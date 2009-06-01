@@ -17,38 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- * $URL: https://scummvm.svn.sourceforge.net/svnroot/scummvm/scummvm/trunk/engines/touche/touche.cpp $
- * $Id: touche.cpp 39003 2009-03-01 04:42:46Z fingolfin $
- *
  */
 
-#include "common/config-manager.h"
-#include "common/events.h"
-#include "common/system.h"
-#include "common/file.h"
+#ifndef ASYLUM_ENGINE_H
+#define ASYLUM_ENGINE_H
 
-#include "asylum/asylum.h"
+#include "engines/engine.h"
 
 namespace Asylum {
 
-AsylumEngine::AsylumEngine(OSystem *system, Common::Language language)
-	: Engine(system) {
-
-	Common::File::addDefaultDirectory(_gameDataDir.getChild("Data"));
-	Common::File::addDefaultDirectory(_gameDataDir.getChild("Vids"));	
-
-	_eventMan->registerRandomSource(_rnd, "asylum");
-}
-
-AsylumEngine::~AsylumEngine() {
-	//Common::clearAllDebugChannels();	
-}
-
-Common::Error AsylumEngine::run() {
-	initGraphics(640, 480, true);
+class AsylumEngine: public Engine {
+public:
 	
-	return Common::kNoError;
-}
+	AsylumEngine(OSystem *system, Common::Language language);
+	virtual ~AsylumEngine();
+
+	// Engine APIs
+	virtual Common::Error run();
+	virtual bool hasFeature(EngineFeature f) const;	
+private:
+	Common::Language _language;
+	Common::RandomSource _rnd;
+};
 
 } // namespace Asylum
+
+#endif

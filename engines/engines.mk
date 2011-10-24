@@ -26,6 +26,11 @@ DEFINES += -DENABLE_AGOS2
 endif
 endif
 
+ifdef ENABLE_ASYLUM
+DEFINES += -DENABLE_ASYLUM=$(ENABLE_ASYLUM)
+MODULES += engines/asylum
+endif
+
 ifdef ENABLE_CGE
 DEFINES += -DENABLE_CGE=$(ENABLE_CGE)
 MODULES += engines/cge

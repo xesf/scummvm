@@ -32,7 +32,8 @@ namespace Gob {
 #define RENDERFLAG_COLLISIONS        0x0004
 #define RENDERFLAG_CAPTUREPOP        0x0008
 #define RENDERFLAG_USEDELTAS         0x0010
-#define RENDERFLAG_UNKNOWN           0x0080
+#define RENDERFLAG_BORDERHOTSPOTS    0x0040
+#define RENDERFLAG_HASWINDOWS        0x0080
 #define RENDERFLAG_NOBLITINVALIDATED 0x0200
 #define RENDERFLAG_NOSUBTITLES       0x0400
 #define RENDERFLAG_FROMSPLIT         0x0800
@@ -145,6 +146,15 @@ public:
 	int8 _cursorAnimHigh[40];
 	int8 _cursorAnimDelays[40];
 
+	int32 _cursorCount;
+	bool *_doCursorPalettes;
+	byte *_cursorPalettes;
+	byte *_cursorKeyColors;
+	uint16 *_cursorPaletteStarts;
+	uint16 *_cursorPaletteCounts;
+	int32 *_cursorHotspotsX;
+	int32 *_cursorHotspotsY;
+
 	int16 _palLoadData1[4];
 	int16 _palLoadData2[4];
 
@@ -249,6 +259,8 @@ public:
 
 private:
 	uint8 _mayorWorkaroundStatus;
+
+	void fixLittleRedStrings();
 };
 
 class Draw_Bargon: public Draw_v2 {

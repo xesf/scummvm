@@ -61,8 +61,6 @@ struct Class {
 	reg_t reg; ///< offset; script-relative offset, segment: 0 if not instantiated
 };
 
-#define RAW_IS_OBJECT(datablock) (READ_SCI11ENDIAN_UINT16(((const byte *) datablock) + SCRIPT_OBJECT_MAGIC_OFFSET) == SCRIPT_OBJECT_MAGIC_NUMBER)
-
 // A reference to an object's variable.
 // The object is stored as a reg_t, the variable as an index into _variables
 struct ObjVarRef {
@@ -84,7 +82,7 @@ struct ExecStack {
 
 	union {
 		ObjVarRef varp; // Variable pointer for r/w access
-		reg_t pc;       // Pointer to the initial program counter. Not accurate for the TOS element
+		reg32_t pc;       // Pointer to the initial program counter. Not accurate for the TOS element
 	} addr;
 
 	StackPtr fp; // Frame pointer
@@ -104,7 +102,7 @@ struct ExecStack {
 	reg_t* getVarPointer(SegManager *segMan) const;
 
 	ExecStack(reg_t objp_, reg_t sendp_, StackPtr sp_, int argc_, StackPtr argp_,
-				SegmentId localsSegment_, reg_t pc_, Selector debugSelector_,
+				SegmentId localsSegment_, reg32_t pc_, Selector debugSelector_,
 				int debugExportId_, int debugLocalCallOffset_, int debugOrigin_,
 				ExecStackType type_) {
 		objp = objp_;
@@ -118,7 +116,7 @@ struct ExecStack {
 		if (localsSegment_ != 0xFFFF)
 			local_segment = localsSegment_;
 		else
-			local_segment = pc_.segment;
+			local_segment = pc_.getSegment();
 		debugSelector = debugSelector_;
 		debugExportId = debugExportId_;
 		debugLocalCallOffset = debugLocalCallOffset_;
@@ -139,7 +137,7 @@ enum {
 	GC_INTERVAL = 0x8000
 };
 
-enum sci_opcodes {
+enum SciOpcodes {
 	op_bnot     = 0x00,	// 000
 	op_add      = 0x01,	// 001
 	op_sub      = 0x02,	// 002

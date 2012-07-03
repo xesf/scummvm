@@ -150,11 +150,11 @@ void CGEEngine::sndSetVolume() {
 void CGEEngine::syncHeader(Common::Serializer &s) {
 	debugC(1, kCGEDebugEngine, "CGEEngine::syncHeader(s)");
 
-	int i;
+	int i = kDemo;
 
 	s.syncAsUint16LE(_now);
 	s.syncAsUint16LE(_oldLev);
-	s.syncAsUint16LE(_demoText);
+	s.syncAsUint16LE(i);        // unused Demo string id
 	for (i = 0; i < 5; i++)
 		s.syncAsUint16LE(_game);
 	s.syncAsSint16LE(i);		// unused VGA::Mono variable
@@ -706,7 +706,7 @@ void CGEEngine::qGame() {
 	saveGame(0, Common::String("Automatic Savegame"));
 
 	_vga->sunset();
-	_finis = true;
+	_endGame = true;
 }
 
 void CGEEngine::switchScene(int newScene) {
@@ -1312,7 +1312,7 @@ void CGEEngine::runGame() {
 
 	_sceneLight->_flags._tran = true;
 	_vga->_showQ->append(_sceneLight);
-	_sceneLight->_flags._hide = true;
+	_sceneLight->_flags._hide = false;
 
 	const Seq pocSeq[] = {
 		{ 0, 0, 0, 0, 20 },
@@ -1403,14 +1403,14 @@ void CGEEngine::runGame() {
 
 	_keyboard->setClient(_sys);
 	// main loop
-	while (!_finis && !_quitFlag) {
-		if (_flag[3])
+	while (!_endGame && !_quitFlag) {
+		if (_flag[3]) // Flag FINIS
 			_commandHandler->addCallback(kCmdExec,  -1, 0, kQGame);
 		mainLoop();
 	}
 
 	// If finishing game due to closing ScummVM window, explicitly save the game
-	if (!_finis && canSaveGameStateCurrently())
+	if (!_endGame && canSaveGameStateCurrently())
 		qGame();
 
 	_keyboard->setClient(NULL);
@@ -1507,22 +1507,9 @@ bool CGEEngine::showTitle(const char *name) {
 		_vga->_showQ->clear();
 		_vga->copyPage(0, 2);
 
-		if (_mode == 0) {
-// The auto-load of savegame #0 is currently disabled
-#if 0
-			if (savegameExists(0)) {
-				// Load the savegame
-				loadGame(0, NULL, true); // only system vars
-				_vga->setColors(_vga->_sysPal, 64);
-				_vga->update();
-				if (_flag[3]) { //flag FINIS
-					_mode++;
-					_flag[3] = false;
-				}
-			} else
-#endif
-				_mode++;
-		}
+		// The original was automatically loading the savegame when available
+		if (_mode == 0)
+			_mode++;
 	}
 
 	if (_mode < 2)

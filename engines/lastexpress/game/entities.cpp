@@ -27,8 +27,6 @@
 #include "lastexpress/data/sequence.h"
 
 // Entities
-#include "lastexpress/entities/entity.h"
-
 #include "lastexpress/entities/abbot.h"
 #include "lastexpress/entities/alexei.h"
 #include "lastexpress/entities/alouan.h"
@@ -71,10 +69,8 @@
 #include "lastexpress/game/state.h"
 
 #include "lastexpress/sound/queue.h"
-#include "lastexpress/sound/sound.h"
 
 #include "lastexpress/graphics.h"
-#include "lastexpress/helpers.h"
 #include "lastexpress/lastexpress.h"
 #include "lastexpress/resource.h"
 
@@ -673,11 +669,12 @@ void Entities::executeCallbacks() {
 //////////////////////////////////////////////////////////////////////////
 // Processing
 //////////////////////////////////////////////////////////////////////////
-#define INCREMENT_DIRECTION_COUNTER() { \
-	data->doProcessEntity = false; \
-	if (data->direction == kDirectionRight || (data->direction == kDirectionSwitch && data->directionSwitch == kDirectionRight)) \
-		++data->field_4A1; \
-	}
+void Entities::incrementDirectionCounter(EntityData::EntityCallData *data) {
+	data->doProcessEntity = false;
+
+	if (data->direction == kDirectionRight || (data->direction == kDirectionSwitch && data->directionSwitch == kDirectionRight))
+		++data->field_4A1;
+}
 
 void Entities::processEntity(EntityIndex entityIndex) {
 	EntityData::EntityCallData *data = getData(entityIndex);
@@ -696,7 +693,7 @@ void Entities::processEntity(EntityIndex entityIndex) {
 		getScenes()->removeAndRedraw(&data->frame, false);
 		getScenes()->removeAndRedraw(&data->frame1, false);
 
-		INCREMENT_DIRECTION_COUNTER();
+		incrementDirectionCounter(data);
 		return;
 	}
 
@@ -726,7 +723,7 @@ label_nosequence:
 			processFrame(entityIndex, false, true);
 
 			if (!getFlags()->flag_entities_0 && !data->doProcessEntity) {
-				INCREMENT_DIRECTION_COUNTER();
+				incrementDirectionCounter(data);
 				return;
 			}
 		} else {
@@ -744,7 +741,7 @@ label_nosequence:
 				data->position = 0;
 			}
 
-			INCREMENT_DIRECTION_COUNTER();
+			incrementDirectionCounter(data);
 		}
 		return;
 	}
@@ -793,7 +790,7 @@ label_nosequence:
 		}
 	}
 
-	INCREMENT_DIRECTION_COUNTER();
+	incrementDirectionCounter(data);
 }
 
 void Entities::computeCurrentFrame(EntityIndex entityIndex) const {

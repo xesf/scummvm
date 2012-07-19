@@ -596,6 +596,15 @@ public:
 			return str;
 		}
 
+		/**
+		 * Synchronizes a string.
+		 *
+		 * @param	s	  	The Common::Serializer to use.
+		 * @param	string	The string.
+		 * @param	length	Length of the string.
+		 */
+		void syncString(Common::Serializer &s, Common::String &string, int length);
+
 		// Serializable
 		void saveLoadWithSerializer(Common::Serializer &s);
 	};
@@ -616,19 +625,19 @@ public:
 	EntityParameters  *getParameters(uint callback, byte index) const;
 	EntityParameters  *getCurrentParameters(byte index = 0) { return getParameters(_data.currentCall, index); }
 
-	int 			   getCallback(uint callback) const;
-	int				   getCurrentCallback() { return getCallback(_data.currentCall); }
-	void 			   setCallback(uint callback, byte index);
-	void 			   setCurrentCallback(uint index) { setCallback(_data.currentCall, index); }
+	int                getCallback(uint callback) const;
+	int                getCurrentCallback() { return getCallback(_data.currentCall); }
+	void               setCallback(uint callback, byte index);
+	void               setCurrentCallback(uint index) { setCallback(_data.currentCall, index); }
 
 	void               updateParameters(uint32 index) const;
 
 	// Serializable
-	void 			   saveLoadWithSerializer(Common::Serializer &ser);
+	void               saveLoadWithSerializer(Common::Serializer &ser);
 
 private:
 
-	EntityCallData 		 _data;
+	EntityCallData       _data;
 	EntityCallParameters _parameters[9];
 };
 
@@ -665,9 +674,17 @@ public:
 protected:
 	LastExpressEngine *_engine;
 
-	EntityIndex				  _entityIndex;
-	EntityData 				 *_data;
-	Common::Array<Callback *> _callbacks;
+	EntityIndex                _entityIndex;
+	EntityData                *_data;
+	Common::Array<Callback *>  _callbacks;
+
+	typedef Common::Functor2<const char *, ObjectIndex, void> EnterFunction;
+	typedef Common::Functor2<CarIndex, EntityPosition, void> UpdateFunction;
+	typedef Common::Functor2<SavegameType, uint32, void> SaveFunction;
+
+	#define WRAP_ENTER_FUNCTION(className, method) new Common::Functor2Mem<const char *, ObjectIndex, void, className>(this, &className::method)
+	#define WRAP_UPDATE_FUNCTION(className, method) new Common::Functor2Mem<CarIndex, EntityPosition, void, className>(this, &className::method)
+	#define WRAP_SAVE_FUNCTION(className, method) new Common::Functor2Mem<SavegameType, uint32, void, className>(this, &className::method)
 
 	/**
 	 * Saves the game
@@ -677,6 +694,11 @@ protected:
 	 *                   - EventIndex
 	 */
 	void savegame(const SavePoint &savepoint);
+
+	/**
+	 * Saves the game before being found out with a blood covered jacket
+	 */
+	void savegameBloodJacket(SaveFunction *savegame);
 
 	/**
 	 * Play sound
@@ -782,15 +804,54 @@ protected:
 	void enterExitCompartment(const SavePoint &savepoint, EntityPosition position1 = kPositionNone, EntityPosition position2 = kPositionNone, CarIndex car = kCarNone, ObjectIndex compartment = kObjectNone, bool alternate = false, bool updateLocation = false);
 
 	/**
+	 * Go to compartment.
+	 *
+	 * @param	savepoint			 	The savepoint.
+	 * @param	compartmentFrom		 	The compartment from.
+	 * @param	positionFrom		 	The position from.
+	 * @param	sequenceFrom		 	The sequence from.
+	 * @param	sequenceTo			 	The sequence to.
+	 * @param	enterFunction			The enter/exit compartment function.
+	 */
+	void goToCompartment(const SavePoint &savepoint, ObjectIndex compartmentFrom, EntityPosition positionFrom, Common::String sequenceFrom, Common::String sequenceTo, EnterFunction *enterFunction);
+
+	/**
+	 * Go to compartment from compartment.
+	 *
+	 * @param	savepoint			  	The savepoint.
+	 * @param	compartmentFrom		  	The compartment from.
+	 * @param	positionFrom		  	The position from.
+	 * @param	sequenceFrom		  	The sequence from.
+	 * @param	compartmentTo		  	The compartment to.
+	 * @param	positionTo			  	The position to.
+	 * @param	sequenceTo			  	The sequence to.
+	 * @param	enterFunction			The enter/exit compartment function.
+	 * @param	enterFunction			The update entity function.
+	 */
+	void goToCompartmentFromCompartment(const SavePoint &savepoint, ObjectIndex compartmentFrom, EntityPosition positionFrom, Common::String sequenceFrom, ObjectIndex compartmentTo, EntityPosition positionTo, Common::String sequenceTo, Entity::EnterFunction *enterFunction, Entity::UpdateFunction *updateFunction);
+
+	/**
 	 * Updates the position
 	 *
-	 * @param savepoint 	 The savepoint
+	 * @param savepoint       The savepoint
 	 *                        - Sequence name
 	 *                        - CarIndex
 	 *                        - Position
 	 * @param handleExcuseMe true to handle excuseMe actions
 	 */
 	void updatePosition(const SavePoint &savepoint, bool handleExcuseMe = false);
+
+	/**
+	 * Store the current callback information and perform the callback action
+	 */
+	void callbackAction();
+
+	//////////////////////////////////////////////////////////////////////////
+	// Helper functions
+	//////////////////////////////////////////////////////////////////////////
+
+	void timeCheckSavepoint(TimeValue timeValue, uint &parameter, EntityIndex entity1, EntityIndex entity2, ActionIndex action);
+	void timeCheckObject(TimeValue timeValue, uint &parameter, ObjectIndex index, ObjectLocation location);
 };
 
 

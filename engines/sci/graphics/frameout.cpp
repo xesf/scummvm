@@ -117,6 +117,8 @@ void GfxFrameout::showCurrentScrollText() {
 	}
 }
 
+extern void showScummVMDialog(const Common::String &message);
+
 void GfxFrameout::kernelAddPlane(reg_t object) {
 	PlaneEntry newPlane;
 
@@ -131,13 +133,33 @@ void GfxFrameout::kernelAddPlane(reg_t object) {
 			tmpRunningWidth = 320;
 			tmpRunningHeight = 200;
 		}
+		
+		// HACK: Phantasmagoria 1 sets a window size of 630x450.
+		// We can't set a width of 630, as that messes up the pitch, so we hack
+		// the internal script width here
+		if (g_sci->getGameId() == GID_PHANTASMAGORIA) {
+			tmpRunningWidth = 325;
+		}
 
 		_coordAdjuster->setScriptsResolution(tmpRunningWidth, tmpRunningHeight);
 	}
 
+	// Import of QfG character files dialog is shown in QFG4.
+	// Display additional popup information before letting user use it.
+	// For the SCI0-SCI1.1 version of this, check kDrawControl().
+	if (g_sci->inQfGImportRoom() && !strcmp(_segMan->getObjectName(object), "DSPlane")) {
+		showScummVMDialog("Characters saved inside ScummVM are shown "
+				"automatically. Character files saved in the original "
+				"interpreter need to be put inside ScummVM's saved games "
+				"directory and a prefix needs to be added depending on which "
+				"game it was saved in: 'qfg1-' for Quest for Glory 1, 'qfg2-' "
+				"for Quest for Glory 2, 'qfg3-' for Quest for Glory 3. "
+				"Example: 'qfg2-thief.sav'.");
+	}
+
 	newPlane.object = object;
 	newPlane.priority = readSelectorValue(_segMan, object, SELECTOR(priority));
-	newPlane.lastPriority = 0xFFFF; // hidden
+	newPlane.lastPriority = -1; // hidden
 	newPlane.planeOffsetX = 0;
 	newPlane.planeOffsetY = 0;
 	newPlane.pictureId = kPlanePlainColored;
@@ -294,6 +316,10 @@ reg_t GfxFrameout::addPlaneLine(reg_t object, Common::Point startPoint, Common::
 }
 
 void GfxFrameout::updatePlaneLine(reg_t object, reg_t hunkId, Common::Point startPoint, Common::Point endPoint, byte color, byte priority, byte control) {
+	// Check if we're asked to update a line that was never added
+	if (hunkId.isNull())
+		return;
+
 	for (PlaneList::iterator it = _planes.begin(); it != _planes.end(); ++it) {
 		if (it->object == object) {
 			for (PlaneLineList::iterator it2 = it->lines.begin(); it2 != it->lines.end(); ++it2) {
@@ -311,6 +337,10 @@ void GfxFrameout::updatePlaneLine(reg_t object, reg_t hunkId, Common::Point star
 }
 
 void GfxFrameout::deletePlaneLine(reg_t object, reg_t hunkId) {
+	// Check if we're asked to delete a line that was never added (happens during the intro of LSL6)
+	if (hunkId.isNull())
+		return;
+
 	for (PlaneList::iterator it = _planes.begin(); it != _planes.end(); ++it) {
 		if (it->object == object) {
 			for (PlaneLineList::iterator it2 = it->lines.begin(); it2 != it->lines.end(); ++it2) {
@@ -326,8 +356,10 @@ void GfxFrameout::deletePlaneLine(reg_t object, reg_t hunkId) {
 
 void GfxFrameout::kernelAddScreenItem(reg_t object) {
 	// Ignore invalid items
-	if (!_segMan->isObject(object))
+	if (!_segMan->isObject(object)) {
+		warning("kernelAddScreenItem: Attempt to add an invalid object (%04x:%04x)", PRINT_REG(object));
 		return;
+	}
 
 	FrameoutEntry *itemEntry = new FrameoutEntry();
 	memset(itemEntry, 0, sizeof(FrameoutEntry));
@@ -341,8 +373,10 @@ void GfxFrameout::kernelAddScreenItem(reg_t object) {
 
 void GfxFrameout::kernelUpdateScreenItem(reg_t object) {
 	// Ignore invalid items
-	if (!_segMan->isObject(object))
+	if (!_segMan->isObject(object)) {
+		warning("kernelUpdateScreenItem: Attempt to update an invalid object (%04x:%04x)", PRINT_REG(object));
 		return;
+	}
 
 	FrameoutEntry *itemEntry = findScreenItem(object);
 	if (!itemEntry) {
@@ -372,10 +406,9 @@ void GfxFrameout::kernelUpdateScreenItem(reg_t object) {
 
 void GfxFrameout::kernelDeleteScreenItem(reg_t object) {
 	FrameoutEntry *itemEntry = findScreenItem(object);
-	if (!itemEntry) {
-		warning("kernelDeleteScreenItem: invalid object %04x:%04x", PRINT_REG(object));
+	// If the item could not be found, it may already have been deleted
+	if (!itemEntry)
 		return;
-	}
 
 	_screenItems.remove(itemEntry);
 	delete itemEntry;
@@ -432,15 +465,10 @@ bool sortHelper(const FrameoutEntry* entry1, const FrameoutEntry* entry2) {
 }
 
 bool planeSortHelper(const PlaneEntry &entry1, const PlaneEntry &entry2) {
-//	SegManager *segMan = g_sci->getEngineState()->_segMan;
-
-//	uint16 plane1Priority = readSelectorValue(segMan, entry1, SELECTOR(priority));
-//	uint16 plane2Priority = readSelectorValue(segMan, entry2, SELECTOR(priority));
-
-	if (entry1.priority == 0xffff)
+	if (entry1.priority < 0)
 		return true;
 
-	if (entry2.priority == 0xffff)
+	if (entry2.priority < 0)
 		return false;
 
 	return entry1.priority < entry2.priority;
@@ -606,13 +634,13 @@ void GfxFrameout::kernelFrameout() {
 			_screen->drawLine(startPoint, endPoint, it2->color, it2->priority, it2->control);
 		}
 
-		uint16 planeLastPriority = it->lastPriority;
+		int16 planeLastPriority = it->lastPriority;
 
 		// Update priority here, sq6 sets it w/o UpdatePlane
-		uint16 planePriority = it->priority = readSelectorValue(_segMan, planeObject, SELECTOR(priority));
+		int16 planePriority = it->priority = readSelectorValue(_segMan, planeObject, SELECTOR(priority));
 
 		it->lastPriority = planePriority;
-		if (planePriority == 0xffff) { // Plane currently not meant to be shown
+		if (planePriority < 0) { // Plane currently not meant to be shown
 			// If plane was shown before, delete plane rect
 			if (planePriority != planeLastPriority)
 				_paint32->fillRect(it->planeRect, 0);
@@ -653,7 +681,7 @@ void GfxFrameout::kernelFrameout() {
 				if (view && view->isSci2Hires()) {
 					view->adjustToUpscaledCoordinates(itemEntry->y, itemEntry->x);
 					view->adjustToUpscaledCoordinates(itemEntry->z, dummyX);
-				} else if (getSciVersion() == SCI_VERSION_2_1) {
+				} else if (getSciVersion() >= SCI_VERSION_2_1) {
 					_coordAdjuster->fromScriptToDisplay(itemEntry->y, itemEntry->x);
 					_coordAdjuster->fromScriptToDisplay(itemEntry->z, dummyX);
 				}
@@ -691,7 +719,7 @@ void GfxFrameout::kernelFrameout() {
 					if (view && view->isSci2Hires()) {
 						view->adjustBackUpscaledCoordinates(nsRect.top, nsRect.left);
 						view->adjustBackUpscaledCoordinates(nsRect.bottom, nsRect.right);
-					} else if (getSciVersion() == SCI_VERSION_2_1) {
+					} else if (getSciVersion() >= SCI_VERSION_2_1) {
 						_coordAdjuster->fromDisplayToScript(nsRect.top, nsRect.left);
 						_coordAdjuster->fromDisplayToScript(nsRect.bottom, nsRect.right);
 					}
@@ -719,6 +747,9 @@ void GfxFrameout::kernelFrameout() {
 					translatedClipRect = clipRect;
 					translatedClipRect.translate(it->upscaledPlaneRect.left, it->upscaledPlaneRect.top);
 				} else {
+					// QFG4 passes invalid rectangles when a battle is starting
+					if (!clipRect.isValidRect())
+						continue;
 					clipRect.clip(it->planeClipRect);
 					translatedClipRect = clipRect;
 					translatedClipRect.translate(it->planeRect.left, it->planeRect.top);

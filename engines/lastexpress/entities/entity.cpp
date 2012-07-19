@@ -29,15 +29,12 @@
 #include "lastexpress/game/action.h"
 #include "lastexpress/game/entities.h"
 #include "lastexpress/game/logic.h"
+#include "lastexpress/game/object.h"
 #include "lastexpress/game/scenes.h"
 #include "lastexpress/game/state.h"
 #include "lastexpress/game/savegame.h"
 #include "lastexpress/game/savepoint.h"
-#include "lastexpress/game/state.h"
 
-#include "lastexpress/sound/sound.h"
-
-#include "lastexpress/helpers.h"
 #include "lastexpress/lastexpress.h"
 
 namespace LastExpress {
@@ -53,6 +50,17 @@ EntityData::EntityCallData::~EntityCallData() {
 	SAFE_DELETE(sequence);
 	SAFE_DELETE(sequence2);
 	SAFE_DELETE(sequence3);
+}
+
+void EntityData::EntityCallData::syncString(Common::Serializer &s, Common::String &string, int length) {
+	char seqName[13];
+	memset(&seqName, 0, length);
+
+	if (s.isSaving()) strcpy((char *)&seqName, string.c_str());
+		s.syncBytes((byte *)&seqName, length);
+
+	if (s.isLoading())
+		string = seqName;
 }
 
 void EntityData::EntityCallData::saveLoadWithSerializer(Common::Serializer &s) {
@@ -81,20 +89,10 @@ void EntityData::EntityCallData::saveLoadWithSerializer(Common::Serializer &s) {
 	s.syncAsByte(directionSwitch);
 
 	// Sync strings
-#define SYNC_STRING(varName, count) { \
-	char seqName[13]; \
-	memset(&seqName, 0, count); \
-	if (s.isSaving()) strcpy((char *)&seqName, varName.c_str()); \
-	s.syncBytes((byte *)&seqName, count); \
-	if (s.isLoading()) varName = seqName; \
-}
-
-	SYNC_STRING(sequenceName, 13);
-	SYNC_STRING(sequenceName2, 13);
-	SYNC_STRING(sequenceNamePrefix, 7);
-	SYNC_STRING(sequenceNameCopy, 13);
-
-#undef SYNC_STRING
+	syncString(s, sequenceName, 13);
+	syncString(s, sequenceName2, 13);
+	syncString(s, sequenceNamePrefix, 7);
+	syncString(s, sequenceNameCopy, 13);
 
 	// Skip pointers to frame & sequences
 	s.skip(5 * 4);
@@ -246,13 +244,35 @@ void Entity::savegame(const SavePoint &savepoint) {
 		break;
 
 	case kActionNone:
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionDefault:
 		getSaveLoad()->saveGame((SavegameType)params->param1, _entityIndex, (EventIndex)params->param2);
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
+	}
+}
+
+void Entity::savegameBloodJacket(SaveFunction *savegame) {
+	if (getProgress().jacket == kJacketBlood
+	 && getEntities()->isDistanceBetweenEntities(_entityIndex, kEntityPlayer, 1000)
+	 && !getEntities()->isInsideCompartments(kEntityPlayer)
+	 && !getEntities()->checkFields10(kEntityPlayer)) {
+		setCallback(1);
+
+		switch (_entityIndex) {
+		default:
+			break;
+
+		case kEntityCoudert:
+			(*savegame)(kSavegameTypeEvent, kEventCoudertBloodJacket);
+			break;
+
+		case kEntityMertens:
+			(*savegame)(kSavegameTypeEvent, kEventCoudertBloodJacket);
+			break;
+		}
 	}
 }
 
@@ -264,7 +284,7 @@ void Entity::playSound(const SavePoint &savepoint, bool resetItem, SoundFlag fla
 		break;
 
 	case kActionEndSound:
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionDefault:
@@ -284,7 +304,7 @@ void Entity::draw(const SavePoint &savepoint, bool handleExcuseMe) {
 		break;
 
 	case kActionExitCompartment:
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionExcuseMeCath:
@@ -308,7 +328,7 @@ void Entity::draw2(const SavePoint &savepoint) {
 		break;
 
 	case kActionExitCompartment:
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionDefault:
@@ -327,7 +347,7 @@ void Entity::updateFromTicks(const SavePoint &savepoint) {
 
 	case kActionNone:
 		UPDATE_PARAM(params->param2, getState()->timeTicks, params->param1)
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 	}
 }
@@ -341,7 +361,7 @@ void Entity::updateFromTime(const SavePoint &savepoint) {
 
 	case kActionNone:
 		UPDATE_PARAM(params->param2, getState()->time, params->param1)
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 	}
 }
@@ -352,12 +372,12 @@ void Entity::callbackActionOnDirection(const SavePoint &savepoint) {
 		break;
 
 	case kActionExitCompartment:
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionDefault:
 		if (getData()->direction != kDirectionRight)
-			CALLBACK_ACTION();
+			callbackAction();
 		break;
 	}
 }
@@ -370,7 +390,7 @@ void Entity::callbackActionRestaurantOrSalon(const SavePoint &savepoint) {
 	case kActionNone:
 	case kActionDefault:
 		if (getEntities()->isSomebodyInsideRestaurantOrSalon())
-			CALLBACK_ACTION();
+			callbackAction();
 		break;
 	}
 }
@@ -395,7 +415,7 @@ void Entity::updateEntity(const SavePoint &savepoint, bool handleExcuseMe) {
 	case kActionNone:
 	case kActionDefault:
 		if (getEntities()->updateEntity(_entityIndex, (CarIndex)params->param1, (EntityPosition)params->param2))
-			CALLBACK_ACTION();
+			callbackAction();
 		break;
 	}
 }
@@ -410,7 +430,7 @@ void Entity::callSavepoint(const SavePoint &savepoint, bool handleExcuseMe) {
 	case kActionExitCompartment:
 		if (!CURRENT_PARAM(1, 1))
 			getSavePoints()->call(_entityIndex, (EntityIndex)params->param4, (ActionIndex)params->param5, (char *)&params->seq2);
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionExcuseMeCath:
@@ -448,7 +468,7 @@ void Entity::enterExitCompartment(const SavePoint &savepoint, EntityPosition pos
 		if (updateLocation)
 			getData()->location = kLocationInsideCompartment;
 
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionDefault:
@@ -468,6 +488,74 @@ void Entity::enterExitCompartment(const SavePoint &savepoint, EntityPosition pos
 	}
 }
 
+void Entity::goToCompartment(const SavePoint &savepoint, ObjectIndex compartmentFrom, EntityPosition positionFrom, Common::String sequenceFrom, Common::String sequenceTo, Entity::EnterFunction *enterFunction) {
+	switch (savepoint.action) {
+	default:
+		break;
+
+	case kActionDefault:
+		getData()->entityPosition = positionFrom;
+		setCallback(1);
+		(*enterFunction)(sequenceFrom.c_str(), compartmentFrom);
+		break;
+
+	case kActionCallback:
+		switch (getCallback()) {
+		default:
+			break;
+
+		case 1:
+			setCallback(2);
+			(*enterFunction)(sequenceTo.c_str(), compartmentFrom);
+			break;
+
+		case 2:
+			getData()->entityPosition = positionFrom;
+			getEntities()->clearSequences(_entityIndex);
+			callbackAction();
+			break;
+		}
+		break;
+	}
+}
+
+void Entity::goToCompartmentFromCompartment(const SavePoint &savepoint, ObjectIndex compartmentFrom, EntityPosition positionFrom, Common::String sequenceFrom, ObjectIndex compartmentTo, EntityPosition positionTo, Common::String sequenceTo, Entity::EnterFunction *enterFunction, Entity::UpdateFunction *updateFunction) {
+	switch (savepoint.action) {
+	default:
+		break;
+
+	case kActionDefault:
+		getData()->entityPosition = positionFrom;
+		getData()->location = kLocationOutsideCompartment;
+		setCallback(1);
+		(*enterFunction)(sequenceFrom.c_str(), compartmentFrom);
+		break;
+
+	case kActionCallback:
+		switch (getCallback()) {
+		default:
+			break;
+
+		case 1:
+			setCallback(2);
+			(*updateFunction)(kCarGreenSleeping, positionTo);
+			break;
+
+		case 2:
+			setCallback(3);
+			(*enterFunction)(sequenceTo.c_str(), compartmentTo);
+			break;
+
+		case 3:
+			getData()->location = kLocationInsideCompartment;
+			getEntities()->clearSequences(_entityIndex);
+			callbackAction();
+			break;
+		}
+		break;
+	}
+}
+
 void Entity::updatePosition(const SavePoint &savepoint, bool handleExcuseMe) {
 	EXPOSE_PARAMS(EntityData::EntityParametersSIII)
 
@@ -477,7 +565,7 @@ void Entity::updatePosition(const SavePoint &savepoint, bool handleExcuseMe) {
 
 	case kActionExitCompartment:
 		getEntities()->updatePositionExit(_entityIndex, (CarIndex)params->param4, (Position)params->param5);
-		CALLBACK_ACTION();
+		callbackAction();
 		break;
 
 	case kActionExcuseMeCath:
@@ -491,6 +579,35 @@ void Entity::updatePosition(const SavePoint &savepoint, bool handleExcuseMe) {
 		getEntities()->drawSequenceRight(_entityIndex, (char *)&params->seq);
 		getEntities()->updatePositionEnter(_entityIndex, (CarIndex)params->param4, (Position)params->param5);
 		break;
+	}
+}
+
+void Entity::callbackAction() {
+	if (getData()->currentCall == 0)
+		error("[Entity::callbackAction] currentCall is already 0, cannot proceed");
+
+	getData()->currentCall--;
+
+	getSavePoints()->setCallback(_entityIndex, _callbacks[_data->getCurrentCallback()]);
+
+	getSavePoints()->call(_entityIndex, _entityIndex, kActionCallback);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Helper functions
+//////////////////////////////////////////////////////////////////////////
+
+void Entity::timeCheckSavepoint(TimeValue timeValue, uint &parameter, EntityIndex entity1, EntityIndex entity2, ActionIndex action) {
+	if (getState()->time > timeValue && !parameter) {
+		parameter = 1;
+		getSavePoints()->push(entity1, entity2, action);
+	}
+}
+
+void Entity::timeCheckObject(TimeValue timeValue, uint &parameter, ObjectIndex object, ObjectLocation location) {
+	if (getState()->time > timeValue && !parameter) {
+		parameter = 1;
+		getObjects()->updateLocation2(object, location);
 	}
 }
 

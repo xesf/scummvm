@@ -25,8 +25,6 @@
 
 namespace LastExpress {
 
-#define LOW_BYTE(w)           ((unsigned char)(((unsigned long)(w)) & 0xff))
-
 //////////////////////////////////////////////////////////////////////////
 // Callbacks
 #define ENTITY_CALLBACK(class, name, pointer) \
@@ -328,12 +326,6 @@ void class::setup_##name() { \
 		break; \
 	}
 
-#define TIME_CHECK_SAVEPOINT(timeValue, parameter, entity1, entity2, action) \
-	if (getState()->time > timeValue && !parameter) { \
-		parameter = 1; \
-		getSavePoints()->push(entity1, entity2, action); \
-	}
-
 #define TIME_CHECK_CALLBACK(timeValue, parameter, callback, function) \
 	if (getState()->time > timeValue && !parameter) { \
 		parameter = 1; \
@@ -368,17 +360,17 @@ void class::setup_##name() { \
 
 #define TIME_CHECK_CALLBACK_INVENTORY(timeValue, parameter, callback, function) \
 	if (getState()->time > timeValue && !parameter) { \
-	parameter = 1; \
-	getData()->inventoryItem = kItemNone; \
-	setCallback(callback); \
-	function(); \
-	break; \
+		parameter = 1; \
+		getData()->inventoryItem = kItemNone; \
+		setCallback(callback); \
+		function(); \
+		break; \
 	}
 
 #define TIME_CHECK_CALLBACK_ACTION(timeValue, parameter) \
 	if (getState()->time > timeValue && !parameter) { \
 		parameter = 1; \
-		CALLBACK_ACTION(); \
+		callbackAction(); \
 		break; \
 	}
 
@@ -391,12 +383,6 @@ void class::setup_##name() { \
 		break; \
 	}
 
-#define TIME_CHECK_OBJECT(timeValue, parameter, object, location) \
-	if (getState()->time > timeValue && !parameter) { \
-		parameter = 1; \
-		getObjects()->updateLocation2(object, location); \
-	}
-
 #define TIME_CHECK_CAR(timeValue, parameter, callback, function) {\
 	if ((getState()->time <= timeValue && !getEntities()->isPlayerInCar(kCarGreenSleeping)) || !parameter) \
 		parameter = (uint)getState()->time + 75; \
@@ -407,17 +393,6 @@ void class::setup_##name() { \
 		break; \
 	} \
 }
-
-//////////////////////////////////////////////////////////////////////////
-// Callback action
-//////////////////////////////////////////////////////////////////////////
-#define CALLBACK_ACTION() { \
-	if (getData()->currentCall == 0) \
-		error("[CALLBACK_ACTION] currentCall is already 0, cannot proceed"); \
-	getData()->currentCall--; \
-	getSavePoints()->setCallback(_entityIndex, _callbacks[_data->getCurrentCallback()]); \
-	getSavePoints()->call(_entityIndex, _entityIndex, kActionCallback); \
-	}
 
 //////////////////////////////////////////////////////////////////////////
 // Param update
@@ -461,66 +436,6 @@ void class::setup_##name() { \
 	if (!parameter || parameter < type) { \
 		if (!parameter) \
 			parameter = (uint)(type + value);
-
-//////////////////////////////////////////////////////////////////////////
-// Compartments
-//////////////////////////////////////////////////////////////////////////
-// Go from one compartment to another (or the same one if no optional args are passed
-#define COMPARTMENT_TO(class, compartmentFrom, positionFrom, sequenceFrom, sequenceTo) \
-	switch (savepoint.action) { \
-	default: \
-		break; \
-	case kActionDefault: \
-		getData()->entityPosition = positionFrom; \
-		setCallback(1); \
-		setup_enterExitCompartment(sequenceFrom, compartmentFrom); \
-		break; \
-	case kActionCallback: \
-		switch (getCallback()) { \
-		default: \
-			break; \
-		case 1: \
-			setCallback(2); \
-			setup_enterExitCompartment(sequenceTo, compartmentFrom); \
-			break; \
-		case 2: \
-			getData()->entityPosition = positionFrom; \
-			getEntities()->clearSequences(_entityIndex); \
-			CALLBACK_ACTION(); \
-		} \
-		break; \
-	}
-
-#define COMPARTMENT_FROM_TO(class, compartmentFrom, positionFrom, sequenceFrom, compartmentTo, positionTo, sequenceTo) \
-	switch (savepoint.action) { \
-	default: \
-		break; \
-	case kActionDefault: \
-		getData()->entityPosition = positionFrom; \
-		getData()->location = kLocationOutsideCompartment; \
-		setCallback(1); \
-		setup_enterExitCompartment(sequenceFrom, compartmentFrom); \
-		break; \
-	case kActionCallback: \
-		switch (getCallback()) { \
-		default: \
-			break; \
-		case 1: \
-			setCallback(2); \
-			setup_updateEntity(kCarGreenSleeping, positionTo); \
-			break; \
-		case 2: \
-			setCallback(3); \
-			setup_enterExitCompartment(sequenceTo, compartmentTo); \
-			break; \
-		case 3: \
-			getData()->location = kLocationInsideCompartment; \
-			getEntities()->clearSequences(_entityIndex); \
-			CALLBACK_ACTION(); \
-			break; \
-		} \
-		break; \
-	}
 
 } // End of namespace LastExpress
 

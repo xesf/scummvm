@@ -63,11 +63,9 @@
 #include "lastexpress/game/state.h"
 
 #include "lastexpress/menu/menu.h"
-#include "lastexpress/sound/sound.h"
 
 #include "lastexpress/sound/queue.h"
 
-#include "lastexpress/helpers.h"
 #include "lastexpress/lastexpress.h"
 #include "lastexpress/resource.h"
 
@@ -152,7 +150,7 @@ IMPLEMENT_FUNCTION(5, Chapters, resetMainEntities)
 	RESET_ENTITY_STATE(kEntityVesna, Vesna, setup_reset);
 	RESET_ENTITY_STATE(kEntityYasmin, Yasmin, setup_reset);
 
-	CALLBACK_ACTION();
+	callbackAction();
 IMPLEMENT_FUNCTION_END
 
 //////////////////////////////////////////////////////////////////////////
@@ -191,7 +189,7 @@ IMPLEMENT_FUNCTION(6, Chapters, chapter1End)
 
 			getScenes()->loadScene(kScene41);
 
-			CALLBACK_ACTION();
+			callbackAction();
 		} else {
 			getSound()->playSound(kEntityPlayer, "LIB014");
 			getSound()->playSound(kEntityPlayer, "LIB015", kFlagDefault, 15);
@@ -386,12 +384,6 @@ IMPLEMENT_FUNCTION(7, Chapters, chapter1Init)
 IMPLEMENT_FUNCTION_END
 
 //////////////////////////////////////////////////////////////////////////
-#define PLAY_STEAM() { \
-	getSoundQueue()->resetState(); \
-	getSound()->playSteam((CityIndex)ENTITY_PARAM(0, 4)); \
-	ENTITY_PARAM(0, 2) = 0; \
-	}
-
 IMPLEMENT_FUNCTION(8, Chapters, chapter1Handler)
 	switch (savepoint.action) {
 	default:
@@ -524,43 +516,43 @@ label_chapter1_next:
 			getSavePoints()->push(kEntityChapters, kEntityTrain, kActionTrainStopRunning);
 
 			if (getEntityData(kEntityPlayer)->location != kLocationOutsideTrain) {
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			if (getEntities()->isOutsideAlexeiWindow()) {
 				getScenes()->loadSceneFromPosition(kCarGreenSleeping, 49);
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			if (getEntities()->isOutsideAnnaWindow()) {
 				getScenes()->loadSceneFromPosition(kCarRedSleeping, 49);
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			CarIndex car = getEntityData(kEntityPlayer)->car;
 			if (car < kCarRedSleeping || car > kCarCoalTender) {
 				if (car < kCarBaggageRear || car > kCarGreenSleeping) {
-					PLAY_STEAM();
+					playSteam();
 					break;
 				}
 
 				if (getEntities()->isPlayerPosition(kCarGreenSleeping, 98)) {
 					getSound()->playSound(kEntityPlayer, "LIB015");
 					getScenes()->loadSceneFromPosition(kCarGreenSleeping, 71);
-					PLAY_STEAM();
+					playSteam();
 					break;
 				}
 
 				getScenes()->loadSceneFromPosition(kCarGreenSleeping, 82);
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			getScenes()->loadSceneFromPosition(kCarRestaurant, 82);
-			PLAY_STEAM();
+			playSteam();
 			break;
 		}
 
@@ -1280,43 +1272,43 @@ label_callback_4:
 			getSavePoints()->push(kEntityChapters, kEntityTrain, kActionTrainStopRunning);
 
 			if (getEntityData(kEntityPlayer)->location != kLocationOutsideTrain) {
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			if (getEntities()->isOutsideAlexeiWindow()) {
 				getScenes()->loadSceneFromPosition(kCarGreenSleeping, 49);
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			if (getEntities()->isOutsideAnnaWindow()) {
 				getScenes()->loadSceneFromPosition(kCarRedSleeping, 49);
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			CarIndex car = getEntityData(kEntityPlayer)->car;
 			if (car < kCarRedSleeping || car > kCarCoalTender) {
 				if (car < kCarBaggageRear || car > kCarGreenSleeping) {
-					PLAY_STEAM();
+					playSteam();
 					break;
 				}
 
 				if (getEntities()->isPlayerPosition(kCarGreenSleeping, 98)) {
 					getSound()->playSound(kEntityPlayer, "LIB015");
 					getScenes()->loadSceneFromPosition(kCarGreenSleeping, 71);
-					PLAY_STEAM();
+					playSteam();
 					break;
 				}
 
 				getScenes()->loadSceneFromPosition(kCarGreenSleeping, 82);
-				PLAY_STEAM();
+				playSteam();
 				break;
 			}
 
 			getScenes()->loadSceneFromPosition(kCarRestaurant, 82);
-			PLAY_STEAM();
+			playSteam();
 			break;
 		}
 
@@ -1815,7 +1807,13 @@ void Chapters::enterExitHelper(bool isEnteringStation) {
 		ENTITY_PARAM(0, 3) = 1;
 	}
 
-	CALLBACK_ACTION();
+	callbackAction();
+}
+
+void Chapters::playSteam() {
+	getSoundQueue()->resetState();
+	getSound()->playSteam((CityIndex)ENTITY_PARAM(0, 4));
+	ENTITY_PARAM(0, 2) = 0;
 }
 
 } // End of namespace LastExpress

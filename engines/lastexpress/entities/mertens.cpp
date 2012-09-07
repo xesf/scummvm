@@ -107,7 +107,7 @@ IMPLEMENT_FUNCTION_S(2, Mertens, bloodJacket)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		break;
 
 	case kActionExitCompartment:
@@ -134,7 +134,7 @@ IMPLEMENT_FUNCTION_SI(3, Mertens, enterExitCompartment, ObjectIndex)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		return;
 
 	case kActionCallback:
@@ -155,7 +155,7 @@ IMPLEMENT_FUNCTION_SI(4, Mertens, enterExitCompartment2, ObjectIndex)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		return;
 
 	case kAction4:
@@ -181,7 +181,7 @@ IMPLEMENT_FUNCTION_SIII(5, Mertens, enterExitCompartment3, ObjectIndex, EntityPo
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		break;
 
 	case kActionExitCompartment:
@@ -223,7 +223,7 @@ IMPLEMENT_FUNCTION(6, Mertens, callbackActionOnDirection)
 			break;
 		}
 
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		break;
 
 	case kActionExitCompartment:
@@ -246,7 +246,7 @@ IMPLEMENT_FUNCTION_S(7, Mertens, playSound)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		break;
 
 	case kActionEndSound:
@@ -273,7 +273,7 @@ IMPLEMENT_FUNCTION_S(8, Mertens, playSound16)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		break;
 
 	case kActionEndSound:
@@ -462,9 +462,10 @@ IMPLEMENT_FUNCTION_I(11, Mertens, function11, uint32)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 
-		UPDATE_PARAM(params->param2, getState()->time, params->param1)
+		if (!Entity::updateParameter(params->param2, getState()->time, params->param1))
+			break;
 
 		callbackAction();
 		break;
@@ -530,23 +531,23 @@ IMPLEMENT_FUNCTION_II(13, Mertens, function13, bool, bool)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 
 		if (!params->param2 && !params->param3) {
-			UPDATE_PARAM_PROC(params->param4, getState()->timeTicks, 75)
+			if (Entity::updateParameter(params->param4, getState()->timeTicks, 75)) {
 				getData()->inventoryItem = kItemNone;
 				setCallback(5);
 				setup_function18();
 				break;
-			UPDATE_PARAM_PROC_END
+			}
 		}
 
-		UPDATE_PARAM_PROC(params->param5, getState()->timeTicks, 225)
+		if (Entity::updateParameter(params->param5, getState()->timeTicks, 225)) {
 			getData()->inventoryItem = kItemNone;
 			setCallback(6);
 			setup_function18();
 			break;
-		UPDATE_PARAM_PROC_END
+		}
 
 		getData()->inventoryItem = (getProgress().chapter == kChapter1
 								 && !ENTITY_PARAM(2, 1)
@@ -652,7 +653,7 @@ IMPLEMENT_FUNCTION_I(14, Mertens, function14, EntityIndex)
 		break;
 
 	case kActionNone:
-		Entity::savegameBloodJacket(WRAP_SAVE_FUNCTION(Mertens, setup_savegame));
+		Entity::savegameBloodJacket();
 		break;
 
 	case kActionDefault:
@@ -1058,11 +1059,12 @@ IMPLEMENT_FUNCTION_II(21, Mertens, function21, ObjectIndex, ObjectIndex)
 		break;
 
 	case kActionNone:
-		UPDATE_PARAM_PROC(CURRENT_PARAM(1, 4), getState()->time, 300)
+		if (Entity::updateParameter(CURRENT_PARAM(1, 4), getState()->time, 300)) {
 			getSound()->playSound(kEntityPlayer, "ZFX1004", getSound()->getSoundFlag(kEntityMertens));
-		UPDATE_PARAM_PROC_END
+		}
 
-		UPDATE_PARAM(CURRENT_PARAM(1, 5), getState()->time, 900);
+		if (!Entity::updateParameter(CURRENT_PARAM(1, 5), getState()->time, 900))
+			break;
 
 		// Update objects
 		getObjects()->updateLocation2((ObjectIndex)params->param1, kObjectLocation1);
@@ -1286,7 +1288,8 @@ IMPLEMENT_FUNCTION(24, Mertens, function24)
 
 	case kActionNone:
 		if (!params->param1) {
-			UPDATE_PARAM(params->param2, getState()->timeTicks, 75);
+			if (!Entity::updateParameter(params->param2, getState()->timeTicks, 75))
+				break;
 
 			setCallback(3);
 			setup_enterExitCompartment3("601Rc", kObjectCompartment3, kPosition_6470, kPosition_6130);
@@ -1389,7 +1392,8 @@ IMPLEMENT_FUNCTION(25, Mertens, function25)
 
 	case kActionNone:
 		if (!params->param1) {
-			UPDATE_PARAM(params->param2, getState()->timeTicks, 75);
+			if (!Entity::updateParameter(params->param2, getState()->timeTicks, 75))
+				break;
 
 			setCallback(3);
 			setup_enterExitCompartment3("601Zb", kObjectCompartment2, kPosition_7500, kPositionNone);
@@ -1612,13 +1616,13 @@ IMPLEMENT_FUNCTION_I(27, Mertens, tylerCompartment, MertensActionType)
 			break;
 		}
 
-		UPDATE_PARAM_PROC(params->param2, getState()->timeTicks, 150)
+		if (Entity::updateParameter(params->param2, getState()->timeTicks, 150)) {
 			getObjects()->update(kObjectCompartment1, kEntityPlayer, getObjects()->get(kObjectCompartment1).location, kCursorNormal, kCursorNormal);
 
 			setCallback(10);
 			setup_playSound16("CON1018A");
 			break;
-		UPDATE_PARAM_PROC_END
+		}
 
 label_callback10:
 		if (!params->param3)
@@ -1626,7 +1630,8 @@ label_callback10:
 
 		if (params->param3 >= getState()->timeTicks) {
 label_callback11:
-			UPDATE_PARAM(params->param4, getState()->timeTicks, 375);
+			if (!Entity::updateParameter(params->param4, getState()->timeTicks, 375))
+				break;
 
 			getSound()->playSound(kEntityPlayer, "LIB033");
 
@@ -2493,7 +2498,7 @@ IMPLEMENT_FUNCTION(34, Mertens, chapter1)
 		break;
 
 	case kActionNone:
-		TIME_CHECK(kTimeChapter1, params->param1, setup_chapter1Handler);
+		Entity::timeCheck(kTimeChapter1, params->param1, WRAP_SETUP_FUNCTION(Mertens, setup_chapter1Handler));
 		break;
 
 	case kActionDefault:
@@ -3020,11 +3025,11 @@ IMPLEMENT_FUNCTION(42, Mertens, function42)
 
 label_callback_8:
 		if (getState()->time > kTime1215000 && !ENTITY_PARAM(0, 1) && !ENTITY_PARAM(2, 1)) {
-			UPDATE_PARAM_PROC(params->param5, getState()->time, 2700)
+			if (Entity::updateParameter(params->param5, getState()->time, 2700)) {
 				getEntities()->drawSequenceLeft(kEntityMertens, "601E");
 				ENTITY_PARAM(0, 1) = 1;
 				params->param5 = 0;
-			UPDATE_PARAM_PROC_END
+			}
 		}
 
 		if (ENTITY_PARAM(0, 8)) {
@@ -3527,19 +3532,23 @@ label_callback_5:
 		}
 
 label_callback_6:
-		TIME_CHECK_CALLBACK_1(kTime1971000, params->param1, 7, setup_function28, "CON3012");
+		if (Entity::timeCheckCallback(kTime1971000, params->param1, 7, "CON3012", WRAP_SETUP_FUNCTION_S(Mertens, setup_function28)))
+			break;
 
 label_callback_7:
-		TIME_CHECK_CALLBACK(kTime2117700, params->param2, 8, setup_function32);
+		if (Entity::timeCheckCallback(kTime2117700, params->param2, 8, WRAP_SETUP_FUNCTION(Mertens, setup_function32)))
+			break;
 
 label_callback_8:
-		TIME_CHECK_CALLBACK_1(kTime2124000, params->param3, 9, setup_function28, "CON2010");
+		if (Entity::timeCheckCallback(kTime2124000, params->param3, 9, "CON2010", WRAP_SETUP_FUNCTION_S(Mertens, setup_function28)))
+			break;
 
 label_callback_9:
-		TIME_CHECK_CALLBACK(kTime2146500, params->param4, 10, setup_function32);
+		if (Entity::timeCheckCallback(kTime2146500, params->param4, 10, WRAP_SETUP_FUNCTION(Mertens, setup_function32)))
+			break;
 
 label_callback_10:
-		TIME_CHECK_CALLBACK(kTime2169000, params->param5, 11, setup_function32);
+		Entity::timeCheckCallback(kTime2169000, params->param5, 11, WRAP_SETUP_FUNCTION(Mertens, setup_function32));
 		break;
 
 	case kAction11:
@@ -3722,21 +3731,26 @@ label_callback_3:
 
 label_callback_4:
 		if (!params->param1) {
-			TIME_CHECK_CALLBACK(kTime2403000, params->param2, 5, setup_function49);
+			if (Entity::timeCheckCallback(kTime2403000, params->param2, 5, WRAP_SETUP_FUNCTION(Mertens, setup_function49)))
+				break;
 
 label_callback_5:
-			TIME_CHECK_CALLBACK(kTime2430000, params->param3, 6, setup_function32);
+			if (Entity::timeCheckCallback(kTime2430000, params->param3, 6, WRAP_SETUP_FUNCTION(Mertens, setup_function32)))
+				break;
 
 label_callback_6:
-			TIME_CHECK_CALLBACK(kTime2439000, params->param4, 7, setup_function32);
+			if (Entity::timeCheckCallback(kTime2439000, params->param4, 7, WRAP_SETUP_FUNCTION(Mertens, setup_function32)))
+				break;
 
 label_callback_7:
-			TIME_CHECK_CALLBACK(kTime2448000, params->param5, 8, setup_function32);
+			if (Entity::timeCheckCallback(kTime2448000, params->param5, 8, WRAP_SETUP_FUNCTION(Mertens, setup_function32)))
+				break;
 		}
 
 label_callback_8:
 		if (getState()->time > kTime2538000 && !ENTITY_PARAM(0, 1) && !ENTITY_PARAM(2, 1)) {
-			UPDATE_PARAM(params->param6, getState()->time, 2700);
+			if (!Entity::updateParameter(params->param6, getState()->time, 2700))
+				break;
 
 			getEntities()->drawSequenceLeft(kEntityMertens, "601E");
 
@@ -3990,7 +4004,8 @@ IMPLEMENT_FUNCTION(53, Mertens, function53)
 
 	case kActionNone:
 		if (params->param1) {
-			UPDATE_PARAM(params->param4, getState()->timeTicks, 75);
+			if (!Entity::updateParameter(params->param4, getState()->timeTicks, 75))
+				break;
 
 			params->param1 = 0;
 			params->param2 = 0;

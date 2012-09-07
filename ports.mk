@@ -96,6 +96,12 @@ ifdef USE_FLAC
 OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libFLAC.a
 endif
 
+ifdef USE_FLUIDSYNTH
+OSX_STATIC_LIBS += \
+                -framework CoreAudio \
+                $(STATICLIBPATH)/lib/libfluidsynth.a
+endif
+
 ifdef USE_MAD
 OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libmad.a
 endif
@@ -293,6 +299,8 @@ endif
 	@cd $(srcdir)/dists/msvc9 && ../../devtools/create_project/create_project ../.. --msvc --msvc-version 9 >/dev/null && git add -f *.sln *.vcproj *.vsprops
 	@echo Creating MSVC10 project files...
 	@cd $(srcdir)/dists/msvc10 && ../../devtools/create_project/create_project ../.. --msvc --msvc-version 10 >/dev/null && git add -f *.sln *.vcxproj *.vcxproj.filters *.props
+	@echo Creating MSVC11 project files...
+	@cd $(srcdir)/dists/msvc11 && ../../devtools/create_project/create_project ../.. --msvc --msvc-version 11 >/dev/null && git add -f *.sln *.vcxproj *.vcxproj.filters *.props
 	@echo
 	@echo All is done.
 	@echo Now run

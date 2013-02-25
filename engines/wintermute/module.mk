@@ -53,6 +53,7 @@ MODULE_OBJS := \
 	base/gfx/base_surface.o \
 	base/gfx/osystem/base_surface_osystem.o \
 	base/gfx/osystem/base_render_osystem.o \
+	base/gfx/osystem/render_ticket.o \
 	base/particles/part_particle.o \
 	base/particles/part_emitter.o \
 	base/particles/part_force.o \
@@ -67,6 +68,7 @@ MODULE_OBJS := \
 	base/base_file_manager.o \
 	base/base_frame.o \
 	base/base_game.o \
+	base/base_game_music.o \
 	base/base_keyboard_state.o \
 	base/base_named_object.o \
 	base/base_object.o \

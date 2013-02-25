@@ -76,12 +76,12 @@ bool BaseScriptable::scCallMethod(ScScript *script, ScStack *stack, ScStack *thi
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *BaseScriptable::scGetProperty(const char *name) {
+ScValue *BaseScriptable::scGetProperty(const Common::String &name) {
 	if (!_scProp) {
 		_scProp = new ScValue(_gameRef);
 	}
 	if (_scProp) {
-		return _scProp->getProp(name);
+		return _scProp->getProp(name.c_str()); // TODO: Change to Common::String
 	} else {
 		return NULL;
 	}
@@ -178,7 +178,7 @@ void BaseScriptable::scDebuggerDesc(char *buf, int bufSize) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool BaseScriptable::canHandleMethod(const char *eventMethod) {
+bool BaseScriptable::canHandleMethod(const char *eventMethod) const {
 	return false;
 }
 

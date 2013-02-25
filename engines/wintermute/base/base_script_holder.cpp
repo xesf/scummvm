@@ -219,13 +219,13 @@ bool BaseScriptHolder::scCallMethod(ScScript *script, ScStack *stack, ScStack *t
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *BaseScriptHolder::scGetProperty(const char *name) {
+ScValue *BaseScriptHolder::scGetProperty(const Common::String &name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (strcmp(name, "Type") == 0) {
+	if (name == "Type") {
 		_scValue->setString("script_holder");
 		return _scValue;
 	}
@@ -233,7 +233,7 @@ ScValue *BaseScriptHolder::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Name
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Name") == 0) {
+	else if (name == "Name") {
 		_scValue->setString(getName());
 		return _scValue;
 	}
@@ -241,7 +241,7 @@ ScValue *BaseScriptHolder::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Filename (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Filename") == 0) {
+	else if (name == "Filename") {
 		_scValue->setString(_filename);
 		return _scValue;
 	} else {
@@ -342,7 +342,7 @@ bool BaseScriptHolder::removeScript(ScScript *script) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool BaseScriptHolder::canHandleEvent(const char *EventName) {
+bool BaseScriptHolder::canHandleEvent(const char *EventName) const {
 	for (uint32 i = 0; i < _scripts.size(); i++) {
 		if (!_scripts[i]->_thread && _scripts[i]->canHandleEvent(EventName)) {
 			return true;
@@ -353,7 +353,7 @@ bool BaseScriptHolder::canHandleEvent(const char *EventName) {
 
 
 //////////////////////////////////////////////////////////////////////////
-bool BaseScriptHolder::canHandleMethod(const char *MethodName) {
+bool BaseScriptHolder::canHandleMethod(const char *MethodName) const {
 	for (uint32 i = 0; i < _scripts.size(); i++) {
 		if (!_scripts[i]->_thread && _scripts[i]->canHandleMethod(MethodName)) {
 			return true;

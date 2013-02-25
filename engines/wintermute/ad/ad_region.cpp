@@ -51,6 +51,21 @@ AdRegion::AdRegion(BaseGame *inGame) : BaseRegion(inGame) {
 AdRegion::~AdRegion() {
 }
 
+uint32 AdRegion::getAlpha() const {
+	return _alpha;
+}
+
+float AdRegion::getZoom() const {
+	return _zoom;
+}
+
+bool AdRegion::isBlocked() const {
+	return _blocked;
+}
+
+bool AdRegion::hasDecoration() const {
+	return _decoration;
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool AdRegion::loadFile(const char *filename) {
@@ -242,13 +257,13 @@ bool AdRegion::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *AdRegion::scGetProperty(const char *name) {
+ScValue *AdRegion::scGetProperty(const Common::String &name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (strcmp(name, "Type") == 0) {
+	if (name == "Type") {
 		_scValue->setString("ad region");
 		return _scValue;
 	}
@@ -256,7 +271,7 @@ ScValue *AdRegion::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Name
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Name") == 0) {
+	else if (name == "Name") {
 		_scValue->setString(getName());
 		return _scValue;
 	}
@@ -264,7 +279,7 @@ ScValue *AdRegion::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Blocked
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Blocked") == 0) {
+	else if (name == "Blocked") {
 		_scValue->setBool(_blocked);
 		return _scValue;
 	}
@@ -272,7 +287,7 @@ ScValue *AdRegion::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Decoration
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Decoration") == 0) {
+	else if (name == "Decoration") {
 		_scValue->setBool(_decoration);
 		return _scValue;
 	}
@@ -280,7 +295,7 @@ ScValue *AdRegion::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Scale
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Scale") == 0) {
+	else if (name == "Scale") {
 		_scValue->setFloat(_zoom);
 		return _scValue;
 	}
@@ -288,7 +303,7 @@ ScValue *AdRegion::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AlphaColor
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AlphaColor") == 0) {
+	else if (name == "AlphaColor") {
 		_scValue->setInt((int)_alpha);
 		return _scValue;
 	} else {

@@ -141,6 +141,9 @@ ScummVM Team
     Parallaction:
        peres
 
+    Pegasus:
+       Matthew Hoops
+
     Queen:
        David Eriksson          - (retired)
        Gregory Montoir         - (retired)
@@ -199,6 +202,11 @@ ScummVM Team
        Max Horn                - (retired)
        Filippos Karapetis
        Joost Peters
+
+    Tony:
+       Arnaud Boutonne
+       Paul Gilbert
+       Alyssa Milburn
 
     Toon:
        Sylvain Dupont
@@ -403,6 +411,9 @@ Other contributions
     Basque:
        Mikel Iturbe Urretxa
 
+    Belarusian:
+       Ivan Lukyanov
+
     Catalan:
        Jordi Vilalta Prat
 
@@ -412,6 +423,9 @@ Other contributions
     Danish:
        Steffen Nyeland
 
+    Finnish:
+       Toni Saarela
+
     French:
        Thierry Crozat
 
@@ -420,7 +434,7 @@ Other contributions
 
     German:
        Simon Sawatzki
-       Lothar Serra Mari
+       Lothar Serra Mari       - (retired)
 
     Hungarian:
        Alex Bevilacqua
@@ -620,4 +634,7 @@ Special thanks to
 
    Jan Nedoma for providing the sources to the Wintermute-engine, and for his
    support while porting the engine to ScummVM.
+
+   Bob Bell, Michel Kripalani, Tommy Yune, from Presto Studios for providing
+   the source code of The Journeyman Project: Pegasus Prime.
 

@@ -80,7 +80,7 @@ public:
 	DECLARE_PERSISTENT(AdScene, BaseObject)
 	bool displayRegionContent(AdRegion *region = NULL, bool display3DOnly = false);
 	bool displayRegionContentOld(AdRegion *region = NULL);
-	static int compareObjs(const void *obj1, const void *obj2);
+	static bool compareObjs(const AdObject *obj1, const AdObject *obj2);
 
 	bool updateFreeObjects();
 	bool traverseNodes(bool update = false);
@@ -156,7 +156,7 @@ public:
 	int getPointsDist(BasePoint p1, BasePoint p2, BaseObject *requester = NULL);
 
 	// scripting interface
-	virtual ScValue *scGetProperty(const char *name);
+	virtual ScValue *scGetProperty(const Common::String &name);
 	virtual bool scSetProperty(const char *name, ScValue *value);
 	virtual bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name);
 	virtual const char *scToString();

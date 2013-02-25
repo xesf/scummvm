@@ -29,17 +29,16 @@
 #include "engines/wintermute/dcgf.h"
 #include "engines/wintermute/base/base_engine.h"
 #include "engines/wintermute/base/base_game.h"
+#include "engines/wintermute/base/base_game_music.h"
 #include "engines/wintermute/base/base_fader.h"
 #include "engines/wintermute/base/base_file_manager.h"
 #include "engines/wintermute/base/font/base_font.h"
 #include "engines/wintermute/base/font/base_font_storage.h"
 #include "engines/wintermute/base/gfx/base_image.h"
-#include "engines/wintermute/base/gfx/base_surface.h"
 #include "engines/wintermute/base/gfx/base_renderer.h"
 #include "engines/wintermute/base/base_keyboard_state.h"
 #include "engines/wintermute/base/base_parser.h"
 #include "engines/wintermute/base/base_quick_msg.h"
-#include "engines/wintermute/base/sound/base_sound.h"
 #include "engines/wintermute/base/sound/base_sound_manager.h"
 #include "engines/wintermute/base/base_sprite.h"
 #include "engines/wintermute/base/base_sub_frame.h"
@@ -54,7 +53,7 @@
 #include "engines/wintermute/base/scriptables/script_engine.h"
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/scriptables/script.h"
-#include "engines/wintermute/base/scriptables/script_ext_math.h"
+#include "engines/wintermute/base/sound/base_sound.h"
 #include "engines/wintermute/video/video_player.h"
 #include "engines/wintermute/video/video_theora_player.h"
 #include "engines/wintermute/utils/utils.h"
@@ -64,6 +63,7 @@
 #include "engines/wintermute/ui/ui_window.h"
 #include "engines/wintermute/wintermute.h"
 #include "engines/wintermute/platform_osystem.h"
+#include "base/version.h"
 #include "common/config-manager.h"
 #include "common/savefile.h"
 #include "common/textconsole.h"
@@ -146,10 +146,7 @@ BaseGame::BaseGame(const Common::String &gameId) : BaseObject(this), _gameId(gam
 
 	_stringTable = new BaseStringTable(this);
 
-	for (int i = 0; i < NUM_MUSIC_CHANNELS; i++) {
-		_music[i] = NULL;
-		_musicStartTime[i] = 0;
-	}
+	_musicSystem = new BaseGameMusic(this);
 
 	_settingsResWidth = 800;
 	_settingsResHeight = 600;
@@ -197,18 +194,9 @@ BaseGame::BaseGame(const Common::String &gameId) : BaseObject(this), _gameId(gam
 	_thumbnailWidth = _thumbnailHeight = 0;
 
 	_richSavedGames = false;
-	_savedGameExt = NULL;
-	BaseUtils::setString(&_savedGameExt, "dsv");
+	_savedGameExt = "dsv";
+	_localSaveDir = "saves";
 
-	_musicCrossfadeRunning = false;
-	_musicCrossfadeStartTime = 0;
-	_musicCrossfadeLength = 0;
-	_musicCrossfadeChannel1 = -1;
-	_musicCrossfadeChannel2 = -1;
-	_musicCrossfadeSwap = false;
-
-	_localSaveDir = NULL;
-	BaseUtils::setString(&_localSaveDir, "saves");
 	_saveDirChecked = false;
 
 	_loadingIcon = NULL;
@@ -222,7 +210,6 @@ BaseGame::BaseGame(const Common::String &gameId) : BaseObject(this), _gameId(gam
 	_suspendedRendering = false;
 
 	_lastCursor = NULL;
-
 
 	BasePlatform::setRectEmpty(&_mouseLockRect);
 
@@ -267,9 +254,7 @@ BaseGame::~BaseGame() {
 
 	cleanup();
 
-	delete[] _localSaveDir;
 	delete[] _settingsGameFile;
-	delete[] _savedGameExt;
 
 	delete _cachedThumbnail;
 
@@ -286,10 +271,9 @@ BaseGame::~BaseGame() {
 
 	delete _renderer;
 	delete _stringTable;
+	delete _musicSystem;
 
-	_localSaveDir = NULL;
 	_settingsGameFile = NULL;
-	_savedGameExt = NULL;
 
 	_cachedThumbnail = NULL;
 
@@ -305,6 +289,7 @@ BaseGame::~BaseGame() {
 
 	_renderer = NULL;
 	_stringTable = NULL;
+	_musicSystem = NULL;
 
 	DEBUG_DebugDisable();
 	debugC(kWintermuteDebugLog, "--- shutting down normally ---\n");
@@ -319,11 +304,7 @@ bool BaseGame::cleanup() {
 	_engineLogCallback = NULL;
 	_engineLogCallbackData = NULL;
 
-	for (int i = 0; i < NUM_MUSIC_CHANNELS; i++) {
-		delete _music[i];
-		_music[i] = NULL;
-		_musicStartTime[i] = 0;
-	}
+	_musicSystem->cleanup();
 
 	unregisterObject(_fader);
 	_fader = NULL;
@@ -404,7 +385,7 @@ bool BaseGame::initialize1() {
 			break;
 		}
 
-		_mathClass = new SXMath(this);
+		_mathClass = makeSXMath(this);
 		if (_mathClass == NULL) {
 			break;
 		}
@@ -489,7 +470,7 @@ void BaseGame::DEBUG_DebugEnable(const char *filename) {
 	LOG(0, "********** DEBUG LOG OPENED %02d-%02d-%02d (Release Build) *****************", hours, mins, secs);
 #endif
 
-	LOG(0, "%s ver %d.%d.%d%s, Compiled on " __DATE__ ", " __TIME__, DCGF_NAME, DCGF_VER_MAJOR, DCGF_VER_MINOR, DCGF_VER_BUILD, DCGF_VER_SUFFIX);
+	LOG(0, "%s - %s ver %d.%d.%d%s ", gScummVMFullVersion, DCGF_NAME, DCGF_VER_MAJOR, DCGF_VER_MINOR, DCGF_VER_BUILD, DCGF_VER_SUFFIX);
 
 	AnsiString platform = BasePlatform::getPlatformName();
 	LOG(0, "Platform: %s", platform.c_str());
@@ -551,7 +532,7 @@ bool BaseGame::initLoop() {
 	_currentTime = g_system->getMillis();
 
 	_renderer->initLoop();
-	updateMusicCrossfade();
+	_musicSystem->updateMusicCrossfade();
 
 	_surfaceStorage->initLoop();
 	_fontStorage->initLoop();
@@ -740,7 +721,7 @@ bool BaseGame::loadBuffer(byte *buffer, bool complete) {
 	TOKEN_TABLE(LOCAL_SAVE_DIR)
 	TOKEN_TABLE(COMPAT_KILL_METHOD_THREADS)
 	TOKEN_TABLE_END
-	
+
 	// Declare a few variables necessary for moving data from these settings over to the renderer:
 	// The values are the same as the defaults set in BaseRenderer.
 	int loadImageX = 0;
@@ -917,7 +898,7 @@ bool BaseGame::loadBuffer(byte *buffer, bool complete) {
 			break;
 
 		case TOKEN_LOCAL_SAVE_DIR:
-			BaseUtils::setString(&_localSaveDir, (char *)params);
+			_localSaveDir = (char *)params;
 			break;
 
 		case TOKEN_COMPAT_KILL_METHOD_THREADS:
@@ -1096,272 +1077,7 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 		return STATUS_OK;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// PlayMusic / PlayMusicChannel
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "PlayMusic") == 0 || strcmp(name, "PlayMusicChannel") == 0) {
-		int channel = 0;
-		if (strcmp(name, "PlayMusic") == 0) {
-			stack->correctParams(3);
-		} else {
-			stack->correctParams(4);
-			channel = stack->pop()->getInt();
-		}
-
-		const char *filename = stack->pop()->getString();
-		ScValue *valLooping = stack->pop();
-		bool looping = valLooping->isNULL() ? true : valLooping->getBool();
-
-		ScValue *valLoopStart = stack->pop();
-		uint32 loopStart = (uint32)(valLoopStart->isNULL() ? 0 : valLoopStart->getInt());
-
-
-		if (DID_FAIL(playMusic(channel, filename, looping, loopStart))) {
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(true);
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// StopMusic / StopMusicChannel
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "StopMusic") == 0 || strcmp(name, "StopMusicChannel") == 0) {
-		int channel = 0;
-
-		if (strcmp(name, "StopMusic") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-
-		if (DID_FAIL(stopMusic(channel))) {
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(true);
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// PauseMusic / PauseMusicChannel
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "PauseMusic") == 0 || strcmp(name, "PauseMusicChannel") == 0) {
-		int channel = 0;
-
-		if (strcmp(name, "PauseMusic") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-
-		if (DID_FAIL(pauseMusic(channel))) {
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(true);
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// ResumeMusic / ResumeMusicChannel
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ResumeMusic") == 0 || strcmp(name, "ResumeMusicChannel") == 0) {
-		int channel = 0;
-		if (strcmp(name, "ResumeMusic") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-
-		if (DID_FAIL(resumeMusic(channel))) {
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(true);
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// GetMusic / GetMusicChannel
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "GetMusic") == 0 || strcmp(name, "GetMusicChannel") == 0) {
-		int channel = 0;
-		if (strcmp(name, "GetMusic") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-		if (channel < 0 || channel >= NUM_MUSIC_CHANNELS) {
-			stack->pushNULL();
-		} else {
-			if (!_music[channel] || !_music[channel]->getFilename()) {
-				stack->pushNULL();
-			} else {
-				stack->pushString(_music[channel]->getFilename());
-			}
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// SetMusicPosition / SetMusicChannelPosition
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SetMusicPosition") == 0 || strcmp(name, "SetMusicChannelPosition") == 0 || strcmp(name, "SetMusicPositionChannel") == 0) {
-		int channel = 0;
-		if (strcmp(name, "SetMusicPosition") == 0) {
-			stack->correctParams(1);
-		} else {
-			stack->correctParams(2);
-			channel = stack->pop()->getInt();
-		}
-
-		uint32 time = stack->pop()->getInt();
-
-		if (DID_FAIL(setMusicStartTime(channel, time))) {
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(true);
-		}
-
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// GetMusicPosition / GetMusicChannelPosition
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "GetMusicPosition") == 0 || strcmp(name, "GetMusicChannelPosition") == 0) {
-		int channel = 0;
-		if (strcmp(name, "GetMusicPosition") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-
-		if (channel < 0 || channel >= NUM_MUSIC_CHANNELS || !_music[channel]) {
-			stack->pushInt(0);
-		} else {
-			stack->pushInt(_music[channel]->getPositionTime());
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// IsMusicPlaying / IsMusicChannelPlaying
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "IsMusicPlaying") == 0 || strcmp(name, "IsMusicChannelPlaying") == 0) {
-		int channel = 0;
-		if (strcmp(name, "IsMusicPlaying") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-
-		if (channel < 0 || channel >= NUM_MUSIC_CHANNELS || !_music[channel]) {
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(_music[channel]->isPlaying());
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// SetMusicVolume / SetMusicChannelVolume
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SetMusicVolume") == 0 || strcmp(name, "SetMusicChannelVolume") == 0) {
-		int channel = 0;
-		if (strcmp(name, "SetMusicVolume") == 0) {
-			stack->correctParams(1);
-		} else {
-			stack->correctParams(2);
-			channel = stack->pop()->getInt();
-		}
-
-		int volume = stack->pop()->getInt();
-		if (channel < 0 || channel >= NUM_MUSIC_CHANNELS || !_music[channel]) {
-			stack->pushBool(false);
-		} else {
-			if (DID_FAIL(_music[channel]->setVolumePercent(volume))) {
-				stack->pushBool(false);
-			} else {
-				stack->pushBool(true);
-			}
-		}
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// GetMusicVolume / GetMusicChannelVolume
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "GetMusicVolume") == 0 || strcmp(name, "GetMusicChannelVolume") == 0) {
-		int channel = 0;
-		if (strcmp(name, "GetMusicVolume") == 0) {
-			stack->correctParams(0);
-		} else {
-			stack->correctParams(1);
-			channel = stack->pop()->getInt();
-		}
-
-		if (channel < 0 || channel >= NUM_MUSIC_CHANNELS || !_music[channel]) {
-			stack->pushInt(0);
-		} else {
-			stack->pushInt(_music[channel]->getVolumePercent());
-		}
-
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// MusicCrossfade
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MusicCrossfade") == 0) {
-		stack->correctParams(4);
-		int channel1 = stack->pop()->getInt(0);
-		int channel2 = stack->pop()->getInt(0);
-		uint32 fadeLength = (uint32)stack->pop()->getInt(0);
-		bool swap = stack->pop()->getBool(true);
-
-		if (_musicCrossfadeRunning) {
-			script->runtimeError("Game.MusicCrossfade: Music crossfade is already in progress.");
-			stack->pushBool(false);
-			return STATUS_OK;
-		}
-
-		_musicCrossfadeStartTime = _liveTimer;
-		_musicCrossfadeChannel1 = channel1;
-		_musicCrossfadeChannel2 = channel2;
-		_musicCrossfadeLength = fadeLength;
-		_musicCrossfadeSwap = swap;
-
-		_musicCrossfadeRunning = true;
-
-		stack->pushBool(true);
-		return STATUS_OK;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// GetSoundLength
-	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "GetSoundLength") == 0) {
-		stack->correctParams(1);
-
-		int length = 0;
-		const char *filename = stack->pop()->getString();
-
-		BaseSound *sound = new BaseSound(_gameRef);
-		if (sound && DID_SUCCEED(sound->setSound(filename, Audio::Mixer::kMusicSoundType, true))) {
-			length = sound->getLength();
-			delete sound;
-			sound = NULL;
-		}
-		stack->pushInt(length);
+	else if (_musicSystem->scCallMethod(script, stack, thisStack, name) == STATUS_OK) {
 		return STATUS_OK;
 	}
 
@@ -2241,27 +1957,27 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *BaseGame::scGetProperty(const char *name) {
+ScValue *BaseGame::scGetProperty(const Common::String &name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (strcmp(name, "Type") == 0) {
+	if (name == "Type") {
 		_scValue->setString("game");
 		return _scValue;
 	}
 	//////////////////////////////////////////////////////////////////////////
 	// Name
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Name") == 0) {
+	else if (name == "Name") {
 		_scValue->setString(getName());
 		return _scValue;
 	}
 	//////////////////////////////////////////////////////////////////////////
 	// Hwnd (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Hwnd") == 0) {
+	else if (name == "Hwnd") {
 		_scValue->setInt((int)_renderer->_window);
 		return _scValue;
 	}
@@ -2269,7 +1985,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// CurrentTime (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "CurrentTime") == 0) {
+	else if (name == "CurrentTime") {
 		_scValue->setInt((int)_timer);
 		return _scValue;
 	}
@@ -2277,7 +1993,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// WindowsTime (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "WindowsTime") == 0) {
+	else if (name == "WindowsTime") {
 		_scValue->setInt((int)g_system->getMillis());
 		return _scValue;
 	}
@@ -2285,7 +2001,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// WindowedMode (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "WindowedMode") == 0) {
+	else if (name == "WindowedMode") {
 		_scValue->setBool(_renderer->_windowed);
 		return _scValue;
 	}
@@ -2293,7 +2009,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MouseX
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MouseX") == 0) {
+	else if (name == "MouseX") {
 		_scValue->setInt(_mousePos.x);
 		return _scValue;
 	}
@@ -2301,7 +2017,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MouseY
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MouseY") == 0) {
+	else if (name == "MouseY") {
 		_scValue->setInt(_mousePos.y);
 		return _scValue;
 	}
@@ -2309,7 +2025,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MainObject
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MainObject") == 0) {
+	else if (name == "MainObject") {
 		_scValue->setNative(_mainObject, true);
 		return _scValue;
 	}
@@ -2317,7 +2033,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ActiveObject (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ActiveObject") == 0) {
+	else if (name == "ActiveObject") {
 		_scValue->setNative(_activeObject, true);
 		return _scValue;
 	}
@@ -2325,7 +2041,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ScreenWidth (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ScreenWidth") == 0) {
+	else if (name == "ScreenWidth") {
 		_scValue->setInt(_renderer->_width);
 		return _scValue;
 	}
@@ -2333,7 +2049,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ScreenHeight (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ScreenHeight") == 0) {
+	else if (name == "ScreenHeight") {
 		_scValue->setInt(_renderer->_height);
 		return _scValue;
 	}
@@ -2341,7 +2057,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Interactive
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Interactive") == 0) {
+	else if (name == "Interactive") {
 		_scValue->setBool(_interactive);
 		return _scValue;
 	}
@@ -2349,7 +2065,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// DebugMode (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "DebugMode") == 0) {
+	else if (name == "DebugMode") {
 		_scValue->setBool(_debugDebugMode);
 		return _scValue;
 	}
@@ -2357,7 +2073,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SoundAvailable (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SoundAvailable") == 0) {
+	else if (name == "SoundAvailable") {
 		_scValue->setBool(_soundMgr->_soundAvailable);
 		return _scValue;
 	}
@@ -2365,7 +2081,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SFXVolume
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SFXVolume") == 0) {
+	else if (name == "SFXVolume") {
 		_gameRef->LOG(0, "**Warning** The SFXVolume attribute is obsolete");
 		_scValue->setInt(_soundMgr->getVolumePercent(Audio::Mixer::kSFXSoundType));
 		return _scValue;
@@ -2374,7 +2090,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SpeechVolume
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SpeechVolume") == 0) {
+	else if (name == "SpeechVolume") {
 		_gameRef->LOG(0, "**Warning** The SpeechVolume attribute is obsolete");
 		_scValue->setInt(_soundMgr->getVolumePercent(Audio::Mixer::kSpeechSoundType));
 		return _scValue;
@@ -2383,7 +2099,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MusicVolume
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MusicVolume") == 0) {
+	else if (name == "MusicVolume") {
 		_gameRef->LOG(0, "**Warning** The MusicVolume attribute is obsolete");
 		_scValue->setInt(_soundMgr->getVolumePercent(Audio::Mixer::kMusicSoundType));
 		return _scValue;
@@ -2392,7 +2108,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MasterVolume
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MasterVolume") == 0) {
+	else if (name == "MasterVolume") {
 		_gameRef->LOG(0, "**Warning** The MasterVolume attribute is obsolete");
 		_scValue->setInt(_soundMgr->getMasterVolumePercent());
 		return _scValue;
@@ -2401,7 +2117,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Keyboard (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Keyboard") == 0) {
+	else if (name == "Keyboard") {
 		if (_keyboardState) {
 			_scValue->setNative(_keyboardState, true);
 		} else {
@@ -2414,7 +2130,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Subtitles
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Subtitles") == 0) {
+	else if (name == "Subtitles") {
 		_scValue->setBool(_subtitles);
 		return _scValue;
 	}
@@ -2422,14 +2138,14 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SubtitlesSpeed
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SubtitlesSpeed") == 0) {
+	else if (name == "SubtitlesSpeed") {
 		_scValue->setInt(_subtitlesSpeed);
 		return _scValue;
 	}
 	//////////////////////////////////////////////////////////////////////////
 	// VideoSubtitles
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "VideoSubtitles") == 0) {
+	else if (name == "VideoSubtitles") {
 		_scValue->setBool(_videoSubtitles);
 		return _scValue;
 	}
@@ -2437,7 +2153,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// FPS (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "FPS") == 0) {
+	else if (name == "FPS") {
 		_scValue->setInt(_fps);
 		return _scValue;
 	}
@@ -2445,7 +2161,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AcceleratedMode / Accelerated (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AcceleratedMode") == 0 || strcmp(name, "Accelerated") == 0) {
+	else if (name == "AcceleratedMode" || name == "Accelerated") {
 		_scValue->setBool(_useD3D);
 		return _scValue;
 	}
@@ -2453,7 +2169,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// TextEncoding
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "TextEncoding") == 0) {
+	else if (name == "TextEncoding") {
 		_scValue->setInt(_textEncoding);
 		return _scValue;
 	}
@@ -2461,7 +2177,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// TextRTL
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "TextRTL") == 0) {
+	else if (name == "TextRTL") {
 		_scValue->setBool(_textRTL);
 		return _scValue;
 	}
@@ -2469,7 +2185,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SoundBufferSize
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SoundBufferSize") == 0) {
+	else if (name == "SoundBufferSize") {
 		_scValue->setInt(_soundBufferSizeSec);
 		return _scValue;
 	}
@@ -2477,7 +2193,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SuspendedRendering
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SuspendedRendering") == 0) {
+	else if (name == "SuspendedRendering") {
 		_scValue->setBool(_suspendedRendering);
 		return _scValue;
 	}
@@ -2485,7 +2201,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SuppressScriptErrors
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SuppressScriptErrors") == 0) {
+	else if (name == "SuppressScriptErrors") {
 		_scValue->setBool(_suppressScriptErrors);
 		return _scValue;
 	}
@@ -2494,7 +2210,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Frozen
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Frozen") == 0) {
+	else if (name == "Frozen") {
 		_scValue->setBool(_state == GAME_FROZEN);
 		return _scValue;
 	}
@@ -2502,7 +2218,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccTTSEnabled
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccTTSEnabled") == 0) {
+	else if (name == "AccTTSEnabled") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2510,7 +2226,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccTTSTalk
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccTTSTalk") == 0) {
+	else if (name == "AccTTSTalk") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2518,7 +2234,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccTTSCaptions
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccTTSCaptions") == 0) {
+	else if (name == "AccTTSCaptions") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2526,7 +2242,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccTTSKeypress
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccTTSKeypress") == 0) {
+	else if (name == "AccTTSKeypress") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2534,7 +2250,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccKeyboardEnabled
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccKeyboardEnabled") == 0) {
+	else if (name == "AccKeyboardEnabled") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2542,7 +2258,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccKeyboardCursorSkip
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccKeyboardCursorSkip") == 0) {
+	else if (name == "AccKeyboardCursorSkip") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2550,7 +2266,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AccKeyboardPause
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AccKeyboardPause") == 0) {
+	else if (name == "AccKeyboardPause") {
 		_scValue->setBool(false);
 		return _scValue;
 	}
@@ -2558,7 +2274,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AutorunDisabled
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AutorunDisabled") == 0) {
+	else if (name == "AutorunDisabled") {
 		_scValue->setBool(_autorunDisabled);
 		return _scValue;
 	}
@@ -2566,7 +2282,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// SaveDirectory (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "SaveDirectory") == 0) {
+	else if (name == "SaveDirectory") {
 		AnsiString dataDir = "saves/";	// TODO: This is just to avoid telling the engine actual paths.
 		_scValue->setString(dataDir.c_str());
 		return _scValue;
@@ -2575,7 +2291,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AutoSaveOnExit
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AutoSaveOnExit") == 0) {
+	else if (name == "AutoSaveOnExit") {
 		_scValue->setBool(_autoSaveOnExit);
 		return _scValue;
 	}
@@ -2583,7 +2299,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AutoSaveSlot
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AutoSaveSlot") == 0) {
+	else if (name == "AutoSaveSlot") {
 		_scValue->setInt(_autoSaveSlot);
 		return _scValue;
 	}
@@ -2591,7 +2307,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// CursorHidden
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "CursorHidden") == 0) {
+	else if (name == "CursorHidden") {
 		_scValue->setBool(_cursorHidden);
 		return _scValue;
 	}
@@ -2599,7 +2315,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Platform (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Platform") == 0) {
+	else if (name == "Platform") {
 		_scValue->setString(BasePlatform::getPlatformName().c_str());
 		return _scValue;
 	}
@@ -2607,7 +2323,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// DeviceType (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "DeviceType") == 0) {
+	else if (name == "DeviceType") {
 		_scValue->setString(getDeviceType().c_str());
 		return _scValue;
 	}
@@ -2615,7 +2331,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MostRecentSaveSlot (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MostRecentSaveSlot") == 0) {
+	else if (name == "MostRecentSaveSlot") {
 		if (!ConfMan.hasKey("most_recent_saveslot")) {
 			_scValue->setInt(-1);
 		} else {
@@ -2627,7 +2343,7 @@ ScValue *BaseGame::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Store (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Store") == 0) {
+	else if (name == "Store") {
 		_scValue->setNULL();
 		error("Request for a SXStore-object, which is not supported by ScummVM");
 
@@ -3344,99 +3060,6 @@ bool BaseGame::displayWindows(bool inGame) {
 	return STATUS_OK;
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-bool BaseGame::playMusic(int channel, const char *filename, bool looping, uint32 loopStart) {
-	if (channel >= NUM_MUSIC_CHANNELS) {
-		_gameRef->LOG(0, "**Error** Attempting to use music channel %d (max num channels: %d)", channel, NUM_MUSIC_CHANNELS);
-		return STATUS_FAILED;
-	}
-
-	delete _music[channel];
-	_music[channel] = NULL;
-
-	_music[channel] = new BaseSound(_gameRef);
-	if (_music[channel] && DID_SUCCEED(_music[channel]->setSound(filename, Audio::Mixer::kMusicSoundType, true))) {
-		if (_musicStartTime[channel]) {
-			_music[channel]->setPositionTime(_musicStartTime[channel]);
-			_musicStartTime[channel] = 0;
-		}
-		if (loopStart) {
-			_music[channel]->setLoopStart(loopStart);
-		}
-		return _music[channel]->play(looping);
-	} else {
-		delete _music[channel];
-		_music[channel] = NULL;
-		return STATUS_FAILED;
-	}
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-bool BaseGame::stopMusic(int channel) {
-	if (channel >= NUM_MUSIC_CHANNELS) {
-		_gameRef->LOG(0, "**Error** Attempting to use music channel %d (max num channels: %d)", channel, NUM_MUSIC_CHANNELS);
-		return STATUS_FAILED;
-	}
-
-	if (_music[channel]) {
-		_music[channel]->stop();
-		delete _music[channel];
-		_music[channel] = NULL;
-		return STATUS_OK;
-	} else {
-		return STATUS_FAILED;
-	}
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-bool BaseGame::pauseMusic(int channel) {
-	if (channel >= NUM_MUSIC_CHANNELS) {
-		_gameRef->LOG(0, "**Error** Attempting to use music channel %d (max num channels: %d)", channel, NUM_MUSIC_CHANNELS);
-		return STATUS_FAILED;
-	}
-
-	if (_music[channel]) {
-		return _music[channel]->pause();
-	} else {
-		return STATUS_FAILED;
-	}
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-bool BaseGame::resumeMusic(int channel) {
-	if (channel >= NUM_MUSIC_CHANNELS) {
-		_gameRef->LOG(0, "**Error** Attempting to use music channel %d (max num channels: %d)", channel, NUM_MUSIC_CHANNELS);
-		return STATUS_FAILED;
-	}
-
-	if (_music[channel]) {
-		return _music[channel]->resume();
-	} else {
-		return STATUS_FAILED;
-	}
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-bool BaseGame::setMusicStartTime(int channel, uint32 time) {
-	if (channel >= NUM_MUSIC_CHANNELS) {
-		_gameRef->LOG(0, "**Error** Attempting to use music channel %d (max num channels: %d)", channel, NUM_MUSIC_CHANNELS);
-		return STATUS_FAILED;
-	}
-
-	_musicStartTime[channel] = time;
-	if (_music[channel] && _music[channel]->isPlaying()) {
-		return _music[channel]->setPositionTime(time);
-	} else {
-		return STATUS_OK;
-	}
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 bool BaseGame::loadSettings(const char *filename) {
 	TOKEN_TABLE_START(commands)
@@ -3538,7 +3161,7 @@ bool BaseGame::loadSettings(const char *filename) {
 			break;
 
 		case TOKEN_SAVED_GAME_EXT:
-			BaseUtils::setString(&_savedGameExt, (char *)params);
+			_savedGameExt = (char *)params;
 			break;
 
 		case TOKEN_GUID:
@@ -3583,10 +3206,7 @@ bool BaseGame::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_keyboardState));
 	persistMgr->transfer(TMEMBER(_lastTime));
 	persistMgr->transfer(TMEMBER(_mainObject));
-	for (int i = 0; i < NUM_MUSIC_CHANNELS; i++) {
-		persistMgr->transfer(TMEMBER(_music[i]));
-		persistMgr->transfer(TMEMBER(_musicStartTime[i]));
-	}
+	_musicSystem->persistChannels(persistMgr);
 
 	persistMgr->transfer(TMEMBER(_offsetX));
 	persistMgr->transfer(TMEMBER(_offsetY));
@@ -3618,13 +3238,8 @@ bool BaseGame::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_liveTimerDelta));
 	persistMgr->transfer(TMEMBER(_liveTimerLast));
 
-	persistMgr->transfer(TMEMBER(_musicCrossfadeRunning));
-	persistMgr->transfer(TMEMBER(_musicCrossfadeStartTime));
-	persistMgr->transfer(TMEMBER(_musicCrossfadeLength));
-	persistMgr->transfer(TMEMBER(_musicCrossfadeChannel1));
-	persistMgr->transfer(TMEMBER(_musicCrossfadeChannel2));
-	persistMgr->transfer(TMEMBER(_musicCrossfadeSwap));
-	
+	_musicSystem->persistCrossfadeSettings(persistMgr);
+
 	_renderer->persistSaveLoadImages(persistMgr);
 
 	persistMgr->transfer(TMEMBER_INT(_textEncoding));
@@ -3729,7 +3344,7 @@ bool BaseGame::handleKeypress(Common::Event *event, bool printable) {
 // TODO
 
 	if (_focusedWindow) {
-		if (!_gameRef->_focusedWindow->handleKeypress(event, _keyboardState->_currentPrintable)) {
+		if (!_gameRef->_focusedWindow->handleKeypress(event, _keyboardState->isCurrentPrintable())) {
 			/*if (event->type != SDL_TEXTINPUT) {*/
 			if (_gameRef->_focusedWindow->canHandleEvent("Keypress")) {
 				_gameRef->_focusedWindow->applyEvent("Keypress");
@@ -3976,69 +3591,6 @@ bool BaseGame::displayContentSimple() {
 
 	return STATUS_OK;
 }
-
-//////////////////////////////////////////////////////////////////////////
-bool BaseGame::updateMusicCrossfade() {
-	/* byte globMusicVol = _soundMgr->getVolumePercent(SOUND_MUSIC); */
-
-	if (!_musicCrossfadeRunning) {
-		return STATUS_OK;
-	}
-	if (_state == GAME_FROZEN) {
-		return STATUS_OK;
-	}
-
-	if (_musicCrossfadeChannel1 < 0 || _musicCrossfadeChannel1 >= NUM_MUSIC_CHANNELS || !_music[_musicCrossfadeChannel1]) {
-		_musicCrossfadeRunning = false;
-		return STATUS_OK;
-	}
-	if (_musicCrossfadeChannel2 < 0 || _musicCrossfadeChannel2 >= NUM_MUSIC_CHANNELS || !_music[_musicCrossfadeChannel2]) {
-		_musicCrossfadeRunning = false;
-		return STATUS_OK;
-	}
-
-	if (!_music[_musicCrossfadeChannel1]->isPlaying()) {
-		_music[_musicCrossfadeChannel1]->play();
-	}
-	if (!_music[_musicCrossfadeChannel2]->isPlaying()) {
-		_music[_musicCrossfadeChannel2]->play();
-	}
-
-	uint32 currentTime = _gameRef->_liveTimer - _musicCrossfadeStartTime;
-
-	if (currentTime >= _musicCrossfadeLength) {
-		_musicCrossfadeRunning = false;
-		//_music[_musicCrossfadeChannel2]->setVolume(GlobMusicVol);
-		_music[_musicCrossfadeChannel2]->setVolumePercent(100);
-
-		_music[_musicCrossfadeChannel1]->stop();
-		//_music[_musicCrossfadeChannel1]->setVolume(GlobMusicVol);
-		_music[_musicCrossfadeChannel1]->setVolumePercent(100);
-
-
-		if (_musicCrossfadeSwap) {
-			// swap channels
-			BaseSound *dummy = _music[_musicCrossfadeChannel1];
-			int dummyInt = _musicStartTime[_musicCrossfadeChannel1];
-
-			_music[_musicCrossfadeChannel1] = _music[_musicCrossfadeChannel2];
-			_musicStartTime[_musicCrossfadeChannel1] = _musicStartTime[_musicCrossfadeChannel2];
-
-			_music[_musicCrossfadeChannel2] = dummy;
-			_musicStartTime[_musicCrossfadeChannel2] = dummyInt;
-		}
-	} else {
-		//_music[_musicCrossfadeChannel1]->setVolume(GlobMusicVol - (float)CurrentTime / (float)_musicCrossfadeLength * GlobMusicVol);
-		//_music[_musicCrossfadeChannel2]->setVolume((float)CurrentTime / (float)_musicCrossfadeLength * GlobMusicVol);
-		_music[_musicCrossfadeChannel1]->setVolumePercent((int)(100.0f - (float)currentTime / (float)_musicCrossfadeLength * 100.0f));
-		_music[_musicCrossfadeChannel2]->setVolumePercent((int)((float)currentTime / (float)_musicCrossfadeLength * 100.0f));
-
-		//_gameRef->QuickMessageForm("%d %d", _music[_musicCrossfadeChannel1]->GetVolume(), _music[_musicCrossfadeChannel2]->GetVolume());
-	}
-
-	return STATUS_OK;
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseGame::resetContent() {

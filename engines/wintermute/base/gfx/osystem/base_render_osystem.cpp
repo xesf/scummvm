@@ -28,6 +28,7 @@
 
 #include "engines/wintermute/base/gfx/osystem/base_render_osystem.h"
 #include "engines/wintermute/base/gfx/osystem/base_surface_osystem.h"
+#include "engines/wintermute/base/gfx/osystem/render_ticket.h"
 #include "engines/wintermute/base/base_surface_storage.h"
 #include "engines/wintermute/base/gfx/base_image.h"
 #include "engines/wintermute/math/math_util.h"
@@ -40,56 +41,6 @@
 
 namespace Wintermute {
 
-RenderTicket::RenderTicket(BaseSurfaceOSystem *owner, const Graphics::Surface *surf, Common::Rect *srcRect, Common::Rect *dstRect, bool mirrorX, bool mirrorY, bool disableAlpha) : _owner(owner),
-	_srcRect(*srcRect), _dstRect(*dstRect), _drawNum(0), _isValid(true), _wantsDraw(true), _hasAlpha(!disableAlpha) {
-	_colorMod = 0;
-	_mirror = TransparentSurface::FLIP_NONE;
-	if (mirrorX) {
-		_mirror |= TransparentSurface::FLIP_V;
-	}
-	if (mirrorY) {
-		_mirror |= TransparentSurface::FLIP_H;
-	}
-	if (surf) {
-		_surface = new Graphics::Surface();
-		_surface->create((uint16)srcRect->width(), (uint16)srcRect->height(), surf->format);
-		assert(_surface->format.bytesPerPixel == 4);
-		// Get a clipped copy of the surface
-		for (int i = 0; i < _surface->h; i++) {
-			memcpy(_surface->getBasePtr(0, i), surf->getBasePtr(srcRect->left, srcRect->top + i), srcRect->width() * _surface->format.bytesPerPixel);
-		}
-		// Then scale it if necessary
-		if (dstRect->width() != srcRect->width() || dstRect->height() != srcRect->height()) {
-			TransparentSurface src(*_surface, false);
-			Graphics::Surface *temp = src.scale(dstRect->width(), dstRect->height());
-			_surface->free();
-			delete _surface;
-			_surface = temp;
-		}
-	} else {
-		_surface = NULL;
-	}
-}
-
-RenderTicket::~RenderTicket() {
-	if (_surface) {
-		_surface->free();
-		delete _surface;
-	}
-}
-
-bool RenderTicket::operator==(RenderTicket &t) {
-	if ((t._srcRect != _srcRect) ||
-	        (t._dstRect != _dstRect) ||
-	        (t._mirror != _mirror) ||
-	        (t._owner != _owner) ||
-	        (t._hasAlpha != _hasAlpha) ||
-	        (t._colorMod != _colorMod)) {
-		return false;
-	}
-	return true;
-}
-
 BaseRenderer *makeOSystemRenderer(BaseGame *inGame) {
 	return new BaseRenderOSystem(inGame);
 }
@@ -100,12 +51,18 @@ BaseRenderOSystem::BaseRenderOSystem(BaseGame *inGame) : BaseRenderer(inGame) {
 	_blankSurface = new Graphics::Surface();
 	_drawNum = 1;
 	_needsFlip = true;
+	_spriteBatch = false;
+	_batchNum = 0;
 
 	_borderLeft = _borderRight = _borderTop = _borderBottom = 0;
 	_ratioX = _ratioY = 1.0f;
 	setAlphaMod(255);
 	setColorMod(255, 255, 255);
 	_dirtyRect = NULL;
+	_disableDirtyRects = false;
+	if (ConfMan.hasKey("dirty_rects")) {
+		_disableDirtyRects = !ConfMan.getBool("dirty_rects");
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -259,14 +216,6 @@ void BaseRenderOSystem::fade(uint16 alpha) {
 
 //////////////////////////////////////////////////////////////////////////
 void BaseRenderOSystem::fadeToColor(byte r, byte g, byte b, byte a, Common::Rect *rect) {
-	// This particular warning is rather messy, as this function is called a ton,
-	// thus we avoid printing it more than once.
-	
-	// TODO: Add fading with dirty rects.
-	if (!_disableDirtyRects) {
-		warning("BaseRenderOSystem::FadeToColor - Breaks when using dirty rects");
-	}
-
 	Common::Rect fillRect;
 
 	if (rect) {
@@ -311,18 +260,32 @@ void BaseRenderOSystem::drawSurface(BaseSurfaceOSystem *owner, const Graphics::S
 	if ((dstRect->left < 0 && dstRect->right < 0) || (dstRect->top < 0 && dstRect->bottom < 0)) {
 		return;
 	}
+	// Start searching from the beginning for the first and second items (since it's empty the first time around
+	// then keep incrementing the start-position, to avoid comparing against already used tickets.
+	if (_drawNum == 0 || _drawNum == 1) {
+		_lastAddedTicket = _renderQueue.begin();
+	}
 
 	if (owner) { // Fade-tickets are owner-less
 		RenderTicket compare(owner, NULL, srcRect, dstRect, mirrorX, mirrorY, disableAlpha);
+		compare._batchNum = _batchNum;
+		if (_spriteBatch)
+			_batchNum++;
 		compare._colorMod = _colorMod;
 		RenderQueueIterator it;
-		for (it = _renderQueue.begin(); it != _renderQueue.end(); ++it) {
-			if ((*it)->_owner == owner && *(*it) == compare && (*it)->_isValid) {
-				(*it)->_colorMod = _colorMod;
+		// Avoid calling end() and operator* every time, when potentially going through
+		// LOTS of tickets.
+		RenderQueueIterator endIterator = _renderQueue.end();
+		RenderTicket *compareTicket = NULL;
+		for (it = _lastAddedTicket; it != endIterator; ++it) {
+			compareTicket = *it;
+			if (*(compareTicket) == compare && compareTicket->_isValid) {
+				compareTicket->_colorMod = _colorMod;
 				if (_disableDirtyRects) {
-					drawFromSurface(*it, NULL);
+					drawFromSurface(compareTicket);
 				} else {
-					drawFromTicket(*it);
+					drawFromTicket(compareTicket);
+					_lastAddedTicket++;
 				}
 				return;
 			}
@@ -332,10 +295,11 @@ void BaseRenderOSystem::drawSurface(BaseSurfaceOSystem *owner, const Graphics::S
 	ticket->_colorMod = _colorMod;
 	if (!_disableDirtyRects) {
 		drawFromTicket(ticket);
+		drawFromSurface(ticket);
+		_lastAddedTicket++;
 	} else {
 		ticket->_wantsDraw = true;
 		_renderQueue.push_back(ticket);
-		drawFromSurface(ticket, NULL);
 	}
 }
 
@@ -421,9 +385,12 @@ void BaseRenderOSystem::addDirtyRect(const Common::Rect &rect) {
 void BaseRenderOSystem::drawTickets() {
 	RenderQueueIterator it = _renderQueue.begin();
 	// Clean out the old tickets
-	int decrement = 0;
+	// Note: We draw invalid tickets too, otherwise we wouldn't be honouring
+	// the draw request they obviously made BEFORE becoming invalid, either way
+	// we have a copy of their data, so their invalidness won't affect us.
+	uint32 decrement = 0;
 	while (it != _renderQueue.end()) {
-		if ((*it)->_wantsDraw == false || (*it)->_isValid == false) {
+		if ((*it)->_wantsDraw == false) {
 			RenderTicket *ticket = *it;
 			addDirtyRect((*it)->_dstRect);
 			it = _renderQueue.erase(it);
@@ -435,6 +402,12 @@ void BaseRenderOSystem::drawTickets() {
 		}
 	}
 	if (!_dirtyRect || _dirtyRect->width() == 0 || _dirtyRect->height() == 0) {
+		it = _renderQueue.begin();
+		while (it != _renderQueue.end()) {
+			RenderTicket *ticket = *it;
+			ticket->_wantsDraw = false;
+			++it;
+		}
 		return;
 	}
 	// The color-mods are stored in the RenderTickets on add, since we set that state again during
@@ -447,7 +420,7 @@ void BaseRenderOSystem::drawTickets() {
 	for (it = _renderQueue.begin(); it != _renderQueue.end(); ++it) {
 		RenderTicket *ticket = *it;
 		assert(ticket->_drawNum == _drawNum++);
-		if (ticket->_isValid && ticket->_dstRect.intersects(*_dirtyRect)) {
+		if (ticket->_dstRect.intersects(*_dirtyRect)) {
 			// dstClip is the area we want redrawn.
 			Common::Rect dstClip(ticket->_dstRect);
 			// reduce it to the dirty rect
@@ -460,7 +433,7 @@ void BaseRenderOSystem::drawTickets() {
 			dstClip.translate(-offsetX, -offsetY);
 
 			_colorMod = ticket->_colorMod;
-			drawFromSurface(ticket->getSurface(), &ticket->_srcRect, &pos, &dstClip, ticket->_mirror);
+			drawFromSurface(ticket, &pos, &dstClip);
 			_needsFlip = true;
 		}
 		// Some tickets want redraw but don't actually clip the dirty area (typically the ones that shouldnt become clear-color)
@@ -470,46 +443,40 @@ void BaseRenderOSystem::drawTickets() {
 
 	// Revert the colorMod-state.
 	_colorMod = oldColorMod;
+	
+	it = _renderQueue.begin();
+	// Clean out the old tickets
+	decrement = 0;
+	while (it != _renderQueue.end()) {
+		if ((*it)->_isValid == false) {
+			RenderTicket *ticket = *it;
+			addDirtyRect((*it)->_dstRect);
+			it = _renderQueue.erase(it);
+			delete ticket;
+			decrement++;
+		} else {
+			(*it)->_drawNum -= decrement;
+			++it;
+		}
+	}
+
 }
 
 // Replacement for SDL2's SDL_RenderCopy
-void BaseRenderOSystem::drawFromSurface(RenderTicket *ticket, Common::Rect *clipRect) {
-	TransparentSurface src(*ticket->getSurface(), false);
-	bool doDelete = false;
-	if (!clipRect) {
-		doDelete = true;
-		clipRect = new Common::Rect();
-		clipRect->setWidth(ticket->getSurface()->w);
-		clipRect->setHeight(ticket->getSurface()->h);
-	}
-
-	src._enableAlphaBlit = ticket->_hasAlpha;
-	src.blit(*_renderSurface, ticket->_dstRect.left, ticket->_dstRect.top, ticket->_mirror, clipRect, _colorMod, clipRect->width(), clipRect->height());
-	if (doDelete) {
-		delete clipRect;
-	}
+void BaseRenderOSystem::drawFromSurface(RenderTicket *ticket) {
+	ticket->drawToSurface(_renderSurface);
 }
-void BaseRenderOSystem::drawFromSurface(const Graphics::Surface *surf, Common::Rect *srcRect, Common::Rect *dstRect, Common::Rect *clipRect, uint32 mirror) {
-	TransparentSurface src(*surf, false);
-	bool doDelete = false;
-	if (!clipRect) {
-		doDelete = true;
-		clipRect = new Common::Rect();
-		clipRect->setWidth(surf->w);
-		clipRect->setHeight(surf->h);
-	}
 
-	src.blit(*_renderSurface, dstRect->left, dstRect->top, mirror, clipRect, _colorMod, clipRect->width(), clipRect->height());
-	if (doDelete) {
-		delete clipRect;
-	}
+void BaseRenderOSystem::drawFromSurface(RenderTicket *ticket, Common::Rect *dstRect, Common::Rect *clipRect) {
+	ticket->drawToSurface(_renderSurface, dstRect, clipRect);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseRenderOSystem::drawLine(int x1, int y1, int x2, int y2, uint32 color) {
-
-	if (!_disableDirtyRects) {
+	static bool hasWarned = false; // TODO: Fix this, this only avoids spamming warnings for now.
+	if (!_disableDirtyRects && !hasWarned) {
 		warning("BaseRenderOSystem::DrawLine - doesn't work for dirty rects yet");
+		hasWarned = true;
 	}
 
 	byte r = RGBCOLGetR(color);
@@ -573,6 +540,11 @@ Rect32 BaseRenderOSystem::getViewPort() {
 
 //////////////////////////////////////////////////////////////////////////
 void BaseRenderOSystem::modTargetRect(Common::Rect *rect) {
+	// FIXME: This is wrong in quite a few ways right now, and ends up
+	// breaking the notebook in Dirty Split, so we disable the correction
+	// for now, this will need fixing when a game with odd aspect-ratios
+	// show up.
+	return;
 	rect->left = (int16)MathUtil::round(rect->left * _ratioX + _borderLeft - _renderRect.left);
 	rect->top = (int16)MathUtil::round(rect->top * _ratioY + _borderTop - _renderRect.top);
 	rect->setWidth((int16)MathUtil::roundUp(rect->width() * _ratioX));
@@ -599,6 +571,31 @@ void BaseRenderOSystem::dumpData(const char *filename) {
 
 BaseSurface *BaseRenderOSystem::createSurface() {
 	return new BaseSurfaceOSystem(_gameRef);
+}
+
+void BaseRenderOSystem::endSaveLoad() {
+	BaseRenderer::endSaveLoad();
+
+	// Clear the scale-buffered tickets as we just loaded.
+	RenderQueueIterator it = _renderQueue.begin();
+	while (it != _renderQueue.end()) {
+		RenderTicket *ticket = *it;
+		it = _renderQueue.erase(it);
+		delete ticket;
+	}
+	_drawNum = 1;
+}
+
+bool BaseRenderOSystem::startSpriteBatch() {
+	_spriteBatch = true;
+	_batchNum = 1;
+	return STATUS_OK;
+}
+
+bool BaseRenderOSystem::endSpriteBatch() {
+	_spriteBatch = false;
+	_batchNum = 0;
+	return STATUS_OK;
 }
 
 } // end of namespace Wintermute

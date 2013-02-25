@@ -235,10 +235,13 @@ bool PICTDecoder::loadStream(Common::SeekableReadStream &stream) {
 		// PICT v2 opcodes are two bytes
 		uint16 opcode = stream.readUint16BE();
 
-		if (opNum == 0 && opcode != 0x0011)
-			error("Cannot find PICT version opcode");
-		else if (opNum == 1 && opcode != 0x0C00)
-			error("Cannot find PICT header opcode");
+		if (opNum == 0 && opcode != 0x0011) {
+			warning("Cannot find PICT version opcode");
+			return false;
+		} else if (opNum == 1 && opcode != 0x0C00) {
+			warning("Cannot find PICT header opcode");
+			return false;
+		}
 
 		// Since opcodes are word-aligned, we need to mark our starting
 		// position here.
@@ -543,7 +546,7 @@ void PICTDecoder::decodeCompressedQuickTime(Common::SeekableReadStream &stream) 
 
 	// Skip the matte and mask
 	stream.skip(matteSize + maskSize);
-	
+
 	// Now we've reached the image descriptor, so read the relevant data from that
 	uint32 idStart = stream.pos();
 	uint32 idSize = stream.readUint32BE();

@@ -287,9 +287,9 @@ float AdScene::getZoomAt(int x, int y) {
 	if (_mainLayer) {
 		for (int i = _mainLayer->_nodes.size() - 1; i >= 0; i--) {
 			AdSceneNode *node = _mainLayer->_nodes[i];
-			if (node->_type == OBJECT_REGION && node->_region->_active && !node->_region->_blocked && node->_region->pointInRegion(x, y)) {
-				if (node->_region->_zoom != 0) {
-					ret = node->_region->_zoom;
+			if (node->_type == OBJECT_REGION && node->_region->_active && !node->_region->isBlocked() && node->_region->pointInRegion(x, y)) {
+				if (node->_region->getZoom() != 0) {
+					ret = node->_region->getZoom();
 					found = true;
 					break;
 				}
@@ -320,9 +320,9 @@ uint32 AdScene::getAlphaAt(int x, int y, bool colorCheck) {
 	if (_mainLayer) {
 		for (int i = _mainLayer->_nodes.size() - 1; i >= 0; i--) {
 			AdSceneNode *node = _mainLayer->_nodes[i];
-			if (node->_type == OBJECT_REGION && node->_region->_active && (colorCheck || !node->_region->_blocked) && node->_region->pointInRegion(x, y)) {
-				if (!node->_region->_blocked) {
-					ret = node->_region->_alpha;
+			if (node->_type == OBJECT_REGION && node->_region->_active && (colorCheck || !node->_region->isBlocked()) && node->_region->pointInRegion(x, y)) {
+				if (!node->_region->isBlocked()) {
+					ret = node->_region->getAlpha();
 				}
 				break;
 			}
@@ -365,8 +365,8 @@ bool AdScene::isBlockedAt(int x, int y, bool checkFreeObjects, BaseObject *reque
 			    break;
 			}
 			*/
-			if (node->_type == OBJECT_REGION && node->_region->_active && !node->_region->_decoration && node->_region->pointInRegion(x, y)) {
-				if (node->_region->_blocked) {
+			if (node->_type == OBJECT_REGION && node->_region->_active && !node->_region->hasDecoration() && node->_region->pointInRegion(x, y)) {
+				if (node->_region->isBlocked()) {
 					ret = true;
 					break;
 				} else {
@@ -405,8 +405,8 @@ bool AdScene::isWalkableAt(int x, int y, bool checkFreeObjects, BaseObject *requ
 	if (_mainLayer) {
 		for (uint32 i = 0; i < _mainLayer->_nodes.size(); i++) {
 			AdSceneNode *node = _mainLayer->_nodes[i];
-			if (node->_type == OBJECT_REGION && node->_region->_active && !node->_region->_decoration && node->_region->pointInRegion(x, y)) {
-				if (node->_region->_blocked) {
+			if (node->_type == OBJECT_REGION && node->_region->_active && !node->_region->hasDecoration() && node->_region->pointInRegion(x, y)) {
+				if (node->_region->isBlocked()) {
 					ret = false;
 					break;
 				} else {
@@ -1045,10 +1045,10 @@ bool AdScene::traverseNodes(bool doUpdate) {
 				break;
 
 			case OBJECT_REGION: {
-				if (node->_region->_blocked) {
+				if (node->_region->isBlocked()) {
 					break;
 				}
-				if (node->_region->_decoration) {
+				if (node->_region->hasDecoration()) {
 					break;
 				}
 
@@ -1140,14 +1140,14 @@ bool AdScene::updateFreeObjects() {
 //////////////////////////////////////////////////////////////////////////
 bool AdScene::displayRegionContent(AdRegion *region, bool display3DOnly) {
 	AdGame *adGame = (AdGame *)_gameRef;
-	BaseArray<AdObject *> objects;
+	Common::Array<AdObject *> objects;
 	AdObject *obj;
 
 	// global objects
 	for (uint32 i = 0; i < adGame->_objects.size(); i++) {
 		obj = adGame->_objects[i];
 		if (obj->_active && !obj->_drawn && (obj->_stickRegion == region || region == NULL || (obj->_stickRegion == NULL && region->pointInRegion(obj->_posX, obj->_posY)))) {
-			objects.add(obj);
+			objects.push_back(obj);
 		}
 	}
 
@@ -1155,7 +1155,7 @@ bool AdScene::displayRegionContent(AdRegion *region, bool display3DOnly) {
 	for (uint32 i = 0; i < _objects.size(); i++) {
 		obj = _objects[i];
 		if (obj->_active && !obj->_editorOnly && !obj->_drawn && (obj->_stickRegion == region || region == NULL || (obj->_stickRegion == NULL && region->pointInRegion(obj->_posX, obj->_posY)))) {
-			objects.add(obj);
+			objects.push_back(obj);
 		}
 	}
 
@@ -1195,16 +1195,11 @@ bool AdScene::displayRegionContent(AdRegion *region, bool display3DOnly) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-int AdScene::compareObjs(const void *obj1, const void *obj2) {
-	const AdObject *object1 = *(const AdObject *const *)obj1;
-	const AdObject *object2 = *(const AdObject *const *)obj2;
-
-	if (object1->_posY < object2->_posY) {
-		return -1;
-	} else if (object1->_posY > object2->_posY) {
-		return 1;
+bool AdScene::compareObjs(const AdObject *obj1, const AdObject *obj2) {
+	if (obj1->_posY < obj2->_posY) {
+		return true;
 	} else {
-		return 0;
+		return false;
 	}
 }
 
@@ -1541,7 +1536,7 @@ bool AdScene::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 			for (int i = _mainLayer->_nodes.size() - 1; i >= 0; i--) {
 				AdSceneNode *node = _mainLayer->_nodes[i];
 				if (node->_type == OBJECT_REGION && node->_region->_active && node->_region->pointInRegion(x, y)) {
-					if (node->_region->_decoration && !includeDecors) {
+					if (node->_region->hasDecoration() && !includeDecors) {
 						continue;
 					}
 
@@ -1809,13 +1804,13 @@ bool AdScene::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *AdScene::scGetProperty(const char *name) {
+ScValue *AdScene::scGetProperty(const Common::String &name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type
 	//////////////////////////////////////////////////////////////////////////
-	if (strcmp(name, "Type") == 0) {
+	if (name == "Type") {
 		_scValue->setString("scene");
 		return _scValue;
 	}
@@ -1823,7 +1818,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// NumLayers (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "NumLayers") == 0) {
+	else if (name == "NumLayers") {
 		_scValue->setInt(_layers.size());
 		return _scValue;
 	}
@@ -1831,7 +1826,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// NumWaypointGroups (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "NumWaypointGroups") == 0) {
+	else if (name == "NumWaypointGroups") {
 		_scValue->setInt(_waypointGroups.size());
 		return _scValue;
 	}
@@ -1839,7 +1834,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MainLayer (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MainLayer") == 0) {
+	else if (name == "MainLayer") {
 		if (_mainLayer) {
 			_scValue->setNative(_mainLayer, true);
 		} else {
@@ -1852,7 +1847,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// NumFreeNodes (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "NumFreeNodes") == 0) {
+	else if (name == "NumFreeNodes") {
 		_scValue->setInt(_objects.size());
 		return _scValue;
 	}
@@ -1860,7 +1855,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MouseX (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MouseX") == 0) {
+	else if (name == "MouseX") {
 		int viewportX;
 		getViewportOffset(&viewportX);
 
@@ -1871,7 +1866,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// MouseY (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "MouseY") == 0) {
+	else if (name == "MouseY") {
 		int viewportY;
 		getViewportOffset(NULL, &viewportY);
 
@@ -1882,7 +1877,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// AutoScroll
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "AutoScroll") == 0) {
+	else if (name == "AutoScroll") {
 		_scValue->setBool(_autoScroll);
 		return _scValue;
 	}
@@ -1890,7 +1885,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// PersistentState
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "PersistentState") == 0) {
+	else if (name == "PersistentState") {
 		_scValue->setBool(_persistentState);
 		return _scValue;
 	}
@@ -1898,7 +1893,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// PersistentStateSprites
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "PersistentStateSprites") == 0) {
+	else if (name == "PersistentStateSprites") {
 		_scValue->setBool(_persistentStateSprites);
 		return _scValue;
 	}
@@ -1906,7 +1901,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ScrollPixelsX
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ScrollPixelsX") == 0) {
+	else if (name == "ScrollPixelsX") {
 		_scValue->setInt(_scrollPixelsH);
 		return _scValue;
 	}
@@ -1914,7 +1909,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ScrollPixelsY
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ScrollPixelsY") == 0) {
+	else if (name == "ScrollPixelsY") {
 		_scValue->setInt(_scrollPixelsV);
 		return _scValue;
 	}
@@ -1923,7 +1918,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ScrollSpeedX
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ScrollSpeedX") == 0) {
+	else if (name == "ScrollSpeedX") {
 		_scValue->setInt(_scrollTimeH);
 		return _scValue;
 	}
@@ -1931,7 +1926,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// ScrollSpeedY
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "ScrollSpeedY") == 0) {
+	else if (name == "ScrollSpeedY") {
 		_scValue->setInt(_scrollTimeV);
 		return _scValue;
 	}
@@ -1939,7 +1934,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// OffsetX
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "OffsetX") == 0) {
+	else if (name == "OffsetX") {
 		_scValue->setInt(_offsetLeft);
 		return _scValue;
 	}
@@ -1947,7 +1942,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// OffsetY
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "OffsetY") == 0) {
+	else if (name == "OffsetY") {
 		_scValue->setInt(_offsetTop);
 		return _scValue;
 	}
@@ -1955,7 +1950,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Width (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Width") == 0) {
+	else if (name == "Width") {
 		if (_mainLayer) {
 			_scValue->setInt(_mainLayer->_width);
 		} else {
@@ -1967,7 +1962,7 @@ ScValue *AdScene::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Height (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Height") == 0) {
+	else if (name == "Height") {
 		if (_mainLayer) {
 			_scValue->setInt(_mainLayer->_height);
 		} else {
@@ -2202,7 +2197,7 @@ bool AdScene::saveAsText(BaseDynamicBuffer *buffer, int indent) {
 	// free entities
 	buffer->putTextIndent(indent + 2, "; ----- free entities\n");
 	for (uint32 i = 0; i < _objects.size(); i++) {
-		if (_objects[i]->_type == OBJECT_ENTITY) {
+		if (_objects[i]->getType() == OBJECT_ENTITY) {
 			_objects[i]->saveAsText(buffer, indent + 2);
 
 		}
@@ -2282,11 +2277,11 @@ float AdScene::getScaleAt(int Y) {
 	}
 
 	int delta_y = next->_posY - prev->_posY;
-	float delta_scale = next->_scale - prev->_scale;
+	float delta_scale = next->getScale() - prev->getScale();
 	Y -= prev->_posY;
 
 	float percent = (float)Y / ((float)delta_y / 100.0f);
-	return prev->_scale + delta_scale / 100 * percent;
+	return prev->getScale() + delta_scale / 100 * percent;
 }
 
 
@@ -2638,7 +2633,7 @@ BaseObject *AdScene::getNodeByName(const char *name) {
 
 	// free entities
 	for (uint32 i = 0; i < _objects.size(); i++) {
-		if (_objects[i]->_type == OBJECT_ENTITY && !scumm_stricmp(name, _objects[i]->getName())) {
+		if (_objects[i]->getType() == OBJECT_ENTITY && !scumm_stricmp(name, _objects[i]->getName())) {
 			return _objects[i];
 		}
 	}
@@ -2722,7 +2717,7 @@ bool AdScene::persistState(bool saving) {
 		if (!_objects[i]->_saveState) {
 			continue;
 		}
-		if (_objects[i]->_type == OBJECT_ENTITY) {
+		if (_objects[i]->getType() == OBJECT_ENTITY) {
 			nodeState = state->getNodeState(_objects[i]->getName(), saving);
 			if (nodeState) {
 				nodeState->transferEntity((AdEntity *)_objects[i], _persistentStateSprites, saving);
@@ -2785,7 +2780,7 @@ bool AdScene::handleItemAssociations(const char *itemName, bool show) {
 			if (layer->_nodes[j]->_type == OBJECT_ENTITY) {
 				AdEntity *ent = layer->_nodes[j]->_entity;
 
-				if (ent->_item && strcmp(ent->_item, itemName) == 0) {
+				if (ent->getItemName() && strcmp(ent->getItemName(), itemName) == 0) {
 					ent->_active = show;
 				}
 			}
@@ -2793,9 +2788,9 @@ bool AdScene::handleItemAssociations(const char *itemName, bool show) {
 	}
 
 	for (uint32 i = 0; i < _objects.size(); i++) {
-		if (_objects[i]->_type == OBJECT_ENTITY) {
+		if (_objects[i]->getType() == OBJECT_ENTITY) {
 			AdEntity *ent = (AdEntity *)_objects[i];
-			if (ent->_item && strcmp(ent->_item, itemName) == 0) {
+			if (ent->getItemName() && strcmp(ent->getItemName(), itemName) == 0) {
 				ent->_active = show;
 			}
 		}

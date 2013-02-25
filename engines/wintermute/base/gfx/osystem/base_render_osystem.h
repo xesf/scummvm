@@ -36,27 +36,7 @@
 
 namespace Wintermute {
 class BaseSurfaceOSystem;
-class RenderTicket {
-	Graphics::Surface *_surface;
-public:
-	RenderTicket(BaseSurfaceOSystem *owner, const Graphics::Surface *surf, Common::Rect *srcRect, Common::Rect *dstRest, bool mirrorX = false, bool mirrorY = false, bool disableAlpha = false);
-	RenderTicket() : _isValid(true), _wantsDraw(false), _drawNum(0) {}
-	~RenderTicket();
-	const Graphics::Surface *getSurface() { return _surface; }
-	Common::Rect _srcRect;
-	Common::Rect _dstRect;
-	uint32 _mirror;
-	bool _hasAlpha;
-
-	bool _isValid;
-	bool _wantsDraw;
-	uint32 _drawNum;
-	uint32 _colorMod;
-
-	BaseSurfaceOSystem *_owner;
-	bool operator==(RenderTicket &a);
-};
-
+class RenderTicket;
 class BaseRenderOSystem : public BaseRenderer {
 public:
 	BaseRenderOSystem(BaseGame *inGame);
@@ -97,17 +77,23 @@ public:
 	float getScaleRatioY() const {
 		return _ratioY;
 	}
-
+	virtual bool startSpriteBatch();
+	virtual bool endSpriteBatch();
+	void endSaveLoad();
 	void drawSurface(BaseSurfaceOSystem *owner, const Graphics::Surface *surf, Common::Rect *srcRect, Common::Rect *dstRect, bool mirrorX, bool mirrorY, bool disableAlpha = false);
 	BaseSurface *createSurface();
 private:
 	void addDirtyRect(const Common::Rect &rect);
 	void drawTickets();
-	void drawFromSurface(RenderTicket *ticket, Common::Rect *clipRect);
-	void drawFromSurface(const Graphics::Surface *surf, Common::Rect *srcRect, Common::Rect *dstRect, Common::Rect *clipRect, uint32 mirror);
+	// Non-dirty-rects:
+	void drawFromSurface(RenderTicket *ticket);
+	// Dirty-rects:
+	void drawFromSurface(RenderTicket *ticket, Common::Rect *dstRect, Common::Rect *clipRect);
 	typedef Common::List<RenderTicket *>::iterator RenderQueueIterator;
 	Common::Rect *_dirtyRect;
 	Common::List<RenderTicket *> _renderQueue;
+	RenderQueueIterator _lastAddedTicket;
+
 	bool _needsFlip;
 	uint32 _drawNum;
 	Common::Rect _renderRect;
@@ -119,7 +105,9 @@ private:
 	int _borderRight;
 	int _borderBottom;
 
-	static const bool _disableDirtyRects = true;
+	bool _disableDirtyRects;
+	bool _spriteBatch;
+	uint32 _batchNum;
 	float _ratioX;
 	float _ratioY;
 	uint32 _colorMod;

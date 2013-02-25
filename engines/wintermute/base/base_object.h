@@ -110,8 +110,8 @@ public:
 	bool _movable;
 	bool _zoomable;
 	bool _shadowable;
-	int _posY;
-	int _posX;
+	int32 _posY;
+	int32 _posX;
 	bool _registrable;
 	char *_caption[7];
 	bool _saveState;
@@ -136,7 +136,7 @@ public:
 
 public:
 	// scripting interface
-	virtual ScValue *scGetProperty(const char *name);
+	virtual ScValue *scGetProperty(const Common::String &name);
 	virtual bool scSetProperty(const char *name, ScValue *value);
 	virtual bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name);
 	virtual const char *scToString();

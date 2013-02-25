@@ -46,6 +46,7 @@ class BaseFileManager;
 class BaseTransitionMgr;
 class ScEngine;
 class BaseFontStorage;
+class BaseGameMusic;
 class BaseStringTable;
 class BaseQuickMsg;
 class UIWindow;
@@ -58,8 +59,6 @@ class SXMath;
 class BaseKeyboardState;
 class VideoPlayer;
 class VideoTheoraPlayer;
-
-#define NUM_MUSIC_CHANNELS 5
 
 class BaseGame: public BaseObject {
 public:
@@ -138,7 +137,7 @@ public:
 	BaseRenderer *_renderer;
 	BaseSoundMgr *_soundMgr;
 	ScEngine *_scEngine;
-	SXMath *_mathClass;
+	BaseScriptable *_mathClass;
 	BaseSurfaceStorage *_surfaceStorage;
 	BaseFontStorage *_fontStorage;
 	BaseGame(const Common::String &gameId);
@@ -164,7 +163,7 @@ public:
 
 	virtual bool externalCall(ScScript *script, ScStack *stack, ScStack *thisStack, char *name);
 	// scripting interface
-	virtual ScValue *scGetProperty(const char *name);
+	virtual ScValue *scGetProperty(const Common::String &name);
 	virtual bool scSetProperty(const char *name, ScValue *value);
 	virtual bool scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, const char *name);
 	virtual const char *scToString();
@@ -274,10 +273,11 @@ private:
 	virtual bool invalidateDeviceObjects();
 	virtual bool restoreDeviceObjects();
 
-	char *_localSaveDir;
+	// TODO: This can probably be removed completely:
 	bool _saveDirChecked;
 	bool _richSavedGames;
-	char *_savedGameExt;
+	Common::String _localSaveDir;
+	Common::String _savedGameExt;
 
 	bool _reportTextureFormat;
 
@@ -292,31 +292,17 @@ private:
 	void *_engineLogCallbackData;
 
 	bool _videoSubtitles;
-	uint32 _musicStartTime[NUM_MUSIC_CHANNELS];
 	bool _compressedSavegames;
 
 	bool _personalizedSave;
 
 	void setWindowTitle();
 
-	bool resumeMusic(int channel);
-	bool setMusicStartTime(int channel, uint32 time);
-	bool pauseMusic(int channel);
-	bool stopMusic(int channel);
-	bool playMusic(int channel, const char *filename, bool looping = true, uint32 loopStart = 0);
-	BaseSound *_music[NUM_MUSIC_CHANNELS];
-	bool _musicCrossfadeRunning;
-	bool _musicCrossfadeSwap;
-	uint32 _musicCrossfadeStartTime;
-	uint32 _musicCrossfadeLength;
-	int _musicCrossfadeChannel1;
-	int _musicCrossfadeChannel2;
-
 	BaseSprite *_cursorNoninteractive;
 	BaseKeyboardState *_keyboardState;
 
 	uint32 _fps;
-	bool updateMusicCrossfade();
+	BaseGameMusic *_musicSystem;
 
 	bool isVideoPlaying();
 	bool stopVideo();

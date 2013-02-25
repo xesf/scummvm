@@ -159,6 +159,11 @@ void BaseFontTT::drawText(const byte *text, int x, int y, int width, TTextAlign 
 	// TODO: Why do we still insist on Widestrings everywhere?
 	/*  if (_gameRef->_textEncoding == TEXT_UTF8) text = StringUtil::Utf8ToWide((char *)Text);
 	        else text = StringUtil::AnsiToWide((char *)Text);*/
+	// HACK: J.U.L.I.A. uses CP1252, we need to fix that,
+	// And we still don't have any UTF8-support.
+	if (_gameRef->_textEncoding != TEXT_UTF8) {
+		textStr = StringUtil::ansiToWide((char *)text);
+	}
 
 	if (maxLength >= 0 && textStr.size() > (uint32)maxLength) {
 		textStr = Common::String(textStr.c_str(), (uint32)maxLength);
@@ -168,25 +173,25 @@ void BaseFontTT::drawText(const byte *text, int x, int y, int width, TTextAlign 
 	BaseRenderer *renderer = _gameRef->_renderer;
 
 	// find cached surface, if exists
-	int minPriority = INT_MAX;
+	uint32 minUseTime = UINT_MAX;
 	int minIndex = -1;
 	BaseSurface *surface = NULL;
 	int textOffset = 0;
 
 	for (int i = 0; i < NUM_CACHED_TEXTS; i++) {
 		if (_cachedTexts[i] == NULL) {
-			minPriority = 0;
+			minUseTime = 0;
 			minIndex = i;
 		} else {
 			if (_cachedTexts[i]->_text == textStr && _cachedTexts[i]->_align == align && _cachedTexts[i]->_width == width && _cachedTexts[i]->_maxHeight == maxHeight && _cachedTexts[i]->_maxLength == maxLength) {
 				surface = _cachedTexts[i]->_surface;
 				textOffset = _cachedTexts[i]->_textOffset;
-				_cachedTexts[i]->_priority++;
 				_cachedTexts[i]->_marked = true;
+				_cachedTexts[i]->_lastUsed = g_system->getMillis();
 				break;
 			} else {
-				if (_cachedTexts[i]->_priority < minPriority) {
-					minPriority = _cachedTexts[i]->_priority;
+				if (_cachedTexts[i]->_lastUsed < minUseTime) {
+					minUseTime = _cachedTexts[i]->_lastUsed;
 					minIndex = i;
 				}
 			}
@@ -209,10 +214,10 @@ void BaseFontTT::drawText(const byte *text, int x, int y, int width, TTextAlign 
 			_cachedTexts[minIndex]->_width = width;
 			_cachedTexts[minIndex]->_maxHeight = maxHeight;
 			_cachedTexts[minIndex]->_maxLength = maxLength;
-			_cachedTexts[minIndex]->_priority = 1;
 			_cachedTexts[minIndex]->_text = textStr;
 			_cachedTexts[minIndex]->_textOffset = textOffset;
 			_cachedTexts[minIndex]->_marked = true;
+			_cachedTexts[minIndex]->_lastUsed = g_system->getMillis();
 		}
 	}
 

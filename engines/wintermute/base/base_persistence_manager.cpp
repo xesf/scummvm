@@ -36,8 +36,10 @@
 #include "engines/wintermute/math/vector2.h"
 #include "engines/wintermute/base/gfx/base_image.h"
 #include "engines/wintermute/base/sound/base_sound.h"
+#include "engines/wintermute/graphics/transparent_surface.h"
 #include "engines/wintermute/wintermute.h"
 #include "graphics/decoders/bmp.h"
+#include "graphics/scaler.h"
 #include "common/memstream.h"
 #include "common/str.h"
 #include "common/system.h"
@@ -148,9 +150,13 @@ void BasePersistenceManager::getSaveStateDesc(int slot, SaveStateDescriptor &des
 		Common::MemoryReadStream thumbStream(_thumbnailData, _thumbnailDataSize);
 		Graphics::BitmapDecoder bmpDecoder;
 		if (bmpDecoder.loadStream(thumbStream)) {
-			Graphics::Surface *surf = new Graphics::Surface;
+			Graphics::Surface *surf = NULL;
 			surf = bmpDecoder.getSurface()->convertTo(g_system->getOverlayFormat());
-			desc.setThumbnail(surf);
+			TransparentSurface *scaleableSurface = new TransparentSurface(*surf, false);
+			Graphics::Surface *scaled = scaleableSurface->scale(kThumbnailWidth, kThumbnailHeight2);
+			desc.setThumbnail(scaled);
+			delete scaleableSurface;
+			delete surf;
 		}
 	}
 

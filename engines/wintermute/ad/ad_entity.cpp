@@ -82,6 +82,21 @@ AdEntity::~AdEntity() {
 	_item = NULL;
 }
 
+int32 AdEntity::getWalkToX() const {
+	return _walkToX;
+}
+
+int32 AdEntity::getWalkToY() const {
+	return _walkToY;
+}
+
+TDirection AdEntity::getWalkToDir() const {
+	return _walkToDir;
+}
+
+const char *AdEntity::getItemName() const {
+	return _item;
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool AdEntity::loadFile(const char *filename) {
@@ -578,7 +593,7 @@ bool AdEntity::update() {
 	}
 
 	// finished playing animation?
-	if (_state == STATE_PLAYING_ANIM && _animSprite != NULL && _animSprite->_finished) {
+	if (_state == STATE_PLAYING_ANIM && _animSprite != NULL && _animSprite->isFinished()) {
 		_state = STATE_READY;
 		_currentSprite = _animSprite;
 	}
@@ -613,7 +628,7 @@ bool AdEntity::update() {
 		}
 
 		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->_timer - _sentence->_startTime);
-		if (_tempSprite2 == NULL || _tempSprite2->_finished || (/*_tempSprite2->_looping &&*/ timeIsUp)) {
+		if (_tempSprite2 == NULL || _tempSprite2->isFinished() || (/*_tempSprite2->_looping &&*/ timeIsUp)) {
 			if (timeIsUp) {
 				_sentence->finish();
 				_tempSprite2 = NULL;
@@ -639,7 +654,7 @@ bool AdEntity::update() {
 
 	if (_currentSprite) {
 		_currentSprite->getCurrentFrame(_zoomable ? ((AdGame *)_gameRef)->_scene->getZoomAt(_posX, _posY) : 100);
-		if (_currentSprite->_changed) {
+		if (_currentSprite->isChanged()) {
 			_posX += _currentSprite->_moveX;
 			_posY += _currentSprite->_moveY;
 		}
@@ -829,13 +844,13 @@ bool AdEntity::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue *AdEntity::scGetProperty(const char *name) {
+ScValue *AdEntity::scGetProperty(const Common::String &name) {
 	_scValue->setNULL();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Type (RO)
 	//////////////////////////////////////////////////////////////////////////
-	if (strcmp(name, "Type") == 0) {
+	if (name == "Type") {
 		_scValue->setString("entity");
 		return _scValue;
 	}
@@ -843,7 +858,7 @@ ScValue *AdEntity::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Item
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Item") == 0) {
+	else if (name == "Item") {
 		if (_item) {
 			_scValue->setString(_item);
 		} else {
@@ -856,7 +871,7 @@ ScValue *AdEntity::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Subtype (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Subtype") == 0) {
+	else if (name == "Subtype") {
 		if (_subtype == ENTITY_SOUND) {
 			_scValue->setString("sound");
 		} else {
@@ -869,7 +884,7 @@ ScValue *AdEntity::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// WalkToX
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "WalkToX") == 0) {
+	else if (name == "WalkToX") {
 		_scValue->setInt(_walkToX);
 		return _scValue;
 	}
@@ -877,7 +892,7 @@ ScValue *AdEntity::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// WalkToY
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "WalkToY") == 0) {
+	else if (name == "WalkToY") {
 		_scValue->setInt(_walkToY);
 		return _scValue;
 	}
@@ -885,7 +900,7 @@ ScValue *AdEntity::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// WalkToDirection
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "WalkToDirection") == 0) {
+	else if (name == "WalkToDirection") {
 		_scValue->setInt((int)_walkToDir);
 		return _scValue;
 	}
@@ -893,7 +908,7 @@ ScValue *AdEntity::scGetProperty(const char *name) {
 	//////////////////////////////////////////////////////////////////////////
 	// Region (RO)
 	//////////////////////////////////////////////////////////////////////////
-	else if (strcmp(name, "Region") == 0) {
+	else if (name == "Region") {
 		if (_region) {
 			_scValue->setNative(_region, true);
 		} else {

@@ -62,7 +62,7 @@ get_var() {
 	eval echo \$${1}
 }
 
-# Add an engine: id name build subengines dependencies
+# Add an engine: id name build subengines base-games dependencies
 add_engine() {
 	_engines="${_engines} ${1}"
 	if test "${3}" = "no" ; then
@@ -2525,10 +2525,13 @@ if test -n "$_host"; then
 				# Use -O3 on the OpenPandora for non-debug builds.
 				_optimization_level=-O3
 			fi
+			define_in_config_if_yes yes 'USE_ARM_NEON_ASPECT_CORRECTOR'
 			CXXFLAGS="$CXXFLAGS -march=armv7-a"
 			CXXFLAGS="$CXXFLAGS -mtune=cortex-a8"
+			CXXFLAGS="$CXXFLAGS -mfloat-abi=softfp"
 			CXXFLAGS="$CXXFLAGS -mfpu=neon"
-			ASFLAGS="$ASFLAGS -mfloat-abi=soft"
+			CXXFLAGS="$CXXFLAGS -fsingle-precision-constant"
+			ASFLAGS="$ASFLAGS -mfloat-abi=softfp"
 			_backend="openpandora"
 			_build_hq_scalers=yes
 			_vkeybd=no
@@ -2537,6 +2540,16 @@ if test -n "$_host"; then
 			_port_mk="backends/platform/openpandora/op-bundle.mk"
 			;;
 		ppc-amigaos)
+			# Only static builds link successfully on buildbot
+			LDFLAGS=`echo $LDFLAGS | sed 's/-use-dynld//'`
+			LDFLAGS="$LDFLAGS -static"
+
+			# toolchain binaries prefixed by host
+			_ranlib=$_host-ranlib
+			_strip=$_host-strip
+			_ar="$_host-ar cru"
+			_as="$_host-as"
+			_windres=$_host-windres
 			;;
 		ps2)
 			DEFINES="$DEFINES -DDISABLE_TEXT_CONSOLE"
@@ -2977,7 +2990,7 @@ PLUGIN_LDFLAGS		+= -Wl,-T$(srcdir)/backends/plugins/ds/plugin.ld -mthumb-interwo
 	freebsd*)
 		_plugin_prefix="lib"
 		_plugin_suffix=".so"
-		CXXFLAGS="$CXXFLAGS -fpic"
+		CXXFLAGS="$CXXFLAGS -fPIC"
 _mak_plugins='
 PLUGIN_EXTRA_DEPS =
 PLUGIN_LDFLAGS  += -shared
@@ -3021,7 +3034,7 @@ POST_OBJS_FLAGS := -Wl,-no-whole-archive
 	linux*)
 		_plugin_prefix="lib"
 		_plugin_suffix=".so"
-		CXXFLAGS="$CXXFLAGS -fpic"
+		CXXFLAGS="$CXXFLAGS -fPIC"
 		LIBS="$LIBS -ldl"
 _mak_plugins='
 PLUGIN_EXTRA_DEPS =
@@ -3981,9 +3994,6 @@ for engine in $_engines; do
 				isbuilt=STATIC_PLUGIN
 			fi
 		fi
-
-		# Prepare the information to be shown
-		prepare_engine_build_strings $engine
 	else
 		# It's a subengine, just say yes or no
 		if test "`get_engine_build $engine`" = "no" ; then
@@ -3999,6 +4009,14 @@ for engine in $_engines; do
 		add_line_to_config_mk "# $defname"
 	else
 		add_line_to_config_mk "$defname = $isbuilt"
+	fi
+done
+
+# Prepare the information to be shown
+for engine in $_engines; do
+	if test "`get_engine_sub $engine`" = "no" ; then
+		# It's a main engine
+		prepare_engine_build_strings $engine
 	fi
 done
 

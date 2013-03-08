@@ -616,7 +616,7 @@ void PegasusEngine::loadFromContinuePoint() {
 	// Failure to load a continue point is fatal
 
 	if (!_continuePoint)
-		error("Attempting to load from non-existant continue point");
+		error("Attempting to load from non-existent continue point");
 
 	_continuePoint->seek(0);
 
@@ -639,9 +639,15 @@ void PegasusEngine::writeContinueStream(Common::WriteStream *stream) {
 	delete[] data;
 }
 
+Common::StringArray PegasusEngine::listSaveFiles() {
+	Common::StringArray fileNames = g_system->getSavefileManager()->listSavefiles("pegasus-*.sav");
+	Common::sort(fileNames.begin(), fileNames.end());
+	return fileNames;
+}
+
 Common::Error PegasusEngine::loadGameState(int slot) {
-	Common::StringArray filenames = _saveFileMan->listSavefiles("pegasus-*.sav");
-	Common::InSaveFile *loadFile = _saveFileMan->openForLoading(filenames[slot]);
+	Common::StringArray fileNames = listSaveFiles();
+	Common::InSaveFile *loadFile = _saveFileMan->openForLoading(fileNames[slot]);
 	if (!loadFile)
 		return Common::kUnknownError;
 
@@ -651,7 +657,23 @@ Common::Error PegasusEngine::loadGameState(int slot) {
 	return valid ? Common::kNoError : Common::kUnknownError;
 }
 
+static bool isValidSaveFileChar(char c) {
+	// Limit it to letters, digits, and a few other characters that should be safe
+	return Common::isAlnum(c) || c == ' ' || c == '_' || c == '+' || c == '-' || c == '.';
+}
+
+static bool isValidSaveFileName(const Common::String &desc) {
+	for (uint32 i = 0; i < desc.size(); i++)
+		if (!isValidSaveFileChar(desc[i]))
+			return false;
+
+	return true;
+}
+
 Common::Error PegasusEngine::saveGameState(int slot, const Common::String &desc) {
+	if (!isValidSaveFileName(desc))
+		return Common::Error(Common::kCreatingFileFailed, _("Invalid save file name"));
+
 	Common::String output = Common::String::format("pegasus-%s.sav", desc.c_str());
 	Common::OutSaveFile *saveFile = _saveFileMan->openForSaving(output, false);
 	if (!saveFile)
@@ -669,19 +691,35 @@ void PegasusEngine::receiveNotification(Notification *notification, const Notifi
 		case kGameStartingFlag: {
 			useMenu(new MainMenu());
 
-			if (!isDemo()) {
+			if (isDemo()) {
+				// Start playing the music earlier here
+				((MainMenu *)_gameMenu)->startMainMenuLoop();
+
+				// Show the intro splash screen
+				showTempScreen("Images/Demo/NGsplashScrn.pict");
+
+				if (shouldQuit()) {
+					useMenu(0);
+					return;
+				}
+
+				// Fade out and then back in with the main menu
+				_gfx->doFadeOutSync();
+				_gfx->updateDisplay();
+				_gfx->doFadeInSync();
+			} else {
+				// Display the intro
 				runIntro();
 				resetIntroTimer();
-			} else {
-				showTempScreen("Images/Demo/NGsplashScrn.pict");
+
+				if (shouldQuit())
+					return;
+
+				// Now display the main menu
+				_gfx->invalRect(Common::Rect(0, 0, 640, 480));
+				_gfx->updateDisplay();
+				((MainMenu *)_gameMenu)->startMainMenuLoop();
 			}
-
-			if (shouldQuit())
-				return;
-
-			_gfx->invalRect(Common::Rect(0, 0, 640, 480));
-			_gfx->updateDisplay();
-			((MainMenu *)_gameMenu)->startMainMenuLoop();
 			break;
 		}
 		case kPlayerDiedFlag:

@@ -147,7 +147,19 @@ bool Player_V3M::loadMusic(const byte *ptr) {
 		return false;
 	}
 
-	assert(ptr[4] == 's' && ptr[5] == 'o');
+	if (ptr[4] != 's' || ptr[5] != 'o') {
+		// Like the original we ignore all sound resources which do not have
+		// a 'so' tag in them.
+		// See bug #3602239 ("Mac Loom crashes using opening spell on
+		// gravestone") for a case where this is required. Loom Mac tries to
+		// play resource 11 here. This resource is no Mac sound resource
+		// though, it is a PC Speaker resource. A test with the original
+		// interpreter also has shown that no sound is played while the
+		// screen is shaking.
+		debug(5, "Player_V3M::loadMusic: Skipping unknown music type %02X%02X", ptr[4], ptr[5]);
+		resource.close();
+		return false;
+	}
 
 	uint i;
 	for (i = 0; i < 5; i++) {

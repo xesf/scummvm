@@ -37,7 +37,7 @@ class BasePersistenceManager;
 typedef void *(*PERSISTBUILD)(void);
 typedef bool(*PERSISTLOAD)(void *, BasePersistenceManager *);
 typedef void(*SYS_INSTANCE_CALLBACK)(void *instance, void *data);
-} // end of namespace Wintermute
+} // End of namespace Wintermute
 
 #include "engines/wintermute/system/sys_class_registry.h"
 namespace Wintermute {
@@ -82,8 +82,9 @@ namespace Wintermute {
 	}\
 
 #define TMEMBER(memberName) #memberName, &memberName
-#define TMEMBER_INT(memberName) #memberName, (int*)&memberName
+#define TMEMBER_PTR(memberName) #memberName, &memberName
+#define TMEMBER_INT(memberName) #memberName, (int32*)&memberName
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute
 
 #endif

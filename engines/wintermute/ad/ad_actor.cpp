@@ -752,7 +752,7 @@ bool AdActor::update() {
 			_tempSprite2 = _sentence->_currentSprite;
 		}
 
-		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->_timer - _sentence->_startTime);
+		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->getTimer()->getTime() - _sentence->_startTime);
 		if (_tempSprite2 == nullptr || _tempSprite2->isFinished() || (/*_tempSprite2->_looping &&*/ timeIsUp)) {
 			if (timeIsUp) {
 				_sentence->finish();
@@ -915,7 +915,7 @@ void AdActor::getNextStep() {
 
 
 //////////////////////////////////////////////////////////////////////////
-void AdActor::initLine(BasePoint startPt, BasePoint endPt) {
+void AdActor::initLine(const BasePoint &startPt, const BasePoint &endPt) {
 	_pFCount = MAX((abs(endPt.x - startPt.x)) , (abs(endPt.y - startPt.y)));
 
 	_pFStepX = (double)(endPt.x - startPt.x) / _pFCount;
@@ -1320,23 +1320,23 @@ bool AdActor::persist(BasePersistenceManager *persistMgr) {
 	AdTalkHolder::persist(persistMgr);
 
 	persistMgr->transfer(TMEMBER_INT(_dir));
-	persistMgr->transfer(TMEMBER(_path));
+	persistMgr->transferPtr(TMEMBER_PTR(_path));
 	persistMgr->transfer(TMEMBER(_pFCount));
 	persistMgr->transfer(TMEMBER(_pFStepX));
 	persistMgr->transfer(TMEMBER(_pFStepY));
 	persistMgr->transfer(TMEMBER(_pFX));
 	persistMgr->transfer(TMEMBER(_pFY));
-	persistMgr->transfer(TMEMBER(_standSprite));
+	persistMgr->transferPtr(TMEMBER_PTR(_standSprite));
 	_talkSprites.persist(persistMgr);
 	_talkSpritesEx.persist(persistMgr);
 	persistMgr->transfer(TMEMBER_INT(_targetDir));
 	persistMgr->transfer(TMEMBER_INT(_afterWalkDir));
-	persistMgr->transfer(TMEMBER(_targetPoint));
-	persistMgr->transfer(TMEMBER(_turnLeftSprite));
-	persistMgr->transfer(TMEMBER(_turnRightSprite));
-	persistMgr->transfer(TMEMBER(_walkSprite));
+	persistMgr->transferPtr(TMEMBER_PTR(_targetPoint));
+	persistMgr->transferPtr(TMEMBER_PTR(_turnLeftSprite));
+	persistMgr->transferPtr(TMEMBER_PTR(_turnRightSprite));
+	persistMgr->transferPtr(TMEMBER_PTR(_walkSprite));
 
-	persistMgr->transfer(TMEMBER(_animSprite2));
+	persistMgr->transferPtr(TMEMBER_PTR(_animSprite2));
 	persistMgr->transfer(TMEMBER(_talkAnimName));
 	persistMgr->transfer(TMEMBER(_idleAnimName));
 	persistMgr->transfer(TMEMBER(_walkAnimName));
@@ -1457,4 +1457,4 @@ bool AdActor::playAnim(const char *filename) {
 	return AdTalkHolder::playAnim(filename);
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

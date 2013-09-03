@@ -164,7 +164,7 @@ bool BaseSound::persist(BasePersistenceManager *persistMgr) {
 		_sFXParam1 = _sFXParam2 = _sFXParam3 = _sFXParam4 = 0;
 	}
 
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 
 	persistMgr->transfer(TMEMBER(_soundFilename));
 	persistMgr->transfer(TMEMBER(_soundLooping));
@@ -289,4 +289,4 @@ bool BaseSound::applyFX(TSFXType type, float param1, float param2, float param3,
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

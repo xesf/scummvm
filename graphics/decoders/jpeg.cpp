@@ -81,7 +81,7 @@ const Surface *JPEGDecoder::getSurface() const {
 	const Graphics::Surface *uComponent = getComponent(2);
 	const Graphics::Surface *vComponent = getComponent(3);
 
-	YUVToRGBMan.convert444(_rgbSurface, Graphics::YUVToRGBManager::kScaleFull, (byte *)yComponent->pixels, (byte *)uComponent->pixels, (byte *)vComponent->pixels, yComponent->w, yComponent->h, yComponent->pitch, uComponent->pitch);
+	YUVToRGBMan.convert444(_rgbSurface, Graphics::YUVToRGBManager::kScaleFull, (const byte *)yComponent->getPixels(), (const byte *)uComponent->getPixels(), (const byte *)vComponent->getPixels(), yComponent->w, yComponent->h, yComponent->pitch, uComponent->pitch);
 
 	return _rgbSurface;
 }
@@ -487,8 +487,8 @@ bool JPEGDecoder::readDQT() {
 
 		// Validate the table id
 		tableId &= 0xF;
-		if (tableId > JPEG_MAX_QUANT_TABLES) {
-			warning("JPEG: Invalid number of components");
+		if (tableId >= JPEG_MAX_QUANT_TABLES) {
+			warning("JPEG: Invalid quantization table");
 			return false;
 		}
 

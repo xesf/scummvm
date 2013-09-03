@@ -29,7 +29,6 @@
 #include "engines/wintermute/base/base_game.h"
 #include "engines/wintermute/ad/ad_node_state.h"
 #include "engines/wintermute/ad/ad_entity.h"
-#include "engines/wintermute/base/base_string_table.h"
 #include "engines/wintermute/base/base_sprite.h"
 #include "engines/wintermute/utils/utils.h"
 #include "engines/wintermute/platform_osystem.h"
@@ -94,7 +93,7 @@ void AdNodeState::setCursor(const char *filename) {
 
 //////////////////////////////////////////////////////////////////////////
 bool AdNodeState::persist(BasePersistenceManager *persistMgr) {
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 
 	persistMgr->transfer(TMEMBER(_active));
 	persistMgr->transfer(TMEMBER(_name));
@@ -122,7 +121,7 @@ void AdNodeState::setCaption(const char *caption, int caseVal) {
 	_caption[caseVal - 1] = new char[strlen(caption) + 1];
 	if (_caption[caseVal - 1]) {
 		strcpy(_caption[caseVal - 1], caption);
-		_gameRef->_stringTable->expand(&_caption[caseVal - 1]);
+		_gameRef->expandStringByStringTable(&_caption[caseVal - 1]);
 	}
 }
 
@@ -193,4 +192,4 @@ bool AdNodeState::transferEntity(AdEntity *entity, bool includingSprites, bool s
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

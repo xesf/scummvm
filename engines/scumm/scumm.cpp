@@ -1747,7 +1747,7 @@ void ScummEngine::setupMusic(int midi) {
 	}
 
 	if ((_game.id == GID_MONKEY_EGA || (_game.id == GID_LOOM && _game.version == 3))
-	   &&  (_game.platform == Common::kPlatformPC) && _sound->_musicType == MDT_MIDI) {
+	   &&  (_game.platform == Common::kPlatformDOS) && _sound->_musicType == MDT_MIDI) {
 		Common::String fileName;
 		bool missingFile = false;
 		if (_game.id == GID_LOOM) {
@@ -2124,7 +2124,7 @@ load_game:
 
 		// HACK as in game save stuff isn't supported currently
 		if (_game.id == GID_LOOM) {
-			int args[16];
+			int args[NUM_SCRIPT_LOCAL];
 			uint var;
 			memset(args, 0, sizeof(args));
 			args[0] = 2;
@@ -2512,7 +2512,7 @@ void ScummEngine::restart() {
 }
 
 void ScummEngine::runBootscript() {
-	int args[16];
+	int args[NUM_SCRIPT_LOCAL];
 	memset(args, 0, sizeof(args));
 	args[0] = _bootParam;
 	if (_game.id == GID_MANIAC && (_game.features & GF_DEMO))

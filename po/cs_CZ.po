@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.4.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.sf.net\n"
-"POT-Creation-Date: 2013-02-07 23:11+0000\n"
-"PO-Revision-Date: 2013-02-07 10:36+0100\n"
+"POT-Creation-Date: 2013-04-24 13:35+0100\n"
+"PO-Revision-Date: 2013-05-01 16:53+0100\n"
 "Last-Translator: Zbynìk Schwarz <zbynek.schwarz@gmail.com>\n"
 "Language-Team: \n"
 "Language: Cesky\n"
@@ -18,6 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 "X-Poedit-SourceCharset: iso-8859-2\n"
 "X-Generator: Poedit 1.5.5\n"
+"X-Poedit-Basepath: ..\n"
 
 #: gui/about.cpp:93
 #, c-format
@@ -57,12 +58,12 @@ msgstr "Jít nahoru"
 #: gui/launcher.cpp:345 gui/massadd.cpp:94 gui/options.cpp:1238
 #: gui/saveload-dialog.cpp:215 gui/saveload-dialog.cpp:275
 #: gui/saveload-dialog.cpp:545 gui/saveload-dialog.cpp:919
-#: gui/themebrowser.cpp:54 engines/engine.cpp:447
-#: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:190
-#: engines/sword1/control.cpp:867 engines/parallaction/saveload.cpp:274
-#: backends/platform/wii/options.cpp:48
-#: backends/events/default/default-events.cpp:191
-#: backends/events/default/default-events.cpp:213
+#: gui/themebrowser.cpp:54 gui/fluidsynth-dialog.cpp:151
+#: engines/engine.cpp:447 engines/drascula/saveload.cpp:51
+#: engines/scumm/dialogs.cpp:190 engines/sword1/control.cpp:865
+#: engines/parallaction/saveload.cpp:274 backends/platform/wii/options.cpp:48
+#: backends/events/default/default-events.cpp:193
+#: backends/events/default/default-events.cpp:215
 msgid "Cancel"
 msgstr "Zru¹it"
 
@@ -103,13 +104,14 @@ msgstr "Mapovat"
 
 #: gui/KeysDialog.cpp:42 gui/launcher.cpp:346 gui/launcher.cpp:1001
 #: gui/launcher.cpp:1005 gui/massadd.cpp:91 gui/options.cpp:1239
-#: gui/saveload-dialog.cpp:920 engines/engine.cpp:366 engines/engine.cpp:377
+#: gui/saveload-dialog.cpp:920 gui/fluidsynth-dialog.cpp:152
+#: engines/engine.cpp:366 engines/engine.cpp:377
 #: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:192
 #: engines/scumm/scumm.cpp:1778 engines/agos/animation.cpp:558
 #: engines/groovie/script.cpp:420 engines/sky/compact.cpp:131
 #: engines/sky/compact.cpp:141 engines/sword1/animation.cpp:519
 #: engines/sword1/animation.cpp:540 engines/sword1/animation.cpp:550
-#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:867
+#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:865
 #: engines/sword1/logic.cpp:1633 engines/sword2/animation.cpp:419
 #: engines/sword2/animation.cpp:439 engines/sword2/animation.cpp:449
 #: engines/sword2/animation.cpp:458 engines/parallaction/saveload.cpp:274
@@ -182,7 +184,7 @@ msgstr "Jazyk:"
 msgid ""
 "Language of the game. This will not turn your Spanish game version into "
 "English"
-msgstr "Jazyk hry. Toto z Va¹í ©panìlské verze neudìlá Anglickou"
+msgstr "Jazyk hry. Toto z va¹í ©panìlské verze neudìlá Anglickou"
 
 #: gui/launcher.cpp:206 gui/launcher.cpp:220 gui/options.cpp:86
 #: gui/options.cpp:736 gui/options.cpp:749 gui/options.cpp:1209
@@ -451,13 +453,13 @@ msgstr "Hledat:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/mohawk/myst.cpp:245
 #: engines/mohawk/riven.cpp:716 engines/cruise/menu.cpp:214
-#: engines/pegasus/pegasus.cpp:345
+#: engines/pegasus/pegasus.cpp:349
 msgid "Load game:"
 msgstr "Nahrát hru:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/scumm/dialogs.cpp:188
 #: engines/mohawk/myst.cpp:245 engines/mohawk/riven.cpp:716
-#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:345
+#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:349
 #: backends/platform/wince/CEActionsPocket.cpp:267
 #: backends/platform/wince/CEActionsSmartphone.cpp:231
 msgid "Load"
@@ -471,7 +473,7 @@ msgstr ""
 "Opravdu chcete spustit hromadnou detekci her? Toto by mohlo potenciálnì "
 "pøidat velkou spoustu her. "
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -479,7 +481,7 @@ msgstr ""
 msgid "Yes"
 msgstr "Ano"
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -865,7 +867,7 @@ msgctxt "lowres"
 msgid "Plugins Path:"
 msgstr "Cesta k Pluginùm:"
 
-#: gui/options.cpp:1169
+#: gui/options.cpp:1169 gui/fluidsynth-dialog.cpp:137
 msgid "Misc"
 msgstr "Rùzné"
 
@@ -1037,6 +1039,93 @@ msgstr "S vyhlazenými hranami (16bpp)"
 msgid "Clear value"
 msgstr "Vyèistit hodnotu"
 
+#: gui/fluidsynth-dialog.cpp:67
+msgid "Reverb"
+msgstr "Dozvuk"
+
+#: gui/fluidsynth-dialog.cpp:69 gui/fluidsynth-dialog.cpp:101
+msgid "Active"
+msgstr "Aktivní"
+
+#: gui/fluidsynth-dialog.cpp:71
+msgid "Room:"
+msgstr "Místnost:"
+
+#: gui/fluidsynth-dialog.cpp:78
+msgid "Damp:"
+msgstr "Tlumení:"
+
+#: gui/fluidsynth-dialog.cpp:85
+msgid "Width:"
+msgstr "©íøka:"
+
+#: gui/fluidsynth-dialog.cpp:92 gui/fluidsynth-dialog.cpp:110
+msgid "Level:"
+msgstr "Úroveò:"
+
+#: gui/fluidsynth-dialog.cpp:99
+msgid "Chorus"
+msgstr "Sbor"
+
+#: gui/fluidsynth-dialog.cpp:103
+msgid "N:"
+msgstr "N:"
+
+#: gui/fluidsynth-dialog.cpp:117
+msgid "Speed:"
+msgstr "Rychlost:"
+
+#: gui/fluidsynth-dialog.cpp:124
+msgid "Depth:"
+msgstr "Hloubka:"
+
+#: gui/fluidsynth-dialog.cpp:131
+msgid "Type:"
+msgstr "Typ:"
+
+#: gui/fluidsynth-dialog.cpp:134
+msgid "Sine"
+msgstr "Sinus"
+
+#: gui/fluidsynth-dialog.cpp:135
+msgid "Triangle"
+msgstr "Trojúhrlník"
+
+#: gui/fluidsynth-dialog.cpp:139
+msgid "Interpolation:"
+msgstr "Interpolace:"
+
+#: gui/fluidsynth-dialog.cpp:142
+msgid "None (fastest)"
+msgstr "®ádná (Nejrychlej¹í)"
+
+#: gui/fluidsynth-dialog.cpp:143
+msgid "Linear"
+msgstr "Lineární"
+
+#: gui/fluidsynth-dialog.cpp:144
+msgid "Fourth-order"
+msgstr "Interpolace ètvrtého øádu"
+
+#: gui/fluidsynth-dialog.cpp:145
+msgid "Seventh-order"
+msgstr "Interpolace sedmého øádu"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset"
+msgstr "Resetovat"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset all FluidSynth settings to their default values."
+msgstr "Resetovat ve¹kerá nastavení FludSynth n ajejich výchozí hodnoty."
+
+#: gui/fluidsynth-dialog.cpp:216
+msgid ""
+"Do you really want to reset all FluidSynth settings to their default values?"
+msgstr ""
+"Opravdu chcete resetovat ve¹kerá nastavení FluidSynth na jejich výchozí "
+"hodnoty?"
+
 #: base/main.cpp:210
 #, c-format
 msgid "Engine does not support debug level '%s'"
@@ -1182,14 +1271,14 @@ msgstr "~N~ávrat do Spou¹tìèe"
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/cruise/menu.cpp:212
 #: engines/sci/engine/kfile.cpp:742 engines/toltecs/menu.cpp:284
-#: engines/pegasus/pegasus.cpp:369
+#: engines/pegasus/pegasus.cpp:373
 msgid "Save game:"
 msgstr "Ulo¾it hru:"
 
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/scumm/dialogs.cpp:187
 #: engines/cruise/menu.cpp:212 engines/sci/engine/kfile.cpp:742
-#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:369
+#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:373
 #: backends/platform/symbian/src/SymbianActions.cpp:44
 #: backends/platform/wince/CEActionsPocket.cpp:43
 #: backends/platform/wince/CEActionsPocket.cpp:267
@@ -1311,12 +1400,12 @@ msgid "Use the original save/load screens, instead of the ScummVM ones"
 msgstr "Pou¾ít pùvodní obrazovky naètení/ulo¾ení místo ze ScummVM"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore game:"
 msgstr "Obnovit hru"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore"
 msgstr "Obnovit"
 
@@ -1440,7 +1529,7 @@ msgstr "Hrát"
 #: backends/platform/symbian/src/SymbianActions.cpp:52
 #: backends/platform/wince/CEActionsPocket.cpp:44
 #: backends/platform/wince/CEActionsSmartphone.cpp:52
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Quit"
 msgstr "Ukonèit"
 
@@ -2241,11 +2330,11 @@ msgstr "Pøesunout se Doleva"
 msgid "Slide Right"
 msgstr "Pøesunout se Doprava"
 
-#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2412
+#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2447
 msgid "Turn Left"
 msgstr "Otoèit se doleva"
 
-#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2413
+#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2448
 msgid "Turn Right"
 msgstr "Otoèit se doprava"
 
@@ -2325,7 +2414,7 @@ msgstr "Videa MPGE2 ji¾ nejsou podporována"
 msgid "Cutscene '%s' not found"
 msgstr "Video '%s' nenalezeno"
 
-#: engines/sword1/control.cpp:865
+#: engines/sword1/control.cpp:863
 msgid ""
 "ScummVM found that you have old savefiles for Broken Sword 1 that should be "
 "converted.\n"
@@ -2343,7 +2432,7 @@ msgstr ""
 "Stisknìte OK, abyste je pøevedli teï, jinak budete po¾ádáni znovu, pøi "
 "spu¹tìní této hry.\n"
 
-#: engines/sword1/control.cpp:1234
+#: engines/sword1/control.cpp:1232
 #, c-format
 msgid ""
 "Target new save game already exists!\n"
@@ -2352,11 +2441,11 @@ msgstr ""
 "Nová cílová ulo¾ená hra ji¾ existuje!\n"
 "Chtìli byste ponechat starou ulo¾enou hru (%s), nebo novou (%s)?\n"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the old one"
 msgstr "Ponechat starou"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the new one"
 msgstr "Ponechat novou"
 
@@ -2439,46 +2528,45 @@ msgstr ""
 "\n"
 "Prosím nahlaste to týmu"
 
-#: engines/pegasus/pegasus.cpp:675
+#: engines/pegasus/pegasus.cpp:679
 msgid "Invalid save file name"
-msgstr ""
+msgstr "Neplatný název souboru"
 
-#: engines/pegasus/pegasus.cpp:2410
+#: engines/pegasus/pegasus.cpp:2445
 msgid "Up/Zoom In/Move Forward/Open Doors"
-msgstr ""
+msgstr "Nahoru/Pøiblí¾it/Pohyb dopøedu/Otevøít dveøe"
 
-#: engines/pegasus/pegasus.cpp:2411
-#, fuzzy
+#: engines/pegasus/pegasus.cpp:2446
 msgid "Down/Zoom Out"
-msgstr "Pøiblí¾ení nahoru"
+msgstr "Dolù/Oddálení"
 
-#: engines/pegasus/pegasus.cpp:2414
+#: engines/pegasus/pegasus.cpp:2449
 msgid "Display/Hide Inventory Tray"
-msgstr ""
+msgstr "Zobrazit/Skrýt podnos inventáøe"
 
-#: engines/pegasus/pegasus.cpp:2415
+#: engines/pegasus/pegasus.cpp:2450
 msgid "Display/Hide Biochip Tray"
-msgstr ""
+msgstr "Zobrazit/Skrýt podnos bioèipu"
 
-#: engines/pegasus/pegasus.cpp:2416
+#: engines/pegasus/pegasus.cpp:2451
 msgid "Action/Select"
-msgstr ""
+msgstr "Èinnost/Vybrat"
 
-#: engines/pegasus/pegasus.cpp:2417
+#: engines/pegasus/pegasus.cpp:2452
 msgid "Toggle Center Data Display"
-msgstr ""
+msgstr "Pøepnout centrální datovou obrazovku"
 
-#: engines/pegasus/pegasus.cpp:2418
+#: engines/pegasus/pegasus.cpp:2453
 msgid "Display/Hide Info Screen"
-msgstr ""
+msgstr "Zobrazit/Skrýto obrazovku informací"
 
-#: engines/pegasus/pegasus.cpp:2419
+#: engines/pegasus/pegasus.cpp:2454
 msgid "Display/Hide Pause Menu"
-msgstr ""
+msgstr "Zobrazit/Skrýt "
 
-#: engines/pegasus/pegasus.cpp:2420
+#: engines/pegasus/pegasus.cpp:2455
 msgid "???"
-msgstr ""
+msgstr "???"
 
 #: audio/fmopl.cpp:49
 msgid "MAME OPL emulator"
@@ -3091,15 +3179,15 @@ msgstr ""
 "Nezapomeòte namapovat klávesu k èinnosti 'Skrýt Panel Nástrojù, abyste "
 "vidìli celý inventáø"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Do you really want to return to the Launcher?"
 msgstr "Opravdu se chcete vrátit tuto do Spou¹tìèe?"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Launcher"
 msgstr "Spou¹tìè"
 
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Do you really want to quit?"
 msgstr "Opravdu chcete skonèit?"
 

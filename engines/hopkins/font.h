@@ -68,6 +68,7 @@ private:
 	int _index[4048];
 	byte *_tempText;
 	byte *_zoneText;
+	int _boxWidth;
 
 	void loadZoneText();
 public:
@@ -77,9 +78,8 @@ public:
 	TxtItem _text[12];
 	TxtItemList _textList[12];
 
-	FontManager();
+	FontManager(HopkinsEngine *vm);
 	~FontManager();
-	void setParent(HopkinsEngine *vm);
 	void clearAll();
 	void initData();
 

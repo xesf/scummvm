@@ -44,9 +44,9 @@ public:
 	AdInventory(BaseGame *inGame);
 	virtual ~AdInventory();
 	BaseArray<AdItem *> _takenItems;
-	int _scrollOffset;
+	int32 _scrollOffset;
 };
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute
 
 #endif

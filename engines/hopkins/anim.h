@@ -30,29 +30,47 @@
 
 namespace Hopkins {
 
+struct BankItem {
+	byte *_data;
+	bool _loadedFl;
+	Common::String _filename;
+	int _fileHeader;
+	int _objDataIdx;
+};
+
+struct BqeAnimItem {
+	byte *_data;
+	bool _enabledFl;
+};
+
 class HopkinsEngine;
 
 class AnimationManager {
 private:
+	bool _clearAnimationFl;
+
 	HopkinsEngine *_vm;
 
+	void initAnimBqe();
 	int loadSpriteBank(int idx, const Common::String &filename);
 	void searchAnim(const byte *data, int animIndex, int count);
 
 public:
-	bool _clearAnimationFl;
-	bool NO_SEQ;
-	bool NO_COUL;
+	BqeAnimItem _animBqe[35];
+	BankItem Bank[8];
 
-	AnimationManager();
-	void setParent(HopkinsEngine *vm) { _vm = vm; }
+	AnimationManager(HopkinsEngine *vm);
+	void clearAll();
 
 	void loadAnim(const Common::String &animName);
 	void clearAnim();
-	void playAnim(const Common::String &filename, uint32 rate1, uint32 rate2, uint32 rate3);
-	void playAnim2(const Common::String &filename, uint32 rate1, uint32 rate2, uint32 rate3);
-	void playSequence(const Common::String &file, uint32 rate1, uint32 rate2, uint32 rate3, bool skipEscFl = false);
-	void playSequence2(const Common::String &file, uint32 rate1, uint32 rate2, uint32 rate3);
+	void playAnim(const Common::String &hiresName, const Common::String &lowresName, uint32 rate1, uint32 rate2, uint32 rate3, bool skipSeqFl = false);
+	void playAnim2(const Common::String &hiresName, const Common::String &lowresName, uint32 rate1, uint32 rate2, uint32 rate3);
+	void playSequence(const Common::String &file, uint32 rate1, uint32 rate2, uint32 rate3, bool skipEscFl, bool skipSeqFl, bool noColFl = false);
+	void playSequence2(const Common::String &file, uint32 rate1, uint32 rate2, uint32 rate3, bool skipSeqFl = false);
+
+	void setClearAnimFlag()   { _clearAnimationFl = true; }
+	void unsetClearAnimFlag() { _clearAnimationFl = false; }
 };
 
 } // End of namespace Hopkins

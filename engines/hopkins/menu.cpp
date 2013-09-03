@@ -37,11 +37,11 @@
 
 namespace Hopkins {
 
-void MenuManager::setParent(HopkinsEngine *vm) {
+enum MenuSelection { MENU_NONE = 0, PLAY_GAME = 1, LOAD_GAME = 2, OPTIONS = 3, INTRODUCTION = 4, QUIT = 5 };
+
+MenuManager::MenuManager(HopkinsEngine *vm) {
 	_vm = vm;
 }
-
-enum MenuSelection { MENU_NONE = 0, PLAY_GAME = 1, LOAD_GAME = 2, OPTIONS = 3, INTRODUCTION = 4, QUIT = 5 };
 
 int MenuManager::menu() {
 	byte *spriteData = NULL;
@@ -50,58 +50,58 @@ int MenuManager::menu() {
 	signed int result;
 	int frameIndex[] = { 0, 0, 0, 0, 0 };
 
-	if (g_system->getEventManager()->shouldQuit())
+	if (_vm->shouldQuit())
 		return -1;
 
 	result = 0;
-	while (!g_system->getEventManager()->shouldQuit()) {
-		_vm->_objectsManager._forestFl = false;
-		_vm->_eventsManager._breakoutFl = false;
-		_vm->_globals._disableInventFl = true;
-		_vm->_globals._exitId = 0;
+	while (!_vm->shouldQuit()) {
+		_vm->_objectsMan->_forestFl = false;
+		_vm->_events->_breakoutFl = false;
+		_vm->_globals->_disableInventFl = true;
+		_vm->_globals->_exitId = 0;
 
 		for (int idx = 0; idx < 31; ++idx)
-			_vm->_globals._inventory[idx] = 0;
+			_vm->_globals->_inventory[idx] = 0;
 
-		memset(_vm->_globals._saveData, 0, 2000);
-		_vm->_objectsManager.addObject(14);
+		memset(_vm->_globals->_saveData, 0, 2000);
+		_vm->_objectsMan->addObject(14);
 		memset(frameIndex, 0, sizeof(int) * ARRAYSIZE(frameIndex));
 
 		if (_vm->getPlatform() == Common::kPlatformOS2 || _vm->getPlatform() == Common::kPlatformBeOS)
-			_vm->_graphicsManager.loadImage("MENU");
-		else if (_vm->_globals._language == LANG_EN)
-			_vm->_graphicsManager.loadImage("MENUAN");
-		else if (_vm->_globals._language == LANG_FR)
-			_vm->_graphicsManager.loadImage("MENUFR");
-		else if (_vm->_globals._language == LANG_SP)
-			_vm->_graphicsManager.loadImage("MENUES");
+			_vm->_graphicsMan->loadImage("MENU");
+		else if (_vm->_globals->_language == LANG_EN)
+			_vm->_graphicsMan->loadImage("MENUAN");
+		else if (_vm->_globals->_language == LANG_FR)
+			_vm->_graphicsMan->loadImage("MENUFR");
+		else if (_vm->_globals->_language == LANG_SP)
+			_vm->_graphicsMan->loadImage("MENUES");
 
-		_vm->_graphicsManager.fadeInLong();
+		_vm->_graphicsMan->fadeInLong();
 
 		if (_vm->getPlatform() == Common::kPlatformOS2 || _vm->getPlatform() == Common::kPlatformBeOS)
-			spriteData = _vm->_objectsManager.loadSprite("MENU.SPR");
-		else if (_vm->_globals._language == LANG_EN)
-			spriteData = _vm->_objectsManager.loadSprite("MENUAN.SPR");
-		else if (_vm->_globals._language == LANG_FR)
-			spriteData = _vm->_objectsManager.loadSprite("MENUFR.SPR");
-		else if (_vm->_globals._language == LANG_SP)
-			spriteData = _vm->_objectsManager.loadSprite("MENUES.SPR");
+			spriteData = _vm->_objectsMan->loadSprite("MENU.SPR");
+		else if (_vm->_globals->_language == LANG_EN)
+			spriteData = _vm->_objectsMan->loadSprite("MENUAN.SPR");
+		else if (_vm->_globals->_language == LANG_FR)
+			spriteData = _vm->_objectsMan->loadSprite("MENUFR.SPR");
+		else if (_vm->_globals->_language == LANG_SP)
+			spriteData = _vm->_objectsMan->loadSprite("MENUES.SPR");
 
-		_vm->_eventsManager.mouseOn();
-		_vm->_eventsManager.changeMouseCursor(0);
-		_vm->_eventsManager._mouseCursorId = 0;
-		_vm->_eventsManager._mouseSpriteId = 0;
+		_vm->_events->mouseOn();
+		_vm->_events->changeMouseCursor(0);
+		_vm->_events->_mouseCursorId = 0;
+		_vm->_events->_mouseSpriteId = 0;
 
-		_vm->_soundManager.playSound(28);
+		_vm->_soundMan->playSound(28);
 
 		// Loop to make menu selection
 		bool selectionMade = false;
 		do {
-			if (g_system->getEventManager()->shouldQuit())
+			if (_vm->shouldQuit())
 				return -1;
 
 			menuIndex = MENU_NONE;
-			mousePos = Common::Point(_vm->_eventsManager.getMouseX(), _vm->_eventsManager.getMouseY());
+			mousePos = Common::Point(_vm->_events->getMouseX(), _vm->_events->getMouseY());
 
 			if (mousePos.x >= 232 && mousePos.x <= 408) {
 				if (mousePos.y >= 261 && mousePos.y <= 284)
@@ -120,37 +120,37 @@ int MenuManager::menu() {
 			if (menuIndex > MENU_NONE)
 				frameIndex[menuIndex - 1] = 1;
 
-			_vm->_graphicsManager.fastDisplay(spriteData, 230, 259, frameIndex[0]);
-			_vm->_graphicsManager.fastDisplay(spriteData, 230, 291, frameIndex[1] + 2);
-			_vm->_graphicsManager.fastDisplay(spriteData, 230, 322, frameIndex[2] + 4);
-			_vm->_graphicsManager.fastDisplay(spriteData, 230, 354, frameIndex[3] + 6);
-			_vm->_graphicsManager.fastDisplay(spriteData, 230, 386, frameIndex[4] + 8);
-			_vm->_eventsManager.refreshScreenAndEvents();
+			_vm->_graphicsMan->fastDisplay(spriteData, 230, 259, frameIndex[0]);
+			_vm->_graphicsMan->fastDisplay(spriteData, 230, 291, frameIndex[1] + 2);
+			_vm->_graphicsMan->fastDisplay(spriteData, 230, 322, frameIndex[2] + 4);
+			_vm->_graphicsMan->fastDisplay(spriteData, 230, 354, frameIndex[3] + 6);
+			_vm->_graphicsMan->fastDisplay(spriteData, 230, 386, frameIndex[4] + 8);
+			_vm->_events->refreshScreenAndEvents();
 
-			if (_vm->_eventsManager.getMouseButton() == 1 && menuIndex != MENU_NONE)
+			if (_vm->_events->getMouseButton() == 1 && menuIndex != MENU_NONE)
 				selectionMade = true;
 		} while (!selectionMade);
 
 		if (menuIndex > MENU_NONE) {
-			_vm->_graphicsManager.fastDisplay(spriteData, 230, 259 + 32 * (menuIndex - 1), 10 + (menuIndex - 1));
-			_vm->_eventsManager.refreshScreenAndEvents();
-			_vm->_eventsManager.delay(200);
+			_vm->_graphicsMan->fastDisplay(spriteData, 230, 259 + 32 * (menuIndex - 1), 10 + (menuIndex - 1));
+			_vm->_events->refreshScreenAndEvents();
+			_vm->_events->delay(200);
 		}
 
 		if (menuIndex == PLAY_GAME) {
 			result = 1;
 			break;
 		} else if (menuIndex == LOAD_GAME) {
-			_vm->_globals._exitId = -1;
-			_vm->_dialogsManager.showLoadGame();
+			_vm->_globals->_exitId = -1;
+			_vm->_dialog->showLoadGame();
 
-			if (_vm->_globals._exitId != -1) {
-				result = _vm->_globals._exitId;
+			if (_vm->_globals->_exitId != -1) {
+				result = _vm->_globals->_exitId;
 				break;
 			}
-			_vm->_globals._exitId = 0;
+			_vm->_globals->_exitId = 0;
 		} else if (menuIndex == OPTIONS) {
-			_vm->_dialogsManager.showOptionsDialog();
+			_vm->_dialog->showOptionsDialog();
 		} else if (menuIndex == INTRODUCTION) {
 			_vm->playIntro();
 		} else if (menuIndex == QUIT) {
@@ -159,9 +159,9 @@ int MenuManager::menu() {
 		}
 	}
 
-	_vm->_globals.freeMemory(spriteData);
-	_vm->_globals._disableInventFl = false;
-	_vm->_graphicsManager.fadeOutLong();
+	_vm->_globals->freeMemory(spriteData);
+	_vm->_globals->_disableInventFl = false;
+	_vm->_graphicsMan->fadeOutLong();
 	return result;
 }
 

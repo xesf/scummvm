@@ -178,13 +178,14 @@ void EoBEngine::runNpcDialogue(int npcIndex) {
 	case 1:
 		if (!checkScriptFlags(0x10000)) {
 			if (checkScriptFlags(0x8000)) {
-				a = 1;
+				a = 13;
 			} else {
 				setScriptFlags(0x8000);
 				r = DLG2(3, 3);
+				a = 4;
 			}
 			if (!r)
-				r = DLG2(a ? 13 : 4, 4);
+				r = DLG2(a, 4);
 
 			if (!r) {
 				for (a = 0; a < 6; a++)
@@ -214,8 +215,8 @@ void EoBEngine::runNpcDialogue(int npcIndex) {
 
 		if (!checkScriptFlags(0x100000)) {
 			if (deletePartyItems(6, -1)) {
-				//_npcSequenceSub = 0;
-				//drawNpcScene(npcIndex);
+				_npcSequenceSub = 0;
+				drawNpcScene(npcIndex);
 				TXT(28);
 				createItemOnCurrentBlock(32);
 				setScriptFlags(0x100000);
@@ -338,6 +339,14 @@ void EoBEngine::replaceMonster(int unit, uint16 block, int pos, int dir, int typ
 	}
 }
 
+bool EoBEngine::killMonsterExtra(EoBMonsterInPlay *m) {
+	if (m->type == 21) {
+		_playFinale = true;
+		_runFlag = false;
+	}
+	return true;
+}
+
 void EoBEngine::updateScriptTimersExtra() {
 	int cnt = 0;
 	for (int i = 1; i < 30; i++) {
@@ -387,6 +396,8 @@ void EoBEngine::loadDoorShapes(int doorType1, int shapeId1, int doorType2, int s
 void EoBEngine::drawDoorIntern(int type, int index, int x, int y, int w, int wall, int mDim, int16 y1, int16 y2) {
 	int shapeIndex = type + 2 - mDim;
 	uint8 *shp = _doorShapes[shapeIndex];
+	if (!shp)
+		return;
 
 	int d1 = 0;
 	int d2 = 0;

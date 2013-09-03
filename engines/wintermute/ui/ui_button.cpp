@@ -382,7 +382,7 @@ bool UIButton::loadBuffer(byte *buffer, bool complete) {
 
 		case TOKEN_TEXT:
 			setText((char *)params);
-			_gameRef->_stringTable->expand(&_text);
+			_gameRef->expandStringByStringTable(&_text);
 			break;
 
 		case TOKEN_TEXT_ALIGN:
@@ -1179,21 +1179,21 @@ bool UIButton::persist(BasePersistenceManager *persistMgr) {
 	UIObject::persist(persistMgr);
 
 	persistMgr->transfer(TMEMBER_INT(_align));
-	persistMgr->transfer(TMEMBER(_backDisable));
-	persistMgr->transfer(TMEMBER(_backFocus));
-	persistMgr->transfer(TMEMBER(_backHover));
-	persistMgr->transfer(TMEMBER(_backPress));
+	persistMgr->transferPtr(TMEMBER_PTR(_backDisable));
+	persistMgr->transferPtr(TMEMBER_PTR(_backFocus));
+	persistMgr->transferPtr(TMEMBER_PTR(_backHover));
+	persistMgr->transferPtr(TMEMBER_PTR(_backPress));
 	persistMgr->transfer(TMEMBER(_centerImage));
-	persistMgr->transfer(TMEMBER(_fontDisable));
-	persistMgr->transfer(TMEMBER(_fontFocus));
-	persistMgr->transfer(TMEMBER(_fontHover));
-	persistMgr->transfer(TMEMBER(_fontPress));
+	persistMgr->transferPtr(TMEMBER_PTR(_fontDisable));
+	persistMgr->transferPtr(TMEMBER_PTR(_fontFocus));
+	persistMgr->transferPtr(TMEMBER_PTR(_fontHover));
+	persistMgr->transferPtr(TMEMBER_PTR(_fontPress));
 	persistMgr->transfer(TMEMBER(_hover));
-	persistMgr->transfer(TMEMBER(_image));
-	persistMgr->transfer(TMEMBER(_imageDisable));
-	persistMgr->transfer(TMEMBER(_imageFocus));
-	persistMgr->transfer(TMEMBER(_imageHover));
-	persistMgr->transfer(TMEMBER(_imagePress));
+	persistMgr->transferPtr(TMEMBER_PTR(_image));
+	persistMgr->transferPtr(TMEMBER_PTR(_imageDisable));
+	persistMgr->transferPtr(TMEMBER_PTR(_imageFocus));
+	persistMgr->transferPtr(TMEMBER_PTR(_imageHover));
+	persistMgr->transferPtr(TMEMBER_PTR(_imagePress));
 	persistMgr->transfer(TMEMBER(_pixelPerfect));
 	persistMgr->transfer(TMEMBER(_press));
 	persistMgr->transfer(TMEMBER(_stayPressed));
@@ -1206,4 +1206,4 @@ bool UIButton::persist(BasePersistenceManager *persistMgr) {
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

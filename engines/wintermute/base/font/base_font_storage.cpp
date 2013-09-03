@@ -132,10 +132,10 @@ bool BaseFontStorage::persist(BasePersistenceManager *persistMgr) {
 		cleanup(false);
 	}
 
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 	_fonts.persist(persistMgr);
 
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

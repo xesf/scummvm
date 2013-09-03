@@ -1,14 +1,14 @@
 # Belarusian translation for ScummVM.
 # Copyright (C) 2010-2013 ScummVM Team
 # This file is distributed under the same license as the ScummVM package.
-# Ivan Lukyanov <greencis@mail.ru>, 2012.
+# Ivan Lukyanov <greencis@mail.ru>, 2013.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.6.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.sf.net\n"
-"POT-Creation-Date: 2013-02-07 23:11+0000\n"
-"PO-Revision-Date: 2012-12-12 22:02+0300\n"
+"POT-Creation-Date: 2013-04-24 13:35+0100\n"
+"PO-Revision-Date: 2013-04-28 18:53+0300\n"
 "Last-Translator: Ivan Lukyanov <greencis@mail.ru>\n"
 "Language-Team: Ivan Lukyanov <greencis@mail.ru>\n"
 "Language: Belarusian\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3;     plural=n%10==1 && n%100!=11 ? 0 :            n"
 "%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Poedit 1.5.4\n"
+"X-Generator: Poedit 1.5.5\n"
 
 #: gui/about.cpp:93
 #, c-format
@@ -33,13 +33,12 @@ msgid "Available engines:"
 msgstr "Даступныя рухавічкі:"
 
 #: gui/browser.cpp:67
-#, fuzzy
 msgid "Show hidden files"
-msgstr "Паказаць / Прыбраць кансоль"
+msgstr "Паказваць схаваныя файлы"
 
 #: gui/browser.cpp:67
 msgid "Show files marked with the hidden attribute"
-msgstr ""
+msgstr "Паказваць файлы са схаваным атрыбутам"
 
 #: gui/browser.cpp:71
 msgid "Go up"
@@ -58,12 +57,12 @@ msgstr "Уверх"
 #: gui/launcher.cpp:345 gui/massadd.cpp:94 gui/options.cpp:1238
 #: gui/saveload-dialog.cpp:215 gui/saveload-dialog.cpp:275
 #: gui/saveload-dialog.cpp:545 gui/saveload-dialog.cpp:919
-#: gui/themebrowser.cpp:54 engines/engine.cpp:447
-#: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:190
-#: engines/sword1/control.cpp:867 engines/parallaction/saveload.cpp:274
-#: backends/platform/wii/options.cpp:48
-#: backends/events/default/default-events.cpp:191
-#: backends/events/default/default-events.cpp:213
+#: gui/themebrowser.cpp:54 gui/fluidsynth-dialog.cpp:151
+#: engines/engine.cpp:447 engines/drascula/saveload.cpp:51
+#: engines/scumm/dialogs.cpp:190 engines/sword1/control.cpp:865
+#: engines/parallaction/saveload.cpp:274 backends/platform/wii/options.cpp:48
+#: backends/events/default/default-events.cpp:193
+#: backends/events/default/default-events.cpp:215
 msgid "Cancel"
 msgstr "Адмена"
 
@@ -104,13 +103,14 @@ msgstr "Прызначыць"
 
 #: gui/KeysDialog.cpp:42 gui/launcher.cpp:346 gui/launcher.cpp:1001
 #: gui/launcher.cpp:1005 gui/massadd.cpp:91 gui/options.cpp:1239
-#: gui/saveload-dialog.cpp:920 engines/engine.cpp:366 engines/engine.cpp:377
+#: gui/saveload-dialog.cpp:920 gui/fluidsynth-dialog.cpp:152
+#: engines/engine.cpp:366 engines/engine.cpp:377
 #: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:192
 #: engines/scumm/scumm.cpp:1778 engines/agos/animation.cpp:558
 #: engines/groovie/script.cpp:420 engines/sky/compact.cpp:131
 #: engines/sky/compact.cpp:141 engines/sword1/animation.cpp:519
 #: engines/sword1/animation.cpp:540 engines/sword1/animation.cpp:550
-#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:867
+#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:865
 #: engines/sword1/logic.cpp:1633 engines/sword2/animation.cpp:419
 #: engines/sword2/animation.cpp:439 engines/sword2/animation.cpp:449
 #: engines/sword2/animation.cpp:458 engines/parallaction/saveload.cpp:274
@@ -326,7 +326,7 @@ msgstr "Паказвае шлях да захаванняў гульні"
 #: gui/launcher.cpp:335 gui/options.cpp:1135
 msgctxt "lowres"
 msgid "Save Path:"
-msgstr "Шлях зах:"
+msgstr "Шлях зах.:"
 
 #: gui/launcher.cpp:354 gui/launcher.cpp:453 gui/launcher.cpp:511
 #: gui/launcher.cpp:565 gui/options.cpp:1144 gui/options.cpp:1152
@@ -453,13 +453,13 @@ msgstr "Пошук:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/mohawk/myst.cpp:245
 #: engines/mohawk/riven.cpp:716 engines/cruise/menu.cpp:214
-#: engines/pegasus/pegasus.cpp:345
+#: engines/pegasus/pegasus.cpp:349
 msgid "Load game:"
 msgstr "Загрузіць гульню:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/scumm/dialogs.cpp:188
 #: engines/mohawk/myst.cpp:245 engines/mohawk/riven.cpp:716
-#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:345
+#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:349
 #: backends/platform/wince/CEActionsPocket.cpp:267
 #: backends/platform/wince/CEActionsSmartphone.cpp:231
 msgid "Load"
@@ -473,7 +473,7 @@ msgstr ""
 "Вы сапраўды жадаеце запусціць дэтэктар усіх гульняў? Гэта патэнцыяльна можа "
 "дадаць вялікую колькасць гульняў."
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -481,7 +481,7 @@ msgstr ""
 msgid "Yes"
 msgstr "Так"
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -524,7 +524,7 @@ msgstr "Шмат гульняў..."
 
 #: gui/massadd.cpp:78 gui/massadd.cpp:81
 msgid "... progress ..."
-msgstr "... шукаю ..."
+msgstr "...шукаю..."
 
 #: gui/massadd.cpp:258
 msgid "Scan complete!"
@@ -538,12 +538,12 @@ msgstr "Знойдзена %d новых гульняў, прапушчана %d раней дададзеных гульняў."
 #: gui/massadd.cpp:265
 #, c-format
 msgid "Scanned %d directories ..."
-msgstr "Прагледжана %d дырэкторый ..."
+msgstr "Прагледжана %d дырэкторый..."
 
 #: gui/massadd.cpp:268
 #, c-format
 msgid "Discovered %d new games, ignored %d previously added games ..."
-msgstr "Знойдзена %d новых гульняў, прапушчана %d раней дададзеных гульняў ..."
+msgstr "Знойдзена %d новых гульняў, прапушчана %d раней дададзеных гульняў..."
 
 #: gui/options.cpp:84
 msgid "Never"
@@ -724,7 +724,7 @@ msgstr "Узмацненне MIDI:"
 
 #: gui/options.cpp:873
 msgid "FluidSynth Settings"
-msgstr ""
+msgstr "Налады FluidSynth"
 
 #: gui/options.cpp:880
 msgid "MT-32 Device:"
@@ -751,12 +751,11 @@ msgstr ""
 #: gui/options.cpp:887
 msgctxt "lowres"
 msgid "True Roland MT-32 (no GM emulation)"
-msgstr "Сапраўдны Roland MT-32 (забараніць GM)"
+msgstr "Сапраўдны Roland MT-32 (без GM)"
 
 #: gui/options.cpp:890
-#, fuzzy
 msgid "Roland GS Mode (disable GM mapping)"
-msgstr "Сапраўдны Roland MT-32 (забараніць эмуляцыю GM)"
+msgstr "Рэжым Roland GS (забараніць раскладку GM)"
 
 #: gui/options.cpp:890
 msgid "Turns off General MIDI mapping for games with Roland MT-32 soundtrack"
@@ -874,7 +873,7 @@ msgctxt "lowres"
 msgid "Plugins Path:"
 msgstr "Шлях да плагінаў:"
 
-#: gui/options.cpp:1169
+#: gui/options.cpp:1169 gui/fluidsynth-dialog.cpp:137
 msgid "Misc"
 msgstr "Рознае"
 
@@ -1046,6 +1045,91 @@ msgstr "Растарызатар са згладжваннем (16bpp)"
 msgid "Clear value"
 msgstr "Ачысціць значэнне"
 
+#: gui/fluidsynth-dialog.cpp:67
+msgid "Reverb"
+msgstr "Рэверберацыя"
+
+#: gui/fluidsynth-dialog.cpp:69 gui/fluidsynth-dialog.cpp:101
+msgid "Active"
+msgstr "(Актыўная)"
+
+#: gui/fluidsynth-dialog.cpp:71
+msgid "Room:"
+msgstr "Пакой:"
+
+#: gui/fluidsynth-dialog.cpp:78
+msgid "Damp:"
+msgstr "Дэмпфаванне:"
+
+#: gui/fluidsynth-dialog.cpp:85
+msgid "Width:"
+msgstr "Даўжыня:"
+
+#: gui/fluidsynth-dialog.cpp:92 gui/fluidsynth-dialog.cpp:110
+msgid "Level:"
+msgstr "Узровень:"
+
+#: gui/fluidsynth-dialog.cpp:99
+msgid "Chorus"
+msgstr "Хор"
+
+#: gui/fluidsynth-dialog.cpp:103
+msgid "N:"
+msgstr "N:"
+
+#: gui/fluidsynth-dialog.cpp:117
+msgid "Speed:"
+msgstr "Хуткасць:"
+
+#: gui/fluidsynth-dialog.cpp:124
+msgid "Depth:"
+msgstr "Глыбіня:"
+
+#: gui/fluidsynth-dialog.cpp:131
+msgid "Type:"
+msgstr "Тып:"
+
+#: gui/fluidsynth-dialog.cpp:134
+msgid "Sine"
+msgstr "Сінус"
+
+#: gui/fluidsynth-dialog.cpp:135
+msgid "Triangle"
+msgstr "Трохкутнік"
+
+#: gui/fluidsynth-dialog.cpp:139
+msgid "Interpolation:"
+msgstr "Інтэрпаляцыя:"
+
+#: gui/fluidsynth-dialog.cpp:142
+msgid "None (fastest)"
+msgstr "Няма (хутчэйшае)"
+
+#: gui/fluidsynth-dialog.cpp:143
+msgid "Linear"
+msgstr "Лінейная"
+
+#: gui/fluidsynth-dialog.cpp:144
+msgid "Fourth-order"
+msgstr "Чацвёртага парадка"
+
+#: gui/fluidsynth-dialog.cpp:145
+msgid "Seventh-order"
+msgstr "Сёмага парадка"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset"
+msgstr "Скінуць"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset all FluidSynth settings to their default values."
+msgstr "Скінуць налады FluidSynth па змаўчанні."
+
+#: gui/fluidsynth-dialog.cpp:216
+msgid ""
+"Do you really want to reset all FluidSynth settings to their default values?"
+msgstr "Вы сапраўды жадаеце скінуць налады FluidSynth па змаўчанні?"
+
 #: base/main.cpp:210
 #, c-format
 msgid "Engine does not support debug level '%s'"
@@ -1162,11 +1246,11 @@ msgstr "Працяг~н~уць"
 
 #: engines/dialogs.cpp:86
 msgid "~L~oad"
-msgstr "~З~агрузіць"
+msgstr "За~г~рузіць"
 
 #: engines/dialogs.cpp:90
 msgid "~S~ave"
-msgstr "~З~апісаць"
+msgstr "За~п~ісаць"
 
 #: engines/dialogs.cpp:94
 msgid "~O~ptions"
@@ -1178,28 +1262,28 @@ msgstr "~Д~апамога"
 
 #: engines/dialogs.cpp:101
 msgid "~A~bout"
-msgstr "Пра пра~г~раму"
+msgstr "~П~ра праграму"
 
 #: engines/dialogs.cpp:104 engines/dialogs.cpp:180
 msgid "~R~eturn to Launcher"
-msgstr "~В~ыйсці ў галоўнае меню"
+msgstr "~Г~алоўнае меню"
 
 #: engines/dialogs.cpp:106 engines/dialogs.cpp:182
 msgctxt "lowres"
 msgid "~R~eturn to Launcher"
-msgstr "~У~ галоўнае меню"
+msgstr "~Г~алоўнае меню"
 
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/cruise/menu.cpp:212
 #: engines/sci/engine/kfile.cpp:742 engines/toltecs/menu.cpp:284
-#: engines/pegasus/pegasus.cpp:369
+#: engines/pegasus/pegasus.cpp:373
 msgid "Save game:"
 msgstr "Захаваць гульню:"
 
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/scumm/dialogs.cpp:187
 #: engines/cruise/menu.cpp:212 engines/sci/engine/kfile.cpp:742
-#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:369
+#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:373
 #: backends/platform/symbian/src/SymbianActions.cpp:44
 #: backends/platform/wince/CEActionsPocket.cpp:43
 #: backends/platform/wince/CEActionsPocket.cpp:267
@@ -1215,8 +1299,8 @@ msgid ""
 "further assistance."
 msgstr ""
 "Прабачце, але гэты рухавічок пакуль не падае дапамогі ў гульні. Калі ласка, "
-"звярніцеся ў файл README за базавай інфармацыяй, а таксама інструкцыямі пра "
-"тое, як атрымаць далейшую дапамогу."
+"звярніцеся да файла README за базавай інфармацыяй, а таксама інструкцыямі "
+"пра тое, як атрымаць далейшую дапамогу."
 
 #: engines/dialogs.cpp:228
 #, c-format
@@ -1224,8 +1308,8 @@ msgid ""
 "Gamestate save failed (%s)! Please consult the README for basic information, "
 "and for instructions on how to obtain further assistance."
 msgstr ""
-"Не атрымалася захаваць гульню (%s)! Калі ласка, звярніцеся ў файл README за "
-"базавай інфармацыяй, а таксама інструкцыямі пра тое, як атрымаць далейшую "
+"Не атрымалася захаваць гульню (%s)! Калі ласка, звярніцеся да файла README "
+"за базавай інфармацыяй, а таксама інструкцыямі пра тое, як атрымаць далейшую "
 "дапамогу."
 
 #: engines/dialogs.cpp:301 engines/mohawk/dialogs.cpp:109
@@ -1326,17 +1410,16 @@ msgstr ""
 "зробленых у ScummVM"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore game:"
 msgstr "Узнавіць гульню:"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore"
 msgstr "Узнавіць"
 
 #: engines/drascula/saveload.cpp:49
-#, fuzzy
 msgid ""
 "ScummVM found that you have old savefiles for Drascula that should be "
 "converted.\n"
@@ -1346,7 +1429,7 @@ msgid ""
 "Press OK to convert them now, otherwise you will be asked again the next "
 "time you start the game.\n"
 msgstr ""
-"ScummVM выявіў у вас захаванні гульні Broken Sword 1 у старым фармаце.\n"
+"ScummVM выявіў у вас захаванні гульні Drascula у старым фармаце.\n"
 "Стары фармат больш не падтрымліваецца, і, каб загрузіць захаванні, яны "
 "павінны быць пераведзены ў новы фармат.\n"
 "\n"
@@ -1460,7 +1543,7 @@ msgstr "Гуляць"
 #: backends/platform/symbian/src/SymbianActions.cpp:52
 #: backends/platform/wince/CEActionsPocket.cpp:44
 #: backends/platform/wince/CEActionsSmartphone.cpp:52
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Quit"
 msgstr "Выхад"
 
@@ -1674,11 +1757,11 @@ msgstr "Пераключэнне карэкцыі суадносін бакоў"
 
 #: engines/scumm/help.cpp:107
 msgid "* Note that using ctrl-f and"
-msgstr "* Выкарыстанне ctrl-f і"
+msgstr "* Выкарыстанне Ctrl-F і"
 
 #: engines/scumm/help.cpp:108
 msgid "  ctrl-g are not recommended"
-msgstr "  ctrl-g не рэкамендуецца,"
+msgstr "  Ctrl-G не рэкамендуецца,"
 
 #: engines/scumm/help.cpp:109
 msgid "  since they may cause crashes"
@@ -1686,7 +1769,7 @@ msgstr "  бо яны могуць прывесці да"
 
 #: engines/scumm/help.cpp:110
 msgid "  or incorrect game behavior."
-msgstr "  няправільнай работы гульні."
+msgstr "  няслушнай работы гульні."
 
 #: engines/scumm/help.cpp:114
 msgid "Spinning drafts on the keyboard:"
@@ -2164,13 +2247,12 @@ msgid "Failed to delete file."
 msgstr "Не атрымалася выдаліць файл."
 
 #: engines/groovie/detection.cpp:312
-#, fuzzy
 msgid "Fast movie speed"
-msgstr "Хуткі рэжым"
+msgstr "Хуткі рэжым відэа"
 
 #: engines/groovie/detection.cpp:313
 msgid "Play movies at an increased speed"
-msgstr ""
+msgstr "Прайграваць відэа на павялічанай хуткасці"
 
 #: engines/groovie/script.cpp:420
 msgid "Failed to save game"
@@ -2262,11 +2344,11 @@ msgstr "Слізгаць налева"
 msgid "Slide Right"
 msgstr "Слізгаць направа"
 
-#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2412
+#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2447
 msgid "Turn Left"
 msgstr "Паварот налева"
 
-#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2413
+#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2448
 msgid "Turn Right"
 msgstr "Паварот направа"
 
@@ -2348,7 +2430,7 @@ msgstr "Застаўкі ў фармаце MPEG2 больш не падтрымліваюцца"
 msgid "Cutscene '%s' not found"
 msgstr "Застаўка '%s' не знойдзена"
 
-#: engines/sword1/control.cpp:865
+#: engines/sword1/control.cpp:863
 msgid ""
 "ScummVM found that you have old savefiles for Broken Sword 1 that should be "
 "converted.\n"
@@ -2365,7 +2447,7 @@ msgstr ""
 "Націсніце ОК, каб перавесці іх у новы фармат зараз, у адваротным выпадку "
 "гэта паведамленне з'явіцца зноў пры наступным запуску гульні.\n"
 
-#: engines/sword1/control.cpp:1234
+#: engines/sword1/control.cpp:1232
 #, c-format
 msgid ""
 "Target new save game already exists!\n"
@@ -2374,11 +2456,11 @@ msgstr ""
 "Захаванне гульні з такім імем ужо існуе!\n"
 "Вы жадаеце пакінуць старую назву (%s) ці зрабіць новую (%s)?\n"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the old one"
 msgstr "Пакінуць старое"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the new one"
 msgstr "Зрабіць новае"
 
@@ -2464,46 +2546,45 @@ msgstr ""
 "\n"
 "Калі ласка, паведаміце пра гэта камандзе ScummVM."
 
-#: engines/pegasus/pegasus.cpp:675
+#: engines/pegasus/pegasus.cpp:679
 msgid "Invalid save file name"
-msgstr ""
+msgstr "Няправільнае імя файла захавання"
 
-#: engines/pegasus/pegasus.cpp:2410
+#: engines/pegasus/pegasus.cpp:2445
 msgid "Up/Zoom In/Move Forward/Open Doors"
-msgstr ""
+msgstr "Уверх/Маштаб+/Наперад/Адчыніць дзверы"
 
-#: engines/pegasus/pegasus.cpp:2411
-#, fuzzy
+#: engines/pegasus/pegasus.cpp:2446
 msgid "Down/Zoom Out"
-msgstr "Павял. маштаб"
+msgstr "Уніз/Паменш. маштаб"
 
-#: engines/pegasus/pegasus.cpp:2414
+#: engines/pegasus/pegasus.cpp:2449
 msgid "Display/Hide Inventory Tray"
-msgstr ""
+msgstr "Паказаць/схаваць інвентар"
 
-#: engines/pegasus/pegasus.cpp:2415
+#: engines/pegasus/pegasus.cpp:2450
 msgid "Display/Hide Biochip Tray"
-msgstr ""
+msgstr "Паказаць/схаваць біячып"
 
-#: engines/pegasus/pegasus.cpp:2416
+#: engines/pegasus/pegasus.cpp:2451
 msgid "Action/Select"
-msgstr ""
+msgstr "Дзеянне/Абраць"
 
-#: engines/pegasus/pegasus.cpp:2417
+#: engines/pegasus/pegasus.cpp:2452
 msgid "Toggle Center Data Display"
-msgstr ""
+msgstr "Пераключыць"
 
-#: engines/pegasus/pegasus.cpp:2418
+#: engines/pegasus/pegasus.cpp:2453
 msgid "Display/Hide Info Screen"
-msgstr ""
+msgstr "Паказаць/схаваць інфармацыю"
 
-#: engines/pegasus/pegasus.cpp:2419
+#: engines/pegasus/pegasus.cpp:2454
 msgid "Display/Hide Pause Menu"
-msgstr ""
+msgstr "Паказаць/схаваць меню паўзы"
 
-#: engines/pegasus/pegasus.cpp:2420
+#: engines/pegasus/pegasus.cpp:2455
 msgid "???"
-msgstr ""
+msgstr "???"
 
 #: audio/fmopl.cpp:49
 msgid "MAME OPL emulator"
@@ -3114,15 +3195,15 @@ msgstr ""
 "Не забудзьцеся прызначыць клавішу для дзеяння 'Hide Toolbar', каб убачыць "
 "увесь інвентар у гульні"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Do you really want to return to the Launcher?"
 msgstr "Вы сапраўды жадаеце вярнуцца ў галоўнае меню?"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Launcher"
 msgstr "Галоўнае меню"
 
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Do you really want to quit?"
 msgstr "Вы сапраўды жадаеце выйсці?"
 
@@ -3161,9 +3242,8 @@ msgid "Decreasing Volume"
 msgstr "Памяншэнне гучнасці"
 
 #: backends/events/openpandora/op-events.cpp:174
-#, fuzzy
 msgid "Touchscreen 'Tap Mode' - Hover (DPad Clicks)"
-msgstr "Рэжым 'дотыкаў' тачскрына - Пралёт (без кліку)"
+msgstr "Рэжым 'дотыкаў' тачскрына - Пралёт (клікі па DPad)"
 
 #: backends/updates/macosx/macosx-updates.mm:67
 msgid "Check for Updates..."

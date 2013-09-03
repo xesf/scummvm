@@ -29,82 +29,6 @@
 
 namespace Hopkins {
 
-struct BqeAnimItem {
-	byte *_data;
-	bool _enabledFl;
-};
-
-struct BankItem {
-	byte *_data;
-	bool _loadedFl;
-	Common::String _filename;
-	int _fileHeader;
-	int _objDataIdx;
-};
-
-struct ListeItem {
-	bool _visibleFl;
-	int _posX;
-	int _posY;
-	int _width;
-	int _height;
-};
-
-struct LockAnimItem {
-	bool _enableFl;
-	int _posX;
-};
-
-struct VBobItem {
-	byte *_spriteData;
-	int field4;
-	int _xp;
-	int _yp;
-	int _frameIndex;
-	byte *_surface;
-	int _oldX;
-	int _oldY;
-	int _oldFrameIndex;
-	byte *_oldSpriteData;
-};
-
-struct ObjectAuthIcon {
-	byte _objectFileNum;
-	byte _idx;
-	byte _flag1;
-	byte _flag2;
-	byte _flag3;
-	byte _flag4;
-	byte _flag5;
-	byte _flag6;
-};
-
-/**
- * Mode for SortItem records
- */
-enum SortMode { SORT_NONE = 0, SORT_BOB = 1, SORT_SPRITE = 2, SORT_HIDING = 3 };
-
-/**
- * Structure to represent a pending display of either a Bob, Sprite, or Cache Item.
- */
-struct SortItem {
-	SortMode _sortMode;
-	int _index;
-	int _priority;
-};
-
-struct HidingItem {
-	int _x;
-	int _y;
-	int _spriteIndex;
-	int _width;
-	int _height;
-	int _useCount;
-	byte *_spriteData;
-	bool field10;
-	int field14;
-};
-
 struct HopkinsItem {
 	int _speedX;
 	int _speedY;
@@ -181,7 +105,8 @@ enum SauvegardeOffset {
 	, svField401 = 401
 };
 
-// TODO: Sauvegrade1 fields should really be mapped into data array
+// As Script engine directly access savegame fields,
+// refactoring it in separated fields properly named is impossible
 struct Savegame {
 	byte _data[2050];
 	CharacterLocation _cloneHopkins;
@@ -194,7 +119,7 @@ struct Savegame {
 
 struct CreditItem {
 	bool _actvFl;
-	int _colour;
+	int _color;
 	int _linePosY;
 	int _lineSize;
 	byte _line[50];
@@ -205,7 +130,7 @@ enum Language { LANG_EN = 0, LANG_FR = 1, LANG_SP = 2};
 enum PlayerCharacter { CHARACTER_HOPKINS = 0, CHARACTER_HOPKINS_CLONE = 1, CHARACTER_SAMANTHA = 2 };
 
 enum Directions {
-	DIR_NONE = -1, 
+	DIR_NONE = -1,
 	DIR_UP = 1,
 	DIR_UP_RIGHT = 2,
 	DIR_RIGHT = 3,
@@ -216,6 +141,12 @@ enum Directions {
 	DIR_UP_LEFT = 8
 };
 
+enum EventMode {
+	EVENTMODE_DEFAULT = 0,
+	EVENTMODE_IGNORE = 1,
+	EVENTMODE_CREDITS = 3,
+	EVENTMODE_ALT = 4
+};
 
 class HopkinsEngine;
 
@@ -226,43 +157,27 @@ class Globals {
 private:
 	HopkinsEngine *_vm;
 
-	void initAnimBqe();
-	void initVBob();
-
 public:
 	bool _disableInventFl;
 	bool _cityMapEnabledFl;
 	bool _linuxEndDemoFl;
 	bool _censorshipFl;
 	bool _introSpeechOffFl;
-	bool _hidingActiveFl;
-	bool _forceHideText;
 	int _exitId;
 	Directions _oceanDirection;
-	Directions _oldDirection;
-	int _oldDirectionSpriteIdx;
 	int _actionDirection;
-	Directions _lastDirection;
-	int _oldFrameIndex;
-	int _hotspotTextColor;
 	int _inventory[36];
-	int _objectWidth, _objectHeight;
 	int _screenId;
 	int _prevScreenId;
-	int _boxWidth;
 	int _characterMaxPosY;
 	int _baseMapColor;
 	int _spriteSize[500];
-	int _sortedDisplayCount;
-	int _oldMouseZoneId;
-	int _oldMouseX, _oldMouseY;
-	int _characterType;
+	PlayerCharacter _characterType;
 	uint _speed;
 	byte *_answerBuffer;
 	Savegame *_saveData;
 	Language _language;
 	HopkinsItem _hopkinsItem[70];
-	SortItem _sortedDisplay[51];
 
 	CreditItem _creditsItem[200];
 	int _creditsLineNumb;
@@ -283,59 +198,27 @@ public:
 
 	byte *_optionDialogSpr;
 	bool _optionDialogFl;
-	uint32 _catalogPos;
-	uint32 _catalogSize;
-	LockAnimItem _lockedAnims[30];
-	int _oldRouteFromX;
-	int _oldRouteFromY;
-	int _oldRouteDestX;
-	int _oldRouteDestY;
-	int _oldZoneNum;
 
 	bool _actionMoveTo;
 	bool _freezeCharacterFl;
 	bool _checkDistanceFl;
-	byte *_hidingItemData[6];
-	HidingItem _hidingItem[25];
-	BqeAnimItem _animBqe[35];
-	ObjectAuthIcon _objectAuthIcons[300];
-	int _curObjectFileNum;
-	byte *_objectDataBuf;
+	byte *_characterSpriteBuf;
 	Common::String _zoneFilename;
 	Common::String _textFilename;
+	byte *_levelSpriteBuf;
 
-	int iRegul;
-	byte *SPRITE_ECRAN;
-	byte *PERSO;
-	ListeItem Liste[6];
-	ListeItem Liste2[35];
-	BankItem Bank[8];
-	VBobItem VBob[30];
-	int Compteur;
-	int compteur_71;
+	EventMode _eventMode;
 
-	Globals();
+	Globals(HopkinsEngine *vm);
 	~Globals();
-	void setParent(HopkinsEngine *vm);
 	byte *allocMemory(int count);
 	byte *freeMemory(byte *p);
 	void setConfig();
-	void loadObjects();
 	void clearAll();
 	void loadCharacterData();
-	void resetHidingItems();
-	void loadHidingItems(const Common::String &file);
-	void enableHiding();
-	void disableHiding();
-	void resetHidingUseCount(int idx);
-	void setHidingUseCount(int idx);
-	void clearVBob();
 
-	void B_CACHE_OFF(int idx);
+	int _curRoomNum;
 };
-
-// Global null pointer
-extern byte *g_PTRNUL;
 
 } // End of namespace Hopkins
 

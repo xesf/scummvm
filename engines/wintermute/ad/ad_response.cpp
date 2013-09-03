@@ -131,16 +131,48 @@ bool AdResponse::persist(BasePersistenceManager *persistMgr) {
 
 	BaseObject::persist(persistMgr);
 
-	persistMgr->transfer(TMEMBER(_icon));
-	persistMgr->transfer(TMEMBER(_iconHover));
-	persistMgr->transfer(TMEMBER(_iconPressed));
+	persistMgr->transferPtr(TMEMBER_PTR(_icon));
+	persistMgr->transferPtr(TMEMBER_PTR(_iconHover));
+	persistMgr->transferPtr(TMEMBER_PTR(_iconPressed));
 	persistMgr->transfer(TMEMBER(_iD));
 	persistMgr->transfer(TMEMBER(_text));
 	persistMgr->transfer(TMEMBER(_textOrig));
 	persistMgr->transfer(TMEMBER_INT(_responseType));
-	persistMgr->transfer(TMEMBER(_font));
+	persistMgr->transferPtr(TMEMBER_PTR(_font));
 
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+void AdResponse::setID(int32 id) {
+	_iD = id;
+}
+
+BaseSprite *AdResponse::getIcon() const {
+	return _icon;
+}
+
+BaseSprite *AdResponse::getIconHover() const {
+	return _iconHover;
+}
+
+BaseSprite *AdResponse::getIconPressed() const {
+	return _iconPressed;
+}
+
+BaseFont *AdResponse::getFont() const {
+	return _font;
+}
+
+int32 AdResponse::getID() const {
+	return _iD;
+}
+
+const char *AdResponse::getText() const {
+	return _text;
+}
+
+const char *AdResponse::getTextOrig() const {
+	return _textOrig;
+}
+
+} // End of namespace Wintermute

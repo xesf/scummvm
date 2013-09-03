@@ -358,7 +358,7 @@ bool UITiledImage::saveAsText(BaseDynamicBuffer *buffer, int indent) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void UITiledImage::correctSize(int *width, int *height) {
+void UITiledImage::correctSize(int32 *width, int32 *height) {
 	int tileWidth = _middleMiddle.right - _middleMiddle.left;
 	int tileHeight = _middleMiddle.bottom - _middleMiddle.top;
 
@@ -377,7 +377,7 @@ bool UITiledImage::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_downLeft));
 	persistMgr->transfer(TMEMBER(_downMiddle));
 	persistMgr->transfer(TMEMBER(_downRight));
-	persistMgr->transfer(TMEMBER(_image));
+	persistMgr->transferPtr(TMEMBER_PTR(_image));
 	persistMgr->transfer(TMEMBER(_middleLeft));
 	persistMgr->transfer(TMEMBER(_middleMiddle));
 	persistMgr->transfer(TMEMBER(_middleRight));
@@ -388,4 +388,4 @@ bool UITiledImage::persist(BasePersistenceManager *persistMgr) {
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

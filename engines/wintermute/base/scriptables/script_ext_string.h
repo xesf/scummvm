@@ -50,9 +50,9 @@ public:
 
 private:
 	char *_string;
-	int _capacity;
+	int32 _capacity;
 };
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute
 
 #endif

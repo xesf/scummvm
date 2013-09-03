@@ -627,7 +627,7 @@ bool AdEntity::update() {
 			_tempSprite2 = _sentence->_currentSprite;
 		}
 
-		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->_timer - _sentence->_startTime);
+		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->getTimer()->getTime() - _sentence->_startTime);
 		if (_tempSprite2 == nullptr || _tempSprite2->isFinished() || (/*_tempSprite2->_looping &&*/ timeIsUp)) {
 			if (timeIsUp) {
 				_sentence->finish();
@@ -1093,7 +1093,7 @@ bool AdEntity::persist(BasePersistenceManager *persistMgr) {
 	AdTalkHolder::persist(persistMgr);
 
 	persistMgr->transfer(TMEMBER(_item));
-	persistMgr->transfer(TMEMBER(_region));
+	persistMgr->transferPtr(TMEMBER_PTR(_region));
 	//persistMgr->transfer(TMEMBER(_sprite));
 	persistMgr->transfer(TMEMBER_INT(_subtype));
 	_talkSprites.persist(persistMgr);
@@ -1103,7 +1103,7 @@ bool AdEntity::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_walkToY));
 	persistMgr->transfer(TMEMBER_INT(_walkToDir));
 
-	persistMgr->transfer(TMEMBER(_theora));
+	persistMgr->transferPtr(TMEMBER_PTR(_theora));
 
 	return STATUS_OK;
 }
@@ -1134,4 +1134,4 @@ bool AdEntity::setSprite(const char *filename) {
 	}
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

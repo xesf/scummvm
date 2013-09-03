@@ -47,7 +47,7 @@ public:
 	virtual ~SXMemBuffer();
 	virtual void *scToMemBuffer();
 private:
-	int _size;
+	int32 _size;
 
 	bool resize(int newSize);
 	void *_buffer;
@@ -55,6 +55,6 @@ private:
 	bool checkBounds(ScScript *script, int start, int length);
 };
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute
 
 #endif

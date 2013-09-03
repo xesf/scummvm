@@ -7,18 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.5.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.sf.net\n"
-"POT-Creation-Date: 2013-02-07 23:11+0000\n"
-"PO-Revision-Date: 2012-07-08 18:03+0100\n"
+"POT-Creation-Date: 2013-04-24 13:35+0100\n"
+"PO-Revision-Date: 2013-05-13 21:30+0100\n"
 "Last-Translator: Hampus Flink <hampus.flink@gmail.com>\n"
 "Language-Team: \n"
 "Language: Svenska\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=iso-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"X-Poedit-Language: Swedish\n"
-"X-Poedit-Country: SWEDEN\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-SourceCharset: iso-8859-1\n"
+"X-Generator: Poedit 1.5.5\n"
 
 #: gui/about.cpp:93
 #, c-format
@@ -34,13 +33,12 @@ msgid "Available engines:"
 msgstr "Tillgängliga motorer"
 
 #: gui/browser.cpp:67
-#, fuzzy
 msgid "Show hidden files"
-msgstr "Visa / göm konsol"
+msgstr "Visa gömda filer"
 
 #: gui/browser.cpp:67
 msgid "Show files marked with the hidden attribute"
-msgstr ""
+msgstr "Visa dolda filer"
 
 #: gui/browser.cpp:71
 msgid "Go up"
@@ -59,12 +57,12 @@ msgstr "Uppåt"
 #: gui/launcher.cpp:345 gui/massadd.cpp:94 gui/options.cpp:1238
 #: gui/saveload-dialog.cpp:215 gui/saveload-dialog.cpp:275
 #: gui/saveload-dialog.cpp:545 gui/saveload-dialog.cpp:919
-#: gui/themebrowser.cpp:54 engines/engine.cpp:447
-#: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:190
-#: engines/sword1/control.cpp:867 engines/parallaction/saveload.cpp:274
-#: backends/platform/wii/options.cpp:48
-#: backends/events/default/default-events.cpp:191
-#: backends/events/default/default-events.cpp:213
+#: gui/themebrowser.cpp:54 gui/fluidsynth-dialog.cpp:151
+#: engines/engine.cpp:447 engines/drascula/saveload.cpp:51
+#: engines/scumm/dialogs.cpp:190 engines/sword1/control.cpp:865
+#: engines/parallaction/saveload.cpp:274 backends/platform/wii/options.cpp:48
+#: backends/events/default/default-events.cpp:193
+#: backends/events/default/default-events.cpp:215
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -105,13 +103,14 @@ msgstr "Ställ in"
 
 #: gui/KeysDialog.cpp:42 gui/launcher.cpp:346 gui/launcher.cpp:1001
 #: gui/launcher.cpp:1005 gui/massadd.cpp:91 gui/options.cpp:1239
-#: gui/saveload-dialog.cpp:920 engines/engine.cpp:366 engines/engine.cpp:377
+#: gui/saveload-dialog.cpp:920 gui/fluidsynth-dialog.cpp:152
+#: engines/engine.cpp:366 engines/engine.cpp:377
 #: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:192
 #: engines/scumm/scumm.cpp:1778 engines/agos/animation.cpp:558
 #: engines/groovie/script.cpp:420 engines/sky/compact.cpp:131
 #: engines/sky/compact.cpp:141 engines/sword1/animation.cpp:519
 #: engines/sword1/animation.cpp:540 engines/sword1/animation.cpp:550
-#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:867
+#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:865
 #: engines/sword1/logic.cpp:1633 engines/sword2/animation.cpp:419
 #: engines/sword2/animation.cpp:439 engines/sword2/animation.cpp:449
 #: engines/sword2/animation.cpp:458 engines/parallaction/saveload.cpp:274
@@ -455,13 +454,13 @@ msgstr "Sök:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/mohawk/myst.cpp:245
 #: engines/mohawk/riven.cpp:716 engines/cruise/menu.cpp:214
-#: engines/pegasus/pegasus.cpp:345
+#: engines/pegasus/pegasus.cpp:349
 msgid "Load game:"
 msgstr "Ladda spel:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/scumm/dialogs.cpp:188
 #: engines/mohawk/myst.cpp:245 engines/mohawk/riven.cpp:716
-#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:345
+#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:349
 #: backends/platform/wince/CEActionsPocket.cpp:267
 #: backends/platform/wince/CEActionsSmartphone.cpp:231
 msgid "Load"
@@ -475,7 +474,7 @@ msgstr ""
 "Vill du verkligen använda mass-speldetektorn? Processen kan potentiellt "
 "lägga till ett enormt antal spel."
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -483,7 +482,7 @@ msgstr ""
 msgid "Yes"
 msgstr "Ja"
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -536,7 +535,7 @@ msgstr "Scanning färdig!"
 #: gui/massadd.cpp:261
 #, c-format
 msgid "Discovered %d new games, ignored %d previously added games."
-msgstr "Upptäckte %n nya spel. Ignorerade %d tidigare tillagda spel."
+msgstr "Upptäckte %d nya spel. Ignorerade %d tidigare tillagda spel."
 
 #: gui/massadd.cpp:265
 #, c-format
@@ -725,7 +724,7 @@ msgstr "MIDI gain:"
 
 #: gui/options.cpp:873
 msgid "FluidSynth Settings"
-msgstr ""
+msgstr "FluidSynth inställningar"
 
 #: gui/options.cpp:880
 msgid "MT-32 Device:"
@@ -754,9 +753,8 @@ msgid "True Roland MT-32 (no GM emulation)"
 msgstr "Äkta Roland MT-32 (ingen GM-emulation)"
 
 #: gui/options.cpp:890
-#, fuzzy
 msgid "Roland GS Mode (disable GM mapping)"
-msgstr "Äkta Roland MT-32 (inaktivera GM-emulation)"
+msgstr "Roland GS-läge (avaktivera GM-mapping)"
 
 #: gui/options.cpp:890
 msgid "Turns off General MIDI mapping for games with Roland MT-32 soundtrack"
@@ -872,7 +870,7 @@ msgctxt "lowres"
 msgid "Plugins Path:"
 msgstr "Sökv. tillägg:"
 
-#: gui/options.cpp:1169
+#: gui/options.cpp:1169 gui/fluidsynth-dialog.cpp:137
 msgid "Misc"
 msgstr "Diverse"
 
@@ -945,11 +943,11 @@ msgstr ""
 
 #: gui/saveload-dialog.cpp:166
 msgid "List view"
-msgstr ""
+msgstr "Visa som lista"
 
 #: gui/saveload-dialog.cpp:167
 msgid "Grid view"
-msgstr ""
+msgstr "Visa som rutnät"
 
 #: gui/saveload-dialog.cpp:210 gui/saveload-dialog.cpp:358
 msgid "No date saved"
@@ -989,31 +987,28 @@ msgstr "Namnlös spardata"
 
 #: gui/saveload-dialog.cpp:546
 msgid "Next"
-msgstr ""
+msgstr "Nästa"
 
 #: gui/saveload-dialog.cpp:549
 msgid "Prev"
-msgstr ""
+msgstr "Bakåt"
 
 #: gui/saveload-dialog.cpp:736
-#, fuzzy
 msgid "New Save"
-msgstr "Spara"
+msgstr "Ny sparning"
 
 #: gui/saveload-dialog.cpp:736
-#, fuzzy
 msgid "Create a new save game"
-msgstr "Kunde inte spara spelet."
+msgstr "Skapa ett nytt sparat spel"
 
 #: gui/saveload-dialog.cpp:865
-#, fuzzy
 msgid "Name: "
 msgstr "Namn:"
 
 #: gui/saveload-dialog.cpp:937
 #, c-format
 msgid "Enter a description for slot %d:"
-msgstr ""
+msgstr "Ange en beskrivning för position %d:"
 
 #: gui/themebrowser.cpp:44
 msgid "Select a Theme"
@@ -1047,6 +1042,94 @@ msgstr "Antialiserad (16 bpp)"
 #: gui/widget.cpp:322 gui/widget.cpp:324 gui/widget.cpp:330 gui/widget.cpp:332
 msgid "Clear value"
 msgstr "Töm sökfältet"
+
+#: gui/fluidsynth-dialog.cpp:67
+msgid "Reverb"
+msgstr "Reverb"
+
+#: gui/fluidsynth-dialog.cpp:69 gui/fluidsynth-dialog.cpp:101
+msgid "Active"
+msgstr "Aktiv"
+
+#: gui/fluidsynth-dialog.cpp:71
+msgid "Room:"
+msgstr "Rum:"
+
+#: gui/fluidsynth-dialog.cpp:78
+msgid "Damp:"
+msgstr "Dämpa:"
+
+#: gui/fluidsynth-dialog.cpp:85
+msgid "Width:"
+msgstr "Bredd:"
+
+#: gui/fluidsynth-dialog.cpp:92 gui/fluidsynth-dialog.cpp:110
+msgid "Level:"
+msgstr "Nivå:"
+
+#: gui/fluidsynth-dialog.cpp:99
+msgid "Chorus"
+msgstr "Chorus"
+
+#: gui/fluidsynth-dialog.cpp:103
+msgid "N:"
+msgstr "N:"
+
+#: gui/fluidsynth-dialog.cpp:117
+msgid "Speed:"
+msgstr "Hastighet:"
+
+#: gui/fluidsynth-dialog.cpp:124
+msgid "Depth:"
+msgstr "Djup:"
+
+#: gui/fluidsynth-dialog.cpp:131
+msgid "Type:"
+msgstr "Typ:"
+
+#: gui/fluidsynth-dialog.cpp:134
+msgid "Sine"
+msgstr "Sinus"
+
+#: gui/fluidsynth-dialog.cpp:135
+msgid "Triangle"
+msgstr "Triangel"
+
+#: gui/fluidsynth-dialog.cpp:139
+msgid "Interpolation:"
+msgstr "Interpolering:"
+
+#: gui/fluidsynth-dialog.cpp:142
+msgid "None (fastest)"
+msgstr "Ingen (snabbast)"
+
+#: gui/fluidsynth-dialog.cpp:143
+msgid "Linear"
+msgstr "Linjär"
+
+#: gui/fluidsynth-dialog.cpp:144
+msgid "Fourth-order"
+msgstr "Fjärde ordningen"
+
+#: gui/fluidsynth-dialog.cpp:145
+msgid "Seventh-order"
+msgstr "Sjunde ordningen"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset"
+msgstr "Återställ"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset all FluidSynth settings to their default values."
+msgstr ""
+"Återställ alla FluidSynth-inställningar till deras ursprungliga värden."
+
+#: gui/fluidsynth-dialog.cpp:216
+msgid ""
+"Do you really want to reset all FluidSynth settings to their default values?"
+msgstr ""
+"Vill du verkligen återställa alla FluidSynth-inställningar till deras "
+"ursprungliga värden?"
 
 #: base/main.cpp:210
 #, c-format
@@ -1194,14 +1277,14 @@ msgstr "Åte~r~vänd till launcher"
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/cruise/menu.cpp:212
 #: engines/sci/engine/kfile.cpp:742 engines/toltecs/menu.cpp:284
-#: engines/pegasus/pegasus.cpp:369
+#: engines/pegasus/pegasus.cpp:373
 msgid "Save game:"
 msgstr "Spara spelet:"
 
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/scumm/dialogs.cpp:187
 #: engines/cruise/menu.cpp:212 engines/sci/engine/kfile.cpp:742
-#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:369
+#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:373
 #: backends/platform/symbian/src/SymbianActions.cpp:44
 #: backends/platform/wince/CEActionsPocket.cpp:43
 #: backends/platform/wince/CEActionsPocket.cpp:267
@@ -1225,7 +1308,9 @@ msgstr ""
 msgid ""
 "Gamestate save failed (%s)! Please consult the README for basic information, "
 "and for instructions on how to obtain further assistance."
-msgstr "Spar"
+msgstr ""
+"Kunde inte spara data (%s)! Var god läs README-filen för grundläggande "
+"information och instruktioner för hur du kan få mer hjälp."
 
 #: engines/dialogs.cpp:301 engines/mohawk/dialogs.cpp:109
 #: engines/mohawk/dialogs.cpp:170
@@ -1321,17 +1406,16 @@ msgid "Use the original save/load screens, instead of the ScummVM ones"
 msgstr "Använder originalskärmarna för spara/ladda istället för ScummVM:s"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore game:"
 msgstr "Återställ spel:"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore"
 msgstr "Återställ"
 
 #: engines/drascula/saveload.cpp:49
-#, fuzzy
 msgid ""
 "ScummVM found that you have old savefiles for Drascula that should be "
 "converted.\n"
@@ -1341,12 +1425,12 @@ msgid ""
 "Press OK to convert them now, otherwise you will be asked again the next "
 "time you start the game.\n"
 msgstr ""
-"ScummVM upptäckte att du har gamla spardata för Broken Sword 1 som borde "
+"ScummVM upptäckte att du har gamla spardata för Drascula som borde "
 "konverteras.\n"
 "Det gamla spardataformatet stöds inte längre, så du kommer inte kunna ladda "
 "dina data om du inte konverterar dem.\n"
 "\n"
-"Tryck \"OK\" för att konvertera dem nu, annars kommer du tillfrågas igen "
+"Tryck på OK för att konvertera dem nu, annars kommer du tillfrågas igen "
 "nästa gång du startar spelet.\n"
 
 #: engines/dreamweb/detection.cpp:57
@@ -1453,7 +1537,7 @@ msgstr "Spela"
 #: backends/platform/symbian/src/SymbianActions.cpp:52
 #: backends/platform/wince/CEActionsPocket.cpp:44
 #: backends/platform/wince/CEActionsSmartphone.cpp:52
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Quit"
 msgstr "Avsluta"
 
@@ -2157,13 +2241,12 @@ msgid "Failed to delete file."
 msgstr "Kunde inte radera filen."
 
 #: engines/groovie/detection.cpp:312
-#, fuzzy
 msgid "Fast movie speed"
-msgstr "Snabbläge"
+msgstr "Snabb filmhastighet"
 
 #: engines/groovie/detection.cpp:313
 msgid "Play movies at an increased speed"
-msgstr ""
+msgstr "Spela filmer i högre hastighet"
 
 #: engines/groovie/script.cpp:420
 msgid "Failed to save game"
@@ -2255,11 +2338,11 @@ msgstr "Glid vänster"
 msgid "Slide Right"
 msgstr "Glid höger"
 
-#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2412
+#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2447
 msgid "Turn Left"
 msgstr "Sväng vänster"
 
-#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2413
+#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2448
 msgid "Turn Right"
 msgstr "Sväng höger"
 
@@ -2291,12 +2374,11 @@ msgstr ""
 
 #: engines/queen/queen.cpp:59
 msgid "Alternative intro"
-msgstr ""
+msgstr "Alternativt intro"
 
 #: engines/queen/queen.cpp:60
-#, fuzzy
 msgid "Use an alternative game intro (CD version only)"
-msgstr "Använd diskettversionens intro (endast CD-version)"
+msgstr "Använd alternativt spelintro (endast CD-version)"
 
 #: engines/sky/compact.cpp:130
 msgid ""
@@ -2340,7 +2422,7 @@ msgstr "MPEG2 filmscener stöds inte längre"
 msgid "Cutscene '%s' not found"
 msgstr "Filmscenen '%s' hittades ej"
 
-#: engines/sword1/control.cpp:865
+#: engines/sword1/control.cpp:863
 msgid ""
 "ScummVM found that you have old savefiles for Broken Sword 1 that should be "
 "converted.\n"
@@ -2358,7 +2440,7 @@ msgstr ""
 "Tryck \"OK\" för att konvertera dem nu, annars kommer du tillfrågas igen "
 "nästa gång du startar spelet.\n"
 
-#: engines/sword1/control.cpp:1234
+#: engines/sword1/control.cpp:1232
 #, c-format
 msgid ""
 "Target new save game already exists!\n"
@@ -2367,11 +2449,11 @@ msgstr ""
 "Den valda spardatan existerar redan!\n"
 "Vill du behålla den gamla spardatan (%s) eller den nya (%s)?\n"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the old one"
 msgstr "Behåll den gamla"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the new one"
 msgstr "Behåll den nya"
 
@@ -2395,13 +2477,15 @@ msgstr "Visar etiketter för objekten som musen pekar på"
 #: engines/teenagent/resources.cpp:94
 msgid ""
 "You're missing the 'teenagent.dat' file. Get it from the ScummVM website"
-msgstr ""
+msgstr "Du har inte 'teenagent.dat'-filen. Hämta den från ScummVM:s webbsida"
 
 #: engines/teenagent/resources.cpp:115
 msgid ""
 "The teenagent.dat file is compressed and zlib hasn't been included in this "
 "executable. Please decompress it"
 msgstr ""
+"Teenagent.dat-filen är komprimerad och zlib har inte inkluderats i det här "
+"programmet. Var god  dekomprimera den"
 
 #: engines/parallaction/saveload.cpp:133
 #, c-format
@@ -2453,46 +2537,45 @@ msgstr ""
 "\n"
 "Var god rapportera till teamet."
 
-#: engines/pegasus/pegasus.cpp:675
+#: engines/pegasus/pegasus.cpp:679
 msgid "Invalid save file name"
-msgstr ""
+msgstr "Ogiltigt namn på sparfil"
 
-#: engines/pegasus/pegasus.cpp:2410
+#: engines/pegasus/pegasus.cpp:2445
 msgid "Up/Zoom In/Move Forward/Open Doors"
-msgstr ""
+msgstr "Upp/Zooma in/Gå framåt/Öppna dörrar"
 
-#: engines/pegasus/pegasus.cpp:2411
-#, fuzzy
+#: engines/pegasus/pegasus.cpp:2446
 msgid "Down/Zoom Out"
-msgstr "Zooma upp"
+msgstr "Ned/Zooma ut"
 
-#: engines/pegasus/pegasus.cpp:2414
+#: engines/pegasus/pegasus.cpp:2449
 msgid "Display/Hide Inventory Tray"
-msgstr ""
+msgstr "Visa/dölj inventarium"
 
-#: engines/pegasus/pegasus.cpp:2415
+#: engines/pegasus/pegasus.cpp:2450
 msgid "Display/Hide Biochip Tray"
-msgstr ""
+msgstr "Visa/dölj biochip"
 
-#: engines/pegasus/pegasus.cpp:2416
+#: engines/pegasus/pegasus.cpp:2451
 msgid "Action/Select"
-msgstr ""
+msgstr "Handling/Välj"
 
-#: engines/pegasus/pegasus.cpp:2417
+#: engines/pegasus/pegasus.cpp:2452
 msgid "Toggle Center Data Display"
-msgstr ""
+msgstr "Aktivera centrerad dataskärm"
 
-#: engines/pegasus/pegasus.cpp:2418
+#: engines/pegasus/pegasus.cpp:2453
 msgid "Display/Hide Info Screen"
-msgstr ""
+msgstr "Visa/dölj informationsskärm"
 
-#: engines/pegasus/pegasus.cpp:2419
+#: engines/pegasus/pegasus.cpp:2454
 msgid "Display/Hide Pause Menu"
-msgstr ""
+msgstr "Visa/dölj pausmeny"
 
-#: engines/pegasus/pegasus.cpp:2420
+#: engines/pegasus/pegasus.cpp:2455
 msgid "???"
-msgstr ""
+msgstr "???"
 
 #: audio/fmopl.cpp:49
 msgid "MAME OPL emulator"
@@ -3104,15 +3187,15 @@ msgstr ""
 "Glöm inte att välja en tangent för \"Göm verktygsrad\" för att se hela "
 "inventariet"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Do you really want to return to the Launcher?"
 msgstr "Vill du verkligen återgå till launchern?"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Launcher"
 msgstr "Launcher"
 
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Do you really want to quit?"
 msgstr "Vill du verkligen avsluta?"
 
@@ -3151,9 +3234,8 @@ msgid "Decreasing Volume"
 msgstr "Sänka volymen"
 
 #: backends/events/openpandora/op-events.cpp:174
-#, fuzzy
 msgid "Touchscreen 'Tap Mode' - Hover (DPad Clicks)"
-msgstr "Touchscreen \"Tap-läge\" - Hover (utan klick)"
+msgstr "Touchscreen 'Tap-läge' - Hover (DPad klick)"
 
 #: backends/updates/macosx/macosx-updates.mm:67
 msgid "Check for Updates..."

@@ -39,6 +39,7 @@
 #include "graphics/fonts/ttf.h"
 #include "graphics/fontman.h"
 #include "common/unzip.h"
+#include "common/config-manager.h" // For Scummmodern.zip
 #include <limits.h>
 
 namespace Wintermute {
@@ -111,13 +112,13 @@ void BaseFontTT::initLoop() {
 }
 
 //////////////////////////////////////////////////////////////////////////
-int BaseFontTT::getTextWidth(byte *text, int maxLength) {
+int BaseFontTT::getTextWidth(const byte *text, int maxLength) {
 	WideString textStr;
 
 	if (_gameRef->_textEncoding == TEXT_UTF8) {
-		textStr = StringUtil::utf8ToWide((char *)text);
+		textStr = StringUtil::utf8ToWide((const char *)text);
 	} else {
-		textStr = StringUtil::ansiToWide((char *)text);
+		textStr = StringUtil::ansiToWide((const char *)text);
 	}
 
 	if (maxLength >= 0 && textStr.size() > (uint32)maxLength) {
@@ -132,13 +133,13 @@ int BaseFontTT::getTextWidth(byte *text, int maxLength) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-int BaseFontTT::getTextHeight(byte *text, int width) {
+int BaseFontTT::getTextHeight(const byte *text, int width) {
 	WideString textStr;
 
 	if (_gameRef->_textEncoding == TEXT_UTF8) {
-		textStr = StringUtil::utf8ToWide((char *)text);
+		textStr = StringUtil::utf8ToWide((const char *)text);
 	} else {
-		textStr = StringUtil::ansiToWide((char *)text);
+		textStr = StringUtil::ansiToWide((const char *)text);
 	}
 
 
@@ -271,7 +272,7 @@ BaseSurface *BaseFontTT::renderTextToTexture(const WideString &text, int width, 
 //	void drawString(Surface *dst, const Common::String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = true) const;
 	Graphics::Surface *surface = new Graphics::Surface();
 	if (_deletableFont) { // We actually have a TTF
-		surface->create((uint16)width, (uint16)(_lineHeight * lines.size()), Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24));
+		surface->create((uint16)width, (uint16)(_lineHeight * lines.size()), _gameRef->_renderer->getPixelFormat());
 	} else { // We are using a fallback, they can't do 32bpp
 		surface->create((uint16)width, (uint16)(_lineHeight * lines.size()), Graphics::PixelFormat(2, 5, 5, 5, 1, 11, 6, 1, 0));
 	}
@@ -284,7 +285,7 @@ BaseSurface *BaseFontTT::renderTextToTexture(const WideString &text, int width, 
 	}
 
 	BaseSurface *retSurface = _gameRef->_renderer->createSurface();
-	Graphics::Surface *convertedSurface = surface->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24));
+	Graphics::Surface *convertedSurface = surface->convertTo(_gameRef->_renderer->getPixelFormat());
 	retSurface->putSurface(*convertedSurface, true);
 	convertedSurface->free();
 	surface->free();
@@ -509,7 +510,7 @@ bool BaseFontTT::persist(BasePersistenceManager *persistMgr) {
 
 
 	// persist layers
-	int numLayers;
+	int32 numLayers;
 	if (persistMgr->getIsSaving()) {
 		numLayers = _layers.size();
 		persistMgr->transfer(TMEMBER(numLayers));
@@ -566,7 +567,19 @@ bool BaseFontTT::initFont() {
 
 	// Fallback2: Try to find ScummModern.zip, and get the font from there:
 	if (!_font) {
-		Common::SeekableReadStream *themeFile = SearchMan.createReadStreamForMember("scummmodern.zip");
+		Common::SeekableReadStream *themeFile = nullptr;
+		if (ConfMan.hasKey("themepath")) {
+			Common::FSNode themePath(ConfMan.get("themepath"));
+			if (themePath.exists()) {
+				Common::FSNode scummModern = themePath.getChild("scummmodern.zip");
+				if (scummModern.exists()) {
+					themeFile = scummModern.createReadStream();
+				}
+			}
+		}
+		if (!themeFile) { // Fallback 2.5: Search for ScummModern.zip in SearchMan.
+			themeFile = SearchMan.createReadStreamForMember("scummmodern.zip");
+		}
 		if (themeFile) {
 			Common::Archive *themeArchive = Common::makeZipArchive(themeFile);
 			if (themeArchive->hasFile("FreeSans.ttf")) {
@@ -631,4 +644,4 @@ void BaseFontTT::measureText(const WideString &text, int maxWidth, int maxHeight
 	    }*/
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

@@ -49,7 +49,7 @@ AdResponseContext::~AdResponseContext() {
 
 //////////////////////////////////////////////////////////////////////////
 bool AdResponseContext::persist(BasePersistenceManager *persistMgr) {
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 	persistMgr->transfer(TMEMBER(_context));
 	persistMgr->transfer(TMEMBER(_id));
 
@@ -68,4 +68,4 @@ void AdResponseContext::setContext(const char *context) {
 	}
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

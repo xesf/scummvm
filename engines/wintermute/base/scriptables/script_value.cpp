@@ -73,7 +73,7 @@ ScValue::ScValue(BaseGame *inGame, bool val) : BaseClass(inGame) {
 
 
 //////////////////////////////////////////////////////////////////////////
-ScValue::ScValue(BaseGame *inGame, int val) : BaseClass(inGame) {
+ScValue::ScValue(BaseGame *inGame, int32 val) : BaseClass(inGame) {
 	_type = VAL_INT;
 	_valInt = val;
 
@@ -789,7 +789,7 @@ void ScValue::setValue(ScValue *val) {
 
 //////////////////////////////////////////////////////////////////////////
 bool ScValue::persist(BasePersistenceManager *persistMgr) {
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 
 	persistMgr->transfer(TMEMBER(_persistent));
 	persistMgr->transfer(TMEMBER(_isConstVar));
@@ -797,9 +797,9 @@ bool ScValue::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_valBool));
 	persistMgr->transfer(TMEMBER(_valFloat));
 	persistMgr->transfer(TMEMBER(_valInt));
-	persistMgr->transfer(TMEMBER(_valNative));
+	persistMgr->transferPtr(TMEMBER_PTR(_valNative));
 
-	int size;
+	int32 size;
 	const char *str;
 	if (persistMgr->getIsSaving()) {
 		size = _valObject.size();
@@ -808,23 +808,23 @@ bool ScValue::persist(BasePersistenceManager *persistMgr) {
 		while (_valIter != _valObject.end()) {
 			str = _valIter->_key.c_str();
 			persistMgr->transfer("", &str);
-			persistMgr->transfer("", &_valIter->_value);
+			persistMgr->transferPtr("", &_valIter->_value);
 
 			_valIter++;
 		}
 	} else {
-		ScValue *val;
+		ScValue *val = nullptr;
 		persistMgr->transfer("", &size);
 		for (int i = 0; i < size; i++) {
 			persistMgr->transfer("", &str);
-			persistMgr->transfer("", &val);
+			persistMgr->transferPtr("", &val);
 
 			_valObject[str] = val;
 			delete[] str;
 		}
 	}
 
-	persistMgr->transfer(TMEMBER(_valRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_valRef));
 	persistMgr->transfer(TMEMBER(_valString));
 
 	/* // TODO: Convert to Debug-statements.
@@ -951,7 +951,7 @@ int ScValue::compareStrict(ScValue *val1, ScValue *val2) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool ScValue::setProperty(const char *propName, int value) {
+bool ScValue::setProperty(const char *propName, int32 value) {
 	ScValue *val = new ScValue(_gameRef,  value);
 	bool ret =  DID_SUCCEED(setProp(propName, val));
 	delete val;
@@ -992,4 +992,4 @@ bool ScValue::setProperty(const char *propName) {
 	return ret;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

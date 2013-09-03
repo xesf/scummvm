@@ -176,6 +176,10 @@ Music::Music(SagaEngine *vm, Audio::Mixer *mixer) : _vm(vm), _mixer(mixer) {
 		}
 	}
 
+	_trackNumber = 0;
+	_targetVolume = 0;
+	_currentVolumePercent = 0;
+
 	_digitalMusic = false;
 }
 
@@ -360,7 +364,7 @@ void Music::play(uint32 resourceId, MusicFlags flags) {
 
 	// Load MIDI/XMI resource data
 	if (_vm->getGameId() == GID_IHNM && _vm->isMacResources()) {
-		// Load the external music file for Mac IHNM		
+		// Load the external music file for Mac IHNM
 		_player->playQuickTime(Common::String::format("Music/Music%02x", resourceId), flags & MUSIC_LOOP);
 	} else {
 		if (_currentMusicBuffer == &_musicBuffer[1]) {

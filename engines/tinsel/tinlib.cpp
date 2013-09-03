@@ -1151,14 +1151,14 @@ static void FaceTag(int actor, HPOLYGON hp) {
  * FadeIn
  */
 static void FadeIn() {
-	FadeInMedium(NULL);
+	FadeInMedium();
 }
 
 /**
  * FadeOut
  */
 static void FadeOut() {
-	FadeOutMedium(NULL);
+	FadeOutMedium();
 }
 
 /**
@@ -1198,7 +1198,6 @@ static void Ghost(int actor, int tColor, int tPalOffset) {
 	SetSysVar(ISV_GHOST_ACTOR, actor);
 	SetSysVar(ISV_GHOST_COLOR,  tColor);
 	SetSysVar(ISV_GHOST_BASE, tPalOffset);
-	CreateGhostPalette(BgPal());
 }
 
 /**

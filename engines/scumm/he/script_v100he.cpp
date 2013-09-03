@@ -2148,7 +2148,7 @@ void ScummEngine_v100he::o100_systemOps() {
 		break;
 	case 132:
 		// Confirm shutdown
-		quitGame();
+		confirmExitDialog();
 		break;
 	case 133:
 		quitGame();
@@ -2237,7 +2237,10 @@ void ScummEngine_v100he::o100_videoOps() {
 	switch (subOp) {
 	case 0:
 		memset(_videoParams.filename, 0, sizeof(_videoParams.filename));
+		_videoParams.status = 0;
+		_videoParams.flags = 0;
 		_videoParams.unk2 = pop();
+		_videoParams.wizResNum = 0;
 		break;
 	case 19:
 		_videoParams.status = 19;

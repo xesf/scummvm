@@ -84,7 +84,7 @@ bool AdInventoryBox::listen(BaseScriptHolder *param1, uint32 param2) {
 			_visible = false;
 		} else if (scumm_stricmp(obj->getName(), "prev") == 0) {
 			_scrollOffset -= _scrollBy;
-			_scrollOffset = MAX(_scrollOffset, 0);
+			_scrollOffset = MAX<int32>(_scrollOffset, 0);
 		} else if (scumm_stricmp(obj->getName(), "next") == 0) {
 			_scrollOffset += _scrollBy;
 		} else {
@@ -120,8 +120,8 @@ bool AdInventoryBox::display() {
 
 	if (_closeButton) {
 		_closeButton->_posX = _closeButton->_posY = 0;
-		_closeButton->_width = _gameRef->_renderer->_width;
-		_closeButton->_height = _gameRef->_renderer->_height;
+		_closeButton->_width = _gameRef->_renderer->getWidth();
+		_closeButton->_height = _gameRef->_renderer->getHeight();
 
 		_closeButton->display();
 	}
@@ -371,7 +371,7 @@ bool AdInventoryBox::saveAsText(BaseDynamicBuffer *buffer, int indent) {
 bool AdInventoryBox::persist(BasePersistenceManager *persistMgr) {
 	BaseObject::persist(persistMgr);
 
-	persistMgr->transfer(TMEMBER(_closeButton));
+	persistMgr->transferPtr(TMEMBER_PTR(_closeButton));
 	persistMgr->transfer(TMEMBER(_hideSelected));
 	persistMgr->transfer(TMEMBER(_itemHeight));
 	persistMgr->transfer(TMEMBER(_itemsArea));
@@ -380,10 +380,10 @@ bool AdInventoryBox::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_scrollOffset));
 	persistMgr->transfer(TMEMBER(_spacing));
 	persistMgr->transfer(TMEMBER(_visible));
-	persistMgr->transfer(TMEMBER(_window));
+	persistMgr->transferPtr(TMEMBER_PTR(_window));
 	persistMgr->transfer(TMEMBER(_exclusive));
 
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

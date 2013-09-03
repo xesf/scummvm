@@ -31,10 +31,10 @@
 #include "engines/wintermute/base/base_game.h"
 #include "engines/wintermute/base/base_engine.h"
 #include "engines/wintermute/base/base_persistence_manager.h"
-#include "engines/wintermute/base/base_save_thumb_helper.h"
 #include "engines/wintermute/platform_osystem.h"
 #include "engines/wintermute/math/vector2.h"
 #include "engines/wintermute/base/gfx/base_image.h"
+#include "engines/wintermute/base/save_thumb_helper.h"
 #include "engines/wintermute/base/sound/base_sound.h"
 #include "engines/wintermute/graphics/transparent_surface.h"
 #include "engines/wintermute/wintermute.h"
@@ -79,12 +79,22 @@ BasePersistenceManager::BasePersistenceManager(const char *savePrefix, bool dele
 	_savedVerMajor = _savedVerMinor = _savedVerBuild = 0;
 	_savedExtMajor = _savedExtMinor = 0;
 
+	_savedTimestamp.tm_sec = 0;
+	_savedTimestamp.tm_min = 0;
+	_savedTimestamp.tm_hour = 0;
+	_savedTimestamp.tm_mday = 0;
+	_savedTimestamp.tm_mon = 0;
+	_savedTimestamp.tm_year = 0;
+	_savedTimestamp.tm_wday = 0;
+
+	_savedPlayTime = 0;
+
 	_thumbnailDataSize = 0;
 	_thumbnailData = nullptr;
 	if (savePrefix) {
 		_savePrefix = savePrefix;
 	} else if (_gameRef) {
-		_savePrefix = _gameRef->getGameId();
+		_savePrefix = _gameRef->getGameTargetName();
 	} else {
 		_savePrefix = "wmesav";
 	}
@@ -218,7 +228,7 @@ bool BasePersistenceManager::initSave(const char *desc) {
 	if (_saveStream) {
 		// get thumbnails
 		if (!_gameRef->_cachedThumbnail) {
-			_gameRef->_cachedThumbnail = new BaseSaveThumbHelper(_gameRef);
+			_gameRef->_cachedThumbnail = new SaveThumbHelper(_gameRef);
 			if (DID_FAIL(_gameRef->_cachedThumbnail->storeThumbnail(true))) {
 				delete _gameRef->_cachedThumbnail;
 				_gameRef->_cachedThumbnail = nullptr;
@@ -272,7 +282,7 @@ bool BasePersistenceManager::initSave(const char *desc) {
 				} else {
 					_saveStream->writeUint32LE(0);
 				}
-				
+
 				thumbnailOK = true;
 			}
 		}
@@ -523,7 +533,7 @@ TimeDate BasePersistenceManager::getTimeDate() {
 }
 
 void BasePersistenceManager::putFloat(float val) {
-	int32 exponent = 0;
+	int exponent = 0;
 	float significand = frexp(val, &exponent);
 	Common::String str = Common::String::format("FS%f", significand);
 	_saveStream->writeUint32LE(str.size());
@@ -546,7 +556,7 @@ float BasePersistenceManager::getFloat() {
 }
 
 void BasePersistenceManager::putDouble(double val) {
-	int32 exponent = 0;
+	int exponent = 0;
 	double significand = frexp(val, &exponent);
 	Common::String str = Common::String::format("DS%f", significand);
 	_saveStream->writeUint32LE(str.size());
@@ -589,7 +599,7 @@ bool BasePersistenceManager::transfer(const char *name, bool *val) {
 
 //////////////////////////////////////////////////////////////////////////
 // int
-bool BasePersistenceManager::transfer(const char *name, int *val) {
+bool BasePersistenceManager::transfer(const char *name, int32 *val) {
 	if (_saving) {
 		_saveStream->writeSint32LE(*val);
 		if (_saveStream->err()) {
@@ -627,7 +637,7 @@ bool BasePersistenceManager::transfer(const char *name, uint32 *val) {
 
 //////////////////////////////////////////////////////////////////////////
 // float
-bool BasePersistenceManager::transfer(const char *name, float *val) {
+bool BasePersistenceManager::transferFloat(const char *name, float *val) {
 	if (_saving) {
 		putFloat(*val);
 		if (_saveStream->err()) {
@@ -838,7 +848,8 @@ bool BasePersistenceManager::transfer(const char *name, Vector2 *val) {
 
 //////////////////////////////////////////////////////////////////////////
 // generic pointer
-bool BasePersistenceManager::transfer(const char *name, void *val) {
+
+bool BasePersistenceManager::transferPtr(const char *name, void *val) {
 	int classID = -1, instanceID = -1;
 
 	if (_saving) {
@@ -859,7 +870,6 @@ bool BasePersistenceManager::transfer(const char *name, void *val) {
 	return STATUS_OK;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 bool BasePersistenceManager::checkVersion(byte verMajor, byte verMinor, byte verBuild) {
 	if (_saving) {
@@ -877,4 +887,4 @@ bool BasePersistenceManager::checkVersion(byte verMajor, byte verMinor, byte ver
 	return true;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

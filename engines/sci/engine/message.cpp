@@ -56,7 +56,7 @@ public:
 
 protected:
 	MessageReader(const byte *data, uint size, uint headerSize, uint recordSize)
-		: _data(data), _size(size), _headerSize(headerSize), _recordSize(recordSize) { }
+		: _data(data), _size(size), _headerSize(headerSize), _recordSize(recordSize), _messageCount(0) { }
 
 	const byte *_data;
 	const uint _size;
@@ -210,6 +210,18 @@ bool MessageState::getRecord(CursorStack &stack, bool recurse, MessageRecord &re
 			t.verb = 2;
 		}
 
+		if (g_sci->getGameId() == GID_PQ1 && stack.getModule() == 38 &&
+			t.noun == 10 && t.verb == 4 && t.cond == 8 && t.seq == 1) {
+			// Using the hand icon on Keith in the Blue Room - bug #3605654
+			t.cond = 9;
+		}
+
+		if (g_sci->getGameId() == GID_PQ1 && stack.getModule() == 38 &&
+			t.noun == 10 && t.verb == 1 && t.cond == 0 && t.seq == 1) {
+			// Using the eye icon on Keith in the Blue Room - bug #3605654
+			t.cond = 13;
+		}
+
 		// Fill in known missing message tuples
 		if (g_sci->getGameId() == GID_SQ4 && stack.getModule() == 16 &&
 			t.noun == 7 && t.verb == 0 && t.cond == 3 && t.seq == 1) {
@@ -226,6 +238,7 @@ bool MessageState::getRecord(CursorStack &stack, bool recurse, MessageRecord &re
 			// as the text shown in this screen is very short (one-liners).
 			// Just output an empty string here instead of showing an error.
 			record.string = "";
+			delete reader;
 			return true;
 		}
 

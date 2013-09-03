@@ -378,7 +378,7 @@ bool AdItem::update() {
 			_tempSprite2 = _sentence->_currentSprite;
 		}
 
-		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->_timer - _sentence->_startTime);
+		bool timeIsUp = (_sentence->_sound && _sentence->_soundStarted && (!_sentence->_sound->isPlaying() && !_sentence->_sound->isPaused())) || (!_sentence->_sound && _sentence->_duration <= _gameRef->getTimer()->getTime() - _sentence->_startTime);
 		if (_tempSprite2 == nullptr || _tempSprite2->isFinished() || (/*_tempSprite2->_looping &&*/ timeIsUp)) {
 			if (timeIsUp) {
 				_sentence->finish();
@@ -784,9 +784,9 @@ bool AdItem::persist(BasePersistenceManager *persistMgr) {
 	AdTalkHolder::persist(persistMgr);
 
 	persistMgr->transfer(TMEMBER(_cursorCombined));
-	persistMgr->transfer(TMEMBER(_cursorHover));
-	persistMgr->transfer(TMEMBER(_cursorNormal));
-	persistMgr->transfer(TMEMBER(_spriteHover));
+	persistMgr->transferPtr(TMEMBER_PTR(_cursorHover));
+	persistMgr->transferPtr(TMEMBER_PTR(_cursorNormal));
+	persistMgr->transferPtr(TMEMBER_PTR(_spriteHover));
 	persistMgr->transfer(TMEMBER(_inInventory));
 	persistMgr->transfer(TMEMBER(_displayAmount));
 	persistMgr->transfer(TMEMBER(_amount));
@@ -810,4 +810,4 @@ bool AdItem::getExtendedFlag(const char *flagName) {
 	}
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

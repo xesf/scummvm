@@ -63,7 +63,7 @@ private:
 	bool _ballUpFl;
 	int _breakoutLevelNbr;
 	int _padPositionX;
-	int _breakoutHiscore;
+	int _lowestHiScore;
 	int _minBreakoutMoveSpeed;
 	int _maxBreakoutMoveSpeed;
 	int _lastBreakoutMoveSpeed;
@@ -84,22 +84,19 @@ private:
 	void displayLives();
 	void displayBricks();
 	void displayGamesSubMenu();
-	void displayScore();
 	int  displayHiscores();
-	void displayHiscoreLine(byte *objectData, int x, int y, int curChar);
-	void playBreakout();
-	void saveScore();
-	int moveBall();
-	void checkBallCollisions();
-	void getScoreName();
-
+	void displayHiscoreLine(const byte *objectData, int x, int y, int curChar);
 	void displayMessage(int xp, int yp, int textIdx);
-
+	void displayScore();
 	void displayScoreChar(int charPos, int charDisp);
+	void getScoreName();
+	void playBreakout();
+	int  moveBall();
+	void saveScore();
+	void checkBallCollisions();
 
 public:
-	ComputerManager();
-	void setParent(HopkinsEngine *vm);
+	ComputerManager(HopkinsEngine *vm);
 
 	void showComputer(ComputerEnum mode);
 };

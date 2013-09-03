@@ -638,6 +638,16 @@ begin_credits("Credits");
 				add_person("David Turner", "digitall", "");
 			end_section();
 
+			begin_section("Mortevielle");
+				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
+				add_person("Paul Gilbert", "dreammaster", "");
+			end_section();
+
+			begin_section("Neverhood");
+				add_person("Benjamin Haisch", "john_doe", "");
+				add_person("Filippos Karapetis", "[md5]", "");
+			end_section();
+
 			begin_section("Parallaction");
 				add_person("", "peres", "");
 			end_section();
@@ -754,10 +764,6 @@ begin_credits("Credits");
 				add_person("Angus Lees", "Gus", "");
 			end_section();
 
-			begin_section("BADA");
-				add_person("Chris Warren-Smith", "", "");
-			end_section();
-
 			begin_section("Dreamcast");
 				add_person("Marcus Comstedt", "", "");
 			end_section();
@@ -816,6 +822,10 @@ begin_credits("Credits");
 			begin_section("SymbianOS");
 				add_person("Jurgen Braam", "SumthinWicked", "");
 				add_person("Lars Persson", "AnotherGuest", "");
+			end_section();
+
+			begin_section("Tizen / BADA");
+				add_person("Chris Warren-Smith", "", "");
 			end_section();
 
 			begin_section("WebOS");

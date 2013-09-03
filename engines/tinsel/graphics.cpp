@@ -272,7 +272,7 @@ static void MacDrawTiles(DRAWOBJECT *pObj, uint8 *srcP, uint8 *destP, bool apply
 					tempDest += rptLength;
 				}
 
-				int overflow = (copyBytes % 2) == 0 ? 0 : 2 - (copyBytes % 2);
+				int overflow = (copyBytes & 1);
 				x += runLength;
 				srcP += runLength + overflow;
 			}
@@ -797,9 +797,10 @@ static void PackedWrtNonZero(DRAWOBJECT *pObj, uint8 *srcP, uint8 *destP,
  * Clears both the screen surface buffer and screen to the specified value
  */
 void ClearScreen() {
-	void *pDest = _vm->screen().getBasePtr(0, 0);
-	memset(pDest, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-	g_system->fillScreen(0);
+	byte blackColorIndex = (!TinselV1Mac) ? 0 : 255;
+	void *pDest = _vm->screen().getPixels();
+	memset(pDest, blackColorIndex, SCREEN_WIDTH * SCREEN_HEIGHT);
+	g_system->fillScreen(blackColorIndex);
 	g_system->updateScreen();
 }
 

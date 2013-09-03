@@ -1485,7 +1485,7 @@ void ScummEngine::playActorSounds() {
 	int sound;
 
 	for (i = 1; i < _numActors; i++) {
-		if (_actors[i]->_cost.soundCounter && _actors[i]->isInCurrentRoom() && _actors[i]->_sound) {
+		if (_actors[i]->_cost.soundCounter && _actors[i]->isInCurrentRoom()) {
 			_currentScript = 0xFF;
 			if (_game.version == 0) {
 				sound = v0ActorSounds[i - 1] & 0x3F;
@@ -1880,7 +1880,7 @@ bool Actor::actorHitTest(int x, int y) {
 #endif
 
 void Actor::startAnimActor(int f) {
-	if (_vm->_game.version >= 7 && !((_vm->_game.id == GID_FT) && (_vm->_game.features & GF_DEMO) && (_vm->_game.platform == Common::kPlatformPC))) {
+	if (_vm->_game.version >= 7 && !((_vm->_game.id == GID_FT) && (_vm->_game.features & GF_DEMO) && (_vm->_game.platform == Common::kPlatformDOS))) {
 		switch (f) {
 		case 1001:
 			f = _initFrame;
@@ -1968,7 +1968,7 @@ void Actor_v0::startAnimActor(int f) {
 void Actor::animateActor(int anim) {
 	int cmd, dir;
 
-	if (_vm->_game.version >= 7 && !((_vm->_game.id == GID_FT) && (_vm->_game.features & GF_DEMO) && (_vm->_game.platform == Common::kPlatformPC))) {
+	if (_vm->_game.version >= 7 && !((_vm->_game.id == GID_FT) && (_vm->_game.features & GF_DEMO) && (_vm->_game.platform == Common::kPlatformDOS))) {
 
 		if (anim == 0xFF)
 			anim = 2000;

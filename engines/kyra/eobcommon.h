@@ -487,7 +487,7 @@ protected:
 	void placeMonster(EoBMonsterInPlay *m, uint16 block, int dir);
 	virtual void replaceMonster(int b, uint16 block, int pos, int dir, int type, int shpIndex, int mode, int h2, int randItem, int fixedItem) = 0;
 	void killMonster(EoBMonsterInPlay *m, bool giveExperience);
-	virtual bool killMonsterExtra(EoBMonsterInPlay *m);
+	virtual bool killMonsterExtra(EoBMonsterInPlay *m) = 0;
 	int countSpecificMonsters(int type);
 	void updateAttackingMonsterFlags();
 
@@ -850,6 +850,7 @@ protected:
 	// Default parameters will import all present original save files and push them to the top of the save dialog.
 	bool importOriginalSaveFile(int destSlot, const char *sourceFile = 0);
 	Common::String readOriginalSaveFile(Common::String &file);
+	bool saveAsOriginalSaveFile(int slot = -1);
 
 	void *generateMonsterTempData(LevelTempData *tmp);
 	void restoreMonsterTempData(LevelTempData *tmp);

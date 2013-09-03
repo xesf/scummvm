@@ -53,7 +53,8 @@ namespace Wintermute {
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-BaseFileManager::BaseFileManager(Common::Language lang) {
+BaseFileManager::BaseFileManager(Common::Language lang, bool detectionMode) {
+	_detectionMode = detectionMode;
 	_language = lang;
 	_resources = nullptr;
 	initResources();
@@ -191,7 +192,9 @@ bool BaseFileManager::registerPackages() {
 	Common::FSList files;
 	for (Common::FSList::iterator it = _packagePaths.begin(); it != _packagePaths.end(); ++it) {
 		debugC(kWintermuteDebugFileAccess, "Should register folder: %s %s", (*it).getPath().c_str(), (*it).getName().c_str());
-		(*it).getChildren(files, Common::FSNode::kListFilesOnly);
+		if (!(*it).getChildren(files, Common::FSNode::kListFilesOnly)) {
+			warning("getChildren() failed for path: %s", (*it).getDisplayName().c_str());
+		}
 		for (Common::FSList::iterator fileIt = files.begin(); fileIt != files.end(); ++fileIt) {
 			if (!fileIt->getName().hasSuffix(".dcp")) {
 				continue;
@@ -232,12 +235,14 @@ bool BaseFileManager::registerPackage(Common::FSNode file, const Common::String 
 
 void BaseFileManager::initResources() {
 	_resources = Common::makeZipArchive("wintermute.zip");
-	if (!_resources) {
+	if (!_resources && !_detectionMode) { // Wintermute.zip is unavailable during detection
 		error("Couldn't load wintermute.zip");
 	}
-	assert(_resources->hasFile("syste_font.bmp"));
-	assert(_resources->hasFile("invalid.bmp"));
-	assert(_resources->hasFile("invalid_debug.bmp"));
+	if (_resources) {
+		assert(_resources->hasFile("syste_font.bmp"));
+		assert(_resources->hasFile("invalid.bmp"));
+		assert(_resources->hasFile("invalid_debug.bmp"));
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -246,7 +251,7 @@ Common::SeekableReadStream *BaseFileManager::openPkgFile(const Common::String &f
 	upcName.toUppercase();
 	Common::SeekableReadStream *file = nullptr;
 	char fileName[MAX_PATH_LENGTH];
-	strcpy(fileName, upcName.c_str());
+	Common::strlcpy(fileName, upcName.c_str(), MAX_PATH_LENGTH);
 
 	// correct slashes
 	for (uint32 i = 0; i < upcName.size(); i++) {
@@ -264,7 +269,7 @@ Common::SeekableReadStream *BaseFileManager::openPkgFile(const Common::String &f
 
 bool BaseFileManager::hasFile(const Common::String &filename) {
 	if (scumm_strnicmp(filename.c_str(), "savegame:", 9) == 0) {
-		BasePersistenceManager pm(BaseEngine::instance().getGameId());
+		BasePersistenceManager pm(BaseEngine::instance().getGameTargetName());
 		if (filename.size() <= 9) {
 			return false;
 		}
@@ -277,7 +282,7 @@ bool BaseFileManager::hasFile(const Common::String &filename) {
 	if (_packages.hasFile(filename)) {
 		return true;    // We don't bother checking if the file can actually be opened, something bigger is wrong if that is the case.
 	}
-	if (_resources->hasFile(filename)) {
+	if (!_detectionMode && _resources->hasFile(filename)) {
 		return true;
 	}
 	return false;
@@ -337,7 +342,9 @@ Common::SeekableReadStream *BaseFileManager::openFileRaw(const Common::String &f
 		return ret;
 	}
 
-	ret = _resources->createReadStreamForMember(filename);
+	if (!_detectionMode) {
+		ret = _resources->createReadStreamForMember(filename);
+	}
 	if (ret) {
 		return ret;
 	}
@@ -353,4 +360,4 @@ BaseFileManager *BaseFileManager::getEngineInstance() {
 	return nullptr;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

@@ -26,9 +26,10 @@
  * Copyright (c) 2011 Jan Nedoma
  */
 
-#include "engines/wintermute/base/base_game.h"
-#include "engines/wintermute/platform_osystem.h"
 #include "engines/wintermute/base/base_viewport.h"
+#include "engines/wintermute/base/base_engine.h"
+#include "engines/wintermute/base/base_persistence_manager.h"
+#include "engines/wintermute/platform_osystem.h"
 #include "engines/wintermute/base/gfx/base_renderer.h"
 
 namespace Wintermute {
@@ -52,9 +53,9 @@ BaseViewport::~BaseViewport() {
 //////////////////////////////////////////////////////////////////////////
 bool BaseViewport::persist(BasePersistenceManager *persistMgr) {
 
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 
-	persistMgr->transfer(TMEMBER(_mainObject));
+	persistMgr->transferPtr(TMEMBER_PTR(_mainObject));
 	persistMgr->transfer(TMEMBER(_offsetX));
 	persistMgr->transfer(TMEMBER(_offsetY));
 	persistMgr->transfer(TMEMBER(_rect));
@@ -64,12 +65,12 @@ bool BaseViewport::persist(BasePersistenceManager *persistMgr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-bool BaseViewport::setRect(int left, int top, int right, int bottom, bool noCheck) {
+bool BaseViewport::setRect(int32 left, int32 top, int32 right, int32 bottom, bool noCheck) {
 	if (!noCheck) {
-		left = MAX(left, 0);
-		top = MAX(top, 0);
-		right = MIN(right, _gameRef->_renderer->_width);
-		bottom = MIN(bottom, _gameRef->_renderer->_height);
+		left = MAX<int32>(left, 0);
+		top = MAX<int32>(top, 0);
+		right = MIN(right, BaseEngine::instance().getRenderer()->getWidth());
+		bottom = MIN(bottom, BaseEngine::instance().getRenderer()->getHeight());
 	}
 
 	BasePlatform::setRect(&_rect, left, top, right, bottom);
@@ -96,4 +97,4 @@ int BaseViewport::getHeight() const {
 	return _rect.bottom - _rect.top;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

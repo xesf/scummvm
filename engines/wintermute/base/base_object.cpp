@@ -33,7 +33,6 @@
 #include "engines/wintermute/base/sound/base_sound.h"
 #include "engines/wintermute/base/sound/base_sound_manager.h"
 #include "engines/wintermute/base/base_game.h"
-#include "engines/wintermute/base/base_string_table.h"
 #include "engines/wintermute/base/base_sprite.h"
 #include "engines/wintermute/platform_osystem.h"
 
@@ -150,7 +149,7 @@ void BaseObject::setCaption(const char *caption, int caseVal) {
 	_caption[caseVal - 1] = new char[strlen(caption) + 1];
 	if (_caption[caseVal - 1]) {
 		strcpy(_caption[caseVal - 1], caption);
-		_gameRef->_stringTable->expand(&_caption[caseVal - 1]);
+		_gameRef->expandStringByStringTable(&_caption[caseVal - 1]);
 	}
 }
 
@@ -956,10 +955,10 @@ bool BaseObject::persist(BasePersistenceManager *persistMgr) {
 	for (int i = 0; i < 7; i++) {
 		persistMgr->transfer(TMEMBER(_caption[i]));
 	}
-	persistMgr->transfer(TMEMBER(_activeCursor));
+	persistMgr->transferPtr(TMEMBER_PTR(_activeCursor));
 	persistMgr->transfer(TMEMBER(_alphaColor));
 	persistMgr->transfer(TMEMBER(_autoSoundPanning));
-	persistMgr->transfer(TMEMBER(_cursor));
+	persistMgr->transferPtr(TMEMBER_PTR(_cursor));
 	persistMgr->transfer(TMEMBER(_sharedCursors));
 	persistMgr->transfer(TMEMBER(_editorAlwaysRegister));
 	persistMgr->transfer(TMEMBER(_editorOnly));
@@ -969,10 +968,10 @@ bool BaseObject::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_movable));
 	persistMgr->transfer(TMEMBER(_posX));
 	persistMgr->transfer(TMEMBER(_posY));
-	persistMgr->transfer(TMEMBER(_relativeScale));
+	persistMgr->transferFloat(TMEMBER(_relativeScale));
 	persistMgr->transfer(TMEMBER(_rotatable));
-	persistMgr->transfer(TMEMBER(_scale));
-	persistMgr->transfer(TMEMBER(_sFX));
+	persistMgr->transferFloat(TMEMBER(_scale));
+	persistMgr->transferPtr(TMEMBER_PTR(_sFX));
 	persistMgr->transfer(TMEMBER(_sFXStart));
 	persistMgr->transfer(TMEMBER(_sFXVolume));
 	persistMgr->transfer(TMEMBER(_ready));
@@ -983,21 +982,21 @@ bool BaseObject::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_soundEvent));
 	persistMgr->transfer(TMEMBER(_zoomable));
 
-	persistMgr->transfer(TMEMBER(_scaleX));
-	persistMgr->transfer(TMEMBER(_scaleY));
+	persistMgr->transferFloat(TMEMBER(_scaleX));
+	persistMgr->transferFloat(TMEMBER(_scaleY));
 
-	persistMgr->transfer(TMEMBER(_rotate));
+	persistMgr->transferFloat(TMEMBER(_rotate));
 	persistMgr->transfer(TMEMBER(_rotateValid));
-	persistMgr->transfer(TMEMBER(_relativeRotate));
+	persistMgr->transferFloat(TMEMBER(_relativeRotate));
 
 	persistMgr->transfer(TMEMBER(_saveState));
 	persistMgr->transfer(TMEMBER(_nonIntMouseEvents));
 
 	persistMgr->transfer(TMEMBER_INT(_sFXType));
-	persistMgr->transfer(TMEMBER(_sFXParam1));
-	persistMgr->transfer(TMEMBER(_sFXParam2));
-	persistMgr->transfer(TMEMBER(_sFXParam3));
-	persistMgr->transfer(TMEMBER(_sFXParam4));
+	persistMgr->transferFloat(TMEMBER(_sFXParam1));
+	persistMgr->transferFloat(TMEMBER(_sFXParam2));
+	persistMgr->transferFloat(TMEMBER(_sFXParam3));
+	persistMgr->transferFloat(TMEMBER(_sFXParam4));
 
 
 	persistMgr->transfer(TMEMBER_INT(_blendMode));
@@ -1243,4 +1242,4 @@ bool BaseObject::afterMove() {
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

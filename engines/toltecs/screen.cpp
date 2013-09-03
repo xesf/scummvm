@@ -251,10 +251,6 @@ void Screen::addAnimatedSprite(int16 x, int16 y, int16 fragmentId, byte *data, i
 	}
 }
 
-void Screen::clearSprites() {
-
-}
-
 void Screen::blastSprite(int16 x, int16 y, int16 fragmentId, int16 resIndex, uint16 flags) {
 	DrawRequest drawRequest;
 	SpriteDrawItem sprite;
@@ -494,6 +490,14 @@ int16 Screen::getTalkTextDuration() {
 	return _talkTextItems[_talkTextItemNum].duration;
 }
 
+void Screen::finishTalkTextItem(int16 slotIndex) {
+	for (int16 i = 0; i <= _talkTextItemNum; i++) {
+		if (_talkTextItems[i].slotIndex == slotIndex) {
+			_talkTextItems[i].duration = 0;
+		}
+	}
+}
+
 void Screen::finishTalkTextItems() {
 	for (int16 i = 0; i <= _talkTextItemNum; i++) {
 		_talkTextItems[i].duration = 0;
@@ -647,7 +651,7 @@ void Screen::drawSurface(int16 x, int16 y, Graphics::Surface *surface) {
 	int16 skipX = 0;
 	int16 width = surface->w;
 	int16 height = surface->h;
-	byte *surfacePixels = (byte *)surface->getBasePtr(0, 0);
+	byte *surfacePixels = (byte *)surface->getPixels();
 	byte *frontScreen;
 
 	// Not on screen, skip

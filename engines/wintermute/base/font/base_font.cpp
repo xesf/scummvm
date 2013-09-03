@@ -57,13 +57,13 @@ void BaseFont::drawText(const byte *text, int x, int y, int width, TTextAlign al
 
 
 //////////////////////////////////////////////////////////////////////
-int BaseFont::getTextHeight(byte *text, int width) {
+int BaseFont::getTextHeight(const byte *text, int width) {
 	return 0;
 }
 
 
 //////////////////////////////////////////////////////////////////////
-int BaseFont::getTextWidth(byte *text, int maxLength) {
+int BaseFont::getTextWidth(const byte *text, int maxLength) {
 	return 0;
 }
 
@@ -137,4 +137,4 @@ bool BaseFont::isTrueType(BaseGame *gameRef, const Common::String &filename) {
 	return ret;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

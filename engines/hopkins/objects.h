@@ -32,6 +32,17 @@
 #define MAX_SPRITE 5
 namespace Hopkins {
 
+struct ObjectAuthIcon {
+	byte _objectFileNum;
+	byte _idx;
+	byte _flag1;
+	byte _flag2;
+	byte _flag3;
+	byte _flag4;
+	byte _flag5;
+	byte _flag6;
+};
+
 struct SpriteItem {
 	int _animationType;
 	const byte *_spriteData;
@@ -39,8 +50,8 @@ struct SpriteItem {
 	int _zoomFactor;
 	bool _flipFl;
 	int _spriteIndex;
-	int field12;
-	int field14;
+	int _deltaX;
+	int _deltaY;
 	bool _rleFl;
 	bool _activeFl;
 	int _destX;
@@ -52,21 +63,21 @@ struct SpriteItem {
 };
 
 struct BobItem {
-	int field0;
+	int _bobMode;
 	byte *_spriteData;
 	int _xp;
 	int _yp;
 	int _frameIndex;
 	int _animDataIdx;
-	int field12;
-	int field14;
+	int _moveChange1;
+	int _moveChange2;
 	bool _disabledAnimationFl;
 	byte *_animData;
-	bool field1C;
-	int field1E;
-	int field20;
-	int field22;
-	bool field34; // Set to true in B_CACHE_OFF()
+	bool _bobMode10;
+	int _bobModeChange;
+	int _modeChangeCtr;
+	int _modeChangeUnused;
+	bool _disableFl; // Set to true in B_CACHE_OFF()
 	int _zoomFactor;
 	bool _flipFl;
 	bool _isSpriteFl;
@@ -80,21 +91,94 @@ struct BobItem {
 	int _zoomOutFactor;
 };
 
+struct HidingItem {
+	int _x;
+	int _y;
+	int _spriteIndex;
+	int _width;
+	int _height;
+	int _useCount;
+	byte *_spriteData;
+	bool _resetUseCount;
+	int _yOffset;
+};
+
+struct LockAnimItem {
+	bool _enableFl;
+	int _posX;
+};
+
+struct VBobItem {
+	const byte *_spriteData;
+	int _displayMode;
+	int _xp;
+	int _yp;
+	int _frameIndex;
+	byte *_surface;
+	int _oldX;
+	int _oldY;
+	int _oldFrameIndex;
+	const byte *_oldSpriteData;
+};
+
+struct ListeItem {
+	bool _visibleFl;
+	int _posX;
+	int _posY;
+	int _width;
+	int _height;
+};
+
+/**
+ * Mode for SortItem records
+ */
+enum SortMode { SORT_NONE = 0, SORT_BOB = 1, SORT_SPRITE = 2, SORT_HIDING = 3 };
+
+/**
+ * Structure to represent a pending display of either a Bob, Sprite, or Cache Item.
+ */
+struct SortItem {
+	SortMode _sortMode;
+	int _index;
+	int _priority;
+};
+
 class HopkinsEngine;
 
 class ObjectsManager {
 private:
 	HopkinsEngine *_vm;
 
+	int _objectWidth, _objectHeight;
 	int _oldBorderSpriteIndex;
 	int _borderSpriteIndex;
 	byte *_spritePtr;
 	const byte *_oldSpriteData;
 	int _verb;
 	int _oldSpriteIndex;
+	int _oldFrameIndex;
+	int _oldDirectionSpriteIdx;
+	Directions _oldDirection;
+	Directions _lastDirection;
 	bool _oldFlipFl;
 	int _curGestureFile;
 	byte *_gestureBuf;
+	int _homeRateCounter;
+	int _sortedDisplayCount;
+	SortItem _sortedDisplay[51];
+	byte *_hidingItemData[6];
+	HidingItem _hidingItem[25];
+	bool _hidingActiveFl;
+	ObjectAuthIcon _objectAuthIcons[300];
+	int _curObjectFileNum;
+	byte *_objectDataBuf;
+
+	VBobItem _vBob[30];
+	ListeItem _liste[6];
+	ListeItem _liste2[35];
+
+	void initVBob();
+	void clearVBob();
 
 	void sprite_alone(const byte *objectData, byte *sprite, int objIndex);
 	void removeObjectDataBuf();
@@ -103,10 +187,9 @@ private:
 	int getOffsetY(const byte *spriteData, int spriteIndex, bool isSize);
 
 	void capture_mem_sprite(const byte *objectData, byte *sprite, int objIndex);
-	void initBob();
 	void setBobInfo(int idx);
-	void SCBOB(int idx);
-	void CALCUL_BOB(int idx);
+	void computeHideCounter(int idx);
+	void initBobVariables(int idx);
 
 	void checkHidingItem();
 	void displayHiding(int idx);
@@ -114,21 +197,19 @@ private:
 	void beforeSort(SortMode sortMode, int index, int priority);
 	void displayBobAnim();
 	void displayVBob();
-	void DEF_SPRITE(int idx);
-
+	void showSprite(int idx);
 	void clearSprite();
 	void setSpriteZoom(int idx, int zoomFactor);
-	
+
 	void loadZone(const Common::String &file);
 	void changeCharacterHead(PlayerCharacter oldCharacter, PlayerCharacter newCharacter);
-	void GOHOME2();
+	void goHome2();
 
 	void nextVerbIcon();
-	int getBobFrameIndex(int idx);
 	void handleForest(int screenId, int minX, int maxX, int minY, int maxY, int idx);
 
 	void sceneSpecialIni();
-	void ACTION(const byte *spriteData, const Common::String &actionStr, int speed, bool flipFl);
+	void showActionAnimation(const byte *spriteData, const Common::String &actionStr, int speed, bool flipFl);
 public:
 	bool _disableFl;
 	bool _forestFl;
@@ -146,12 +227,11 @@ public:
 	int _eraseVisibleCounter;
 	int _curObjectIndex;
 	int _startSpriteIndex;
-	int _oldInventoryPosX, _oldInventoryPosY;
 	int _saveLoadX, _saveLoadY;
 	int _mapCarPosX, _mapCarPosY;
 	int _oldCharacterPosX, _oldCharacterPosY;
 	Common::Point _borderPos;
-	Common::Point _oldBorderPos; 
+	Common::Point _oldBorderPos;
 	Common::Point _characterPos;
 	byte *_forestSprite;
 	byte *_saveLoadSprite;
@@ -159,22 +239,20 @@ public:
 	byte *_headSprites;
 	SpriteItem _sprite[6];
 	BobItem _bob[36];
+	LockAnimItem _lockedAnims[36];
+	bool _charactersEnabledFl;
+	bool _refreshBobMode10Fl;
 
-	bool PERSO_ON;
-	bool BOBTOUS;
-	bool OBSSEUL;
-
-	ObjectsManager();
+	ObjectsManager(HopkinsEngine *vm);
 	~ObjectsManager();
 
-	void setParent(HopkinsEngine *vm);
 	void clearAll();
 
 	int getWidth(const byte *objectData, int idx);
 	int getHeight(const byte *objectData, int idx);
 	byte *loadSprite(const Common::String &file);
-	void loadLinkFile(const Common::String &file);
-	void addStaticSprite(const byte *spriteData, Common::Point pos, int idx, int spriteIndex, int zoomFactor, bool flipFl, int a8, int a9);
+	void loadLinkFile(const Common::String &file, bool OBSSEUL = false);
+	void addStaticSprite(const byte *spriteData, Common::Point pos, int idx, int spriteIndex, int zoomFactor, bool flipFl, int deltaX, int deltaY);
 	void animateSprite(int idx);
 	void removeSprite(int idx);
 	void setSpriteX(int idx, int xp);
@@ -204,7 +282,6 @@ public:
 	void setBobAnimation(int idx);
 	void stopBobAnimation(int idx);
 	int getBobPosX(int idx);
-	int getBobPosY(int idx);
 
 	void handleCityMap();
 	void clearScreen();
@@ -222,23 +299,38 @@ public:
 	void doActionLeft(int idx);
 	void doActionDiagRight(int idx);
 	void doActionDiagLeft(int idx);
-
-	void PERSONAGE(const Common::String &backgroundFile, const Common::String &linkFile,
-		const Common::String &animFile, const Common::String &s4, int soundNum, bool initializeScreen);
-	void PERSONAGE2(const Common::String &backgroundFile, const Common::String &linkFile,
-		const Common::String &animFile, const Common::String &s4, int soundNum, bool initializeScreen);
+	void loadObjects();
 	byte *loadObjectFromFile(int objIndex, bool mode);
-	void OPTI_OBJET();
-	void SPACTION(byte *spriteData, const Common::String &animationSeq, int speed, bool flipFl);
-	void BOB_VIVANT(int idx);
-	void VBOB(byte *src, int idx, int xp, int yp, int frameIndex);
-	void VBOB_OFF(int idx);
-	void OPTI_ONE(int idx, int animIdx, int destPosi, int animAction);
-	void SCI_OPTI_ONE(int idx, int animIdx, int animDataIdx, int a4);
-	void GOHOME();
-	void OPTI_BOBON(int idx1, int idx2, int idx3, int anim1Idx, int anim2Idx, int anim3Idx);
-	void SPACTION1(byte *spriteData, const Common::String &animString, int speed);
-	void PARADISE();
+	void resetHidingItems();
+	void resetHidingUseCount(int idx);
+	void setHidingUseCount(int idx);
+	void loadHidingItems(const Common::String &file);
+	void enableHidingBehavior();
+	void disableHidingBehavior();
+	void disableHidingItem(int idx);
+
+	void resetHomeRateCounter() { _homeRateCounter = 0; }
+	void resetOldFrameIndex() { _oldFrameIndex = -1; }
+	void resetOldDirection()  { _oldDirection = DIR_NONE; }
+	int getObjectWidth()  { return _objectWidth; }
+	int getObjectHeight() { return _objectHeight; }
+
+	void showSpecialActionAnimationWithFlip(const byte *spriteData, const Common::String &animationSeq, int speed, bool flipFl);
+	void showSpecialActionAnimation(const byte *spriteData, const Common::String &animString, int speed);
+	void checkEventBobAnim(int idx, int animIdx, int animDataIdx, int a4);
+	void setMultiBobAnim(int idx1, int idx2, int anim1Idx, int anim2Idx);
+	void loadObjectIniFile();
+	void quickDisplayBobSprite(int idx);
+	void initVbob(const byte *src, int idx, int xp, int yp, int frameIndex);
+	void disableVbob(int idx);
+	void setAndPlayAnim(int idx, int animIdx, int destPosi, bool animAction);
+
+	void sceneControl(const Common::String &backgroundFile, const Common::String &linkFile,
+		const Common::String &animFile, const Common::String &s4, int soundNum, bool initializeScreen);
+	void sceneControl2(const Common::String &backgroundFile, const Common::String &linkFile,
+		const Common::String &animFile, const Common::String &s4, int soundNum, bool initializeScreen);
+	void goHome();
+	void paradise();
 };
 
 } // End of namespace Hopkins

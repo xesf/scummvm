@@ -59,14 +59,6 @@
  */
 namespace Hopkins {
 
-enum {
-	kHopkinsDebugAnimations = 1 << 0,
-	kHopkinsDebugActions = 1 << 1,
-	kHopkinsDebugSound = 1 << 2,
-	kHopkinsDebugMusic = 1 << 3,
-	kHopkinsDebugScripts = 1 << 4
-};
-
 #define DEBUG_BASIC 1
 #define DEBUG_INTERMEDIATE 2
 #define DEBUG_DETAILED 3
@@ -74,7 +66,9 @@ enum {
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
-#define MAX_LINES 400
+enum HopkinsDebugChannels {
+	kDebugPath      = 1 <<  0
+};
 
 /**
  * A wrapper macro used around three character constants, like 'END', to
@@ -103,6 +97,7 @@ private:
 	void playUnderwaterBaseCutscene();
 	void playPlaneCutscene();
 	void playEnding();
+	bool isUnderwaterSubScene();
 
 	/**
 	 * Displays the map screen in the underground base.
@@ -124,9 +119,9 @@ private:
 	void setSubmarineSprites();
 	void handleOceanMaze(int16 curExitId, Common::String backgroundFilename, Directions defaultDirection, int16 exit1, int16 exit2, int16 exit3, int16 exit4, int16 soundId);
 	void loadCredits();
-	void displayCredits(int startPosY, byte *buffer, char colour);
+	void displayCredits(int startPosY, byte *buffer, char color);
 	void displayCredits();
-	void handleNotAvailable(int sortie);
+	void handleNotAvailable(int nextScreen);
 
 	bool runWin95Demo();
 	bool runLinuxDemo();
@@ -142,22 +137,22 @@ protected:
 	virtual bool hasFeature(EngineFeature f) const;
 
 public:
-	Debugger _debugger;
-	AnimationManager _animationManager;
-	ComputerManager _computerManager;
-	DialogsManager _dialogsManager;
-	EventsManager _eventsManager;
-	FontManager _fontManager;
-	Globals _globals;
-	FileManager _fileManager;
-	GraphicsManager _graphicsManager;
-	LinesManager _linesManager;
-	MenuManager _menuManager;
-	ObjectsManager _objectsManager;
-	SaveLoadManager _saveLoadManager;
-	ScriptManager _scriptManager;
-	SoundManager _soundManager;
-	TalkManager _talkManager;
+	AnimationManager *_animMan;
+	ComputerManager *_computer;
+	DialogsManager *_dialog;
+	Debugger *_debug;
+	EventsManager *_events;
+	FileManager *_fileIO;
+	FontManager *_fontMan;
+	Globals *_globals;
+	GraphicsManager *_graphicsMan;
+	LinesManager *_linesMan;
+	MenuManager *_menuMan;
+	ObjectsManager *_objectsMan;
+	SaveLoadManager *_saveLoad;
+	ScriptManager *_script;
+	SoundManager *_soundMan;
+	TalkManager *_talkMan;
 
 public:
 	HopkinsEngine(OSystem *syst, const HopkinsGameDescription *gameDesc);
@@ -169,7 +164,7 @@ public:
 	Common::Platform getPlatform() const;
 	uint16 getVersion() const;
 	bool getIsDemo() const;
-	bool shouldQuit() const;
+	const Common::String &getTargetName() const;
 
 	int getRandomNumber(int maxNumber);
 	Common::String generateSaveName(int slotNumber);
@@ -177,22 +172,17 @@ public:
 	virtual bool canSaveGameStateCurrently();
 	virtual Common::Error loadGameState(int slot);
 	virtual Common::Error saveGameState(int slot, const Common::String &desc);
-
+	int _startGameSlot;
 	/**
 	 * Run the introduction sequence
 	 */
 	void playIntro();
 
 	/**
-	 * Synchronises the sound settings from ScummVM into the engine
+	 * Synchronizes the sound settings from ScummVM into the engine
 	 */
 	virtual void syncSoundSettings();
 };
-
-// Global reference to the HopkinsEngine object
-extern HopkinsEngine *g_vm;
-
-#define GLOBALS g_vm->_globals
 
 } // End of namespace Hopkins
 

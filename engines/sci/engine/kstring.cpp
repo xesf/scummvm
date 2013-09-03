@@ -488,9 +488,9 @@ enum kMessageFunc {
 	K_MESSAGE_GET,
 	K_MESSAGE_NEXT,
 	K_MESSAGE_SIZE,
-	K_MESSAGE_REFCOND,
-	K_MESSAGE_REFVERB,
 	K_MESSAGE_REFNOUN,
+	K_MESSAGE_REFVERB,
+	K_MESSAGE_REFCOND,
 	K_MESSAGE_PUSH,
 	K_MESSAGE_POP,
 	K_MESSAGE_LASTMESSAGE
@@ -511,16 +511,10 @@ reg_t kMessage(EngineState *s, int argc, reg_t *argv) {
 #ifdef ENABLE_SCI32
 	if (getSciVersion() >= SCI_VERSION_2) {
 		// In complete weirdness, SCI32 bumps up subops 3-8 to 4-9 and stubs off subop 3.
-		// In addition, SCI32 reorders the REF* subops.
 		if (func == 3)
 			error("SCI32 kMessage(3)");
-		else if (func > 3) {
+		else if (func > 3)
 			func--;
-			if (func == K_MESSAGE_REFCOND)
-				func = K_MESSAGE_REFNOUN;
-			else if (func == K_MESSAGE_REFNOUN || func == K_MESSAGE_REFVERB)
-				func--;
-		}
 	}
 #endif
 
@@ -557,7 +551,7 @@ reg_t kMessage(EngineState *s, int argc, reg_t *argv) {
 	// NOTE: To fix a corrupted jar object, type "send Glass_Jar message 52"
 	// in the debugger.
 	if (g_sci->getGameId() == GID_PEPPER && func == 0 && argc >= 6 && module == 894 &&
-		tuple.noun == 26 && tuple.cond == 0 && tuple.seq == 1 && 
+		tuple.noun == 26 && tuple.cond == 0 && tuple.seq == 1 &&
 		!s->_msgState->getMessage(module, tuple, NULL_REG))
 		tuple.verb = 0;
 

@@ -127,8 +127,8 @@ bool UIWindow::display(int offsetX, int offsetY) {
 		}
 		if (_shieldWindow) {
 			_shieldWindow->_posX = _shieldWindow->_posY = 0;
-			_shieldWindow->_width = _gameRef->_renderer->_width;
-			_shieldWindow->_height = _gameRef->_renderer->_height;
+			_shieldWindow->_width = _gameRef->_renderer->getWidth();
+			_shieldWindow->_height = _gameRef->_renderer->getHeight();
 
 			_shieldWindow->display();
 		}
@@ -141,8 +141,8 @@ bool UIWindow::display(int offsetX, int offsetY) {
 		}
 		if (_shieldButton) {
 			_shieldButton->_posX = _shieldButton->_posY = 0;
-			_shieldButton->_width = _gameRef->_renderer->_width;
-			_shieldButton->_height = _gameRef->_renderer->_height;
+			_shieldButton->_width = _gameRef->_renderer->getWidth();
+			_shieldButton->_height = _gameRef->_renderer->getHeight();
 
 			_shieldButton->display();
 		}
@@ -431,7 +431,7 @@ bool UIWindow::loadBuffer(byte *buffer, bool complete) {
 
 		case TOKEN_TITLE:
 			setText((char *)params);
-			_gameRef->_stringTable->expand(&_text);
+			_gameRef->expandStringByStringTable(&_text);
 			break;
 
 		case TOKEN_TITLE_ALIGN:
@@ -885,8 +885,8 @@ bool UIWindow::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 	//////////////////////////////////////////////////////////////////////////
 	else if (strcmp(name, "Center") == 0) {
 		stack->correctParams(0);
-		_posX = (_gameRef->_renderer->_width - _width) / 2;
-		_posY = (_gameRef->_renderer->_height - _height) / 2;
+		_posX = (_gameRef->_renderer->getWidth() - _width) / 2;
+		_posY = (_gameRef->_renderer->getHeight() - _height) / 2;
 		stack->pushNULL();
 		return STATUS_OK;
 	}
@@ -1257,24 +1257,24 @@ bool UIWindow::persist(BasePersistenceManager *persistMgr) {
 
 	UIObject::persist(persistMgr);
 
-	persistMgr->transfer(TMEMBER(_backInactive));
+	persistMgr->transferPtr(TMEMBER_PTR(_backInactive));
 	persistMgr->transfer(TMEMBER(_clipContents));
 	persistMgr->transfer(TMEMBER(_dragFrom));
 	persistMgr->transfer(TMEMBER(_dragging));
 	persistMgr->transfer(TMEMBER(_dragRect));
 	persistMgr->transfer(TMEMBER(_fadeBackground));
 	persistMgr->transfer(TMEMBER(_fadeColor));
-	persistMgr->transfer(TMEMBER(_fontInactive));
-	persistMgr->transfer(TMEMBER(_imageInactive));
+	persistMgr->transferPtr(TMEMBER_PTR(_fontInactive));
+	persistMgr->transferPtr(TMEMBER_PTR(_imageInactive));
 	persistMgr->transfer(TMEMBER(_inGame));
 	persistMgr->transfer(TMEMBER(_isMenu));
 	persistMgr->transfer(TMEMBER_INT(_mode));
-	persistMgr->transfer(TMEMBER(_shieldButton));
-	persistMgr->transfer(TMEMBER(_shieldWindow));
+	persistMgr->transferPtr(TMEMBER_PTR(_shieldButton));
+	persistMgr->transferPtr(TMEMBER_PTR(_shieldWindow));
 	persistMgr->transfer(TMEMBER_INT(_titleAlign));
 	persistMgr->transfer(TMEMBER(_titleRect));
 	persistMgr->transfer(TMEMBER(_transparent));
-	persistMgr->transfer(TMEMBER(_viewport));
+	persistMgr->transferPtr(TMEMBER_PTR(_viewport));
 	persistMgr->transfer(TMEMBER(_pauseMusic));
 
 	_widgets.persist(persistMgr);
@@ -1442,4 +1442,4 @@ bool UIWindow::getWindowObjects(BaseArray<UIObject *> &objects, bool interactive
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

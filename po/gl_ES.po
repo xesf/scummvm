@@ -1,16 +1,16 @@
-# LANGUAGE translation for ScummVM.
+# Galician translation for ScummVM.
 # Copyright (C) 2010-2013 ScummVM Team
 # This file is distributed under the same license as the ScummVM package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Santiago G. Sanz <s.sanz@uvigo.es>, 2013.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.6.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.sf.net\n"
-"POT-Creation-Date: 2013-02-07 23:11+0000\n"
-"PO-Revision-Date: 2012-08-15 13:33+0100\n"
+"POT-Creation-Date: 2013-04-24 13:35+0100\n"
+"PO-Revision-Date: 2013-04-24 15:41+0100\n"
 "Last-Translator: Santiago G. Sanz <s.sanz@uvigo.es>\n"
-"Language-Team: \n"
+"Language-Team: Santiago G. Sanz <s.sanz@uvigo.es>\n"
 "Language: Galego\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=iso-8859-1\n"
@@ -30,13 +30,12 @@ msgid "Available engines:"
 msgstr "Motores dispoñibles:"
 
 #: gui/browser.cpp:67
-#, fuzzy
 msgid "Show hidden files"
-msgstr "Mostrar/ocultar consola"
+msgstr "Mostrar ficheiros ocultos"
 
 #: gui/browser.cpp:67
 msgid "Show files marked with the hidden attribute"
-msgstr ""
+msgstr "Mostra os ficheiros marcados co atributo Oculto."
 
 #: gui/browser.cpp:71
 msgid "Go up"
@@ -55,12 +54,12 @@ msgstr "Arriba"
 #: gui/launcher.cpp:345 gui/massadd.cpp:94 gui/options.cpp:1238
 #: gui/saveload-dialog.cpp:215 gui/saveload-dialog.cpp:275
 #: gui/saveload-dialog.cpp:545 gui/saveload-dialog.cpp:919
-#: gui/themebrowser.cpp:54 engines/engine.cpp:447
-#: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:190
-#: engines/sword1/control.cpp:867 engines/parallaction/saveload.cpp:274
-#: backends/platform/wii/options.cpp:48
-#: backends/events/default/default-events.cpp:191
-#: backends/events/default/default-events.cpp:213
+#: gui/themebrowser.cpp:54 gui/fluidsynth-dialog.cpp:151
+#: engines/engine.cpp:447 engines/drascula/saveload.cpp:51
+#: engines/scumm/dialogs.cpp:190 engines/sword1/control.cpp:865
+#: engines/parallaction/saveload.cpp:274 backends/platform/wii/options.cpp:48
+#: backends/events/default/default-events.cpp:193
+#: backends/events/default/default-events.cpp:215
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -101,13 +100,14 @@ msgstr "Asignar"
 
 #: gui/KeysDialog.cpp:42 gui/launcher.cpp:346 gui/launcher.cpp:1001
 #: gui/launcher.cpp:1005 gui/massadd.cpp:91 gui/options.cpp:1239
-#: gui/saveload-dialog.cpp:920 engines/engine.cpp:366 engines/engine.cpp:377
+#: gui/saveload-dialog.cpp:920 gui/fluidsynth-dialog.cpp:152
+#: engines/engine.cpp:366 engines/engine.cpp:377
 #: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:192
 #: engines/scumm/scumm.cpp:1778 engines/agos/animation.cpp:558
 #: engines/groovie/script.cpp:420 engines/sky/compact.cpp:131
 #: engines/sky/compact.cpp:141 engines/sword1/animation.cpp:519
 #: engines/sword1/animation.cpp:540 engines/sword1/animation.cpp:550
-#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:867
+#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:865
 #: engines/sword1/logic.cpp:1633 engines/sword2/animation.cpp:419
 #: engines/sword2/animation.cpp:439 engines/sword2/animation.cpp:449
 #: engines/sword2/animation.cpp:458 engines/parallaction/saveload.cpp:274
@@ -449,13 +449,13 @@ msgstr "Buscar:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/mohawk/myst.cpp:245
 #: engines/mohawk/riven.cpp:716 engines/cruise/menu.cpp:214
-#: engines/pegasus/pegasus.cpp:345
+#: engines/pegasus/pegasus.cpp:349
 msgid "Load game:"
 msgstr "Cargar partida:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/scumm/dialogs.cpp:188
 #: engines/mohawk/myst.cpp:245 engines/mohawk/riven.cpp:716
-#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:345
+#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:349
 #: backends/platform/wince/CEActionsPocket.cpp:267
 #: backends/platform/wince/CEActionsSmartphone.cpp:231
 msgid "Load"
@@ -469,7 +469,7 @@ msgstr ""
 "Queres executar o detector de xogos en masa? É posible que se engada un gran "
 "número de xogos."
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -477,7 +477,7 @@ msgstr ""
 msgid "Yes"
 msgstr "Si"
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -720,7 +720,7 @@ msgstr "Ganancia de MIDI:"
 
 #: gui/options.cpp:873
 msgid "FluidSynth Settings"
-msgstr ""
+msgstr "Configuración de FluidSynth"
 
 #: gui/options.cpp:880
 msgid "MT-32 Device:"
@@ -749,9 +749,8 @@ msgid "True Roland MT-32 (no GM emulation)"
 msgstr "Roland MT-32 (sen emulación de GM)"
 
 #: gui/options.cpp:890
-#, fuzzy
 msgid "Roland GS Mode (disable GM mapping)"
-msgstr "Roland MT-32 verdadeiro (sen emulación de GM)"
+msgstr "Modo Roland GS (desactivar mapeamento GM)"
 
 #: gui/options.cpp:890
 msgid "Turns off General MIDI mapping for games with Roland MT-32 soundtrack"
@@ -866,7 +865,7 @@ msgctxt "lowres"
 msgid "Plugins Path:"
 msgstr "Camiño complementos:"
 
-#: gui/options.cpp:1169
+#: gui/options.cpp:1169 gui/fluidsynth-dialog.cpp:137
 msgid "Misc"
 msgstr "Misc."
 
@@ -1038,6 +1037,94 @@ msgstr "Antidistorsión (16 bpp)"
 msgid "Clear value"
 msgstr "Limpar valor"
 
+#: gui/fluidsynth-dialog.cpp:67
+msgid "Reverb"
+msgstr "Reverberación"
+
+#: gui/fluidsynth-dialog.cpp:69 gui/fluidsynth-dialog.cpp:101
+msgid "Active"
+msgstr "Activa"
+
+#: gui/fluidsynth-dialog.cpp:71
+msgid "Room:"
+msgstr "Sala:"
+
+#: gui/fluidsynth-dialog.cpp:78
+msgid "Damp:"
+msgstr "Humidade:"
+
+#: gui/fluidsynth-dialog.cpp:85
+msgid "Width:"
+msgstr "Largo:"
+
+#: gui/fluidsynth-dialog.cpp:92 gui/fluidsynth-dialog.cpp:110
+msgid "Level:"
+msgstr "Nivel:"
+
+#: gui/fluidsynth-dialog.cpp:99
+msgid "Chorus"
+msgstr "Refrán"
+
+#: gui/fluidsynth-dialog.cpp:103
+msgid "N:"
+msgstr "N:"
+
+#: gui/fluidsynth-dialog.cpp:117
+msgid "Speed:"
+msgstr "Velocidade:"
+
+#: gui/fluidsynth-dialog.cpp:124
+msgid "Depth:"
+msgstr "Profundidade:"
+
+#: gui/fluidsynth-dialog.cpp:131
+msgid "Type:"
+msgstr "Tipo:"
+
+#: gui/fluidsynth-dialog.cpp:134
+msgid "Sine"
+msgstr "Seno"
+
+#: gui/fluidsynth-dialog.cpp:135
+msgid "Triangle"
+msgstr "Triángulo"
+
+#: gui/fluidsynth-dialog.cpp:139
+msgid "Interpolation:"
+msgstr "Interpolación:"
+
+#: gui/fluidsynth-dialog.cpp:142
+msgid "None (fastest)"
+msgstr "Ningunha (máis rápido)"
+
+#: gui/fluidsynth-dialog.cpp:143
+msgid "Linear"
+msgstr "Lineal"
+
+#: gui/fluidsynth-dialog.cpp:144
+msgid "Fourth-order"
+msgstr "Cuarta orde"
+
+#: gui/fluidsynth-dialog.cpp:145
+msgid "Seventh-order"
+msgstr "Séptima orde"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset"
+msgstr "Restablecer"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset all FluidSynth settings to their default values."
+msgstr ""
+"Restablece a configuración de FluidSynth aos seus valores predefinidos."
+
+#: gui/fluidsynth-dialog.cpp:216
+msgid ""
+"Do you really want to reset all FluidSynth settings to their default values?"
+msgstr ""
+"Seguro que queres restablecer a configuración de FluidSynth aos seus valores "
+"predefinidos?"
+
 #: base/main.cpp:210
 #, c-format
 msgid "Engine does not support debug level '%s'"
@@ -1183,14 +1270,14 @@ msgstr "~V~olver ao Iniciador"
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/cruise/menu.cpp:212
 #: engines/sci/engine/kfile.cpp:742 engines/toltecs/menu.cpp:284
-#: engines/pegasus/pegasus.cpp:369
+#: engines/pegasus/pegasus.cpp:373
 msgid "Save game:"
 msgstr "Gardar partida:"
 
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/scumm/dialogs.cpp:187
 #: engines/cruise/menu.cpp:212 engines/sci/engine/kfile.cpp:742
-#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:369
+#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:373
 #: backends/platform/symbian/src/SymbianActions.cpp:44
 #: backends/platform/wince/CEActionsPocket.cpp:43
 #: backends/platform/wince/CEActionsPocket.cpp:267
@@ -1313,17 +1400,16 @@ msgstr ""
 "Empregar as pantallas orixinais de gardado e carga, no canto das de ScummVM"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore game:"
 msgstr "Restaurar xogo:"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore"
 msgstr "Restaurar"
 
 #: engines/drascula/saveload.cpp:49
-#, fuzzy
 msgid ""
 "ScummVM found that you have old savefiles for Drascula that should be "
 "converted.\n"
@@ -1333,8 +1419,8 @@ msgid ""
 "Press OK to convert them now, otherwise you will be asked again the next "
 "time you start the game.\n"
 msgstr ""
-"ScummVM atopou ficheiros de gardado vellos de Broken Sword 1 que deberían "
-"ser convertidos.\n"
+"ScummVM atopou ficheiros de gardado vellos de Drascula que deberían ser "
+"convertidos.\n"
 "O formato vello xa non é compatible, de xeito que non poderás cargar as "
 "partidas se non os convertes.\n"
 "\n"
@@ -1447,7 +1533,7 @@ msgstr "Xogar"
 #: backends/platform/symbian/src/SymbianActions.cpp:52
 #: backends/platform/wince/CEActionsPocket.cpp:44
 #: backends/platform/wince/CEActionsSmartphone.cpp:52
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Quit"
 msgstr "Saír"
 
@@ -2151,13 +2237,12 @@ msgid "Failed to delete file."
 msgstr "Erro ao eliminar o ficheiro."
 
 #: engines/groovie/detection.cpp:312
-#, fuzzy
 msgid "Fast movie speed"
-msgstr "Modo rápido"
+msgstr "Velocidade de vídeo rápida"
 
 #: engines/groovie/detection.cpp:313
 msgid "Play movies at an increased speed"
-msgstr ""
+msgstr "Reproducir vídeos a máis velocidade"
 
 #: engines/groovie/script.cpp:420
 msgid "Failed to save game"
@@ -2249,11 +2334,11 @@ msgstr "Esvarar á esquerda"
 msgid "Slide Right"
 msgstr "Esvarar á dereita"
 
-#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2412
+#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2447
 msgid "Turn Left"
 msgstr "Xirar á esquerda"
 
-#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2413
+#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2448
 msgid "Turn Right"
 msgstr "Xirar á dereita"
 
@@ -2335,7 +2420,7 @@ msgstr "Xa non hai compatibilidade coas secuencias en MPEG2"
 msgid "Cutscene '%s' not found"
 msgstr "Non se atopou a secuencia %s"
 
-#: engines/sword1/control.cpp:865
+#: engines/sword1/control.cpp:863
 msgid ""
 "ScummVM found that you have old savefiles for Broken Sword 1 that should be "
 "converted.\n"
@@ -2353,7 +2438,7 @@ msgstr ""
 "Preme Aceptar para convertilos. Se non, volverás ver esta mensaxe a próxima "
 "vez que inicies o xogo.\n"
 
-#: engines/sword1/control.cpp:1234
+#: engines/sword1/control.cpp:1232
 #, c-format
 msgid ""
 "Target new save game already exists!\n"
@@ -2362,11 +2447,11 @@ msgstr ""
 "Xa existe unha partida con ese nome!\n"
 "Queres conservar a vella (%s) ou a nova (%s)?\n"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the old one"
 msgstr "Conservar a vella"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the new one"
 msgstr "Conservar a nova"
 
@@ -2453,46 +2538,45 @@ msgstr ""
 "\n"
 "Contacta co equipo de ScummVM."
 
-#: engines/pegasus/pegasus.cpp:675
+#: engines/pegasus/pegasus.cpp:679
 msgid "Invalid save file name"
-msgstr ""
+msgstr "Nome de ficheiro non válido"
 
-#: engines/pegasus/pegasus.cpp:2410
+#: engines/pegasus/pegasus.cpp:2445
 msgid "Up/Zoom In/Move Forward/Open Doors"
-msgstr ""
+msgstr "Arriba/Ampliar/Avanzar/Abrir portas"
 
-#: engines/pegasus/pegasus.cpp:2411
-#, fuzzy
+#: engines/pegasus/pegasus.cpp:2446
 msgid "Down/Zoom Out"
-msgstr "Ampliar"
+msgstr "Abaixo/Reducir"
 
-#: engines/pegasus/pegasus.cpp:2414
+#: engines/pegasus/pegasus.cpp:2449
 msgid "Display/Hide Inventory Tray"
-msgstr ""
+msgstr "Mostrar/Ocultar bandexa de inventario"
 
-#: engines/pegasus/pegasus.cpp:2415
+#: engines/pegasus/pegasus.cpp:2450
 msgid "Display/Hide Biochip Tray"
-msgstr ""
+msgstr "Mostrar/Ocultar bandexa de biochip"
 
-#: engines/pegasus/pegasus.cpp:2416
+#: engines/pegasus/pegasus.cpp:2451
 msgid "Action/Select"
-msgstr ""
+msgstr "Acción/Seleccionar"
 
-#: engines/pegasus/pegasus.cpp:2417
+#: engines/pegasus/pegasus.cpp:2452
 msgid "Toggle Center Data Display"
-msgstr ""
+msgstr "Activar/Desactivar pantalla de datos"
 
-#: engines/pegasus/pegasus.cpp:2418
+#: engines/pegasus/pegasus.cpp:2453
 msgid "Display/Hide Info Screen"
-msgstr ""
+msgstr "Mostrar/Ocultar pantalla de información"
 
-#: engines/pegasus/pegasus.cpp:2419
+#: engines/pegasus/pegasus.cpp:2454
 msgid "Display/Hide Pause Menu"
-msgstr ""
+msgstr "Mostrar/Ocultar menú de pausa"
 
-#: engines/pegasus/pegasus.cpp:2420
+#: engines/pegasus/pegasus.cpp:2455
 msgid "???"
-msgstr ""
+msgstr "???"
 
 #: audio/fmopl.cpp:49
 msgid "MAME OPL emulator"
@@ -3103,15 +3187,15 @@ msgstr ""
 "Non esquezas asignar unha tecla á acción Ocultar barra de ferramentas para "
 "ver o inventario completo"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Do you really want to return to the Launcher?"
 msgstr "Seguro que queres volver ao Iniciador?"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Launcher"
 msgstr "Iniciador"
 
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Do you really want to quit?"
 msgstr "Seguro que queres saír?"
 
@@ -3131,7 +3215,7 @@ msgstr "Modo pantalla táctil: premer botón secundario"
 #: backends/events/gph/gph-events.cpp:433
 #: backends/events/openpandora/op-events.cpp:172
 msgid "Touchscreen 'Tap Mode' - Hover (No Click)"
-msgstr "Modo pantalla táctil: apuntar co rato"
+msgstr "Modo pantalla táctil: apuntar co rato (sen premer)"
 
 #: backends/events/gph/gph-events.cpp:410
 msgid "Maximum Volume"
@@ -3150,9 +3234,8 @@ msgid "Decreasing Volume"
 msgstr "Baixando volume"
 
 #: backends/events/openpandora/op-events.cpp:174
-#, fuzzy
 msgid "Touchscreen 'Tap Mode' - Hover (DPad Clicks)"
-msgstr "Modo pantalla táctil: apuntar co rato"
+msgstr "Modo pantalla táctil: apuntar co rato (premer na cruceta)"
 
 #: backends/updates/macosx/macosx-updates.mm:67
 msgid "Check for Updates..."

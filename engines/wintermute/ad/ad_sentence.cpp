@@ -56,7 +56,7 @@ AdSentence::AdSentence(BaseGame *inGame) : BaseClass(inGame) {
 	_font = nullptr;
 
 	_pos.x = _pos.y = 0;
-	_width = _gameRef->_renderer->_width;
+	_width = _gameRef->_renderer->getWidth();
 
 	_align = (TTextAlign)TAL_CENTER;
 
@@ -204,8 +204,8 @@ bool AdSentence::display() {
 	}
 
 	if (_gameRef->_subtitles) {
-		int x = _pos.x;
-		int y = _pos.y;
+		int32 x = _pos.x;
+		int32 y = _pos.y;
 
 		if (!_fixedPos) {
 			x = x - ((AdGame *)_gameRef)->_scene->getOffsetLeft();
@@ -213,9 +213,9 @@ bool AdSentence::display() {
 		}
 
 
-		x = MAX(x, 0);
-		x = MIN(x, _gameRef->_renderer->_width - _width);
-		y = MAX(y, 0);
+		x = MAX<int32>(x, 0);
+		x = MIN(x, _gameRef->_renderer->getWidth() - _width);
+		y = MAX<int32>(y, 0);
 
 		_font->drawText((byte *)_text, x, y, _width, _align);
 	}
@@ -247,20 +247,20 @@ bool AdSentence::finish() {
 //////////////////////////////////////////////////////////////////////////
 bool AdSentence::persist(BasePersistenceManager *persistMgr) {
 
-	persistMgr->transfer(TMEMBER(_gameRef));
+	persistMgr->transferPtr(TMEMBER_PTR(_gameRef));
 
 	persistMgr->transfer(TMEMBER_INT(_align));
 	persistMgr->transfer(TMEMBER(_currentStance));
-	persistMgr->transfer(TMEMBER(_currentSprite));
+	persistMgr->transferPtr(TMEMBER_PTR(_currentSprite));
 	persistMgr->transfer(TMEMBER(_currentSkelAnim));
 	persistMgr->transfer(TMEMBER(_duration));
-	persistMgr->transfer(TMEMBER(_font));
+	persistMgr->transferPtr(TMEMBER_PTR(_font));
 	persistMgr->transfer(TMEMBER(_pos));
-	persistMgr->transfer(TMEMBER(_sound));
+	persistMgr->transferPtr(TMEMBER_PTR(_sound));
 	persistMgr->transfer(TMEMBER(_soundStarted));
 	persistMgr->transfer(TMEMBER(_stances));
 	persistMgr->transfer(TMEMBER(_startTime));
-	persistMgr->transfer(TMEMBER(_talkDef));
+	persistMgr->transferPtr(TMEMBER_PTR(_talkDef));
 	persistMgr->transfer(TMEMBER(_tempStance));
 	persistMgr->transfer(TMEMBER(_text));
 	persistMgr->transfer(TMEMBER(_width));
@@ -314,9 +314,9 @@ bool AdSentence::update(TDirection dir) {
 
 	/*
 	if (_sound) CurrentTime = _sound->GetPositionTime();
-	else CurrentTime = _gameRef->_timer - _startTime;
+	else CurrentTime = _gameRef->getTimer()->getTime() - _startTime;
 	*/
-	currentTime = _gameRef->_timer - _startTime;
+	currentTime = _gameRef->getTimer()->getTime() - _startTime;
 
 	bool talkNodeFound = false;
 	for (uint32 i = 0; i < _talkDef->_nodes.size(); i++) {
@@ -355,7 +355,7 @@ bool AdSentence::update(TDirection dir) {
 //////////////////////////////////////////////////////////////////////////
 bool AdSentence::canSkip() {
 	// prevent accidental sentence skipping (TODO make configurable)
-	return (_gameRef->_timer - _startTime) > 300;
+	return (_gameRef->getTimer()->getTime() - _startTime) > 300;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

@@ -57,23 +57,20 @@ private:
 	void clearCharacterAnim();
 	bool searchCharacterAnim(int idx, const byte *bufPerso, int animId, int bufferSize);
 	int countBoxLines(int idx, const Common::String &file);
-
-	void VISU_PARLE();
-	void BOB_VISU_PARLE(int idx);
+	void dialogAnim();
+	void displayBobDialogAnim(int idx);
 
 public:
 	byte *_characterAnim;
 	byte *_characterSprite;
 
-	TalkManager();
-	void setParent(HopkinsEngine *vm);
+	TalkManager(HopkinsEngine *vm);
 
 	void startStaticCharacterDialogue(const Common::String &filename);
 	void startAnimatedCharacterDialogue(const Common::String &filename);
 	void animateObject(const Common::String &filename);
-
-	void REPONSE(int zone, int verb);
-	void REPONSE2(int zone, int verb);
+	void handleAnswer(int zone, int verb);
+	void handleForestAnswser(int zone, int verb);
 };
 
 } // End of namespace Hopkins

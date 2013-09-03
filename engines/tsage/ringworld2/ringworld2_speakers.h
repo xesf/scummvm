@@ -41,21 +41,27 @@ class VisualSpeaker : public Speaker {
 public:
 	SceneActor _object1;
 	SceneObject *_object2;
-	int _fieldF6, _fieldF8;
+	int _speakerMode;
+	int _fieldF8;
 	int _displayMode;
 	int _soundId;
 	int _delayAmount;
 	bool _removeObject;
-	int _frameNumber;
+	uint32 _frameNumber;
 	int _numFrames;
+	int _delayAmount2;
+	uint32 _frameNumber2;
 private:
 	void setFrame(int numFrames);
+	void setFrame2(int numFrames);
 public:
 	VisualSpeaker();
 
 	virtual Common::String getClassName() { return "VisualSpeaker"; }
 	virtual void synchronize(Serializer &s);
 	virtual void remove();
+	virtual void signal();
+	virtual void dispatch();
 	virtual void setText(const Common::String &msg);
 	virtual void proc15() {}
 	virtual void proc16();
@@ -276,6 +282,12 @@ public:
 	virtual void proc15();
 };
 
+class SpeakerQuinn500 : public SpeakerQuinn {
+public:
+	virtual Common::String getClassName() { return "SpeakerQuinn500"; }
+	virtual void proc15();
+};
+
 class SpeakerQuinn1100 : public SpeakerQuinn {
 public:
 	virtual Common::String getClassName() { return "SpeakerQuinn1100"; }
@@ -414,6 +426,12 @@ public:
 	virtual void proc15();
 };
 
+class SpeakerSeeker500 : public SpeakerSeeker {
+public:
+	virtual Common::String getClassName() { return "SpeakerSeeker500"; }
+	virtual void proc15();
+};
+
 class SpeakerSeeker1100 : public SpeakerSeeker {
 public:
 	virtual Common::String getClassName() { return "SpeakerSeeker1100"; }
@@ -498,7 +516,7 @@ public:
 
 class SpeakerSoldier : public VisualSpeaker {
 public:
-	SpeakerSoldier(int colour);
+	SpeakerSoldier(int color);
 	virtual Common::String getClassName() { return "SpeakerSoldier"; }
 };
 
@@ -573,7 +591,7 @@ public:
 
 class SpeakerWebbster : public VisualSpeaker {
 public:
-	SpeakerWebbster(int colour);
+	SpeakerWebbster(int color);
 	virtual Common::String getClassName() { return "SpeakerWebbster"; }
 };
 

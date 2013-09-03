@@ -208,9 +208,9 @@ bool AdTalkDef::persist(BasePersistenceManager *persistMgr) {
 
 	BaseObject::persist(persistMgr);
 
-	persistMgr->transfer(TMEMBER(_defaultSprite));
+	persistMgr->transferPtr(TMEMBER_PTR(_defaultSprite));
 	persistMgr->transfer(TMEMBER(_defaultSpriteFilename));
-	persistMgr->transfer(TMEMBER(_defaultSpriteSet));
+	persistMgr->transferPtr(TMEMBER_PTR(_defaultSpriteSet));
 	persistMgr->transfer(TMEMBER(_defaultSpriteSetFilename));
 
 	_nodes.persist(persistMgr);
@@ -282,4 +282,4 @@ BaseSprite *AdTalkDef::getDefaultSprite(TDirection dir) {
 	}
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

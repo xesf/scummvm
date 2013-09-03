@@ -38,7 +38,9 @@ struct LigneZoneItem {
 	int16 *_zoneData;
 };
 
-#define INVALID_LINEIDX 1300
+#define INVALID_LINE_VALUE 1300
+
+#define MAX_LINES 400
 
 struct RouteItem;
 
@@ -74,7 +76,7 @@ struct SquareZoneItem {
 	bool _squareZoneFl;
 };
 
-struct ZonePItem {
+struct ZoneItem {
 	int _destX;
 	int _destY;
 	int _spriteIndex;
@@ -106,29 +108,38 @@ class LinesManager {
 private:
 	HopkinsEngine *_vm;
 
+	bool _forceHideText;
+	int _hotspotTextColor;
 	int _pathFindingMaxDepth;
 	SmoothItem _smoothRoute[4000];
 	Directions _smoothMoveDirection;
-	LigneZoneItem _zoneLine[401];
+	LigneZoneItem _zoneLine[MAX_LINES+1];
 	SegmentItem _segment[101];
-	SquareZoneItem _squareZone[101];
 	int _currentSegmentId;
 	int _maxLineIdx;
 	int _lastLine;
-	int _linesNumb;
 	int _newLineIdx;
 	int _newLineDataIdx;
 	int _newRouteIdx;
 	int _newPosX;
 	int _newPosY;
+	int _oldMouseX, _oldMouseY;
+	int _oldRouteFromX;
+	int _oldRouteFromY;
+	int _oldRouteDestX;
+	int _oldRouteDestY;
+	int _oldZoneNum;
 
 	byte *_largeBuf;
 	RouteItem *_testRoute0;
 	RouteItem *_testRoute1;
 	int16 *_lineBuf;
-	LigneItem _lineItem[400];
 	RouteItem _bestRoute[8001];
+	int _zoneSkipCount;
+	int _oldMouseZoneId;
 
+	int avoidObstacle(int lineIdx, int lineDataIdx, int routeIdx, int destLineIdx, int destLineDataIdx, RouteItem *route);
+	int avoidObstacleOnSegment(int lineIdx, int lineDataIdx, int routeIdx, int destLineIdx, int destLineDataIdx, RouteItem *route, int startLineIdx, int endLineIdx);
 	int checkInventoryHotspotsRow(int posX, int minZoneNum, bool lastRow);
 	void removeZoneLine(int idx);
 	void removeLine(int idx);
@@ -137,39 +148,41 @@ private:
 	bool checkSmoothMove(int fromX, int fromY, int destX, int destY);
 	bool makeSmoothMove(int fromX, int fromY, int destX, int destY);
 	int characterRoute(int fromX, int fromY, int destX, int destY, int startLineIdx, int endLineIdx, int routeIdx);
-	int testLine(int paramX, int paramY, int *a3, int *foundLineIdx, int *foundDataIdx);
-	void _useRoute0(int idx, int curRouteIdx);
+	int testLine(int paramX, int paramY, int *testValue, int *foundLineIdx, int *foundDataIdx);
+	void useRoute0(int idx, int curRouteIdx);
 	void useRoute1(int idx, int curRouteIdx);
 	void useRoute2(int idx, int curRouteIdx);
+	int computeYSteps(int idx);
+	int computeRouteIdx(int lineIdx, int dataIdx, int fromX, int fromY, int destX, int destY, int routerIdx, RouteItem *route);
 
-	int CALC_PROPRE(int idx);
-	int CONTOURNE(int lineIdx, int lineDataIdx, int routeIdx, int destLineIdx, int destLineDataIdx, RouteItem *route);
-	int CONTOURNE1(int lineIdx, int lineDataIdx, int routeIdx, int destLineIdx, int destLineDataIdx, RouteItem *route, int a8, int a9);
 	bool MIRACLE(int fromX, int fromY, int lineIdx, int destLineIdx, int routeIdx);
-	int GENIAL(int lineIdx, int dataIdx, int fromX, int fromY, int destX, int destY, int routerIdx, RouteItem *route);
-	bool PLAN_TEST(int paramX, int paramY, int superRouteIdx, int a4, int a5);
+	bool PLAN_TEST(int paramX, int paramY, int superRouteIdx, int paramStartLineIdx, int paramEndLineIdx);
 
 public:
 	RouteItem *_route;
 	RouteItem *_testRoute2;
 
-	int BOBZONE[105];
-	bool BOBZONE_FLAG[105];
-	ZonePItem ZONEP[106];
+	int _bobZone[105];
+	bool _bobZoneFl[105];
+	ZoneItem _zone[106];
+	SquareZoneItem _squareZone[101];
+	LigneItem _lineItem[MAX_LINES];
+	int _linesNumb;
 
-	LinesManager();
+	LinesManager(HopkinsEngine *vm);
 	~LinesManager();
-	void setParent(HopkinsEngine *vm);
 	void clearAll();
 
 	void setMaxLineIdx(int idx);
 	int checkInventoryHotspots(int posX, int posY);
-	void addZoneLine(int idx, int a2, int a3, int a4, int a5, int bobZoneIdx);
+	void addZoneLine(int idx, int fromX, int fromY, int destX, int destY, int bobZoneIdx);
 	void loadLines(const Common::String &file);
-	void addLine(int lineIdx, Directions direction, int a3, int a4, int a5, int a6);
+	void addLine(int lineIdx, Directions direction, int fromX, int fromY, int destX, int destY);
 	void initRoute();
+	RouteItem *findRoute(int fromX, int fromY, int destX, int destY);
 	RouteItem *cityMapCarRoute(int x1, int y1, int x2, int y2);
 	void clearAllZones();
+	void initSquareZones();
 	void resetLines();
 	void resetLinesNumb();
 	void resetLastLine();
@@ -177,10 +190,7 @@ public:
 	void disableZone(int idx);
 	void checkZone();
 	int getMouseZone();
-
-	void CARRE_ZONE();
-	RouteItem *PARCOURS2(int fromX, int fromY, int destX, int destY);
-	void PACOURS_PROPRE(RouteItem *route);
+	void optimizeRoute(RouteItem *route);
 };
 
 } // End of namespace Hopkins

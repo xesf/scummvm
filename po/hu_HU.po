@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.3.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.sf.net\n"
-"POT-Creation-Date: 2013-02-07 23:11+0000\n"
-"PO-Revision-Date: 2013-02-11 09:27+0100\n"
+"POT-Creation-Date: 2013-04-24 13:35+0100\n"
+"PO-Revision-Date: 2013-04-25 06:38+0100\n"
 "Last-Translator: George Kormendi <grubycza@hotmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: Magyar\n"
@@ -57,12 +57,12 @@ msgstr "Feljebb"
 #: gui/launcher.cpp:345 gui/massadd.cpp:94 gui/options.cpp:1238
 #: gui/saveload-dialog.cpp:215 gui/saveload-dialog.cpp:275
 #: gui/saveload-dialog.cpp:545 gui/saveload-dialog.cpp:919
-#: gui/themebrowser.cpp:54 engines/engine.cpp:447
-#: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:190
-#: engines/sword1/control.cpp:867 engines/parallaction/saveload.cpp:274
-#: backends/platform/wii/options.cpp:48
-#: backends/events/default/default-events.cpp:191
-#: backends/events/default/default-events.cpp:213
+#: gui/themebrowser.cpp:54 gui/fluidsynth-dialog.cpp:151
+#: engines/engine.cpp:447 engines/drascula/saveload.cpp:51
+#: engines/scumm/dialogs.cpp:190 engines/sword1/control.cpp:865
+#: engines/parallaction/saveload.cpp:274 backends/platform/wii/options.cpp:48
+#: backends/events/default/default-events.cpp:193
+#: backends/events/default/default-events.cpp:215
 msgid "Cancel"
 msgstr "Mégse"
 
@@ -103,13 +103,14 @@ msgstr "Kiosztás"
 
 #: gui/KeysDialog.cpp:42 gui/launcher.cpp:346 gui/launcher.cpp:1001
 #: gui/launcher.cpp:1005 gui/massadd.cpp:91 gui/options.cpp:1239
-#: gui/saveload-dialog.cpp:920 engines/engine.cpp:366 engines/engine.cpp:377
+#: gui/saveload-dialog.cpp:920 gui/fluidsynth-dialog.cpp:152
+#: engines/engine.cpp:366 engines/engine.cpp:377
 #: engines/drascula/saveload.cpp:51 engines/scumm/dialogs.cpp:192
 #: engines/scumm/scumm.cpp:1778 engines/agos/animation.cpp:558
 #: engines/groovie/script.cpp:420 engines/sky/compact.cpp:131
 #: engines/sky/compact.cpp:141 engines/sword1/animation.cpp:519
 #: engines/sword1/animation.cpp:540 engines/sword1/animation.cpp:550
-#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:867
+#: engines/sword1/animation.cpp:557 engines/sword1/control.cpp:865
 #: engines/sword1/logic.cpp:1633 engines/sword2/animation.cpp:419
 #: engines/sword2/animation.cpp:439 engines/sword2/animation.cpp:449
 #: engines/sword2/animation.cpp:458 engines/parallaction/saveload.cpp:274
@@ -451,13 +452,13 @@ msgstr "Keresés:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/mohawk/myst.cpp:245
 #: engines/mohawk/riven.cpp:716 engines/cruise/menu.cpp:214
-#: engines/pegasus/pegasus.cpp:345
+#: engines/pegasus/pegasus.cpp:349
 msgid "Load game:"
 msgstr "Játék betöltése:"
 
 #: gui/launcher.cpp:680 engines/dialogs.cpp:114 engines/scumm/dialogs.cpp:188
 #: engines/mohawk/myst.cpp:245 engines/mohawk/riven.cpp:716
-#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:345
+#: engines/cruise/menu.cpp:214 engines/pegasus/pegasus.cpp:349
 #: backends/platform/wince/CEActionsPocket.cpp:267
 #: backends/platform/wince/CEActionsSmartphone.cpp:231
 msgid "Load"
@@ -471,7 +472,7 @@ msgstr ""
 "Biztos hogy futtatod a Masszív játékdetektort? Ez potenciálisan sok játékot "
 "hozzáad a listához."
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -479,7 +480,7 @@ msgstr ""
 msgid "Yes"
 msgstr "Igen"
 
-#: gui/launcher.cpp:789 gui/launcher.cpp:937
+#: gui/launcher.cpp:789 gui/launcher.cpp:937 gui/fluidsynth-dialog.cpp:216
 #: backends/events/symbiansdl/symbiansdl-events.cpp:184
 #: backends/platform/wince/CEActionsPocket.cpp:326
 #: backends/platform/wince/CEActionsSmartphone.cpp:287
@@ -864,7 +865,7 @@ msgctxt "lowres"
 msgid "Plugins Path:"
 msgstr "Plugin Mappa:"
 
-#: gui/options.cpp:1169
+#: gui/options.cpp:1169 gui/fluidsynth-dialog.cpp:137
 msgid "Misc"
 msgstr "Vegyes"
 
@@ -1036,6 +1037,92 @@ msgstr "Élsimított (16bpp)"
 msgid "Clear value"
 msgstr "Érték törlése"
 
+#: gui/fluidsynth-dialog.cpp:67
+msgid "Reverb"
+msgstr "Forgatás"
+
+#: gui/fluidsynth-dialog.cpp:69 gui/fluidsynth-dialog.cpp:101
+msgid "Active"
+msgstr "Aktív"
+
+#: gui/fluidsynth-dialog.cpp:71
+msgid "Room:"
+msgstr "Szoba:"
+
+#: gui/fluidsynth-dialog.cpp:78
+msgid "Damp:"
+msgstr "Csillapítás:"
+
+#: gui/fluidsynth-dialog.cpp:85
+msgid "Width:"
+msgstr "Szélesség:"
+
+#: gui/fluidsynth-dialog.cpp:92 gui/fluidsynth-dialog.cpp:110
+msgid "Level:"
+msgstr "Szint:"
+
+#: gui/fluidsynth-dialog.cpp:99
+msgid "Chorus"
+msgstr "Kórus"
+
+#: gui/fluidsynth-dialog.cpp:103
+msgid "N:"
+msgstr "N:"
+
+#: gui/fluidsynth-dialog.cpp:117
+msgid "Speed:"
+msgstr "Sebesség:"
+
+#: gui/fluidsynth-dialog.cpp:124
+msgid "Depth:"
+msgstr "Mélység:"
+
+#: gui/fluidsynth-dialog.cpp:131
+msgid "Type:"
+msgstr "Típus:"
+
+#: gui/fluidsynth-dialog.cpp:134
+msgid "Sine"
+msgstr "Színusz"
+
+#: gui/fluidsynth-dialog.cpp:135
+msgid "Triangle"
+msgstr "Háromszög"
+
+#: gui/fluidsynth-dialog.cpp:139
+msgid "Interpolation:"
+msgstr "Interpoláció:"
+
+#: gui/fluidsynth-dialog.cpp:142
+msgid "None (fastest)"
+msgstr "Nincs (gyorsabb)"
+
+#: gui/fluidsynth-dialog.cpp:143
+msgid "Linear"
+msgstr "Lineáris"
+
+#: gui/fluidsynth-dialog.cpp:144
+msgid "Fourth-order"
+msgstr "Negyedrangú"
+
+#: gui/fluidsynth-dialog.cpp:145
+msgid "Seventh-order"
+msgstr "Hetedrangú"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset"
+msgstr "Reset"
+
+#: gui/fluidsynth-dialog.cpp:149
+msgid "Reset all FluidSynth settings to their default values."
+msgstr "Minden FluidSynth beállítás alapértelmezett értékre."
+
+#: gui/fluidsynth-dialog.cpp:216
+msgid ""
+"Do you really want to reset all FluidSynth settings to their default values?"
+msgstr ""
+"Biztos visszaállítassz minden FluidSynth beállítást alapértelmezett értékre?"
+
 #: base/main.cpp:210
 #, c-format
 msgid "Engine does not support debug level '%s'"
@@ -1181,14 +1268,14 @@ msgstr "Visszatérés az indítóba"
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/cruise/menu.cpp:212
 #: engines/sci/engine/kfile.cpp:742 engines/toltecs/menu.cpp:284
-#: engines/pegasus/pegasus.cpp:369
+#: engines/pegasus/pegasus.cpp:373
 msgid "Save game:"
 msgstr "Játék mentése:"
 
 #: engines/dialogs.cpp:115 engines/agi/saveload.cpp:803
 #: engines/drascula/saveload.cpp:338 engines/scumm/dialogs.cpp:187
 #: engines/cruise/menu.cpp:212 engines/sci/engine/kfile.cpp:742
-#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:369
+#: engines/toltecs/menu.cpp:284 engines/pegasus/pegasus.cpp:373
 #: backends/platform/symbian/src/SymbianActions.cpp:44
 #: backends/platform/wince/CEActionsPocket.cpp:43
 #: backends/platform/wince/CEActionsPocket.cpp:267
@@ -1309,12 +1396,12 @@ msgid "Use the original save/load screens, instead of the ScummVM ones"
 msgstr "Az eredeti mentés/betöltés képernyõ használata a ScummVM képek helyett"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore game:"
 msgstr "Játékmenet visszaállítása:"
 
 #: engines/agi/saveload.cpp:816 engines/drascula/saveload.cpp:351
-#: engines/sci/engine/kfile.cpp:838 engines/toltecs/menu.cpp:259
+#: engines/sci/engine/kfile.cpp:841 engines/toltecs/menu.cpp:259
 msgid "Restore"
 msgstr "Visszaállítás"
 
@@ -1437,7 +1524,7 @@ msgstr "Játék"
 #: backends/platform/symbian/src/SymbianActions.cpp:52
 #: backends/platform/wince/CEActionsPocket.cpp:44
 #: backends/platform/wince/CEActionsSmartphone.cpp:52
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Quit"
 msgstr "Kilépés"
 
@@ -2238,11 +2325,11 @@ msgstr "Siklás balra"
 msgid "Slide Right"
 msgstr "Siklás jobbra"
 
-#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2412
+#: engines/kyra/lol.cpp:485 engines/pegasus/pegasus.cpp:2447
 msgid "Turn Left"
 msgstr "Balra fordul"
 
-#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2413
+#: engines/kyra/lol.cpp:486 engines/pegasus/pegasus.cpp:2448
 msgid "Turn Right"
 msgstr "Jobbra fordul"
 
@@ -2322,7 +2409,7 @@ msgstr "MPEG2 átvezetõk már nem támogatottak"
 msgid "Cutscene '%s' not found"
 msgstr "'%s' átvezetõ nem található"
 
-#: engines/sword1/control.cpp:865
+#: engines/sword1/control.cpp:863
 msgid ""
 "ScummVM found that you have old savefiles for Broken Sword 1 that should be "
 "converted.\n"
@@ -2340,7 +2427,7 @@ msgstr ""
 "Nyomj OK-t az átalakításhoz, vagy rákérdezzek ha legközelebb elindítod a "
 "játékot.\n"
 
-#: engines/sword1/control.cpp:1234
+#: engines/sword1/control.cpp:1232
 #, c-format
 msgid ""
 "Target new save game already exists!\n"
@@ -2349,11 +2436,11 @@ msgstr ""
 "A választott játékmentés már létezik!\n"
 "Megtartod a régi játékmentést (%s) vagy kicseréled az újra (%s)?\n"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the old one"
 msgstr "A régit megtartom"
 
-#: engines/sword1/control.cpp:1237
+#: engines/sword1/control.cpp:1235
 msgid "Keep the new one"
 msgstr "Az újat megtartom"
 
@@ -2438,43 +2525,43 @@ msgstr ""
 "\n"
 "Légyszíves jelentsd a csapatnak."
 
-#: engines/pegasus/pegasus.cpp:675
+#: engines/pegasus/pegasus.cpp:679
 msgid "Invalid save file name"
 msgstr "Érvénytelen mentés fájlnév"
 
-#: engines/pegasus/pegasus.cpp:2410
+#: engines/pegasus/pegasus.cpp:2445
 msgid "Up/Zoom In/Move Forward/Open Doors"
 msgstr "Fel/Nagyítás/Elõre mozgás/Ajtónyitás"
 
-#: engines/pegasus/pegasus.cpp:2411
+#: engines/pegasus/pegasus.cpp:2446
 msgid "Down/Zoom Out"
 msgstr "Le/Zoom Ki"
 
-#: engines/pegasus/pegasus.cpp:2414
+#: engines/pegasus/pegasus.cpp:2449
 msgid "Display/Hide Inventory Tray"
 msgstr "Tárgylista tálca Képre/Elrejt"
 
-#: engines/pegasus/pegasus.cpp:2415
+#: engines/pegasus/pegasus.cpp:2450
 msgid "Display/Hide Biochip Tray"
 msgstr "Biochip tálca Képre/Elrejt"
 
-#: engines/pegasus/pegasus.cpp:2416
+#: engines/pegasus/pegasus.cpp:2451
 msgid "Action/Select"
 msgstr "Akció/Választ"
 
-#: engines/pegasus/pegasus.cpp:2417
+#: engines/pegasus/pegasus.cpp:2452
 msgid "Toggle Center Data Display"
 msgstr "Adatképernyõ kapcsoló"
 
-#: engines/pegasus/pegasus.cpp:2418
+#: engines/pegasus/pegasus.cpp:2453
 msgid "Display/Hide Info Screen"
 msgstr "Infóképernyõ Képre/Elrejt"
 
-#: engines/pegasus/pegasus.cpp:2419
+#: engines/pegasus/pegasus.cpp:2454
 msgid "Display/Hide Pause Menu"
 msgstr "Szünet menü Képre/Elrejt"
 
-#: engines/pegasus/pegasus.cpp:2420
+#: engines/pegasus/pegasus.cpp:2455
 msgid "???"
 msgstr "???"
 
@@ -3083,15 +3170,15 @@ msgstr ""
 "Ne felejts billentyût társítani az 'Eszköztár rejtés' mûvelethez, hogy lásd "
 "a teljes listát"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Do you really want to return to the Launcher?"
 msgstr "Biztos hogy visszatérsz az indítópulthoz?"
 
-#: backends/events/default/default-events.cpp:191
+#: backends/events/default/default-events.cpp:193
 msgid "Launcher"
 msgstr "Indítópult"
 
-#: backends/events/default/default-events.cpp:213
+#: backends/events/default/default-events.cpp:215
 msgid "Do you really want to quit?"
 msgstr "Biztos hogy ki akarsz lépni ?"
 

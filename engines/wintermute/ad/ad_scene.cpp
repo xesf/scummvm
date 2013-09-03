@@ -189,7 +189,7 @@ void AdScene::cleanup() {
 
 
 //////////////////////////////////////////////////////////////////////////
-bool AdScene::getPath(BasePoint source, BasePoint target, AdPath *path, BaseObject *requester) {
+bool AdScene::getPath(const BasePoint &source, const BasePoint &target, AdPath *path, BaseObject *requester) {
 	if (!_pfReady) {
 		return false;
 	} else {
@@ -420,7 +420,7 @@ bool AdScene::isWalkableAt(int x, int y, bool checkFreeObjects, BaseObject *requ
 
 
 //////////////////////////////////////////////////////////////////////////
-int AdScene::getPointsDist(BasePoint p1, BasePoint p2, BaseObject *requester) {
+int AdScene::getPointsDist(const BasePoint &p1, const BasePoint &p2, BaseObject *requester) {
 	double xStep, yStep, x, y;
 	int xLength, yLength, xCount, yCount;
 	int x1, y1, x2, y2;
@@ -755,7 +755,7 @@ bool AdScene::loadBuffer(byte *buffer, bool complete) {
 			break;
 
 		case TOKEN_CAMERA:
-			strcpy(camera, (char *)params);
+			Common::strlcpy(camera, (char *)params, MAX_PATH_LENGTH);
 			break;
 
 		case TOKEN_EDITOR_MARGIN_H:
@@ -931,13 +931,13 @@ bool AdScene::traverseNodes(bool doUpdate) {
 
 		if (_autoScroll) {
 			// adjust horizontal scroll
-			if (_gameRef->_timer - _lastTimeH >= _scrollTimeH) {
-				int timesMissed = (_gameRef->_timer - _lastTimeH) / _scrollTimeH;
+			if (_gameRef->getTimer()->getTime() - _lastTimeH >= _scrollTimeH) {
+				int timesMissed = (_gameRef->getTimer()->getTime() - _lastTimeH) / _scrollTimeH;
 				// Cap the amount of catch-up to avoid jittery characters.
 				if (timesMissed > 2) {
 					timesMissed = 2;
 				}
-				_lastTimeH = _gameRef->_timer;
+				_lastTimeH = _gameRef->getTimer()->getTime();
 				if (_offsetLeft < _targetOffsetLeft) {
 					_offsetLeft += _scrollPixelsH * timesMissed;
 					_offsetLeft = MIN(_offsetLeft, _targetOffsetLeft);
@@ -948,13 +948,13 @@ bool AdScene::traverseNodes(bool doUpdate) {
 			}
 
 			// adjust vertical scroll
-			if (_gameRef->_timer - _lastTimeV >= _scrollTimeV) {
-				int timesMissed = (_gameRef->_timer - _lastTimeV) / _scrollTimeV;
+			if (_gameRef->getTimer()->getTime() - _lastTimeV >= _scrollTimeV) {
+				int timesMissed = (_gameRef->getTimer()->getTime() - _lastTimeV) / _scrollTimeV;
 				// Cap the amount of catch-up to avoid jittery characters.
 				if (timesMissed > 2) {
 					timesMissed = 2;
 				}
-				_lastTimeV = _gameRef->_timer;
+				_lastTimeV = _gameRef->getTimer()->getTime();
 				if (_offsetTop < _targetOffsetTop) {
 					_offsetTop += _scrollPixelsV * timesMissed;
 					_offsetTop = MIN(_offsetTop, _targetOffsetTop);
@@ -976,14 +976,14 @@ bool AdScene::traverseNodes(bool doUpdate) {
 
 
 	//////////////////////////////////////////////////////////////////////////
-	int viewportWidth, viewportHeight;
+	int32 viewportWidth, viewportHeight;
 	getViewportSize(&viewportWidth, &viewportHeight);
 
-	int viewportX, viewportY;
+	int32 viewportX, viewportY;
 	getViewportOffset(&viewportX, &viewportY);
 
-	int scrollableX = _width  - viewportWidth;
-	int scrollableY = _height - viewportHeight;
+	int32 scrollableX = _width  - viewportWidth;
+	int32 scrollableY = _height - viewportHeight;
 
 	double widthRatio  = scrollableX <= 0 ? 0 : ((double)(_offsetLeft) / (double)scrollableX);
 	double heightRatio = scrollableY <= 0 ? 0 : ((double)(_offsetTop)  / (double)scrollableY);
@@ -1014,8 +1014,8 @@ bool AdScene::traverseNodes(bool doUpdate) {
 				}
 				if (_shieldWindow) {
 					_shieldWindow->_posX = _shieldWindow->_posY = 0;
-					_shieldWindow->_width = _gameRef->_renderer->_width;
-					_shieldWindow->_height = _gameRef->_renderer->_height;
+					_shieldWindow->_width = _gameRef->_renderer->getWidth();
+					_shieldWindow->_height = _gameRef->_renderer->getHeight();
 					_shieldWindow->display();
 				}
 			}
@@ -1272,16 +1272,16 @@ bool AdScene::update() {
 
 //////////////////////////////////////////////////////////////////////////
 void AdScene::scrollTo(int offsetX, int offsetY) {
-	int viewportWidth, viewportHeight;
+	int32 viewportWidth, viewportHeight;
 	getViewportSize(&viewportWidth, &viewportHeight);
 
-	int origOffsetLeft = _targetOffsetLeft;
-	int origOffsetTop = _targetOffsetTop;
+	int32 origOffsetLeft = _targetOffsetLeft;
+	int32 origOffsetTop = _targetOffsetTop;
 
-	_targetOffsetLeft = MAX(0, offsetX - viewportWidth / 2);
+	_targetOffsetLeft = MAX<int32>(0, offsetX - viewportWidth / 2);
 	_targetOffsetLeft = MIN(_targetOffsetLeft, _width - viewportWidth);
 
-	_targetOffsetTop = MAX(0, offsetY - viewportHeight / 2);
+	_targetOffsetTop = MAX<int32>(0, offsetY - viewportHeight / 2);
 	_targetOffsetTop = MIN(_targetOffsetTop, _height - viewportHeight);
 
 
@@ -1317,13 +1317,13 @@ void AdScene::skipToObject(BaseObject *object) {
 
 //////////////////////////////////////////////////////////////////////////
 void AdScene::skipTo(int offsetX, int offsetY) {
-	int viewportWidth, viewportHeight;
+	int32 viewportWidth, viewportHeight;
 	getViewportSize(&viewportWidth, &viewportHeight);
 
-	_offsetLeft = MAX(0, offsetX - viewportWidth / 2);
+	_offsetLeft = MAX<int32>(0, offsetX - viewportWidth / 2);
 	_offsetLeft = MIN(_offsetLeft, _width - viewportWidth);
 
-	_offsetTop = MAX(0, offsetY - viewportHeight / 2);
+	_offsetTop = MAX<int32>(0, offsetY - viewportHeight / 2);
 	_offsetTop = MIN(_offsetTop, _height - viewportHeight);
 
 	_targetOffsetLeft = _offsetLeft;
@@ -1694,10 +1694,10 @@ bool AdScene::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack,
 		int height = stack->pop()->getInt();
 
 		if (width <= 0) {
-			width = _gameRef->_renderer->_width;
+			width = _gameRef->_renderer->getWidth();
 		}
 		if (height <= 0) {
-			height = _gameRef->_renderer->_height;
+			height = _gameRef->_renderer->getHeight();
 		}
 
 		if (!_viewport) {
@@ -1866,7 +1866,7 @@ ScValue *AdScene::scGetProperty(const Common::String &name) {
 	// MouseX (RO)
 	//////////////////////////////////////////////////////////////////////////
 	else if (name == "MouseX") {
-		int viewportX;
+		int32 viewportX;
 		getViewportOffset(&viewportX);
 
 		_scValue->setInt(_gameRef->_mousePos.x + _offsetLeft - viewportX);
@@ -1877,7 +1877,7 @@ ScValue *AdScene::scGetProperty(const Common::String &name) {
 	// MouseY (RO)
 	//////////////////////////////////////////////////////////////////////////
 	else if (name == "MouseY") {
-		int viewportY;
+		int32 viewportY;
 		getViewportOffset(nullptr, &viewportY);
 
 		_scValue->setInt(_gameRef->_mousePos.y + _offsetTop - viewportY);
@@ -2057,10 +2057,10 @@ bool AdScene::scSetProperty(const char *name, ScValue *value) {
 	else if (strcmp(name, "OffsetX") == 0) {
 		_offsetLeft = value->getInt();
 
-		int viewportWidth, viewportHeight;
+		int32 viewportWidth, viewportHeight;
 		getViewportSize(&viewportWidth, &viewportHeight);
 
-		_offsetLeft = MAX(0, _offsetLeft - viewportWidth / 2);
+		_offsetLeft = MAX<int32>(0, _offsetLeft - viewportWidth / 2);
 		_offsetLeft = MIN(_offsetLeft, _width - viewportWidth);
 		_targetOffsetLeft = _offsetLeft;
 
@@ -2073,10 +2073,10 @@ bool AdScene::scSetProperty(const char *name, ScValue *value) {
 	else if (strcmp(name, "OffsetY") == 0) {
 		_offsetTop = value->getInt();
 
-		int viewportWidth, viewportHeight;
+		int32 viewportWidth, viewportHeight;
 		getViewportSize(&viewportWidth, &viewportHeight);
 
-		_offsetTop = MAX(0, _offsetTop - viewportHeight / 2);
+		_offsetTop = MAX<int32>(0, _offsetTop - viewportHeight / 2);
 		_offsetTop = MIN(_offsetTop, _height - viewportHeight);
 		_targetOffsetTop = _offsetTop;
 
@@ -2319,13 +2319,13 @@ bool AdScene::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transfer(TMEMBER(_editorShowEntities));
 	persistMgr->transfer(TMEMBER(_editorShowRegions));
 	persistMgr->transfer(TMEMBER(_editorShowScale));
-	persistMgr->transfer(TMEMBER(_fader));
+	persistMgr->transferPtr(TMEMBER_PTR(_fader));
 	persistMgr->transfer(TMEMBER(_height));
 	persistMgr->transfer(TMEMBER(_initialized));
 	persistMgr->transfer(TMEMBER(_lastTimeH));
 	persistMgr->transfer(TMEMBER(_lastTimeV));
 	_layers.persist(persistMgr);
-	persistMgr->transfer(TMEMBER(_mainLayer));
+	persistMgr->transferPtr(TMEMBER_PTR(_mainLayer));
 	_objects.persist(persistMgr);
 	persistMgr->transfer(TMEMBER(_offsetLeft));
 	persistMgr->transfer(TMEMBER(_offsetTop));
@@ -2336,20 +2336,20 @@ bool AdScene::persist(BasePersistenceManager *persistMgr) {
 	_pfPath.persist(persistMgr);
 	persistMgr->transfer(TMEMBER(_pfPointsNum));
 	persistMgr->transfer(TMEMBER(_pfReady));
-	persistMgr->transfer(TMEMBER(_pfRequester));
-	persistMgr->transfer(TMEMBER(_pfTarget));
-	persistMgr->transfer(TMEMBER(_pfTargetPath));
+	persistMgr->transferPtr(TMEMBER_PTR(_pfRequester));
+	persistMgr->transferPtr(TMEMBER_PTR(_pfTarget));
+	persistMgr->transferPtr(TMEMBER_PTR(_pfTargetPath));
 	_rotLevels.persist(persistMgr);
 	_scaleLevels.persist(persistMgr);
 	persistMgr->transfer(TMEMBER(_scrollPixelsH));
 	persistMgr->transfer(TMEMBER(_scrollPixelsV));
 	persistMgr->transfer(TMEMBER(_scrollTimeH));
 	persistMgr->transfer(TMEMBER(_scrollTimeV));
-	persistMgr->transfer(TMEMBER(_shieldWindow));
+	persistMgr->transferPtr(TMEMBER_PTR(_shieldWindow));
 	persistMgr->transfer(TMEMBER(_targetOffsetLeft));
 	persistMgr->transfer(TMEMBER(_targetOffsetTop));
 	_waypointGroups.persist(persistMgr);
-	persistMgr->transfer(TMEMBER(_viewport));
+	persistMgr->transferPtr(TMEMBER_PTR(_viewport));
 	persistMgr->transfer(TMEMBER(_width));
 
 	return STATUS_OK;
@@ -2361,10 +2361,10 @@ bool AdScene::afterLoad() {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool AdScene::correctTargetPoint2(int startX, int startY, int *targetX, int *targetY, bool checkFreeObjects, BaseObject *requester) {
+bool AdScene::correctTargetPoint2(int32 startX, int32 startY, int32 *targetX, int32 *targetY, bool checkFreeObjects, BaseObject *requester) {
 	double xStep, yStep, x, y;
-	int xLength, yLength, xCount, yCount;
-	int x1, y1, x2, y2;
+	int32 xLength, yLength, xCount, yCount;
+	int32 x1, y1, x2, y2;
 
 	x1 = *targetX;
 	y1 = *targetY;
@@ -2407,9 +2407,9 @@ bool AdScene::correctTargetPoint2(int startX, int startY, int *targetX, int *tar
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool AdScene::correctTargetPoint(int startX, int startY, int *argX, int *argY, bool checkFreeObjects, BaseObject *requester) {
-	int x = *argX;
-	int y = *argY;
+bool AdScene::correctTargetPoint(int32 startX, int32 startY, int32 *argX, int32 *argY, bool checkFreeObjects, BaseObject *requester) {
+	int32 x = *argX;
+	int32 y = *argY;
 
 	if (isWalkableAt(x, y, checkFreeObjects, requester) || !_mainLayer) {
 		return STATUS_OK;
@@ -2522,7 +2522,7 @@ void AdScene::pfPointsAdd(int x, int y, int distance) {
 
 
 //////////////////////////////////////////////////////////////////////////
-bool AdScene::getViewportOffset(int *offsetX, int *offsetY) {
+bool AdScene::getViewportOffset(int32 *offsetX, int32 *offsetY) {
 	AdGame *adGame = (AdGame *)_gameRef;
 	if (_viewport && !_gameRef->_editorMode) {
 		if (offsetX) {
@@ -2551,7 +2551,7 @@ bool AdScene::getViewportOffset(int *offsetX, int *offsetY) {
 
 
 //////////////////////////////////////////////////////////////////////////
-bool AdScene::getViewportSize(int *width, int *height) {
+bool AdScene::getViewportSize(int32 *width, int32 *height) {
 	AdGame *adGame = (AdGame *)_gameRef;
 	if (_viewport && !_gameRef->_editorMode) {
 		if (width) {
@@ -2569,10 +2569,10 @@ bool AdScene::getViewportSize(int *width, int *height) {
 		}
 	} else {
 		if (width) {
-			*width  = _gameRef->_renderer->_width;
+			*width  = _gameRef->_renderer->getWidth();
 		}
 		if (height) {
-			*height = _gameRef->_renderer->_height;
+			*height = _gameRef->_renderer->getHeight();
 		}
 	}
 	return STATUS_OK;
@@ -2581,7 +2581,7 @@ bool AdScene::getViewportSize(int *width, int *height) {
 
 //////////////////////////////////////////////////////////////////////////
 int AdScene::getOffsetLeft() {
-	int viewportX;
+	int32 viewportX;
 	getViewportOffset(&viewportX);
 
 	return _offsetLeft - viewportX;
@@ -2590,7 +2590,7 @@ int AdScene::getOffsetLeft() {
 
 //////////////////////////////////////////////////////////////////////////
 int AdScene::getOffsetTop() {
-	int viewportY;
+	int32 viewportY;
 	getViewportOffset(nullptr, &viewportY);
 
 	return _offsetTop - viewportY;
@@ -2599,7 +2599,7 @@ int AdScene::getOffsetTop() {
 
 //////////////////////////////////////////////////////////////////////////
 bool AdScene::pointInViewport(int x, int y) {
-	int left, top, width, height;
+	int32 left, top, width, height;
 
 	getViewportOffset(&left, &top);
 	getViewportSize(&width, &height);
@@ -2774,11 +2774,11 @@ float AdScene::getRotationAt(int x, int y) {
 	}
 
 	int delta_x = next->_posX - prev->_posX;
-	float delta_rot = next->_rotation - prev->_rotation;
+	float delta_rot = next->getRotation() - prev->getRotation();
 	x -= prev->_posX;
 
 	float percent = (float)x / ((float)delta_x / 100.0f);
-	return prev->_rotation + delta_rot / 100 * percent;
+	return prev->getRotation() + delta_rot / 100 * percent;
 }
 
 
@@ -2989,4 +2989,4 @@ bool AdScene::getRegionObjects(AdRegion *region, BaseArray<AdObject *> &objects,
 	return STATUS_OK;
 }
 
-} // end of namespace Wintermute
+} // End of namespace Wintermute

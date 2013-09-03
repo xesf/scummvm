@@ -1219,7 +1219,7 @@ void cmdWander(AgiGame *state, uint8 *p) {
 
 void cmdSetGameID(AgiGame *state, uint8 *p) {
 	if (state->_curLogic->texts && (p0 - 1) <= state->_curLogic->numTexts)
-		strncpy(state->id, state->_curLogic->texts[p0 - 1], 8);
+		Common::strlcpy(state->id, state->_curLogic->texts[p0 - 1], 8);
 	else
 		state->id[0] = 0;
 
@@ -1705,7 +1705,9 @@ void cmdCallV1(AgiGame *state, uint8 *p) {
 	// FIXME: The following instruction looks incomplete.
 	// Maybe something is meant to be assigned to, or read from,
 	// the logic_list entry?
-	state->logic_list[++state->max_logics];
+//	state->logic_list[++state->max_logics];
+	// For now, just do the increment, to silence a clang warning
+	++state->max_logics;
 	_v[13] = 1;
 }
 

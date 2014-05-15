@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -426,13 +426,11 @@ bool RivenConsole::Cmd_CurStack(int argc, const char **argv) {
 }
 
 bool RivenConsole::Cmd_ChangeStack(int argc, const char **argv) {
-	byte i;
-
 	if (argc < 3) {
 		DebugPrintf("Usage: changeStack <stack> <card>\n\n");
 		DebugPrintf("Stacks:\n=======\n");
 
-		for (i = 0; i <= tspit; i++)
+		for (uint i = kStackFirst; i <= kStackLast; i++)
 			DebugPrintf(" %s\n", _vm->getStackName(i).c_str());
 
 		DebugPrintf("\n");
@@ -440,20 +438,21 @@ bool RivenConsole::Cmd_ChangeStack(int argc, const char **argv) {
 		return true;
 	}
 
-	byte stackNum = 0;
+	uint stack = kStackUnknown;
 
-	for (i = 1; i <= tspit + 1; i++)
-		if (!scumm_stricmp(argv[1], _vm->getStackName(i - 1).c_str())) {
-			stackNum = i;
+	for (uint i = kStackFirst; i <= kStackLast; i++) {
+		if (!scumm_stricmp(argv[1], _vm->getStackName(i).c_str())) {
+			stack = i;
 			break;
 		}
+	}
 
-	if (!stackNum) {
+	if (stack == kStackUnknown) {
 		DebugPrintf("\'%s\' is not a stack name!\n", argv[1]);
 		return true;
 	}
 
-	_vm->changeToStack(stackNum - 1);
+	_vm->changeToStack(stack);
 	_vm->changeToCard((uint16)atoi(argv[2]));
 
 	return false;
@@ -494,21 +493,20 @@ bool RivenConsole::Cmd_DumpScript(int argc, const char **argv) {
 	}
 
 	uint16 oldStack = _vm->getCurStack();
+	uint newStack = kStackUnknown;
 
-	byte newStack = 0;
-
-	for (byte i = 1; i <= tspit + 1; i++)
-		if (!scumm_stricmp(argv[1], _vm->getStackName(i - 1).c_str())) {
+	for (uint i = kStackFirst; i <= kStackLast; i++) {
+		if (!scumm_stricmp(argv[1], _vm->getStackName(i).c_str())) {
 			newStack = i;
 			break;
 		}
+	}
 
-	if (!newStack) {
+	if (newStack == kStackUnknown) {
 		DebugPrintf("\'%s\' is not a stack name!\n", argv[1]);
 		return true;
 	}
 
-	newStack--;
 	_vm->changeToStack(newStack);
 
 	// Load in Variable Names

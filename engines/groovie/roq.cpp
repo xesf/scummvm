@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -28,10 +28,11 @@
 #include "groovie/groovie.h"
 
 #include "common/debug.h"
+#include "common/substream.h"
 #include "common/textconsole.h"
 
 #include "graphics/palette.h"
-#include "graphics/decoders/jpeg.h"
+#include "image/jpeg.h"
 
 #ifdef USE_RGB_COLOR
 // Required for the YUV to RGB conversion
@@ -44,7 +45,7 @@ namespace Groovie {
 
 ROQPlayer::ROQPlayer(GroovieEngine *vm) :
 	VideoPlayer(vm), _codingTypeCount(0),
-	_fg(&_vm->_graphicsMan->_foreground), _bg(&_vm->_graphicsMan->_background) {
+	_bg(&_vm->_graphicsMan->_background) {
 
 	// Create the work surfaces
 	_currBuf = new Graphics::Surface();
@@ -434,20 +435,19 @@ bool ROQPlayer::processBlockStill(ROQBlockHeader &blockHeader) {
 
 	warning("Groovie::ROQ: JPEG frame (unfinished)");
 
-	Graphics::JPEGDecoder *jpg = new Graphics::JPEGDecoder();
-	jpg->loadStream(*_file);
-	const byte *y = (const byte *)jpg->getComponent(1)->getPixels();
-	const byte *u = (const byte *)jpg->getComponent(2)->getPixels();
-	const byte *v = (const byte *)jpg->getComponent(3)->getPixels();
+	Image::JPEGDecoder jpg;
+	jpg.setOutputColorSpace(Image::JPEGDecoder::kColorSpaceYUV);
 
+	uint32 startPos = _file->pos();
+	Common::SeekableSubReadStream subStream(_file, startPos, startPos + blockHeader.size, DisposeAfterUse::NO);
+	jpg.loadStream(subStream);
+
+	const Graphics::Surface *srcSurf = jpg.getSurface();
+	const byte *src = (const byte *)srcSurf->getPixels();
 	byte *ptr = (byte *)_currBuf->getPixels();
-	for (int i = 0; i < _currBuf->w * _currBuf->h; i++) {
-		*ptr++ = *y++;
-		*ptr++ = *u++;
-		*ptr++ = *v++;
-	}
+	memcpy(ptr, src, _currBuf->w * _currBuf->h * srcSurf->format.bytesPerPixel);
 
-	delete jpg;
+	_file->seek(startPos + blockHeader.size);
 	return true;
 }
 

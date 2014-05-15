@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -84,7 +84,7 @@ public:
 	 * @param a the alpha component to fade too.
 	 * @param rect the portion of the screen to fade (if nullptr, the entire screen will be faded).
 	 */
-	virtual void fadeToColor(byte r, byte g, byte b, byte a, Common::Rect *rect = nullptr) = 0;
+	virtual void fadeToColor(byte r, byte g, byte b, byte a) = 0;
 
 	virtual bool drawLine(int x1, int y1, int x2, int y2, uint32 color); 	// Unused outside indicator-display
 	virtual bool drawRect(int x1, int y1, int x2, int y2, uint32 color, int width = 1); 	// Unused outside indicator-display

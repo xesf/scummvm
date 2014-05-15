@@ -453,8 +453,13 @@ GlobeGame::GlobeGame(Neighborhood *handler) : GameInteraction(kNoradGlobeGameInt
 	_neighborhoodNotification = handler->getNeighborhoodNotification();
 }
 
+void GlobeGame::setSoundFXLevel(const uint16 fxLevel) {
+	_monitorMovie.setVolume(fxLevel);
+}
+
 void GlobeGame::openInteraction() {
 	_monitorMovie.initFromMovieFile("Images/Norad Delta/N79 Left Monitor");
+	_monitorMovie.setVolume(((PegasusEngine *)g_engine)->getSoundFXLevel());
 	_monitorMovie.moveElementTo(kGlobeMonitorLeft, kGlobeMonitorTop);
 	_monitorMovie.setDisplayOrder(kGlobeMonitorLayer);
 	_monitorMovie.startDisplaying();
@@ -905,6 +910,11 @@ void GlobeGame::clickGlobe(const Input &input) {
 				_monitorMovie.start();
 				_owner->requestSpotSound(kMaximumDeactivationIn, kMaximumDeactivationOut,
 						kFilterNoInput, kSpotSoundCompletedFlag);
+
+				// This sound was left out of the original.
+				_owner->requestSpotSound(kAllSilosDeactivatedIn, kAllSilosDeactivatedOut,
+						kFilterNoInput, kSpotSoundCompletedFlag);
+
 				_gameState = kPlayerWon1;
 			} else {
 				_owner->requestDelay(2, 1, kFilterNoInput, kDelayCompletedFlag);
@@ -1060,12 +1070,13 @@ void GlobeGame::doSolve() {
 	_upperNamesMovie.hide();
 	_lowerNamesMovie.hide();
 	_countdown.hide();
-	_monitorMovie.setSegment(kMaxDeactivatedStart * _monitorMovie.getScale(), kMaxDeactivatedStop * _monitorMovie.getScale());
-	_monitorMovie.setTime(kMaxDeactivatedStart * _monitorMovie.getScale());
+	_monitorMovie.setSegment(kMaxDeactivatedStart * _monitorMovie.getScale() + (kSiloDeactivatedOut - kSiloDeactivatedIn), kMaxDeactivatedStop * _monitorMovie.getScale());
+	_monitorMovie.setTime(kMaxDeactivatedStart * _monitorMovie.getScale() + (kSiloDeactivatedOut - kSiloDeactivatedIn));
 	_monitorCallBack.setCallBackFlag(kMaxDeactivatedFinished);
 	_monitorCallBack.scheduleCallBack(kTriggerAtStop, 0, 0);
 	_monitorMovie.start();
 	_owner->requestSpotSound(kMaximumDeactivationIn, kMaximumDeactivationOut, kFilterNoInput, kSpotSoundCompletedFlag);
+	_owner->requestSpotSound(kAllSilosDeactivatedIn, kAllSilosDeactivatedOut, kFilterNoInput, kSpotSoundCompletedFlag);
 	_gameState = kPlayerWon1;
 }
 

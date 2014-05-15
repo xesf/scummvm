@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -162,6 +162,10 @@ public:
 	T* createSprite(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6) {
 		return new T(_vm, arg1, arg2, arg3, arg4, arg5, arg6);
 	}
+
+	uint32 getBackgroundFileHash() const { return _backgroundFileHash; }
+	uint32 getCursorFileHash() const { return _cursorFileHash; }
+
 protected:
 	Module *_parentModule;
 	Common::Array<Entity*> _entities;
@@ -197,8 +201,9 @@ protected:
 	HitRectList *_hitRects;
 	Common::Array<Sprite*> _collisionSprites;
 
-	void (Entity::*_savedUpdateHandlerCb)();
-	uint32 (Entity::*_savedMessageHandlerCb)(int messageNum, const MessageParam &param, Entity *sender);
+	// Used for debugging
+	uint32 _backgroundFileHash, _cursorFileHash;    // for StaticScene and all Scene* classes
+
 	int _messageValue;
 	uint32 handleMessage(int messageNum, const MessageParam &param, Entity *sender);
 	bool queryPositionSprite(int16 mouseX, int16 mouseY);
@@ -222,6 +227,14 @@ protected:
 	void clearCollisionSprites();
 
 	void insertMouse(Mouse *mouseCursor);
+};
+
+
+class StaticScene : public Scene {
+public:
+	StaticScene(NeverhoodEngine *vm, Module *parentModule, uint32 backgroundFileHash, uint32 cursorFileHash);
+protected:
+	uint32 handleMessage(int messageNum, const MessageParam &param, Entity *sender);
 };
 
 } // End of namespace Neverhood

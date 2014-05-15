@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -28,6 +28,18 @@ StaticData::StaticData() {
 }
 
 StaticData::~StaticData() {
+	for (Common::HashMap<uint32, HitRectList*>::iterator i = _hitRectLists.begin(); i != _hitRectLists.end(); ++i)
+		delete i->_value;
+	for (Common::HashMap<uint32, RectList*>::iterator i = _rectLists.begin(); i != _rectLists.end(); ++i)
+		delete i->_value;
+	for (Common::HashMap<uint32, MessageList*>::iterator i = _messageLists.begin(); i != _messageLists.end(); ++i)
+		delete i->_value;
+	for (Common::HashMap<uint32, NavigationList*>::iterator i = _navigationLists.begin(); i != _navigationLists.end(); ++i)
+		delete i->_value;
+	for (Common::HashMap<uint32, HallOfRecordsInfo*>::iterator i = _hallOfRecordsInfoItems.begin(); i != _hallOfRecordsInfoItems.end(); ++i)
+		delete i->_value;
+	for (Common::HashMap<uint32, TrackInfo*>::iterator i = _trackInfoItems.begin(); i != _trackInfoItems.end(); ++i)
+		delete i->_value;
 }
 
 void StaticData::load(const char *filename) {
@@ -53,6 +65,27 @@ void StaticData::load(const char *filename) {
 			messageItem.messageValue = fd.readUint32LE();
 			messageList->push_back(messageItem);
 		}
+
+		// WORKAROUND for a problem in two of the game's message lists:
+		// the message lists used when Klaymen is drinking the wrong potion
+		// have as a last element the animation itself (message 0x4832).
+		// However, when processMessageList() reaches the last element in a
+		// message list, it allows player input, which means that the player
+		// can erroneously skip these potion drinking animations. We insert
+		// another message at the end of these lists to prevent player input
+		// till the animations are finished
+		if (id == 0x004AF0C8 || id == 0x004B5BD0) {	// wrong potion message lists
+			MessageItem messageItem;
+			messageItem.messageNum = 0x4004;	// set Klaymen's state to idle
+			messageItem.messageValue = 0;
+			messageList->push_back(messageItem);
+		}
+
+		if(_messageLists.contains(id)) {
+			warning("Duplicate id %d in _messageLists - freeing older entry", id);
+			delete _messageLists[id];
+		}
+
 		_messageLists[id] = messageList;
 	}
 
@@ -82,6 +115,12 @@ void StaticData::load(const char *filename) {
 			}
 			rectList->push_back(rectItem);
 		}
+
+		if(_rectLists.contains(id)) {
+			warning("Duplicate id %d in _rectLists - freeing older entry", id);
+			delete _rectLists[id];
+		}
+
 		_rectLists[id] = rectList;
 	}
 
@@ -101,6 +140,12 @@ void StaticData::load(const char *filename) {
 			hitRect.type = fd.readUint16LE();
 			hitRectList->push_back(hitRect);
 		}
+
+		if(_hitRectLists.contains(id)) {
+			warning("Duplicate id %d in _hitRectLists - freeing older entry", id);
+			delete _hitRectLists[id];
+		}
+
 		_hitRectLists[id] = hitRectList;
 	}
 
@@ -122,6 +167,12 @@ void StaticData::load(const char *filename) {
 			navigationItem.mouseCursorFileHash = fd.readUint32LE();
 			navigationList->push_back(navigationItem);
 		}
+
+		if(_navigationLists.contains(id)) {
+			warning("Duplicate id %d in _navigationLists - freeing older entry", id);
+			delete _navigationLists[id];
+		}
+
 		_navigationLists[id] = navigationList;
 	}
 
@@ -137,6 +188,12 @@ void StaticData::load(const char *filename) {
 		hallOfRecordsInfo->bgFilename3 = fd.readUint32LE();
 		hallOfRecordsInfo->xPosIndex = fd.readByte();
 		hallOfRecordsInfo->count = fd.readByte();
+
+		if(_hallOfRecordsInfoItems.contains(id)) {
+			warning("Duplicate id %d in _hallOfRecordsInfoItems - freeing older entry", id);
+			delete _hallOfRecordsInfoItems[id];
+		}
+
 		_hallOfRecordsInfoItems[id] = hallOfRecordsInfo;
 	}
 
@@ -156,6 +213,12 @@ void StaticData::load(const char *filename) {
 		trackInfo->mouseCursorFilename = fd.readUint32LE();
 		trackInfo->which1 = fd.readUint16LE();
 		trackInfo->which2 = fd.readUint16LE();
+
+		if(_trackInfoItems.contains(id)) {
+			warning("Duplicate id %d in _trackInfoItems - freeing older entry", id);
+			delete _trackInfoItems[id];
+		}
+
 		_trackInfoItems[id] = trackInfo;
 	}
 

@@ -492,14 +492,10 @@ struct GameSettings {
 	const char *detectname;
 };
 
-static const GameSettings agiSettings[] = {
-	{"agi", "AGI game", GID_AGI, MDT_ADLIB, "OBJECT"},
-	{NULL, NULL, 0, 0, NULL}
-};
-
 AgiBase::AgiBase(OSystem *syst, const AGIGameDescription *gameDesc) : Engine(syst), _gameDescription(gameDesc) {
 	// Assign default values to the config manager, in case settings are missing
 	ConfMan.registerDefault("originalsaveload", "false");
+	ConfMan.registerDefault("altamigapalette", "false");
 
 	_noSaveLoadAllowed = false;
 

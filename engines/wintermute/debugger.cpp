@@ -29,8 +29,8 @@
 namespace Wintermute {
 
 Console::Console(WintermuteEngine *vm) : GUI::Debugger(), _engineRef(vm) {
-	DCmd_Register("show_fps", WRAP_METHOD(Console, Cmd_ShowFps));
-	DCmd_Register("dump_file", WRAP_METHOD(Console, Cmd_DumpFile));
+	registerCmd("show_fps", WRAP_METHOD(Console, Cmd_ShowFps));
+	registerCmd("dump_file", WRAP_METHOD(Console, Cmd_DumpFile));
 }
 
 Console::~Console(void) {
@@ -42,7 +42,7 @@ bool Console::Cmd_ShowFps(int argc, const char **argv) {
 		if (Common::String(argv[1]) == "true") {
 			_engineRef->_game->setShowFPS(true);
 		} else if (Common::String(argv[1]) == "false") {
-			_engineRef->_game->setShowFPS(false);;
+			_engineRef->_game->setShowFPS(false);
 		}
 	}
 	return true;
@@ -50,7 +50,7 @@ bool Console::Cmd_ShowFps(int argc, const char **argv) {
 
 bool Console::Cmd_DumpFile(int argc, const char **argv) {
 	if (argc != 3) {
-		DebugPrintf("Usage: %s <file path> <output file name>\n", argv[0]);
+		debugPrintf("Usage: %s <file path> <output file name>\n", argv[0]);
 		return true;
 	}
 
@@ -60,7 +60,7 @@ bool Console::Cmd_DumpFile(int argc, const char **argv) {
 	BaseFileManager *fileManager = BaseEngine::instance().getFileManager();
 	Common::SeekableReadStream *inFile = fileManager->openFile(filePath);
 	if (!inFile) {
-		DebugPrintf("File '%s' not found\n", argv[1]);
+		debugPrintf("File '%s' not found\n", argv[1]);
 		return true;
 	}
 
@@ -77,7 +77,7 @@ bool Console::Cmd_DumpFile(int argc, const char **argv) {
 	delete outFile;
 	delete inFile;
 
-	DebugPrintf("Resource file '%s' dumped to file '%s'\n", argv[1], argv[2]);
+	debugPrintf("Resource file '%s' dumped to file '%s'\n", argv[1], argv[2]);
 	return true;
 }
 

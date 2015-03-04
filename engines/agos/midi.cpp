@@ -52,7 +52,7 @@ MidiPlayer::MidiPlayer() {
 	_paused = false;
 
 	_currentTrack = 255;
-	_loopTrack = 0;
+	_loopTrackDefault = false;
 	_queuedTrack = 255;
 	_loopQueuedTrack = 0;
 }
@@ -166,13 +166,13 @@ void MidiPlayer::metaEvent(byte type, byte *data, uint16 length) {
 		return;
 	} else if (_current == &_sfx) {
 		clearConstructs(_sfx);
-	} else if (_loopTrack) {
+	} else if (_current->loopTrack) {
 		_current->parser->jumpToTick(0);
 	} else if (_queuedTrack != 255) {
 		_currentTrack = 255;
 		byte destination = _queuedTrack;
 		_queuedTrack = 255;
-		_loopTrack = _loopQueuedTrack;
+		_current->loopTrack = _loopQueuedTrack;
 		_loopQueuedTrack = false;
 
 		// Remember, we're still inside the locked mutex.
@@ -235,10 +235,6 @@ void MidiPlayer::startTrack(int track) {
 		_music.parser = parser; // That plugs the power cord into the wall
 	} else if (_music.parser) {
 		if (!_music.parser->setTrack(track)) {
-			// The Roland MT32 music in Simon the Sorcerer 2
-			// is missing the extra tracks in many scenes,
-			// like the introduction sequence.
-			stop();
 			return;
 		}
 		_currentTrack = (byte)track;
@@ -304,7 +300,7 @@ void MidiPlayer::setVolume(int musicVol, int sfxVol) {
 void MidiPlayer::setLoop(bool loop) {
 	Common::StackLock lock(_mutex);
 
-	_loopTrack = loop;
+	_loopTrackDefault = loop;
 }
 
 void MidiPlayer::queueTrack(int track, bool loop) {
@@ -409,7 +405,7 @@ void MidiPlayer::loadSMF(Common::File *in, int song, bool sfx) {
 
 	uint32 timerRate = _driver->getBaseTempo();
 
-	if (!memcmp(p->data, "GMF\x1", 4)) {
+	if (isGMF) {
 		// The GMF header
 		// 3 BYTES: 'GMF'
 		// 1 BYTE : Major version
@@ -430,11 +426,9 @@ void MidiPlayer::loadSMF(Common::File *in, int song, bool sfx) {
 		// It seems that 4 corresponds to our base tempo, so
 		// this should be the right way to calculate it.
 		timerRate = (4 * _driver->getBaseTempo()) / p->data[5];
-
-		// According to bug #1004919 calling setLoop() from
-		// within a lock causes a lockup, though I have no
-		// idea when this actually happens.
-		_loopTrack = (p->data[6] != 0);
+		p->loopTrack = (p->data[6] != 0);
+	} else {
+		p->loopTrack = _loopTrackDefault;
 	}
 
 	MidiParser *parser = MidiParser::createParser_SMF();
@@ -504,6 +498,8 @@ void MidiPlayer::loadMultipleSMF(Common::File *in, bool sfx) {
 		p->song_sizes[i] = size;
 	}
 
+	p->loopTrack = _loopTrackDefault;
+
 	if (!sfx) {
 		_currentTrack = 255;
 		resetVolumeTable();
@@ -535,6 +531,7 @@ void MidiPlayer::loadXMIDI(Common::File *in, bool sfx) {
 		in->seek(pos, 0);
 		p->data = (byte *)calloc(size, 1);
 		in->read(p->data, size);
+		p->loopTrack = _loopTrackDefault;
 	} else {
 		error("Expected 'FORM' tag but found '%c%c%c%c' instead", buf[0], buf[1], buf[2], buf[3]);
 	}
@@ -579,6 +576,7 @@ void MidiPlayer::loadS1D(Common::File *in, bool sfx) {
 		_currentTrack = 255;
 		resetVolumeTable();
 	}
+	p->loopTrack = _loopTrackDefault;
 	p->parser = parser; // That plugs the power cord into the wall
 }
 

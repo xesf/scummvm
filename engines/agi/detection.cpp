@@ -145,6 +145,13 @@ static const ExtraGuiOption agiExtraGuiOption = {
 	false
 };
 
+static const ExtraGuiOption agiExtraGuiOptionAmiga = {
+	_s("Use an alternative palette"),
+	_s("Use an alternative palette, common for all Amiga games. This was the old behavior"),
+	"altamigapalette",
+	false
+};
+
 #include "agi/detection_tables.h"
 
 using namespace Agi;
@@ -230,6 +237,8 @@ bool AgiMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameD
 const ExtraGuiOptions AgiMetaEngine::getExtraGuiOptions(const Common::String &target) const {
 	ExtraGuiOptions options;
 	options.push_back(agiExtraGuiOption);
+	if (target.contains("-amiga"))
+		options.push_back(agiExtraGuiOptionAmiga);
 	return options;
 }
 
@@ -267,15 +276,13 @@ SaveStateList AgiMetaEngine::listSaves(const char *target) const {
 int AgiMetaEngine::getMaximumSaveSlot() const { return 999; }
 
 void AgiMetaEngine::removeSaveState(const char *target, int slot) const {
-	char fileName[MAXPATHLEN];
-	sprintf(fileName, "%s.%03d", target, slot);
+	Common::String fileName = Common::String::format("%s.%03d", target, slot);
 	g_system->getSavefileManager()->removeSavefile(fileName);
 }
 
 SaveStateDescriptor AgiMetaEngine::querySaveMetaInfos(const char *target, int slot) const {
 	const uint32 AGIflag = MKTAG('A','G','I',':');
-	char fileName[MAXPATHLEN];
-	sprintf(fileName, "%s.%03d", target, slot);
+	Common::String fileName = Common::String::format("%s.%03d", target, slot);
 
 	Common::InSaveFile *in = g_system->getSavefileManager()->openForLoading(fileName);
 

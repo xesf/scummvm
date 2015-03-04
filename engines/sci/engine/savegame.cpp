@@ -617,6 +617,14 @@ void MusicEntry::saveLoadWithSerializer(Common::Serializer &s) {
 	s.syncAsSint32LE(fadeTicker);
 	s.syncAsSint32LE(fadeTickerStep);
 	s.syncAsByte(status);
+	if (s.getVersion() >= 32)
+		s.syncAsByte(playBed);
+	else if (s.isLoading())
+		playBed = false;
+	if (s.getVersion() >= 33)
+		s.syncAsByte(overridePriority);
+	else if (s.isLoading())
+		overridePriority = false;
 
 	// pMidiParser and pStreamAud will be initialized when the
 	// sound list is reconstructed in gamestate_restore()
@@ -635,20 +643,26 @@ void SoundCommandParser::syncPlayList(Common::Serializer &s) {
 void SoundCommandParser::reconstructPlayList() {
 	Common::StackLock lock(_music->_mutex);
 
-	const MusicList::iterator end = _music->getPlayListEnd();
-	for (MusicList::iterator i = _music->getPlayListStart(); i != end; ++i) {
+	// We store all songs here because starting songs may re-shuffle their order
+	MusicList songs;
+	for (MusicList::iterator i = _music->getPlayListStart(); i != _music->getPlayListEnd(); ++i)
+		songs.push_back(*i);
+
+	for (MusicList::iterator i = songs.begin(); i != songs.end(); ++i) {
 		initSoundResource(*i);
 
 		if ((*i)->status == kSoundPlaying) {
-			// Sync the sound object's selectors related to playing with the stored
-			// ones in the playlist, as they may have been invalidated when loading.
-			// Refer to bug #3104624.
+			// WORKAROUND: PQ3 (German?) scripts can set volume negative in the
+			// sound object directly without going through DoSound.
+			// Since we re-read this selector when re-playing the sound after loading,
+			// this will lead to unexpected behaviour. As a workaround we
+			// sync the sound object's selectors here. (See bug #5501)
 			writeSelectorValue(_segMan, (*i)->soundObj, SELECTOR(loop), (*i)->loop);
 			writeSelectorValue(_segMan, (*i)->soundObj, SELECTOR(priority), (*i)->priority);
 			if (_soundVersion >= SCI_VERSION_1_EARLY)
 				writeSelectorValue(_segMan, (*i)->soundObj, SELECTOR(vol), (*i)->volume);
 
-			processPlaySound((*i)->soundObj);
+			processPlaySound((*i)->soundObj, (*i)->playBed);
 		}
 	}
 }
@@ -843,6 +857,8 @@ bool gamestate_save(EngineState *s, Common::WriteStream *fh, const Common::Strin
 	Vocabulary *voc = g_sci->getVocabulary();
 	if (voc)
 		voc->saveLoadWithSerializer(ser);
+
+	// TODO: SSCI (at least JonesCD, presumably more) also stores the Menu state
 
 	return true;
 }

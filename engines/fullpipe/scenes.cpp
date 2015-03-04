@@ -1454,9 +1454,31 @@ void BallChain::init(Ball **ball) {
 }
 
 Ball *BallChain::sub04(Ball *ballP, Ball *ballN) {
-	warning("STUB: BallChain::sub04");
+	if (!pTail) {
+		if (!cPlexLen)
+			error("BallChain::sub04: cPlexLen is 0");
 
-	return pTail;
+		cPlex = (byte *)calloc(cPlexLen, sizeof(Ball));
+
+		Ball *runPtr = (Ball *)&cPlex[(cPlexLen - 1) * sizeof(Ball)];
+
+		for (int i = 0; i < cPlexLen; i++) {
+			runPtr->p0 = pTail;
+			pTail = runPtr;
+
+			runPtr--;
+		}
+	}
+
+	Ball *res = pTail;
+
+	pTail = res->p0;
+	res->p1 = ballP;
+	res->p0 = ballN;
+	numBalls++;
+	res->ani = 0;
+
+	return res;
 }
 
 void BallChain::removeBall(Ball *ball) {

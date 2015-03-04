@@ -70,6 +70,11 @@ ScummVM Team
        Arnaud Boutonne
        Paul Gilbert
 
+    CGE2:
+       Peter Bozso
+       Arnaud Boutonne
+       Paul Gilbert
+
     Cine:
        Vincent Hamm                 - (retired)
        Pawel Kolodziejski
@@ -136,6 +141,11 @@ ScummVM Team
 
     MADE:
        Benjamin Haisch
+       Filippos Karapetis
+
+    MADS:
+       Arnaud Boutonne
+       Paul Gilbert
        Filippos Karapetis
 
     Mohawk:
@@ -241,11 +251,18 @@ ScummVM Team
     Tucker:
        Gregory Montoir              - (retired)
 
+    Voyeur:
+       Arnaud Boutonne
+       Paul Gilbert
+
     Wintermute:
        Einar Johan T. Somaaen
+       Tobia Tesan
 
     ZVision:
        Adrian Astley
+       Filippos Karapetis
+       Anton Yarcev
 
   Backend Teams
   -------------
@@ -299,6 +316,7 @@ ScummVM Team
     SymbianOS:
        Jurgen Braam
        Lars Persson
+       Fedor Strizhniou
 
     Tizen / BADA:
        Chris Warren-Smith
@@ -391,7 +409,7 @@ Other contributions
        Keith Scroggins
 
     BeOS:
-       Stefan Parviainen
+       Stefan Parviainen            - (retired)
        Luc Schrijvers
 
     Debian GNU/Linux:
@@ -400,6 +418,9 @@ Other contributions
 
     Fedora / RedHat:
        Willem Jan Palenstijn
+
+    Haiku:
+       Luc Schrijvers
 
     Mac OS X:
        Max Horn                     - (retired)
@@ -449,6 +470,9 @@ Other contributions
 
     Danish:
        Steffen Nyeland
+
+    Dutch:
+       Ben Castricum
 
     Finnish:
        Toni Saarela
@@ -501,6 +525,12 @@ Other contributions
        Dan Serban                   - Soltys English translation
        Victor Gonzalez              - Soltys Spanish translation
        Alejandro Gomez de la Munoza - Soltys Spanish translation
+
+    CGE2:
+       Arnaud Boutonne              - Sfinx English translation
+       Thierry Crozat               - Sfinx English translation
+       Peter Bozso                  - Sfinx English translation editor
+       Ryan Clark                   - Sfinx English translation editor
 
     Drascula:
        Thierry Crozat               - Improve French translation
@@ -630,7 +660,7 @@ Special thanks to
                        repository, planet and doxygen sites as well as tons
                        of HD space
    DOSBox Team       - For their awesome OPL2 and OPL3 emulator
-   Yusuke Kamiyamane - For contributing some GUI icons 
+   Yusuke Kamiyamane - For contributing some GUI icons
    Till Kresslein    - For design of modern ScummVM GUI
    Jezar             - For his freeverb filter implementation
    Jim Leiterman     - Various info on his FM-TOWNS/Marty SCUMM ports
@@ -679,8 +709,8 @@ Special thanks to
    of Dreamweb and for their tremendous support.
 
    Janusz Wisniewski and Miroslaw Liminowicz from Laboratorium Komputerowe
-   Avalon for providing full source code for Soltys and letting us
-   redistribute the game.
+   Avalon for providing full source code for Soltys and Sfinx and letting us
+   redistribute the games.
 
    Jan Nedoma for providing the sources to the Wintermute-engine, and for his
    support while porting the engine to ScummVM.

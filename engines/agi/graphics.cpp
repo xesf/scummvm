@@ -20,6 +20,7 @@
  *
  */
 
+#include "common/config-manager.h"
 #include "common/file.h"
 #include "common/textconsole.h"
 
@@ -220,7 +221,7 @@ static const uint8 amigaAgiPaletteV3[16 * 3] = {
 /**
  * 16 color amiga-ish palette.
  */
-static const uint8 newPalette[16 * 3] = {
+static const uint8 altAmigaPalette[16 * 3] = {
 	0x00, 0x00, 0x00,
 	0x00, 0x00, 0x3f,
 	0x00, 0x2A, 0x00,
@@ -904,6 +905,7 @@ static const byte sciMouseCursor[] = {
 	0,0,0,0,0,0,1,2,2,1,0
 };
 
+#if 0
 /**
  * A black and white Apple IIGS style arrow cursor (9x11).
  * 0 = Transparent.
@@ -923,6 +925,7 @@ static const byte appleIIgsMouseCursor[] = {
 	2,2,2,0,2,1,1,2,0,
 	0,0,0,0,0,2,2,2,0
 };
+#endif
 
 /**
  * RGB-palette for the black and white SCI and Apple IIGS arrow cursors.
@@ -1030,8 +1033,22 @@ int GfxMgr::initVideo() {
 		initPalette(vgaPalette, 256, 8);
 	else if (_vm->_renderMode == Common::kRenderEGA)
 		initPalette(egaPalette);
-	else
-		initPalette(newPalette);
+	else if (_vm->_renderMode == Common::kRenderAmiga) {
+		if (!ConfMan.getBool("altamigapalette")) {
+			// Set the correct Amiga palette
+			if (_vm->getVersion() < 0x2936)
+				// TODO: This palette isn't used for Apple IIGS games yet, as
+				// we don't set a separate render mode for them yet
+				initPalette(amigaAgiPaletteV1, 16, 4);
+			else if (_vm->getVersion() == 0x2936)
+				initPalette(amigaAgiPaletteV2, 16, 4);
+			else if (_vm->getVersion() > 0x2936)
+				initPalette(amigaAgiPaletteV3, 16, 4);
+		} else
+			// Set the old common alternative Amiga palette
+			initPalette(altAmigaPalette);
+	} else
+		error("initVideo: Unhandled render mode");
 
 	if ((_agiScreen = (uint8 *)calloc(GFX_WIDTH, GFX_HEIGHT)) == NULL)
 		return errNotEnoughMemory;

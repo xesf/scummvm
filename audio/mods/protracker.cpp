@@ -24,8 +24,6 @@
 #include "audio/mods/paula.h"
 #include "audio/mods/module.h"
 
-#include "audio/audiostream.h"
-
 #include "common/textconsole.h"
 
 namespace Modules {
@@ -219,11 +217,10 @@ void ProtrackerStream::updateRow() {
 		case 0x0:
 			if (exy) {
 				_track[track].arpeggio = true;
-				if (note.period) {
-					_track[track].arpeggioNotes[0] = note.note;
-					_track[track].arpeggioNotes[1] = note.note + ex;
-					_track[track].arpeggioNotes[2] = note.note + ey;
-				}
+				byte trackNote = _module.periodToNote(_track[track].period);
+				_track[track].arpeggioNotes[0] = trackNote;
+				_track[track].arpeggioNotes[1] = trackNote + ex;
+				_track[track].arpeggioNotes[2] = trackNote + ey;
 			}
 			break;
 		case 0x1:

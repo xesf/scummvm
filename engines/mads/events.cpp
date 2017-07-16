@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -41,7 +41,7 @@ EventsManager::EventsManager(MADSEngine *vm) {
 	_mouseReleased = false;
 	_mouseButtons = 0;
 	_mouseStatus = 0;
-	_vD2 = 0;
+	_strokeGoing = 0;
 	_mouseStatusCopy = 0;
 	_mouseMoved = false;
 	_rightMousePressed = false;
@@ -84,8 +84,8 @@ void EventsManager::waitCursor() {
 	CursorType cursorId = (CursorType)MIN(_cursorSprites->getCount(), (int)CURSOR_WAIT);
 	_newCursorId = cursorId;
 	if (_cursorId != _newCursorId) {
-		changeCursor();
 		_cursorId = _newCursorId;
+		changeCursor();
 	}
 }
 
@@ -98,7 +98,7 @@ void EventsManager::changeCursor() {
 		// Check for hotspot indication pixels along the right-hand and bottom
 		// row. Put together, these give the cursor's hotspot x,y
 		int hotspotX = 0, hotspotY = 0;
-		byte *cursorData = cursor->getData();
+		const byte *cursorData = (const byte *)cursor->getPixels();
 		for (int idx = 0; idx < cursor->w; ++idx) {
 			if (cursorData[(cursor->h - 1) * cursor->w + idx] != transIndex)
 				hotspotX = idx;
@@ -110,7 +110,7 @@ void EventsManager::changeCursor() {
 		// Reduce the cursor data to remove the last column from each row, since
 		// the cursor routines don't have a pitch option
 		byte *destCursor = new byte[(cursor->w - 1) * (cursor->h - 1)];
-		byte *srcP = cursorData;
+		const byte *srcP = cursorData;
 		byte *destP = destCursor;
 
 		for (int idx = 0; idx < (cursor->h - 1); ++idx) {
@@ -217,7 +217,7 @@ bool EventsManager::checkForNextFrameCounter() {
 		_vm->_debugger->onFrame();
 
 		// Display the frame
-		_vm->_screen.updateScreen();
+		_vm->_screen->update();
 
 		// Signal the ScummVM debugger
 		_vm->_debugger->onFrame();
@@ -266,7 +266,12 @@ void EventsManager::waitForNextFrame() {
 void EventsManager::initVars() {
 	_mousePos = Common::Point(-1, -1);
 	_mouseStatusCopy = _mouseStatus;
-	_vD2 = 0;
+	_strokeGoing = 0;
 }
+
+void EventsManager::clearEvents() {
+	_pendingKeys.clear();
+}
+
 
 } // End of namespace MADS

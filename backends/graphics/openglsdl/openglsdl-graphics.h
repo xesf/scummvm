@@ -32,7 +32,7 @@
 
 class OpenGLSdlGraphicsManager : public OpenGL::OpenGLGraphicsManager, public SdlGraphicsManager, public Common::EventObserver {
 public:
-	OpenGLSdlGraphicsManager(uint desktopWidth, uint desktopHeight, SdlEventSource *eventSource);
+	OpenGLSdlGraphicsManager(uint desktopWidth, uint desktopHeight, SdlEventSource *eventSource, SdlWindow *window);
 	virtual ~OpenGLSdlGraphicsManager();
 
 	// GraphicsManager API
@@ -65,11 +65,22 @@ protected:
 	virtual void setInternalMousePosition(int x, int y);
 
 	virtual bool loadVideoMode(uint requestedWidth, uint requestedHeight, const Graphics::PixelFormat &format);
+
+	virtual void refreshScreen();
+
+	virtual void *getProcAddress(const char *name) const;
 private:
 	bool setupMode(uint width, uint height);
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	int _glContextProfileMask, _glContextMajor, _glContextMinor;
+	SDL_GLContext _glContext;
+#else
 	uint32 _lastVideoModeLoad;
 	SDL_Surface *_hwScreen;
+#endif
+
+	void getWindowDimensions(int *width, int *height);
 
 	uint _lastRequestedWidth;
 	uint _lastRequestedHeight;

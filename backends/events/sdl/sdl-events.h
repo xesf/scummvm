@@ -28,6 +28,8 @@
 
 #include "common/events.h"
 
+// multiplier used to increase resolution for keyboard/joystick mouse
+#define MULTIPLIER 16
 
 /**
  * The SDL event source.
@@ -47,12 +49,7 @@ public:
 	/**
 	 * Resets keyboard emulation after a video screen change
 	 */
-	virtual void resetKeyboadEmulation(int16 x_max, int16 y_max);
-
-	/**
-	 * Toggles mouse input grab
-	 */
-	virtual void toggleMouseGrab();
+	virtual void resetKeyboardEmulation(int16 x_max, int16 y_max);
 
 protected:
 	/** @name Keyboard mouse emulation
@@ -63,8 +60,9 @@ protected:
 	//@{
 
 	struct KbdMouse {
-		int16 x, y, x_vel, y_vel, x_max, y_max, x_down_count, y_down_count;
+		int16 x, y, x_vel, y_vel, x_max, y_max, x_down_count, y_down_count, joy_x, joy_y;
 		uint32 last_time, delay_time, x_down_time, y_down_time;
+		bool modifier;
 	};
 	KbdMouse _km;
 
@@ -111,7 +109,7 @@ protected:
 	virtual bool handleJoyButtonDown(SDL_Event &ev, Common::Event &event);
 	virtual bool handleJoyButtonUp(SDL_Event &ev, Common::Event &event);
 	virtual bool handleJoyAxisMotion(SDL_Event &ev, Common::Event &event);
-	virtual void handleKbdMouse();
+	virtual bool handleKbdMouse(Common::Event &event);
 
 	//@}
 
@@ -141,6 +139,35 @@ protected:
 	 * Translates SDL key codes to OSystem key codes
 	 */
 	Common::KeyCode SDLToOSystemKeycode(const SDLKey key);
+
+	/**
+	 * Notify graphics manager of a resize request.
+	 */
+	bool handleResizeEvent(Common::Event &event, int w, int h);
+
+	/**
+	 * Extracts unicode information for the specific key sym.
+	 * May only be used for key down events.
+	 */
+	uint32 obtainUnicode(const SDL_keysym keySym);
+
+	/**
+	 * Extracts the keycode for the specified key sym.
+	 */
+	SDLKey obtainKeycode(const SDL_keysym keySym);
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	/**
+	 * Whether _fakeKeyUp contains an event we need to send.
+	 */
+	bool _queuedFakeKeyUp;
+
+	/**
+	 * A fake key up event when we receive a TEXTINPUT without any previous
+	 * KEYDOWN event.
+	 */
+	Common::Event _fakeKeyUp;
+#endif
 };
 
 #endif

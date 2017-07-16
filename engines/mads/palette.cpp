@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -497,7 +497,7 @@ void Fader::fadeIn(byte palette[PALETTE_SIZE], byte destPalette[PALETTE_SIZE],
 	int baseColor, int numColors, int baseGrey, int numGreys,
 	int tickDelay, int steps) {
 	GreyEntry map[PALETTE_COUNT];
-	byte tempPal[PALETTE_SIZE];;
+	byte tempPal[PALETTE_SIZE];
 	int8 signs[PALETTE_COUNT][3];
 	byte palIndex[PALETTE_COUNT][3];
 	int intensity;
@@ -665,15 +665,15 @@ void Fader::insertionSort(int size, byte *id, byte *value) {
 
 				int moveCount = size - arrIndex - 1;
 				if (moveCount > 0) {
-					Common::copy(idP + 1, idP + moveCount + 2, idP);
-					Common::copy(valueP + 1, valueP + moveCount + 2, valueP);
+					Common::copy(idP + 1, idP + moveCount + 1, idP);
+					Common::copy(valueP + 1, valueP + moveCount + 1, valueP);
 				}
 
 				// Scan for insert spot
 				int idx = 0;
 				if (endIndex > 0) {
 					bool breakFlag = false;
-					for (; idx <= endIndex && !breakFlag; ++idx) {
+					for (; idx <= endIndex - 1 && !breakFlag; ++idx) {
 						breakFlag = savedId < id[idx];
 					}
 				}

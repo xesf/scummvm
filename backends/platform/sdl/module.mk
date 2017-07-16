@@ -1,7 +1,8 @@
 MODULE := backends/platform/sdl
 
 MODULE_OBJS := \
-	sdl.o
+	sdl.o \
+	sdl-window.o
 
 ifdef POSIX
 MODULE_OBJS += \
@@ -13,12 +14,14 @@ ifdef MACOSX
 MODULE_OBJS += \
 	macosx/macosx-main.o \
 	macosx/macosx.o \
+	macosx/macosx_wrapper.o \
 	macosx/appmenu_osx.o
 endif
 
 ifdef WIN32
 MODULE_OBJS += \
 	win32/win32-main.o \
+	win32/win32-window.o \
 	win32/win32.o
 endif
 
@@ -32,6 +35,13 @@ ifdef PLAYSTATION3
 MODULE_OBJS += \
 	ps3/ps3-main.o \
 	ps3/ps3.o
+endif
+
+ifdef PSP2
+CC=arm-vita-eabi-gcc
+MODULE_OBJS += \
+	psp2/psp2-main.o \
+	psp2/psp2.o
 endif
 
 # We don't use rules.mk but rather manually update OBJS and MODULE_DIRS.

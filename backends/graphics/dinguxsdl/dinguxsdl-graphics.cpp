@@ -35,8 +35,12 @@ static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
 	{0, 0, 0}
 };
 
-DINGUXSdlGraphicsManager::DINGUXSdlGraphicsManager(SdlEventSource *boss)
-	: SurfaceSdlGraphicsManager(boss) {
+#ifndef USE_SCALERS
+#define DownscaleAllByHalf 0
+#endif
+
+DINGUXSdlGraphicsManager::DINGUXSdlGraphicsManager(SdlEventSource *boss, SdlWindow *window)
+	: SurfaceSdlGraphicsManager(boss, window) {
 }
 
 const OSystem::GraphicsMode *DINGUXSdlGraphicsManager::getSupportedGraphicsModes() const {
@@ -61,9 +65,11 @@ bool DINGUXSdlGraphicsManager::setGraphicsMode(int mode) {
 	case GFX_NORMAL:
 		newScaleFactor = 1;
 		break;
+#ifdef USE_SCALERS
 	case GFX_HALF:
 		newScaleFactor = 1;
 		break;
+#endif
 	default:
 		warning("unknown gfx mode %d", mode);
 		return false;
@@ -89,9 +95,11 @@ void DINGUXSdlGraphicsManager::setGraphicsModeIntern() {
 	case GFX_NORMAL:
 		newScalerProc = Normal1x;
 		break;
+#ifdef USE_SCALERS
 	case GFX_HALF:
 		newScalerProc = DownscaleAllByHalf;
 		break;
+#endif
 
 	default:
 		error("Unknown gfx mode %d", _videoMode.mode);
@@ -122,7 +130,7 @@ void DINGUXSdlGraphicsManager::initSize(uint w, uint h) {
 	if (w > 320 || h > 240) {
 		setGraphicsMode(GFX_HALF);
 		setGraphicsModeIntern();
-		_eventSource->toggleMouseGrab();
+		_window->toggleMouseGrab();
 	}
 
 	_transactionDetails.sizeChanged = true;
@@ -249,26 +257,6 @@ void DINGUXSdlGraphicsManager::internUpdateScreen() {
 		_forceFull = true;
 	}
 
-#ifdef USE_OSD
-	// OSD visible (i.e. non-transparent)?
-	if (_osdAlpha != SDL_ALPHA_TRANSPARENT) {
-		// Updated alpha value
-		const int diff = SDL_GetTicks() - _osdFadeStartTime;
-		if (diff > 0) {
-			if (diff >= kOSDFadeOutDuration) {
-				// Back to full transparency
-				_osdAlpha = SDL_ALPHA_TRANSPARENT;
-			} else {
-				// Do a linear fade out...
-				const int startAlpha = SDL_ALPHA_TRANSPARENT + kOSDInitialAlpha * (SDL_ALPHA_OPAQUE - SDL_ALPHA_TRANSPARENT) / 100;
-				_osdAlpha = startAlpha + diff * (SDL_ALPHA_TRANSPARENT - startAlpha) / kOSDFadeOutDuration;
-			}
-			SDL_SetAlpha(_osdSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, _osdAlpha);
-			_forceFull = true;
-		}
-	}
-#endif
-
 	if (!_overlayVisible) {
 		origSurf = _screen;
 		srcSurf = _tmpscreen;
@@ -289,6 +277,10 @@ void DINGUXSdlGraphicsManager::internUpdateScreen() {
 	// we have to redraw the mouse.
 	if (_mouseNeedsRedraw)
 		undrawMouse();
+
+#ifdef USE_OSD
+	updateOSD();
+#endif
 
 	// Force a full redraw if requested
 	if (_forceFull) {
@@ -397,9 +389,7 @@ void DINGUXSdlGraphicsManager::internUpdateScreen() {
 		drawMouse();
 
 #ifdef USE_OSD
-		if (_osdAlpha != SDL_ALPHA_TRANSPARENT) {
-			SDL_BlitSurface(_osdSurface, 0, _hwscreen, 0);
-		}
+		drawOSD();
 #endif
 		// Finally, blit all our changes to the screen
 		SDL_UpdateRects(_hwscreen, _numDirtyRects, _dirtyRectList);

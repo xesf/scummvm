@@ -32,6 +32,7 @@
 #include "agos/intern.h"
 #include "agos/agos.h"
 #include "agos/midi.h"
+#include "agos/sound.h"
 
 #include "backends/audiocd/audiocd.h"
 
@@ -585,7 +586,9 @@ Common::Error AGOSEngine::init() {
 		((getFeatures() & GF_TALKIE) && getPlatform() == Common::kPlatformAcorn) ||
 		(getPlatform() == Common::kPlatformDOS)) {
 
-		int ret = _midi->open(getGameType());
+		bool isDemo = (getFeatures() & GF_DEMO) ? true : false;
+
+		int ret = _midi->open(getGameType(), isDemo);
 		if (ret)
 			warning("MIDI Player init failed: \"%s\"", MidiDriver::getErrorName(ret));
 

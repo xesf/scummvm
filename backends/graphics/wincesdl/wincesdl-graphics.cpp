@@ -42,8 +42,8 @@
 #include "backends/platform/wince/CEScaler.h"
 #include "backends/platform/wince/CEgui/ItemAction.h"
 
-WINCESdlGraphicsManager::WINCESdlGraphicsManager(SdlEventSource *sdlEventSource)
-	: SurfaceSdlGraphicsManager(sdlEventSource),
+WINCESdlGraphicsManager::WINCESdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window)
+	: SurfaceSdlGraphicsManager(sdlEventSource, window),
 	  _panelInitialized(false), _noDoubleTapRMB(false), _noDoubleTapPT(false),
 	  _toolbarHighDrawn(false), _newOrientation(0), _orientationLandscape(0),
 	  _panelVisible(true), _saveActiveToolbar(NAME_MAIN_PANEL), _panelStateForced(false),
@@ -934,7 +934,7 @@ bool WINCESdlGraphicsManager::loadGFXMode() {
 		_toolbarHigh = NULL;
 
 	// keyboard cursor control, some other better place for it?
-	_eventSource->resetKeyboadEmulation(_videoMode.screenWidth * _scaleFactorXm / _scaleFactorXd - 1, _videoMode.screenHeight * _scaleFactorXm / _scaleFactorXd - 1);
+	_eventSource->resetKeyboardEmulation(_videoMode.screenWidth * _scaleFactorXm / _scaleFactorXd - 1, _videoMode.screenHeight * _scaleFactorXm / _scaleFactorXd - 1);
 
 	return true;
 }

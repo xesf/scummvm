@@ -320,10 +320,11 @@ int MS_ADPCMStream::readBuffer(int16 *buffer, const int numSamples) {
 				_decodedSamples[_decodedSampleCount++] = decodeMS(&_status.ch[0], (data >> 4) & 0x0f);
 				_decodedSamples[_decodedSampleCount++] = decodeMS(&_status.ch[_channels - 1], data & 0x0f);
 			}
+			_decodedSampleIndex = 0;
 		}
 
-		// (1 - (count - 1)) ensures that _decodedSamples acts as a FIFO of depth 2
-		buffer[samples] = _decodedSamples[1 - (_decodedSampleCount - 1)];
+		// _decodedSamples acts as a FIFO of depth 2 or 4;
+		buffer[samples] = _decodedSamples[_decodedSampleIndex++];
 		_decodedSampleCount--;
 	}
 
@@ -433,7 +434,7 @@ int16 Ima_ADPCMStream::decodeIMA(byte code, int channel) {
 	return samp;
 }
 
-RewindableAudioStream *makeADPCMStream(Common::SeekableReadStream *stream, DisposeAfterUse::Flag disposeAfterUse, uint32 size, ADPCMType type, int rate, int channels, uint32 blockAlign) {
+SeekableAudioStream *makeADPCMStream(Common::SeekableReadStream *stream, DisposeAfterUse::Flag disposeAfterUse, uint32 size, ADPCMType type, int rate, int channels, uint32 blockAlign) {
 	// If size is 0, report the entire size of the stream
 	if (!size)
 		size = stream->size();
@@ -455,6 +456,36 @@ RewindableAudioStream *makeADPCMStream(Common::SeekableReadStream *stream, Dispo
 		error("Unsupported ADPCM encoding");
 		break;
 	}
+}
+
+class PacketizedADPCMStream : public StatelessPacketizedAudioStream {
+public:
+	PacketizedADPCMStream(ADPCMType type, int rate, int channels, uint32 blockAlign) :
+		StatelessPacketizedAudioStream(rate, channels), _type(type), _blockAlign(blockAlign) {}
+
+protected:
+	AudioStream *makeStream(Common::SeekableReadStream *data);
+
+private:
+	ADPCMType _type;
+	uint32 _blockAlign;
+};
+
+AudioStream *PacketizedADPCMStream::makeStream(Common::SeekableReadStream *data) {
+	return makeADPCMStream(data, DisposeAfterUse::YES, data->size(), _type, getRate(), getChannels(), _blockAlign);
+}
+
+PacketizedAudioStream *makePacketizedADPCMStream(ADPCMType type, int rate, int channels, uint32 blockAlign) {
+	// Filter out types we can't support (they're not fully stateless)
+	switch (type) {
+	case kADPCMOki:
+	case kADPCMDVI:
+		return 0;
+	default:
+		break;
+	}
+
+	return new PacketizedADPCMStream(type, rate, channels, blockAlign);
 }
 
 } // End of namespace Audio

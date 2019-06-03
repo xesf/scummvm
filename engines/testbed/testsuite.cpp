@@ -244,7 +244,7 @@ void Testsuite::updateStats(const char *prefix, const char *info, uint testNum, 
 	byte *buffer = new byte[lRect * wRect];
 	memset(buffer, 0, sizeof(byte) * lRect * wRect);
 
-	int wShaded = (int) (wRect * (((float)testNum) / numTests));
+	int wShaded = (int)(wRect * (((float)testNum) / numTests));
 
 	// draw the boundary
 	memset(buffer, barColor, sizeof(byte) * wRect);
@@ -282,6 +282,9 @@ void Testsuite::execute() {
 	Common::Point pt = getDisplayRegionCoordinates();
 	pt.y += getLineSeparation();
 	int numEnabledTests = getNumTestsEnabled();
+
+	if (!numEnabledTests)
+		return;
 
 	for (Common::Array<Test *>::iterator i = _testsToExecute.begin(); i != _testsToExecute.end(); ++i) {
 		if (!(*i)->enabled) {

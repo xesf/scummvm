@@ -23,11 +23,13 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_isalnum
 #define FORBIDDEN_SYMBOL_EXCEPTION_isalpha
 #define FORBIDDEN_SYMBOL_EXCEPTION_isdigit
+#define FORBIDDEN_SYMBOL_EXCEPTION_isxdigit
 #define FORBIDDEN_SYMBOL_EXCEPTION_isnumber
 #define FORBIDDEN_SYMBOL_EXCEPTION_islower
 #define FORBIDDEN_SYMBOL_EXCEPTION_isspace
 #define FORBIDDEN_SYMBOL_EXCEPTION_isupper
 #define FORBIDDEN_SYMBOL_EXCEPTION_isprint
+#define FORBIDDEN_SYMBOL_EXCEPTION_ispunct
 
 
 #include "common/util.h"
@@ -131,6 +133,11 @@ bool isDigit(int c) {
 	return isdigit((byte)c);
 }
 
+bool isXDigit(int c) {
+	ENSURE_ASCII_CHAR(c);
+	return isxdigit((byte)c);
+}
+
 bool isLower(int c) {
 	ENSURE_ASCII_CHAR(c);
 	return islower((byte)c);
@@ -150,4 +157,10 @@ bool isPrint(int c) {
 	ENSURE_ASCII_CHAR(c);
 	return isprint((byte)c);
 }
+
+bool isPunct(int c) {
+	ENSURE_ASCII_CHAR(c);
+	return ispunct((byte)c);
+}
+
 } // End of namespace Common

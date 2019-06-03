@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -190,10 +190,6 @@ private:
 	 * Draw a UI textual element
 	 */
 	void writeVocab(ScrCategory category, int id);
-
-	void refresh();
-
-	void updateRect(const Common::Rect &bounds);
 public:
 	MSurface _surface;
 	UISlots _uiSlots;
@@ -242,7 +238,7 @@ public:
 	* @param destPos		Destination position to draw in current surface
 	* @param transparencyIndex	Transparency color
 	*/
-	void mergeFrom(MSurface *src, const Common::Rect &srcBounds, const Common::Point &destPos,
+	void mergeFrom(BaseSurface *src, const Common::Rect &srcBounds, const Common::Point &destPos,
 		int transparencyIndex = -1);
 
 	/**
@@ -304,6 +300,8 @@ public:
 	 * Synchronize the data
 	 */
 	void synchronize(Common::Serializer &s);
+
+	void refresh();
 };
 
 } // End of namespace MADS

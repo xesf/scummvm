@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -47,15 +47,18 @@
 
 namespace ZVision {
 
-ResultAction::ResultAction(ZVision *engine, int32 slotkey) : _engine(engine), _slotKey(slotkey), _scriptManager(engine->getScriptManager()) {
+ResultAction::ResultAction(ZVision *engine, int32 slotKey) :
+	_engine(engine),
+	_slotKey(slotKey),
+	_scriptManager(engine->getScriptManager()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // ActionAdd
 //////////////////////////////////////////////////////////////////////////////
 
-ActionAdd::ActionAdd(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionAdd::ActionAdd(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 	_value = 0;
 
@@ -71,8 +74,8 @@ bool ActionAdd::execute() {
 // ActionAssign
 //////////////////////////////////////////////////////////////////////////////
 
-ActionAssign::ActionAssign(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionAssign::ActionAssign(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 
 	char buf[64];
@@ -94,8 +97,8 @@ bool ActionAssign::execute() {
 // ActionAttenuate
 //////////////////////////////////////////////////////////////////////////////
 
-ActionAttenuate::ActionAttenuate(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionAttenuate::ActionAttenuate(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 	_attenuation = 0;
 
@@ -115,8 +118,8 @@ bool ActionAttenuate::execute() {
 // ActionChangeLocation
 //////////////////////////////////////////////////////////////////////////////
 
-ActionChangeLocation::ActionChangeLocation(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionChangeLocation::ActionChangeLocation(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_world = 'g';
 	_room = 'a';
 	_node = 'r';
@@ -137,8 +140,8 @@ bool ActionChangeLocation::execute() {
 // ActionCrossfade
 //////////////////////////////////////////////////////////////////////////////
 
-ActionCrossfade::ActionCrossfade(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionCrossfade::ActionCrossfade(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_keyOne = 0;
 	_keyTwo = 0;
 	_oneStartVolume = 0;
@@ -181,8 +184,8 @@ bool ActionCrossfade::execute() {
 // ActionCursor
 //////////////////////////////////////////////////////////////////////////////
 
-ActionCursor::ActionCursor(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionCursor::ActionCursor(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	Common::String up = line;
 	up.toUppercase();
 	_action = 0;
@@ -213,8 +216,8 @@ bool ActionCursor::execute() {
 // ActionDelayRender
 //////////////////////////////////////////////////////////////////////////////
 
-ActionDelayRender::ActionDelayRender(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionDelayRender::ActionDelayRender(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_framesToDelay = 0;
 	sscanf(line.c_str(), "%u", &_framesToDelay);
 	// Limit to 10 frames maximum. This fixes the script bug in ZGI scene px10
@@ -231,8 +234,8 @@ bool ActionDelayRender::execute() {
 // ActionDisableControl
 //////////////////////////////////////////////////////////////////////////////
 
-ActionDisableControl::ActionDisableControl(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionDisableControl::ActionDisableControl(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 
 	sscanf(line.c_str(), "%u", &_key);
@@ -247,8 +250,8 @@ bool ActionDisableControl::execute() {
 // ActionDisplayMessage
 //////////////////////////////////////////////////////////////////////////////
 
-ActionDisplayMessage::ActionDisplayMessage(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionDisplayMessage::ActionDisplayMessage(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_control = 0;
 	_msgid = 0;
 
@@ -282,8 +285,8 @@ bool ActionDissolve::execute() {
 // ActionDistort - only used by Zork: Nemesis for the "treatment" puzzle in the Sanitarium (aj30)
 //////////////////////////////////////////////////////////////////////////////
 
-ActionDistort::ActionDistort(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionDistort::ActionDistort(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_distSlot = 0;
 	_speed = 0;
 	_startAngle = 60.0;
@@ -311,8 +314,8 @@ bool ActionDistort::execute() {
 // ActionEnableControl
 //////////////////////////////////////////////////////////////////////////////
 
-ActionEnableControl::ActionEnableControl(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionEnableControl::ActionEnableControl(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 
 	sscanf(line.c_str(), "%u", &_key);
@@ -327,8 +330,8 @@ bool ActionEnableControl::execute() {
 // ActionFlushMouseEvents
 //////////////////////////////////////////////////////////////////////////////
 
-ActionFlushMouseEvents::ActionFlushMouseEvents(ZVision *engine, int32 slotkey) :
-	ResultAction(engine, slotkey) {
+ActionFlushMouseEvents::ActionFlushMouseEvents(ZVision *engine, int32 slotKey) :
+	ResultAction(engine, slotKey) {
 }
 
 bool ActionFlushMouseEvents::execute() {
@@ -341,8 +344,8 @@ bool ActionFlushMouseEvents::execute() {
 // ActionInventory
 //////////////////////////////////////////////////////////////////////////////
 
-ActionInventory::ActionInventory(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionInventory::ActionInventory(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_type = -1;
 	_key = 0;
 
@@ -393,8 +396,8 @@ bool ActionInventory::execute() {
 // ActionKill - only used by ZGI
 //////////////////////////////////////////////////////////////////////////////
 
-ActionKill::ActionKill(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionKill::ActionKill(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 	_type = 0;
 	char keytype[25];
@@ -432,8 +435,8 @@ bool ActionKill::execute() {
 // ActionMenuBarEnable
 //////////////////////////////////////////////////////////////////////////////
 
-ActionMenuBarEnable::ActionMenuBarEnable(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionMenuBarEnable::ActionMenuBarEnable(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_menus = 0xFFFF;
 
 	sscanf(line.c_str(), "%hu", &_menus);
@@ -448,8 +451,8 @@ bool ActionMenuBarEnable::execute() {
 // ActionMusic
 //////////////////////////////////////////////////////////////////////////////
 
-ActionMusic::ActionMusic(ZVision *engine, int32 slotkey, const Common::String &line, bool global) :
-	ResultAction(engine, slotkey),
+ActionMusic::ActionMusic(ZVision *engine, int32 slotKey, const Common::String &line, bool global) :
+	ResultAction(engine, slotKey),
 	_note(0),
 	_prog(0),
 	_universe(global) {
@@ -527,8 +530,8 @@ bool ActionMusic::execute() {
 // ActionPanTrack
 //////////////////////////////////////////////////////////////////////////////
 
-ActionPanTrack::ActionPanTrack(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey),
+ActionPanTrack::ActionPanTrack(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey),
 	_pos(0),
 	_musicSlot(0) {
 
@@ -552,8 +555,8 @@ bool ActionPanTrack::execute() {
 // ActionPreferences
 //////////////////////////////////////////////////////////////////////////////
 
-ActionPreferences::ActionPreferences(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionPreferences::ActionPreferences(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	if (line.compareToIgnoreCase("save") == 0)
 		_save = true;
 	else
@@ -573,8 +576,8 @@ bool ActionPreferences::execute() {
 // ActionPreloadAnimation
 //////////////////////////////////////////////////////////////////////////////
 
-ActionPreloadAnimation::ActionPreloadAnimation(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionPreloadAnimation::ActionPreloadAnimation(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_mask = 0;
 	_framerate = 0;
 
@@ -612,8 +615,8 @@ bool ActionPreloadAnimation::execute() {
 // ActionUnloadAnimation
 //////////////////////////////////////////////////////////////////////////////
 
-ActionUnloadAnimation::ActionUnloadAnimation(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionUnloadAnimation::ActionUnloadAnimation(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 
 	sscanf(line.c_str(), "%u", &_key);
@@ -632,8 +635,8 @@ bool ActionUnloadAnimation::execute() {
 // ActionPlayAnimation
 //////////////////////////////////////////////////////////////////////////////
 
-ActionPlayAnimation::ActionPlayAnimation(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionPlayAnimation::ActionPlayAnimation(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_x = 0;
 	_y = 0;
 	_x2 = 0;
@@ -690,8 +693,8 @@ bool ActionPlayAnimation::execute() {
 // ActionPlayPreloadAnimation
 //////////////////////////////////////////////////////////////////////////////
 
-ActionPlayPreloadAnimation::ActionPlayPreloadAnimation(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionPlayPreloadAnimation::ActionPlayPreloadAnimation(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_controlKey = 0;
 	_x1 = 0;
 	_y1 = 0;
@@ -729,8 +732,8 @@ bool ActionQuit::execute() {
 // ActionRegion - only used by Zork: Nemesis
 //////////////////////////////////////////////////////////////////////////////
 
-ActionRegion::ActionRegion(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionRegion::ActionRegion(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_delay = 0;
 	_type = 0;
 	_unk1 = 0;
@@ -808,8 +811,8 @@ bool ActionRegion::execute() {
 // ActionRandom
 //////////////////////////////////////////////////////////////////////////////
 
-ActionRandom::ActionRandom(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionRandom::ActionRandom(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	char maxBuffer[64];
 	memset(maxBuffer, 0, 64);
 	sscanf(line.c_str(), "%s", maxBuffer);
@@ -830,8 +833,8 @@ bool ActionRandom::execute() {
 // ActionRestoreGame
 //////////////////////////////////////////////////////////////////////////////
 
-ActionRestoreGame::ActionRestoreGame(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionRestoreGame::ActionRestoreGame(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	char buf[128];
 	sscanf(line.c_str(), "%s", buf);
 	_fileName = Common::String(buf);
@@ -846,8 +849,8 @@ bool ActionRestoreGame::execute() {
 // ActionRotateTo
 //////////////////////////////////////////////////////////////////////////////
 
-ActionRotateTo::ActionRotateTo(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionRotateTo::ActionRotateTo(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_time = 0;
 	_toPos = 0;
 
@@ -864,8 +867,8 @@ bool ActionRotateTo::execute() {
 // ActionSetPartialScreen
 //////////////////////////////////////////////////////////////////////////////
 
-ActionSetPartialScreen::ActionSetPartialScreen(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionSetPartialScreen::ActionSetPartialScreen(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_x = 0;
 	_y = 0;
 
@@ -904,8 +907,8 @@ bool ActionSetPartialScreen::execute() {
 // ActionSetScreen
 //////////////////////////////////////////////////////////////////////////////
 
-ActionSetScreen::ActionSetScreen(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionSetScreen::ActionSetScreen(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	char fileName[25];
 	sscanf(line.c_str(), "%24s", fileName);
 
@@ -922,8 +925,8 @@ bool ActionSetScreen::execute() {
 // ActionStop
 //////////////////////////////////////////////////////////////////////////////
 
-ActionStop::ActionStop(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionStop::ActionStop(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_key = 0;
 	sscanf(line.c_str(), "%u", &_key);
 }
@@ -937,8 +940,8 @@ bool ActionStop::execute() {
 // ActionStreamVideo
 //////////////////////////////////////////////////////////////////////////////
 
-ActionStreamVideo::ActionStreamVideo(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionStreamVideo::ActionStreamVideo(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_x1 = 0;
 	_x2 = 0;
 	_y1 = 0;
@@ -964,9 +967,9 @@ bool ActionStreamVideo::execute() {
 	bool subtitleExists = _engine->getSearchManager()->hasFile(subname);
 	bool switchToHires = false;
 
-// NOTE: We only show the hires MPEG2 videos when libmpeg2 is compiled in,
+// NOTE: We only show the hires MPEG2 videos when libmpeg2 and liba52 are compiled in,
 // otherwise we fall back to the lowres ones
-#ifdef USE_MPEG2
+#if defined(USE_MPEG2) && defined(USE_A52)
 	Common::String hiresFileName = _fileName;
 	hiresFileName.setChar('d', hiresFileName.size() - 8);
 	hiresFileName.setChar('v', hiresFileName.size() - 3);
@@ -974,12 +977,8 @@ bool ActionStreamVideo::execute() {
 	hiresFileName.setChar('b', hiresFileName.size() - 1);
 
 	if (_scriptManager->getStateValue(StateKey_MPEGMovies) == 1 &&_engine->getSearchManager()->hasFile(hiresFileName)) {
-		// TODO: Enable once AC3 support is implemented
-		if (!_engine->getSearchManager()->hasFile(_fileName))	// Check for the regular video
-			return true;
-		warning("The hires videos of the DVD version of ZGI aren't supported yet, using lowres");
-		//_fileName = hiresFileName;
-		//switchToHires = true;
+		_fileName = hiresFileName;
+		switchToHires = true;
 	} else if (!_engine->getSearchManager()->hasFile(_fileName))
 		return true;
 #else
@@ -1019,8 +1018,8 @@ bool ActionStreamVideo::execute() {
 // ActionSyncSound
 //////////////////////////////////////////////////////////////////////////////
 
-ActionSyncSound::ActionSyncSound(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionSyncSound::ActionSyncSound(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_syncto = 0;
 
 	char fileName[25];
@@ -1047,8 +1046,8 @@ bool ActionSyncSound::execute() {
 // ActionTimer
 //////////////////////////////////////////////////////////////////////////////
 
-ActionTimer::ActionTimer(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionTimer::ActionTimer(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	char timeBuffer[64];
 	memset(timeBuffer, 0, 64);
 	sscanf(line.c_str(), "%s", timeBuffer);
@@ -1071,13 +1070,13 @@ bool ActionTimer::execute() {
 // ActionTtyText
 //////////////////////////////////////////////////////////////////////////////
 
-ActionTtyText::ActionTtyText(ZVision *engine, int32 slotkey, const Common::String &line) :
-	ResultAction(engine, slotkey) {
+ActionTtyText::ActionTtyText(ZVision *engine, int32 slotKey, const Common::String &line) :
+	ResultAction(engine, slotKey) {
 	_delay = 0;
 
 	char filename[64];
 	int32 x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-	sscanf(line.c_str(), "%d %d %d %d %64s %u", &x1, &y1, &x2, &y2, filename, &_delay);
+	sscanf(line.c_str(), "%d %d %d %d %63s %u", &x1, &y1, &x2, &y2, filename, &_delay);
 	_r = Common::Rect(x1, y1, x2, y2);
 	_filename = Common::String(filename);
 }

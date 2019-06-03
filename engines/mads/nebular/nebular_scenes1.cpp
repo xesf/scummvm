@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -84,7 +84,7 @@ void Scene1xx::setPlayerSpritesPrefix() {
 	} else if (_scene->_nextSceneId == 112)
 		_game._player._spritesPrefix = "";
 
-	if (oldName == _game._player._spritesPrefix)
+	if (oldName != _game._player._spritesPrefix)
 		_game._player._spritesChanged = true;
 
 	if (_scene->_nextSceneId == 105 || (_scene->_nextSceneId == 109 && _globals[kHoovicAlive])) {
@@ -188,13 +188,13 @@ void Scene101::enter() {
 	_scene->_hotspots.activate(NOUN_SHIELD_MODULATOR, false);
 	_panelOpened = false;
 
-	if (_scene->_priorSceneId != -1)
+	if (_scene->_priorSceneId != RETURNING_FROM_LOADING)
 		_globals[kNeedToStandUp] = false;
 
-	if (_scene->_priorSceneId != -2)
+	if (_scene->_priorSceneId != RETURNING_FROM_DIALOG)
 		_game._player._playerPos = Common::Point(100, 152);
 
-	if ((_scene->_priorSceneId == 112) || ((_scene->_priorSceneId == -2) && _sittingFl )) {
+	if ((_scene->_priorSceneId == 112) || ((_scene->_priorSceneId == RETURNING_FROM_DIALOG) && _sittingFl )) {
 		_game._player._visible = false;
 		_sittingFl = true;
 		_game._player._playerPos = Common::Point(161, 123);
@@ -258,32 +258,32 @@ void Scene101::step() {
 		break;
 	}
 
-	if (_scene->_activeAnimation != nullptr) {
-		if ((_scene->_activeAnimation->getCurrentFrame() >= 6) && (_messageNum == 0)) {
+	if (_scene->_animation[0] != nullptr) {
+		if ((_scene->_animation[0]->getCurrentFrame() >= 6) && (_messageNum == 0)) {
 			_messageNum++;
 			_scene->_kernelMessages.add(Common::Point(63, _posY), 0x1110, 0, 0, 240, _game.getQuote(49));
 			_posY += 14;
 		}
 
-		if ((_scene->_activeAnimation->getCurrentFrame() >= 7) && (_messageNum == 1)) {
+		if ((_scene->_animation[0]->getCurrentFrame() >= 7) && (_messageNum == 1)) {
 			_messageNum++;
 			_scene->_kernelMessages.add(Common::Point(63, _posY), 0x1110, 0, 0, 240, _game.getQuote(54));
 			_posY += 14;
 		}
 
-		if ((_scene->_activeAnimation->getCurrentFrame() >= 10) && (_messageNum == 2)) {
+		if ((_scene->_animation[0]->getCurrentFrame() >= 10) && (_messageNum == 2)) {
 			_messageNum++;
 			_scene->_kernelMessages.add(Common::Point(63, _posY), 0x1110, 0, 0, 240, _game.getQuote(55));
 			_posY += 14;
 		}
 
-		if ((_scene->_activeAnimation->getCurrentFrame() >= 17) && (_messageNum == 3)) {
+		if ((_scene->_animation[0]->getCurrentFrame() >= 17) && (_messageNum == 3)) {
 			_messageNum++;
 			_scene->_kernelMessages.add(Common::Point(63, _posY), 0x1110, 0, 0, 240, _game.getQuote(56));
 			_posY += 14;
 		}
 
-		if ((_scene->_activeAnimation->getCurrentFrame() >= 20) && (_messageNum == 4)) {
+		if ((_scene->_animation[0]->getCurrentFrame() >= 20) && (_messageNum == 4)) {
 			_messageNum++;
 			_scene->_kernelMessages.add(Common::Point(63, _posY), 0x1110, 0, 0, 240, _game.getQuote(50));
 			_posY += 14;
@@ -721,7 +721,7 @@ void Scene102::enter() {
 		_scene->_sequences.addSubEntry(_globals._sequenceIndexes[6], SEQUENCE_TRIGGER_EXPIRE, 0, 70);
 	} else if (_scene->_priorSceneId == 103)
 		_game._player._playerPos = Common::Point(47, 152);
-	else if (_scene->_priorSceneId != -2) {
+	else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG) {
 		_game._player._facing = FACING_NORTHWEST;
 		_game._player._playerPos = Common::Point(32, 129);
 	}
@@ -906,7 +906,7 @@ void Scene102::actions() {
 		_fridgeFirstOpenFl = false;
 		int quoteId = _vm->getRandomNumber(59, 63);
 		Common::String curQuote = _game.getQuote(quoteId);
-		int width = _vm->_font->getWidth(curQuote, -1);
+		int width = _scene->_kernelMessages._talkFont->getWidth(curQuote, -1);
 		_scene->_kernelMessages.reset();
 		_game._triggerSetupMode = SEQUENCE_TRIGGER_DAEMON;
 		_scene->_kernelMessages.add(Common::Point(210, 60), 0x1110, 0, 73, 120, curQuote);
@@ -1263,7 +1263,7 @@ void Scene102::actions() {
 		return;
 	}
 
-	if (_action.isAction(VERB_LOOK, NOUN_BURGER) && (_action._mainObjectSource == 4)) {
+	if (_action.isAction(VERB_LOOK, NOUN_BURGER) && (_action._mainObjectSource == CAT_HOTSPOT)) {
 		_vm->_dialogs->show(801);
 		_action._inProgress = false;
 	}
@@ -1342,7 +1342,7 @@ void Scene103::enter() {
 		_scene->_hotspots.activate(362, false);
 	}
 
-	if (_scene->_priorSceneId != -2)
+	if (_scene->_priorSceneId != RETURNING_FROM_DIALOG)
 		_game._player._playerPos = Common::Point(237, 74);
 
 	if (_scene->_priorSceneId == 102) {
@@ -1459,10 +1459,9 @@ void Scene103::actions() {
 		default:
 			break;
 		}
-	} else if (_action.isAction(VERB_TAKE, 289, 0) && _game._objects.isInRoom(OBJ_REBREATHER)) {
+	} else if (_action.isAction(VERB_TAKE, NOUN_REBREATHER, 0) && _game._objects.isInRoom(OBJ_REBREATHER)) {
 		switch (_vm->_game->_trigger) {
 		case 0:
-			_scene->changeVariant(1);
 			_globals._sequenceIndexes[12] = _scene->_sequences.startPingPongCycle(_globals._spriteIndexes[12], false, 3, 2);
 			_scene->_sequences.setMsgLayout(_globals._sequenceIndexes[12]);
 			_scene->_sequences.addSubEntry(_globals._sequenceIndexes[12], SEQUENCE_TRIGGER_SPRITE, 6, 1);
@@ -1625,7 +1624,7 @@ void Scene104::enter() {
 
 	if (_scene->_priorSceneId == 105)
 		_game._player._playerPos = Common::Point(302, 107);
-	else if (_scene->_priorSceneId != -2)
+	else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG)
 		_game._player._playerPos = Common::Point(160, 134);
 
 	_loseFl = false;
@@ -1783,7 +1782,7 @@ void Scene104::step() {
 	if ((_game._player._special > 0) && _game._player._stepEnabled)
 		_game._player._stepEnabled = false;
 
-	if (_kargShootingFl && (_scene->_activeAnimation->getCurrentFrame() >= 19)) {
+	if (_kargShootingFl && (_scene->_animation[0]->getCurrentFrame() >= 19)) {
 		_scene->_kernelMessages.add(Common::Point(0, 0), 0x1110, 34, 0, 120, _game.getQuote(52));
 		_kargShootingFl = false;
 	}
@@ -1847,7 +1846,7 @@ void Scene105::enter() {
 
 	if (_scene->_priorSceneId == 104)
 		_game._player._playerPos = Common::Point(13, 97);
-	else if (_scene->_priorSceneId != -2)
+	else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG)
 		_game._player._playerPos = Common::Point(116, 147);
 
 	_game.loadQuoteSet(0x4A, 0x4B, 0x4C, 0x35, 0x34, 0);
@@ -2021,7 +2020,7 @@ void Scene106::enter() {
 		_game._player._stepEnabled = false;
 		_game._player._facing = FACING_EAST;
 		_game._player._playerPos = Common::Point(106, 69);
-	} else if (_scene->_priorSceneId != -2) {
+	} else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG) {
 		if (_scene->_priorSceneId == 107) {
 			_game._player._playerPos = Common::Point(319, 84);
 			_game._player._facing = _game._player._prepareWalkFacing = FACING_WEST;
@@ -2080,7 +2079,7 @@ void Scene106::step() {
 		}
 	}
 
-	if (_firstEmergingFl && (_scene->_activeAnimation->getCurrentFrame() >= 19)) {
+	if (_firstEmergingFl && (_scene->_animation[0]->getCurrentFrame() >= 19)) {
 		_firstEmergingFl = false;
 		_scene->_kernelMessages.add(Common::Point(0, 0), 0x1110, 34, 0, 120, _game.getQuote(52));
 	}
@@ -2113,9 +2112,9 @@ void Scene106::step() {
 		}
 
 		if (msgId >= 0) {
-			int nextAbortVal = _game._trigger + 1;
+			int nextTrigger = _game._trigger + 1;
 			_scene->_kernelMessages.add(Common::Point(15, _positionY), 0x1110, 0, 0, 360, _game.getQuote(msgId));
-			_scene->_sequences.addTimer(150, nextAbortVal);
+			_scene->_sequences.addTimer(150, nextTrigger);
 			_positionY += 14;
 		}
 	}
@@ -2240,7 +2239,7 @@ void Scene107::enter() {
 		_game._player._playerPos = Common::Point(132, 47);
 	else if (_scene->_priorSceneId == 106)
 		_game._player._playerPos = Common::Point(20, 91);
-	else if (_scene->_priorSceneId != -2)
+	else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG)
 		_game._player._playerPos = Common::Point(223, 151);
 
 	if (((_scene->_priorSceneId == 105) || (_scene->_priorSceneId == 106)) && (_vm->getRandomNumber(1, 3) == 1)) {
@@ -2264,7 +2263,7 @@ void Scene107::enter() {
 }
 
 void Scene107::step() {
-	if (_shootingFl && (_scene->_activeAnimation->getCurrentFrame() >= 19)) {
+	if (_shootingFl && (_scene->_animation[0]->getCurrentFrame() >= 19)) {
 		_scene->_kernelMessages.add(Common::Point(0, 0), 0x1110, 34, 0, 120, _game.getQuote(52));
 		_shootingFl = false;
 	}
@@ -2296,7 +2295,7 @@ void Scene107::actions() {
 		_scene->_nextSceneId = 105;
 	else if (_action.isAction(VERB_LOOK, NOUN_NORTHERN_SEA_CLIFF))
 		_vm->_dialogs->show(10701);
-	else if (_action.isAction(VERB_LOOK, NOUN_DEAD_FISH) && (_action._mainObjectSource == 4))
+	else if (_action.isAction(VERB_LOOK, NOUN_DEAD_FISH) && (_action._mainObjectSource == CAT_HOTSPOT))
 		_vm->_dialogs->show(10702);
 	else if (_action.isAction(VERB_LOOK, NOUN_BUSH_LIKE_FORMATION))
 		_vm->_dialogs->show(10703);
@@ -2352,7 +2351,7 @@ void Scene108::enter() {
 
 	if (_scene->_priorSceneId == 107)
 		_game._player._playerPos = Common::Point(138, 58);
-	else if (_scene->_priorSceneId != -2)
+	else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG)
 		_game._player._playerPos = Common::Point(305, 98);
 
 	_game.loadQuoteSet(0x4A, 0x4B, 0x4C, 0x35, 0x34, 0);
@@ -2459,7 +2458,7 @@ void Scene109::enter() {
 	if (_scene->_priorSceneId == 110) {
 		_game._player._playerPos = Common::Point(248, 38);
 		_globals[kHoovicSated] = 2;
-	} else if (_scene->_priorSceneId != -2) {
+	} else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG) {
 		_game._player._playerPos = Common::Point(20, 68);
 		_game._player._facing = FACING_EAST;
 	}
@@ -2590,8 +2589,8 @@ void Scene109::preActions() {
 		_game._player._walkOffScreenSceneId = 108;
 
 	if ((_action.isAction(VERB_THROW) || _action.isAction(VERB_GIVE) || _action.isAction(VERB_PUT))
-	&& (_action.isObject(NOUN_SMALL_HOLE) || _action.isObject(NOUN_TUNNEL))
-	&& (_action.isObject(NOUN_DEAD_FISH) || _action.isObject(NOUN_STUFFED_FISH) || _action.isObject(NOUN_BURGER))) {
+			&& (_action.isTarget(NOUN_SMALL_HOLE) || _action.isTarget(NOUN_TUNNEL))
+			&& (_action.isObject(NOUN_DEAD_FISH) || _action.isObject(NOUN_STUFFED_FISH) || _action.isObject(NOUN_BURGER))) {
 		int idx = _game._objects.getIdFromDesc(_action._activeAction._objectNameId);
 		if ((idx >= 0) && _game._objects.isInInventory(idx)) {
 			_game._player._prepareWalkPos = Common::Point(106, 38);
@@ -2638,7 +2637,7 @@ void Scene109::actions() {
 							break;
 
 						case OBJ_BURGER:
-							_hoovicDifficultFl = (_game._difficulty == DIFFICULTY_EASY);
+							_hoovicDifficultFl = (_game._difficulty == DIFFICULTY_HARD);
 							_globals._spriteIndexes[8] = _scene->_sprites.addSprites(formAnimName('H', (_hoovicDifficultFl ? 3 : 1)));
 							break;
 						}
@@ -2865,7 +2864,7 @@ void Scene110::enter() {
 		_scene->_dynamicHotspots.setPosition(idx, Common::Point(-1, 0), FACING_NONE);
 		idx = _scene->_dynamicHotspots.add(91, 348, _globals._sequenceIndexes[3], Common::Rect(0, 0, 0, 0));
 		_scene->_dynamicHotspots.setPosition(idx, Common::Point(-1, 0), FACING_NONE);
-	} else if (_scene->_priorSceneId != -2) {
+	} else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG) {
 		_game._player._playerPos = Common::Point(194, 23);
 		_game._player._facing = FACING_SOUTH;
 		_game._player._visible = false;
@@ -2920,7 +2919,7 @@ void Scene110::actions() {
 		switch (_game._trigger) {
 		case 0:
 			_scene->loadAnimation(Resources::formatName(110, 'T', 0, EXT_AA, ""), 1);
-			_scene->_activeAnimation->setNextFrameTimer(_game._player._ticksAmount + _game._player._priorTimer);
+			_scene->_animation[0]->setNextFrameTimer(_game._player._ticksAmount + _game._player._priorTimer);
 			_game._player._stepEnabled = false;
 			_game._player._visible = false;
 			break;
@@ -3008,7 +3007,7 @@ void Scene111::enter() {
 	_launched2Fl = false;
 	_stampedFl = false;
 
-	if ((_scene->_priorSceneId < 201) && (_scene->_priorSceneId != -2)) {
+	if ((_scene->_priorSceneId < 201) && (_scene->_priorSceneId != RETURNING_FROM_DIALOG)) {
 		_game._player._stepEnabled = false;
 		_game._player._visible = false;
 		_scene->loadAnimation(Resources::formatName(111, 'A', 0, EXT_AA, ""), 70);
@@ -3019,7 +3018,7 @@ void Scene111::enter() {
 		_launched2Fl = true;
 
 		_vm->_sound->command(36);
-	} else if (_scene->_priorSceneId != -2) {
+	} else if (_scene->_priorSceneId != RETURNING_FROM_DIALOG) {
 		_game._player._playerPos = Common::Point(300, 130);
 		_game._player._facing = FACING_WEST;
 	}
@@ -3067,7 +3066,7 @@ void Scene111::step() {
 	if (_game._trigger == 73)
 		_vm->_sound->command(37);
 
-	if (_rexDivingFl && (_scene->_activeAnimation->getCurrentFrame() >= 9)) {
+	if (_rexDivingFl && (_scene->_animation[0]->getCurrentFrame() >= 9)) {
 		_vm->_sound->command(36);
 		_rexDivingFl = false;
 	}
@@ -3139,8 +3138,8 @@ void Scene112::enter() {
 }
 
 void Scene112::step() {
-	if ((_scene->_activeAnimation != nullptr) && (_game._storyMode == STORYMODE_NICE)) {
-		if (_scene->_activeAnimation->getCurrentFrame() >= 54) {
+	if ((_scene->_animation[0] != nullptr) && (_game._storyMode == STORYMODE_NICE)) {
+		if (_scene->_animation[0]->getCurrentFrame() >= 54) {
 			_scene->freeAnimation();
 			_game._trigger = 70;
 		}

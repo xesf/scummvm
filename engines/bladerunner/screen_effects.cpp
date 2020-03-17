@@ -37,7 +37,7 @@ ScreenEffects::~ScreenEffects() {
 	delete[] _data;
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
-	if(!_skipEntries.empty()) {
+	if (!_skipEntries.empty()) {
 		_skipEntries.clear();
 	}
 #endif // BLADERUNNER_ORIGINAL_BUGS
@@ -48,7 +48,7 @@ ScreenEffects::~ScreenEffects() {
 void ScreenEffects::toggleEntry(int effectId, bool skip) {
 	if (effectId >= 0 && effectId < kMaxEffectsInScene) {
 		int foundAt = -1;
-		for (int i = 0; i < (int)_skipEntries.size(); i++) {
+		for (int i = 0; i < (int)_skipEntries.size(); ++i) {
 			if (_skipEntries[i] == effectId) {
 				foundAt = i;
 				break;
@@ -58,14 +58,14 @@ void ScreenEffects::toggleEntry(int effectId, bool skip) {
 		if (skip && foundAt < 0) {
 			int newSlot = 0;
 			// keep the array sorted (from greater values to lower values)
-			for (int i = 0; i < (int)_skipEntries.size(); i++) {
+			for (int i = 0; i < (int)_skipEntries.size(); ++i) {
 				if (effectId > _skipEntries[i]) {
 					newSlot = i;
 					break;
 				}
 			}
 			_skipEntries.insert_at(newSlot, effectId);
-		} else if (!skip && foundAt >= 0 ){
+		} else if (!skip && foundAt >= 0 ) {
 			_skipEntries.remove_at(foundAt);
 		}
 	} else if (effectId == -1 && !skip) {
@@ -115,13 +115,13 @@ void ScreenEffects::readVqa(Common::SeekableReadStream *stream) {
 			uint8 count = stream->readByte();
 			if (count & 0x80) { // repeat same data
 				uint8 colors = stream->readByte();
-				for (uint8 j = 0; j < (count & 0x7F) + 1; j++) {
+				for (uint8 j = 0; j < (count & 0x7F) + 1; ++j) {
 					*(dataPtr++) = colors >> 4;  // upper 4 bit
 					*(dataPtr++) = colors & 0xF; // lower 4 bit
 					pixelCount -= 2;
 				}
 			} else { // copy data
-				for (uint8 j = 0; j < count + 1; j++) {
+				for (uint8 j = 0; j < count + 1; ++j) {
 					uint8 colors = stream->readByte();
 					*(dataPtr++) = colors >> 4;  // upper 4 bit
 					*(dataPtr++) = colors & 0xF; // lower 4 bit
@@ -135,7 +135,7 @@ void ScreenEffects::readVqa(Common::SeekableReadStream *stream) {
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
 	// added code to allow skipping specific effects
-	for (int i = 0; i < (int)_skipEntries.size(); i++) {
+	for (int i = 0; i < (int)_skipEntries.size(); ++i) {
 		_entries.remove_at(_skipEntries[i]);
 	}
 #endif // BLADERUNNER_ORIGINAL_BUGS
@@ -149,13 +149,13 @@ void ScreenEffects::readVqa(Common::SeekableReadStream *stream) {
 //		return false;
 //	}
 //
-//	for(int i = 0; i < _entries.size(); i++) {
+//	for(int i = 0; i < _entries.size(); ++i) {
 //		Entry &entry = _entries[i];
 //		if (entry.z < z) {
 //			if (entry.width < (width >> 1) + xx) {
 //				if (entry.width + entry.x > xx) {
 //					if (entry.height < (height >> 1) + yy) {
-//						if(entry.height + entry.y > yy) {
+//						if (entry.height + entry.y > yy) {
 //							return true;
 //						}
 //					}

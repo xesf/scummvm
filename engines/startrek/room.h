@@ -61,10 +61,16 @@ const int RDF_ROOM_ENTRY_POSITIONS = 0x2a;
 const int RDF_BEAM_IN_POSITIONS = 0xaa;
 const int RDF_SPAWN_POSITIONS = 0xba;
 
+#define COMMON_MESSAGE_OFFSET 1000
+#define FOLLOWUP_MESSAGE_OFFSET 600
+#define SCOTTY_MESSAGE_OFFSET 500
+
 class Room {
 public:
 	Room(StarTrekEngine *vm, const Common::String &name);
 	~Room();
+
+	friend class Console;
 
 	uint16 readRdfWord(int offset);
 
@@ -136,6 +142,7 @@ public:
 	 * all rooms).
 	 */
 	Common::Point getBeamInPosition(int crewmanIndex);
+
 	/**
 	 * This is analagous to above, but instead of beaming in, they just appear in a spot.
 	 * Used sparingly, ie. in feather's serpent when appearing in cave after Quetzecoatl
@@ -143,23 +150,35 @@ public:
 	 */
 	Common::Point getSpawnPosition(int crewmanIndex);
 
-	int showText(TextRef speaker, TextRef text, bool fromRDF = false);
+	/**
+	 * Returns true if the given position is contained in a polygon.
+	 *
+	 * The data passed contains the following words in this order:
+	 *   * Index of polygon (unused here)
+	 *   * Number of vertices in polygon
+	 *   * For each vertex: x and y coordinates.
+	 */
+	bool isPointInPolygon(int offset, int16 x, int16 y);
 
-public:
 	byte *_rdfData;
 
 private:
+	uint16 _rdfSize;
+
 	StarTrekEngine *_vm;
 	AwayMission *_awayMission;
 
 	const RoomAction *_roomActionList;
 	int _numRoomActions;
 
-	int _roomIndex; // ie. for DEMON2, this is 2
 	Common::HashMap<int, Common::String> _lookMessages;
+	Common::HashMap<int, Common::String> _lookWithTalkerMessages;
 	Common::HashMap<int, Common::String> _talkMessages;
 
 	void loadRoomMessages();
+	void loadOtherRoomMessages();
+	void loadRoomMessage(const char *text);
+	Common::String patchRoomMessage(const char *text);
 
 	int findFunctionPointer(int action, void (Room::*funcPtr)());
 
@@ -186,8 +205,10 @@ private:
 	 * Cmd 0x03
 	 */
 	int showRoomSpecificText(const char **textAddr);
-	int showText(const TextRef *text, bool fromRDF = false);
-	int showText(TextRef text, bool fromRDF = false);
+	int showMultipleTexts(const TextRef *text, bool fromRDF = false, bool lookWithTalker = false);
+	int showDescription(TextRef text, bool fromRDF = false, bool lookWithTalker = false);
+	int showText(TextRef speaker, TextRef text, bool fromRDF = false, bool lookWithTalker = false);
+
 	/**
 	 * Cmd 0x04
 	 */
@@ -208,10 +229,14 @@ private:
 	 */
 	void walkCrewman(int actorIndex, int16 destX, int16 destY, uint16 finishedAnimActionParam = 0);
 	void walkCrewmanC(int actorIndex, int16 destX, int16 destY, void (Room::*funcPtr)());      // Cmd 0x08
+
+public:
 	/**
 	 * Cmd 0x09: Loads a pair of .map and .iw files to change the room's collisions and pathfinding.
 	 */
 	void loadMapFile(const Common::String &name);
+
+private:
 	/**
 	 * Cmd 0x0a
 	 */
@@ -274,8 +299,8 @@ private:
 	 * If "changeDirection" is true, they remain facing that direction even after their
 	 * animation is finished. The game is inconsistent about doing this.
 	 */
-	void spockScan(int direction, TextRef text, bool changeDirection = false);
-	void mccoyScan(int direction, TextRef text, bool changeDirection = false);
+	void spockScan(int direction, TextRef text, bool changeDirection = false, bool fromRDF = false);
+	void mccoyScan(int direction, TextRef text, bool changeDirection = false, bool fromRDF = false);
 
 	// Room-specific code
 public:
@@ -2988,10 +3013,6 @@ public:
 		struct {
 			// love0
 			bool heardSummaryOfVirus; // 0xda
-			int16 consoleCrewman; // 0xe3
-			char consoleAnimation[10]; // 0xe5
-			TextRef consoleSpeaker; // 0xe7
-			TextRef consoleText; // 0xe9
 
 			// love1
 			TextRef dyingSpeaker; // 0xcf
@@ -3029,10 +3050,13 @@ public:
 			void saveLoadWithSerializer(Common::Serializer &ser) {
 				// love0
 				ser.syncAsByte(heardSummaryOfVirus);
-				ser.syncAsSint16LE(consoleCrewman);
-				ser.syncBytes((byte *)consoleAnimation, 10);
-				ser.syncAsSint32LE(consoleSpeaker);
-				ser.syncAsSint32LE(consoleText);
+				uint16 tmp = 0;
+				uint32 tmp2 = 0;
+				byte tmp3[10];
+				ser.syncAsSint16LE(tmp);	// consoleCrewman
+				ser.syncBytes((byte *)tmp3, 10);	// consoleAnimation
+				ser.syncAsSint32LE(tmp2);	// consoleSpeaker
+				ser.syncAsSint32LE(tmp2);	// consoleText
 
 				// love1
 				ser.syncAsSint32LE(dyingSpeaker);

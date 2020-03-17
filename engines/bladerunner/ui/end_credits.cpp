@@ -55,13 +55,8 @@ void EndCredits::show() {
 
 	_vm->_music->play(_vm->_gameInfo->getMusicTrack(kMusicCredits), 100, 0, 2, -1, 0, 3);
 
-	Font *fontBig = new Font(_vm);
-	fontBig->open("TAHOMA24.FON", 640, 480, -1, 0, 0);
-	fontBig->setSpacing(1, 0);
-
-	Font *fontSmall = new Font(_vm);
-	fontSmall->open("TAHOMA18.FON", 640, 480, -1, 0, 0);
-	fontSmall->setSpacing(1, 0);
+	Font *fontBig = Font::load(_vm, "TAHOMA24.FON", 1, true);
+	Font *fontSmall = Font::load(_vm, "TAHOMA18.FON", 1, true);
 
 	TextResource *textResource = new TextResource(_vm);
 	textResource->open("ENDCRED");
@@ -71,7 +66,7 @@ void EndCredits::show() {
 	int y = 452;
 	bool small = false;
 
-	for (int i = 0; i < textCount; i++) {
+	for (int i = 0; i < textCount; ++i) {
 		Common::String s = textResource->getText(i);
 		if (s.hasPrefix("^")) {
 			if (!small) {
@@ -109,17 +104,16 @@ void EndCredits::show() {
 
 		if (!_vm->_windowIsActive) {
 			timeLast = _vm->_time->currentSystem();
-
 			continue;
 		}
 
 		uint32 timeNow = _vm->_time->currentSystem();
-		position += (double)(timeNow - timeLast) * 0.05f;
+		position += (double)(timeNow - timeLast) * 0.05f; // unsigned difference is intentional
 		timeLast = timeNow;
 
 		_vm->_surfaceFront.fillRect(Common::Rect(640, 480), 0);
 
-		for (int i = 0; i < textCount; i++) {
+		for (int i = 0; i < textCount; ++i) {
 			Common::String s = textResource->getText(i);
 			Font *font;
 			int height;
@@ -141,10 +135,10 @@ void EndCredits::show() {
 				if (font == fontBig) {
 					x = 280;
 				} else {
-					x = 270 - font->getTextWidth(s);
+					x = 270 - font->getStringWidth(s);
 				}
 
-				font->draw(s, _vm->_surfaceFront, x, y);
+				font->drawString(&_vm->_surfaceFront, s, x, y, _vm->_surfaceFront.w, 0);
 			}
 		}
 
@@ -152,8 +146,6 @@ void EndCredits::show() {
 		_vm->_surfaceFront.fillRect(Common::Rect(0, 452, 640, 480), 0);
 
 		_vm->blitToScreen(_vm->_surfaceFront);
-
-		_vm->_system->delayMillis(10);
 	}
 
 	_vm->_vqaIsPlaying = false;

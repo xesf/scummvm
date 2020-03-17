@@ -33,6 +33,8 @@
 
 #include "engines/engine.h"
 
+#include "graphics/cursorman.h"
+
 #include "cryomni3d/font_manager.h"
 #include "cryomni3d/objects.h"
 #include "cryomni3d/sprites.h"
@@ -59,8 +61,24 @@ class ImageDecoder;
  */
 namespace CryOmni3D {
 
+class DATSeekableStream;
+
 enum CryOmni3DGameType {
 	GType_VERSAILLES
+};
+
+enum CryOmni3DGameFeatures {
+	GF_VERSAILLES_FONTS_MASK               = (3 << 0), // Fonts flag mask
+	GF_VERSAILLES_FONTS_NUMERIC            = (0 << 0), // Fonts are font01.crf, ...
+	GF_VERSAILLES_FONTS_SET_A              = (1 << 0), // Fonts are for French Macintosh (development version)
+	GF_VERSAILLES_FONTS_SET_B              = (2 << 0), // Standard set (Helvet12 is used for debugging docs)
+	GF_VERSAILLES_FONTS_SET_C              = (3 << 0), // Fonts for Italian version (Helvet12 is used for docs texts)
+
+	GF_VERSAILLES_AUDIOPADDING_NO          = (0 << 2), // Audio files have underscore padding before extension
+	GF_VERSAILLES_AUDIOPADDING_YES         = (1 << 2), // Audio files have underscore padding before extension
+
+	GF_VERSAILLES_LINK_STANDARD            = (0 << 3), // Links file is lien_doc.txt
+	GF_VERSAILLES_LINK_LOCALIZED           = (1 << 3)  // Links file is taken from cryomni3d.dat
 };
 
 struct CryOmni3DGameDescription;
@@ -81,38 +99,43 @@ enum DragStatus {
 
 class CryOmni3DEngine : public ::Engine {
 protected:
-	virtual Common::Error run();
+	Common::Error run() override;
 
 public:
 	CryOmni3DEngine(OSystem *syst, const CryOmni3DGameDescription *gamedesc);
-	virtual ~CryOmni3DEngine();
+	~CryOmni3DEngine() override;
 
 	// Detection related functions
 	const CryOmni3DGameDescription *_gameDescription;
 	const char *getGameId() const;
 	uint32 getFeatures() const;
-	const char *getAppName() const;
 	uint16 getVersion() const;
 	Common::Platform getPlatform() const;
 	uint8 getGameType() const;
 	Common::Language getLanguage() const;
 
-	bool hasFeature(EngineFeature f) const;
+	bool hasFeature(EngineFeature f) const override;
+	bool canLoadGameStateCurrently() override { return _canLoadSave; }
+	bool canSaveGameStateCurrently() override { return _canLoadSave; }
 
+	void setCanLoadSave(bool canLoadSave) { _canLoadSave = canLoadSave; }
+	static const uint kSaveDescriptionLen = 20;
 private:
-	void pauseEngineIntern(bool);
+	void pauseEngineIntern(bool) override;
 
 public:
 	Image::ImageDecoder *loadHLZ(const Common::String &filename);
 
 	void fillSurface(byte color);
+	/* We use CursorMan because it avoids problems with cursors in GMM */
 	void setCursor(const Graphics::Cursor &cursor) const;
 	void setCursor(uint cursorId) const;
+	bool showMouse(bool visible) { return CursorMan.showMouse(visible); }
 	typedef void (CryOmni3DEngine::*HNMCallback)(uint frameNum);
 	void playHNM(const Common::String &filename,
 	             Audio::Mixer::SoundType soundType = Audio::Mixer::kPlainSoundType,
 	             HNMCallback beforeDraw = nullptr, HNMCallback afterDraw = nullptr);
-	void displayHLZ(const Common::String &filename);
+	bool displayHLZ(const Common::String &filename, uint32 timeout = uint(-1));
 
 	bool pollEvents();
 	Common::Point getMousePos();
@@ -143,6 +166,8 @@ public:
 	virtual void setupPalette(const byte *colors, uint start, uint num) = 0;
 
 protected:
+	DATSeekableStream *getStaticData(uint32 gameId, uint16 version) const;
+
 	void copySubPalette(byte *dst, const byte *src, uint start, uint num);
 	void setPalette(const byte *colors, uint start, uint num);
 	void lockPalette(uint startRW, uint endRW) { _lockPaletteStartRW = startRW; _lockPaletteEndRW = endRW; }
@@ -151,7 +176,12 @@ protected:
 	void fadeInPalette(const byte *colors);
 	void setBlackPalette();
 
+	void setHNMClipping(const Common::Rect &clip) { _hnmClipping = clip; _hnmHasClip = true; }
+	void unsetHNMClipping() { _hnmHasClip = false; }
+
 protected:
+	bool _canLoadSave;
+
 	FontManager _fontManager;
 	Sprites _sprites;
 	Objects _objects;
@@ -167,6 +197,9 @@ protected:
 private:
 	uint _lockPaletteStartRW;
 	uint _lockPaletteEndRW;
+
+	Common::Rect _hnmClipping;
+	bool _hnmHasClip;
 };
 
 } // End of namespace CryOmni3D

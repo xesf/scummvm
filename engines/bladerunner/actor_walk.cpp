@@ -211,6 +211,18 @@ bool ActorWalk::tick(int actorId, float stepDistance, bool mustReachWalkDestinat
 		}
 	}
 
+#if !BLADERUNNER_ORIGINAL_BUGS
+	// safety-guard / validator  check
+	if (_facing >= 1024) {
+		_facing = (_facing % 1024);
+	} else if (_facing < 0) {
+		_facing  = (-1) * _facing;
+		_facing = (_facing % 1024);
+		if (_facing > 0) {
+			_facing  = 1024 - _facing; // this will always be in [1, 1023]
+		}
+	}
+#endif
 	_current.x += stepDistance * _vm->_sinTable1024->at(_facing);
 	_current.z -= stepDistance * _vm->_cosTable1024->at(_facing);
 	_current.y = _vm->_scene->_set->getAltitudeAtXZ(_current.x, _current.z, &walkboxFound);
@@ -380,7 +392,7 @@ bool ActorWalk::findEmptyPositionAroundToOriginalDestination(int actorId, Vector
 bool ActorWalk::addNearActors(int skipActorId) {
 	bool added = false;
 	int setId = _vm->_scene->getSetId();
-	for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); i++) {
+	for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); ++i) {
 		assert(_vm->_actors[i] != nullptr);
 
 		if (_vm->_actors[skipActorId] != nullptr

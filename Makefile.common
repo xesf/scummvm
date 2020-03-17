@@ -27,9 +27,9 @@ MODULES := test devtools base $(MODULES)
 
 # After the game specific modules follow the shared modules
 MODULES += \
+	engines \
 	gui \
 	backends \
-	engines \
 	video \
 	image \
 	graphics \
@@ -136,6 +136,10 @@ ifdef CXX_UPDATE_DEP_FLAG
 	$(QUIET)$(MKDIR) $(*D)/$(DEPDIR)
 	$(QUIET_AS)$(CXX) $(CXX_UPDATE_DEP_FLAG) $(ASFLAGS) -c $(<) -o $*.o
 
+base/version.o: base/version.cpp
+	$(QUIET)$(MKDIR) $(*D)/$(DEPDIR)
+	$(QUIET_CXX)$(CXX) $(CXX_UPDATE_DEP_FLAG) $(CXXFLAGS) $(VERFLAGS) $(CPPFLAGS) -c $(<) -o $*.o
+
 else
 
 # Dumb compile rule, for C++ compilers that don't allow dependency tracking or
@@ -149,6 +153,9 @@ else
 	$(QUIET)$(MKDIR) $(*D)
 	$(QUIET_AS)$(CXX) $(ASFLAGS) -c $(<) -o $*.o
 
+base/version.o: base/version.cpp
+	$(QUIET)$(MKDIR) $(*D)
+	$(QUIET_CXX)$(CXX) $(CXXFLAGS) $(VERFLAGS) $(CPPFLAGS) -c $(<) -o $*.o
 endif
 
 # Build rule for assembler files
@@ -192,7 +199,7 @@ VER_EXTRA = $(shell echo $(VERSION) | cut -d. -f 3 | cut -c2-)
 ifdef AMIGAOS
 # Amiga needs date in specific format for the version cookie
 AMIGA_DATE = $(shell gdate '+%d.%m.%Y')
-base/version.o: CXXFLAGS:=$(CXXFLAGS) -DAMIGA_DATE=\"$(AMIGA_DATE)\"
+VERFLAGS += -DAMIGA_DATE=\"$(AMIGA_DATE)\"
 endif
 
 ######################################################################
@@ -214,7 +221,7 @@ endif
 # Define the Subversion revision if available, either autodetected or
 # specified by the user, but only for base/version.cpp.
 ifneq ($(origin VER_REV), undefined)
-base/version.o: CXXFLAGS:=$(CXXFLAGS) -DSCUMMVM_REVISION=\"$(VER_REV)\"
+VERFLAGS += -DSCUMMVM_REVISION=\"$(VER_REV)\"
 endif
 
 ######################################################################
@@ -302,6 +309,12 @@ ifdef USE_SDL_NET
 DIST_FILES_NETWORKING:=$(addprefix $(srcdir)/dists/networking/,wwwroot.zip)
 endif
 
+# Virtual keyboard files
+DIST_FILES_VKEYBD=
+ifdef ENABLE_VKEYBD
+DIST_FILES_VKEYBD:=$(addprefix $(srcdir)/backends/vkeybd/packs/,vkeybd_default.zip vkeybd_small.zip)
+endif
+
 # Engine data files
 DIST_FILES_ENGINEDATA=
 ifdef ENABLE_ACCESS
@@ -309,6 +322,9 @@ DIST_FILES_ENGINEDATA+=access.dat
 endif
 ifdef ENABLE_CRYO
 DIST_FILES_ENGINEDATA+=cryo.dat
+endif
+ifdef ENABLE_CRYOMNI3D
+DIST_FILES_ENGINEDATA+=cryomni3d.dat
 endif
 ifdef ENABLE_DRASCULA
 DIST_FILES_ENGINEDATA+=drascula.dat
@@ -348,6 +364,9 @@ DIST_FILES_ENGINEDATA+=tony.dat
 endif
 ifdef ENABLE_TOON
 DIST_FILES_ENGINEDATA+=toon.dat
+endif
+ifdef ENABLE_ULTIMA
+DIST_FILES_ENGINEDATA+=ultima.dat
 endif
 ifdef ENABLE_WINTERMUTE
 DIST_FILES_ENGINEDATA+=wintermute.zip

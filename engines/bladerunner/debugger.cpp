@@ -133,6 +133,7 @@ Debugger::Debugger(BladeRunnerEngine *vm) : GUI::Debugger() {
 	registerCmd("item", WRAP_METHOD(Debugger, cmdItem));
 	registerCmd("region", WRAP_METHOD(Debugger, cmdRegion));
 	registerCmd("click", WRAP_METHOD(Debugger, cmdClick));
+	registerCmd("difficulty", WRAP_METHOD(Debugger, cmdDifficulty));
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
 	registerCmd("effect", WRAP_METHOD(Debugger, cmdEffect));
@@ -140,7 +141,7 @@ Debugger::Debugger(BladeRunnerEngine *vm) : GUI::Debugger() {
 }
 
 Debugger::~Debugger() {
-	if(!_specificDrawnObjectsList.empty()) {
+	if (!_specificDrawnObjectsList.empty()) {
 		_specificDrawnObjectsList.clear();
 	}
 }
@@ -220,12 +221,11 @@ bool Debugger::cmdDraw(int argc, const char **argv) {
 	} else {
 		Common::String arg = argv[1];
 
-		int specificObjectId = -1;
 		DebuggerDrawnObject dbgDrawnObj;
 		dbgDrawnObj.type = debuggerObjTypeUndefined;
 
 		if (argc == 3) {
-			specificObjectId = atoi(argv[2]);
+			int specificObjectId = atoi(argv[2]);
 			dbgDrawnObj.objId = specificObjectId;
 			dbgDrawnObj.sceneId = _vm->_scene->getSceneId();
 			dbgDrawnObj.setId = _vm->_scene->getSetId();
@@ -379,7 +379,7 @@ bool Debugger::cmdDraw(int argc, const char **argv) {
 			debugPrintf("Drawing Z buffer = %s\n", _viewZBuffer? "true" : "false");
 		} else if (arg == "reset") {
 
-			if(!_specificDrawnObjectsList.empty()) {
+			if (!_specificDrawnObjectsList.empty()) {
 				_specificDrawnObjectsList.clear();
 			}
 
@@ -690,7 +690,7 @@ bool Debugger::cmdScene(int argc, const char **argv) {
 
 		// Sanity check
 		uint i;
-		for (i = 0; sceneList[i].chapter != 0; i++) {
+		for (i = 0; sceneList[i].chapter != 0; ++i) {
 			if (sceneList[i].chapter == chapterIdNormalized &&
 			    sceneList[i].set == setId &&
 			    sceneList[i].scene == sceneId
@@ -735,7 +735,7 @@ bool Debugger::cmdScene(int argc, const char **argv) {
 		}
 
 		uint i;
-		for (i = 0; sceneList[i].chapter != 0; i++) {
+		for (i = 0; sceneList[i].chapter != 0; ++i) {
 			if (sceneList[i].chapter == chapterIdNormalized && sceneName.equalsIgnoreCase(sceneList[i].name))
 				break;
 		}
@@ -760,7 +760,7 @@ bool Debugger::cmdScene(int argc, const char **argv) {
 	}
 
 	uint i;
-	for (i = 0; sceneList[i].chapter != 0; i++) {
+	for (i = 0; sceneList[i].chapter != 0; ++i) {
 		if (sceneList[i].chapter == chapterIdNormalized && sceneList[i].set == _vm->_scene->getSetId()
 				&& sceneList[i].scene == _vm->_scene->getSceneId())
 			break;
@@ -863,7 +863,7 @@ bool Debugger::cmdTimer(int argc, const char **argv) {
 	}
 
 	for (int i = 0; i < 7; ++i) {
-		debugPrintf("actorTimer(%i, %i) = %i ms\n", actorId, i, actor->timerLeft(i));
+		debugPrintf("actorTimer(%i, %i) = %d ms\n", actorId, i, actor->timerLeft(i));
 	}
 
 	return true;
@@ -1053,8 +1053,6 @@ const struct OverlayAndScenesVQAsList {
 */
 bool Debugger::cmdOverlay(int argc, const char **argv) {
 	bool invalidSyntax = false;
-	bool modeMixOverlaysAvailableFlg = false;
-	int chapterIdOverlaysAvailableInt = -1;
 
 	if (_vm->_kia->isOpen()
 		|| _vm->_esper->isOpen()
@@ -1070,6 +1068,9 @@ bool Debugger::cmdOverlay(int argc, const char **argv) {
 	if (argc != 1 && argc != 2 && argc != 3 && argc != 5) {
 		invalidSyntax = true;
 	} else {
+		bool modeMixOverlaysAvailableFlg = false;
+		int chapterIdOverlaysAvailableInt = -1;
+
 		if (_vm->_chapters->hasOpenResources()) {
 			chapterIdOverlaysAvailableInt = MIN(_vm->_chapters->currentResourceId(), 3);
 		}
@@ -1095,7 +1096,7 @@ bool Debugger::cmdOverlay(int argc, const char **argv) {
 
 			for (int i = 0; i < _vm->_overlays->kOverlayVideos; ++i) {
 				if (_vm->_overlays->_videos[i].loaded) {
-					countOfLoadedOverlaysInScene++;
+					++countOfLoadedOverlaysInScene;
 					VQADecoder::LoopInfo &loopInfo =_vm->_overlays->_videos[i].vqaPlayer->_decoder._loopInfo;
 					for (int j = 0; j < loopInfo.loopCount; ++j) {
 						debugPrintf("%s %2d %4d %4d\n", _vm->_overlays->_videos[i].name.c_str(), j, loopInfo.loops[j].begin, loopInfo.loops[j].end);
@@ -1203,7 +1204,7 @@ bool Debugger::cmdOverlay(int argc, const char **argv) {
 				if ( (overlaysList[itemIter].resourceId == chapterIdOverlaysAvailableInt)
 					|| ( modeMixOverlaysAvailableFlg && overlaysList[itemIter].resourceId == 6)
 				) {
-					if (strcmp(overlaysList[itemIter].name, overlayName.c_str()) == 0){
+					if (strcmp(overlaysList[itemIter].name, overlayName.c_str()) == 0) {
 						break;
 					}
 				}
@@ -1218,7 +1219,7 @@ bool Debugger::cmdOverlay(int argc, const char **argv) {
 				// Attempt to load the overlay in an empty slot
 				// even if it's not already loaded for the scene (in _vm->_overlays->_videos)
 				int overlayVideoIdx = _vm->_overlays->play(overlayName, overlayAnimationId, loopForever, startNowFlag, 0);
-				if( overlayVideoIdx == -1 ) {
+				if ( overlayVideoIdx == -1 ) {
 					debugPrintf("Could not load the overlay animation: %s in this scene. Try reseting overlays first to free up slots!\n", overlayName.c_str());
 				} else {
 					debugPrintf("Loading overlay animation: %s...\n", overlayName.c_str());
@@ -1290,13 +1291,13 @@ bool Debugger::cmdSubtitle(int argc, const char **argv) {
 
 		Common::String subtitleText = argv[1];
 		if (subtitleText == "info") {
-			debugPrintf("Subtitles version info: v%s (%s) %s by: %s\n",
+			debugPrintf("Subtitles version info: v%s (%s) %s\nCredits:\n%s\n",
 			            _vm->_subtitles->getSubtitlesInfo().versionStr.c_str(),
 			            _vm->_subtitles->getSubtitlesInfo().dateOfCompile.c_str(),
 			            _vm->_subtitles->getSubtitlesInfo().languageMode.c_str(),
 			            _vm->_subtitles->getSubtitlesInfo().credits.c_str());
-			debugPrintf("Subtitles fonts loaded: %s\n",
-			            _vm->_subtitles->isSubsFontsLoaded()? "True":"False");
+			debugPrintf("Subtitles font loaded: %s\n",
+			            _vm->_subtitles->getSubtitlesInfo().fontName.c_str());
 
 		} else if (subtitleText == "reset") {
 			_vm->_subtitles->setGameSubsText("", false);
@@ -1391,7 +1392,7 @@ bool Debugger::cmdObject(int argc, const char **argv) {
 				debugPrintf("Unable to add more objects in the set\n");
 			} else {
 				int objectId = _vm->_scene->_set->_objectCount;
-				_vm->_scene->_set->_objectCount++;
+				++(_vm->_scene->_set->_objectCount);
 				_vm->_scene->_set->_objects[objectId].name = custObjName.c_str();
 
 				float x0, y0, z0, x1, y1, z1;
@@ -1464,7 +1465,7 @@ bool Debugger::cmdObject(int argc, const char **argv) {
 					Vector3 positionBottomRight(atof(argv[3]), atof(argv[4]), atof(argv[5]));
 					Vector3 positionTopLeft(atof(argv[6]), atof(argv[7]), atof(argv[8]));
 					_vm->_scene->_set->_objects[objectId].bbox.setXYZ(positionBottomRight.x, positionBottomRight.y, positionBottomRight.z, positionTopLeft.x, positionTopLeft.y, positionTopLeft.z);
-					if (!_vm->_sceneIsLoading && _vm->_sceneObjects->remove(objectId + kSceneObjectOffsetObjects)){
+					if (!_vm->_sceneIsLoading && _vm->_sceneObjects->remove(objectId + kSceneObjectOffsetObjects)) {
 						_vm->_sceneObjects->addObject(objectId + kSceneObjectOffsetObjects,
 						                               _vm->_scene->_set->_objects[objectId].bbox,
 						                               _vm->_scene->_set->_objects[objectId].isClickable,
@@ -1571,7 +1572,7 @@ bool Debugger::cmdItem(int argc, const char **argv) {
 					            _vm->_items->isTarget(itemId)?  "T" : "F",
 					            _vm->_items->isVisible(itemId)? "T" : "F",
 					            xpos_curr, ypos_curr, zpos_curr,
-					            facing_curr, currWidth, currHeight, itemAnimationId,
+					            facing_curr, currHeight, currWidth, itemAnimationId,
 					            screenRect.top, screenRect.left, screenRect.bottom, screenRect.right,
 					            x0_curr, y0_curr, z0_curr, x1_curr, y1_curr, z1_curr);
 				} else if (modeName == "remove") {
@@ -1640,9 +1641,9 @@ bool Debugger::cmdItem(int argc, const char **argv) {
 		debugPrintf("Usage 1: %s add    <id> <posX> <posY> <posZ> <facing> <height> <width> <animationId>\n", argv[0]);
 		debugPrintf("Usage 2: %s list   <id>\n", argv[0]);
 		debugPrintf("Usage 3: %s flags  <id> <isVisible> <isTarget>\n", argv[0]);
-		debugPrintf("Usage 4: %s bounds <id> <posX> <posY> <posZ>  <facing> <height> <width>\n", argv[0]);
+		debugPrintf("Usage 4: %s bounds <id> <posX> <posY> <posZ> <facing> <height> <width>\n", argv[0]);
 		debugPrintf("Usage 5: %s remove <id>\n", argv[0]);
-		debugPrintf("Usage 6: %s spin <animationId>\n", argv[0]);
+		debugPrintf("Usage 6: %s spin   <animationId>\n", argv[0]);
 	}
 	return true;
 }
@@ -1676,7 +1677,7 @@ bool Debugger::cmdRegion(int argc, const char **argv) {
 			debugPrintf("A region id has to be an integer within [0, 9]\n");
 			return true;
 		}
-		if (modeName == "add" && ((regionTypeName == "reg" && argc == 8) || (regionTypeName == "exit" && argc == 9)) ){
+		if (modeName == "add" && ((regionTypeName == "reg" && argc == 8) || (regionTypeName == "exit" && argc == 9)) ) {
 			// add region mode
 			if (!regions->_regions[regionID].present) {
 				int type = 0;
@@ -1780,6 +1781,59 @@ bool Debugger::cmdClick(int argc, const char **argv) {
 	return true;
 }
 
+/**
+* Auxiliary function to get a descriptive string for a given difficulty value
+*/
+Common::String Debugger::getDifficultyDescription(int difficultyValue) {
+	Common::String difficultyStr;
+	switch (difficultyValue) {
+	default:
+		// fall through
+	case kGameDifficultyEasy:
+		difficultyStr = Common::String::format("Easy (%d)", kGameDifficultyEasy);
+		break;
+	case kGameDifficultyMedium:
+		difficultyStr = Common::String::format("Normal (%d)", kGameDifficultyMedium);
+		break;
+	case kGameDifficultyHard:
+		difficultyStr = Common::String::format("Hard (%d)", kGameDifficultyHard);
+		break;
+	}
+	return difficultyStr;
+}
+
+/**
+* Show or set current game's difficulty mode
+*/
+bool Debugger::cmdDifficulty(int argc, const char **argv) {
+	bool invalidSyntax = false;
+
+	if (argc == 1) {
+		debugPrintf("Current game difficulty is %s\n", getDifficultyDescription(_vm->_settings->getDifficulty()).c_str());
+	} else if (argc == 2) {
+		int difficultyID = atoi(argv[1]);
+		if (difficultyID < kGameDifficultyEasy || difficultyID > kGameDifficultyHard) {
+			debugPrintf("The difficulty value must be an integer within [0, 2]\n");
+			return true;
+		} else {
+			_vm->_settings->setDifficulty(difficultyID);
+			debugPrintf("Current game difficulty is set to %s\n", getDifficultyDescription(_vm->_settings->getDifficulty()).c_str());
+		}
+	} else {
+		invalidSyntax = true;
+	}
+
+	if (invalidSyntax) {
+		debugPrintf("Show or set current game's difficulty mode\n");
+		debugPrintf("Valid difficulty values: \n");
+		debugPrintf("0: Easy\n");
+		debugPrintf("1: Normal\n");
+		debugPrintf("2: Hard\n");
+		debugPrintf("Usage 1: %s\n", argv[0]);
+		debugPrintf("Usage 2: %s <difficulty>\n", argv[0]);
+	}
+	return true;
+}
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
 bool Debugger::cmdEffect(int argc, const char **argv) {
@@ -1880,28 +1934,40 @@ bool Debugger::cmdList(int argc, const char **argv) {
 			if (argc == 2) {
 				debugPrintf("Listing scene actors: \n");
 				int count = 0;
-				for (int i = 0; i < _vm->_sceneObjects->_count; i++) {
+				for (int i = 0; i < _vm->_sceneObjects->_count; ++i) {
 					SceneObjects::SceneObject *sceneObject = &_vm->_sceneObjects->_sceneObjects[_vm->_sceneObjects->_sceneObjectsSortedByDistance[i]];
 
 					if (sceneObject->type == kSceneObjectTypeActor) {
+
 						Actor *actor = _vm->_actors[sceneObject->id - kSceneObjectOffsetActors];
-						debugPrintf("%d: %s (Clk: %s, Trg: %s, Prs: %s, Obs: %s, Mvg: %s)\n    Goal: %d, Set: %d, Anim mode: %d id:%d showDmg: %s inCombat: %s\n    Pos(%02.2f,%02.2f,%02.2f)\n",
-									 sceneObject->id - kSceneObjectOffsetActors,
-									 _vm->_textActorNames->getText(sceneObject->id - kSceneObjectOffsetActors),
-									 sceneObject->isClickable? "T" : "F",
-									 sceneObject->isTarget?    "T" : "F",
-									 sceneObject->isPresent?   "T" : "F",
-									 sceneObject->isObstacle?  "T" : "F",
-									 sceneObject->isMoving?    "T" : "F",
-									 actor->getGoal(),
-									 actor->getSetId(),
-									 actor->getAnimationMode(),
-									 actor->getAnimationId(),
-									 actor->getFlagDamageAnimIfMoving()? "T" : "F",
-									 actor->inCombat()? "T" : "F",
-									 actor->getPosition().x,
-									 actor->getPosition().y,
-									 actor->getPosition().z);
+						const Common::Rect &screenRect = actor->getScreenRectangle();
+						const BoundingBox &bbox = actor->getBoundingBox();
+						Vector3 a, b;
+						bbox.getXYZ(&a.x, &a.y, &a.z, &b.x, &b.y, &b.z);
+
+						debugPrintf("%d: %s (Clk: %s, Trg: %s, Prs: %s, Obs: %s, Mvg: %s)\n",
+						             sceneObject->id - kSceneObjectOffsetActors,
+						             _vm->_textActorNames->getText(sceneObject->id - kSceneObjectOffsetActors),
+						             sceneObject->isClickable? "T" : "F",
+						             sceneObject->isTarget?    "T" : "F",
+						             sceneObject->isPresent?   "T" : "F",
+						             sceneObject->isObstacle?  "T" : "F",
+						             sceneObject->isMoving?    "T" : "F");
+						debugPrintf("    Goal: %d, Set: %d, Anim mode: %d id:%d showDmg: %s inCombat: %s\n",
+						             actor->getGoal(),
+						             actor->getSetId(),
+						             actor->getAnimationMode(),
+						             actor->getAnimationId(),
+						             actor->getFlagDamageAnimIfMoving()? "T" : "F",
+						             actor->inCombat()? "T" : "F");
+						debugPrintf("    Pos(%02.2f,%02.2f,%02.2f)\n",
+						             actor->getPosition().x,
+						             actor->getPosition().y,
+						             actor->getPosition().z);
+						debugPrintf("    ScreenRect(%03d,%03d,%03d,%03d)\n",
+						             screenRect.top, screenRect.left, screenRect.bottom, screenRect.right);
+						debugPrintf("    Bbox(%02.2f,%02.2f,%02.2f) ~ (%02.2f,%02.2f,%02.2f)\n",
+						             a.x, a.y, a.z, b.x, b.y, b.z);
 						++count;
 					}
 				}
@@ -1978,7 +2044,7 @@ bool Debugger::cmdList(int argc, const char **argv) {
 						_vm->_view->_fovX);
 			debugPrintf("Listing scene objects: \n");
 			int count = 0;
-			for (int i = 0; i < _vm->_sceneObjects->_count; i++) {
+			for (int i = 0; i < _vm->_sceneObjects->_count; ++i) {
 				SceneObjects::SceneObject *sceneObject = &_vm->_sceneObjects->_sceneObjects[_vm->_sceneObjects->_sceneObjectsSortedByDistance[i]];
 				const BoundingBox &bbox = sceneObject->boundingBox;
 				Vector3 a, b;
@@ -2006,7 +2072,7 @@ bool Debugger::cmdList(int argc, const char **argv) {
 		} else if (arg == "item") {
 			debugPrintf("Listing scene items: \n");
 			int count = 0;
-			for (int i = 0; i < _vm->_sceneObjects->_count; i++) {
+			for (int i = 0; i < _vm->_sceneObjects->_count; ++i) {
 				SceneObjects::SceneObject *sceneObject = &_vm->_sceneObjects->_sceneObjects[_vm->_sceneObjects->_sceneObjectsSortedByDistance[i]];
 
 				if (sceneObject->type == kSceneObjectTypeItem) {
@@ -2038,7 +2104,7 @@ bool Debugger::cmdList(int argc, const char **argv) {
 			debugPrintf("Listing plain regions: \n");
 			int count = 0;
 			//list regions
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < 10; ++i) {
 				Regions::Region *region = &_vm->_scene->_regions->_regions[i];
 				if (!region->present) continue;
 				Common::Rect r = region->rectangle;
@@ -2048,7 +2114,7 @@ bool Debugger::cmdList(int argc, const char **argv) {
 
 			debugPrintf("Listing exits: \n");
 			//list exits
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < 10; ++i) {
 				Regions::Region *region = &_vm->_scene->_exits->_regions[i];
 				if (!region->present) continue;
 				Common::Rect r = region->rectangle;
@@ -2059,48 +2125,42 @@ bool Debugger::cmdList(int argc, const char **argv) {
 		} else if (arg == "way") {
 			debugPrintf("Listing waypoints: \n");
 			int count = 0;
-			for (int i = 0; i < _vm->_waypoints->_count; i++) {
+			for (int i = 0; i < _vm->_waypoints->_count; ++i) {
 				Waypoints::Waypoint *waypoint = &_vm->_waypoints->_waypoints[i];
-				if(waypoint->setId != _vm->_scene->getSetId()) {
+				if (waypoint->setId != _vm->_scene->getSetId()) {
 					continue;
 				}
-				char waypointText[40];
 				Vector3 a = waypoint->position;
-				sprintf(waypointText, "Waypoint %i, Pos(%02.2f,%02.2f,%02.2f)", i, a.x, a.y, a.z);
-				debugPrintf("%s\n", waypointText);
+				debugPrintf("Waypoint %i, Pos(%02.2f,%02.2f,%02.2f)\n", i, a.x, a.y, a.z);
 				++count;
 			}
 
 			// list combat cover waypoints
-			for (int i = 0; i < (int)_vm->_combat->_coverWaypoints.size(); i++) {
+			for (int i = 0; i < (int)_vm->_combat->_coverWaypoints.size(); ++i) {
 				Combat::CoverWaypoint *cover = &_vm->_combat->_coverWaypoints[i];
 				if (cover->setId != _vm->_scene->getSetId()) {
 					continue;
 				}
-				char coverText[40];
 				Vector3 a = cover->position;
-				sprintf(coverText, "Cover %i, Pos(%02.2f,%02.2f,%02.2f)", i, a.x, a.y, a.z);
-				debugPrintf("%s\n", coverText);
+				debugPrintf("Cover %i, Pos(%02.2f,%02.2f,%02.2f)\n", i, a.x, a.y, a.z);
 				++count;
 			}
 
 			// list combat flee waypoints
-			for (int i = 0; i < (int)_vm->_combat->_fleeWaypoints.size(); i++) {
+			for (int i = 0; i < (int)_vm->_combat->_fleeWaypoints.size(); ++i) {
 				Combat::FleeWaypoint *flee = &_vm->_combat->_fleeWaypoints[i];
 				if (flee->setId != _vm->_scene->getSetId()) {
 					continue;
 				}
-				char fleeText[40];
 				Vector3 a = flee->position;
-				sprintf(fleeText, "Flee %i, Pos(%02.2f,%02.2f,%02.2f)", i, a.x, a.y, a.z);
-				debugPrintf("%s\n", fleeText);
+				debugPrintf("Flee %i, Pos(%02.2f,%02.2f,%02.2f)\n", i, a.x, a.y, a.z);
 				++count;
 			}
 			debugPrintf("%d waypoints were found in scene.\n", count);
 		} else if (arg == "walk") {
 			debugPrintf("Listing walkboxes: \n");
 			// list walkboxes
-			for (int i = 0; i < _vm->_scene->_set->_walkboxCount; i++) {
+			for (int i = 0; i < _vm->_scene->_set->_walkboxCount; ++i) {
 				Set::Walkbox *walkbox = &_vm->_scene->_set->_walkboxes[i];
 
 				debugPrintf("%2d. Walkbox %s, vertices: %d\n", i, walkbox->name.c_str(), walkbox->vertexCount);
@@ -2117,7 +2177,7 @@ bool Debugger::cmdList(int argc, const char **argv) {
 		} else if (arg == "lit") {
 			debugPrintf("Listing lights: \n");
 			// list lights
-			for (int i = 0; i < (int)_vm->_lights->_lights.size(); i++) {
+			for (int i = 0; i < (int)_vm->_lights->_lights.size(); ++i) {
 				Light *light = _vm->_lights->_lights[i];
 				debugPrintf("%2d. Light %s\n", i, light->_name.c_str());
 			}
@@ -2125,7 +2185,7 @@ bool Debugger::cmdList(int argc, const char **argv) {
 		} else if (arg == "eff") {
 			debugPrintf("Listing scene effects: \n");
 			// list scene effects
-			for (uint i = 0; i < _vm->_screenEffects->_entries.size(); i++) {
+			for (uint i = 0; i < _vm->_screenEffects->_entries.size(); ++i) {
 				ScreenEffects::Entry &entry = _vm->_screenEffects->_entries[i];
 				debugPrintf("%2d. Effect (h: %d, x: %d, y: %d, z: %d\n", i, (int)entry.height, (int)entry.x, (int)entry.y, (int)entry.z);
 			}
@@ -2202,7 +2262,7 @@ void Debugger::drawSceneObjects() {
 	//draw scene objects
 	int count = _vm->_sceneObjects->_count;
 	if (count > 0) {
-		for (int i = 0; i < count; i++) {
+		for (int i = 0; i < count; ++i) {
 			SceneObjects::SceneObject *sceneObject = &_vm->_sceneObjects->_sceneObjects[_vm->_sceneObjects->_sceneObjectsSortedByDistance[i]];
 
 			const BoundingBox &bbox = sceneObject->boundingBox;
@@ -2212,6 +2272,8 @@ void Debugger::drawSceneObjects() {
 			int color;
 
 			switch (sceneObject->type) {
+			default:
+				// fallthrough intended
 			case kSceneObjectTypeUnknown:
 				break;
 			case kSceneObjectTypeActor:
@@ -2221,7 +2283,7 @@ void Debugger::drawSceneObjects() {
 					color = _vm->_surfaceFront.format.RGBToColor(255, 0, 0);
 					drawBBox(a, b, _vm->_view, &_vm->_surfaceFront, color);
 					_vm->_surfaceFront.frameRect(sceneObject->screenRectangle, color);
-					_vm->_mainFont->drawColor(_vm->_textActorNames->getText(sceneObject->id - kSceneObjectOffsetActors), _vm->_surfaceFront, pos.x, pos.y, color);
+					_vm->_mainFont->drawString(&_vm->_surfaceFront, _vm->_textActorNames->getText(sceneObject->id - kSceneObjectOffsetActors), pos.x, pos.y, _vm->_surfaceFront.w, color);
 				}
 				break;
 			case kSceneObjectTypeItem:
@@ -2229,11 +2291,10 @@ void Debugger::drawSceneObjects() {
 				    || (_specificItemsDrawn && findInDbgDrawList(debuggerObjTypeItem, sceneObject->id - kSceneObjectOffsetItems, -1, -1) != -1)
 				) {
 					color = _vm->_surfaceFront.format.RGBToColor(0, 255, 0);
-					char itemText[40];
 					drawBBox(a, b, _vm->_view, &_vm->_surfaceFront, color);
-					sprintf(itemText, "item %i", sceneObject->id - kSceneObjectOffsetItems);
+					Common::String itemText = Common::String::format("item %i", sceneObject->id - kSceneObjectOffsetItems);
 					_vm->_surfaceFront.frameRect(sceneObject->screenRectangle, color);
-					_vm->_mainFont->drawColor(itemText, _vm->_surfaceFront, pos.x, pos.y, color);
+					_vm->_mainFont->drawString(&_vm->_surfaceFront, itemText, pos.x, pos.y, _vm->_surfaceFront.w, color);
 				}
 				break;
 			case kSceneObjectTypeObject:
@@ -2246,7 +2307,7 @@ void Debugger::drawSceneObjects() {
 					}
 					drawBBox(a, b, _vm->_view, &_vm->_surfaceFront, color);
 					_vm->_surfaceFront.frameRect(sceneObject->screenRectangle, color);
-					_vm->_mainFont->drawColor(_vm->_scene->objectGetName(sceneObject->id - kSceneObjectOffsetObjects), _vm->_surfaceFront, pos.x, pos.y, color);
+					_vm->_mainFont->drawString(&_vm->_surfaceFront, _vm->_scene->objectGetName(sceneObject->id - kSceneObjectOffsetObjects), pos.x, pos.y, _vm->_surfaceFront.w, color);
 				}
 				break;
 			}
@@ -2256,7 +2317,7 @@ void Debugger::drawSceneObjects() {
 
 void Debugger::drawLights() {
 	// draw lights
-	for (int i = 0; i < (int)_vm->_lights->_lights.size(); i++) {
+	for (int i = 0; i < (int)_vm->_lights->_lights.size(); ++i) {
 		if (_viewLights
 		    || (_specificLightsDrawn && findInDbgDrawList(debuggerObjTypeLight, i, _vm->_scene->getSetId(), _vm->_scene->getSceneId()) != -1)
 		) {
@@ -2283,7 +2344,7 @@ void Debugger::drawLights() {
 
 			_vm->_surfaceFront.drawLine(posOriginT.x, posOriginT.y, posTargetT.x, posTargetT.y, color);
 
-			_vm->_mainFont->drawColor(light->_name, _vm->_surfaceFront, posOriginT.x, posOriginT.y, color);
+			_vm->_mainFont->drawString(&_vm->_surfaceFront, light->_name, posOriginT.x, posOriginT.y, _vm->_surfaceFront.w, color);
 		}
 	}
 }
@@ -2319,7 +2380,7 @@ void Debugger::drawFogs() {
 			// TODO: draw line only for cone fogs, draw boxes or circles for the other types
 			_vm->_surfaceFront.drawLine(posOriginT.x, posOriginT.y, posTargetT.x, posTargetT.y, color);
 
-			_vm->_mainFont->drawColor(fog->_name, _vm->_surfaceFront, posOriginT.x, posOriginT.y, color);
+			_vm->_mainFont->drawString(&_vm->_surfaceFront, fog->_name, posOriginT.x, posOriginT.y, _vm->_surfaceFront.w, color);
 		}
 		fog = fog->_next;
 	}
@@ -2328,7 +2389,7 @@ void Debugger::drawFogs() {
 void Debugger::drawRegions() {
 	if (_viewRegionsNormalToggle || _specificRegionNormalDrawn) {
 		//draw regions
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 10; ++i) {
 			Regions::Region *region = &_vm->_scene->_regions->_regions[i];
 			if (!region->present) continue;
 			if (_viewRegionsNormalToggle
@@ -2341,7 +2402,7 @@ void Debugger::drawRegions() {
 
 	if (_viewRegionsExitsToggle || _specificRegionExitsDrawn) {
 		//draw exits
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 10; ++i) {
 			Regions::Region *region = &_vm->_scene->_exits->_regions[i];
 			if (!region->present) continue;
 			if (_viewRegionsExitsToggle
@@ -2356,9 +2417,9 @@ void Debugger::drawRegions() {
 void Debugger::drawWaypoints() {
 	if (_viewWaypointsNormalToggle || _specificWaypointNormalDrawn)  {
 		//draw world waypoints
-		for (int i = 0; i < _vm->_waypoints->_count; i++) {
+		for (int i = 0; i < _vm->_waypoints->_count; ++i) {
 			Waypoints::Waypoint *waypoint = &_vm->_waypoints->_waypoints[i];
-			if(waypoint->setId != _vm->_scene->getSetId()) {
+			if (waypoint->setId != _vm->_scene->getSetId()) {
 				continue;
 			}
 			if (_viewWaypointsNormalToggle
@@ -2369,16 +2430,15 @@ void Debugger::drawWaypoints() {
 				int color = _vm->_surfaceFront.format.RGBToColor(255, 255, 255);
 				drawBBox(pos - size, pos + size, _vm->_view, &_vm->_surfaceFront, color);
 				Vector3 spos = _vm->_view->calculateScreenPosition(pos);
-				char waypointText[40];
-				sprintf(waypointText, "waypoint %i", i);
-				_vm->_mainFont->drawColor(waypointText, _vm->_surfaceFront, spos.x, spos.y, color);
+				Common::String waypointText = Common::String::format("waypoint %i", i);
+				_vm->_mainFont->drawString(&_vm->_surfaceFront, waypointText, spos.x, spos.y, _vm->_surfaceFront.w, color);
 			}
 		}
 	}
 
 	if (_viewWaypointsCoverToggle || _specificWaypointCoverDrawn) {
 		//draw combat cover waypoints
-		for (int i = 0; i < (int)_vm->_combat->_coverWaypoints.size(); i++) {
+		for (int i = 0; i < (int)_vm->_combat->_coverWaypoints.size(); ++i) {
 			Combat::CoverWaypoint *cover = &_vm->_combat->_coverWaypoints[i];
 			if (cover->setId != _vm->_scene->getSetId()) {
 				continue;
@@ -2391,16 +2451,15 @@ void Debugger::drawWaypoints() {
 				int color = _vm->_surfaceFront.format.RGBToColor(255, 0, 255);
 				drawBBox(pos - size, pos + size, _vm->_view, &_vm->_surfaceFront, color);
 				Vector3 spos = _vm->_view->calculateScreenPosition(pos);
-				char coverText[40];
-				sprintf(coverText, "cover %i", i);
-				_vm->_mainFont->drawColor(coverText, _vm->_surfaceFront, spos.x, spos.y, color);
+				Common::String coverText = Common::String::format("cover %i", i);
+				_vm->_mainFont->drawString(&_vm->_surfaceFront, coverText, spos.x, spos.y, _vm->_surfaceFront.w, color);
 			}
 		}
 	}
 
 	if (_viewWaypointsFleeToggle || _specificWaypointFleeDrawn) {
 		//draw combat flee waypoints
-		for (int i = 0; i < (int)_vm->_combat->_fleeWaypoints.size(); i++) {
+		for (int i = 0; i < (int)_vm->_combat->_fleeWaypoints.size(); ++i) {
 			Combat::FleeWaypoint *flee = &_vm->_combat->_fleeWaypoints[i];
 			if (flee->setId != _vm->_scene->getSetId()) {
 				continue;
@@ -2413,9 +2472,8 @@ void Debugger::drawWaypoints() {
 				int color = _vm->_surfaceFront.format.RGBToColor(0, 255, 255);
 				drawBBox(pos - size, pos + size, _vm->_view, &_vm->_surfaceFront, color);
 				Vector3 spos = _vm->_view->calculateScreenPosition(pos);
-				char fleeText[40];
-				sprintf(fleeText, "flee %i", i);
-				_vm->_mainFont->drawColor(fleeText, _vm->_surfaceFront, spos.x, spos.y, color);
+				Common::String fleeText = Common::String::format("flee %i", i);
+				_vm->_mainFont->drawString(&_vm->_surfaceFront, fleeText, spos.x, spos.y, _vm->_surfaceFront.w, color);
 			}
 		}
 	}
@@ -2423,17 +2481,17 @@ void Debugger::drawWaypoints() {
 
 void Debugger::drawWalkboxes() {
 	//draw walkboxes
-	for (int i = 0; i < _vm->_scene->_set->_walkboxCount; i++) {
+	for (int i = 0; i < _vm->_scene->_set->_walkboxCount; ++i) {
 		if (_viewWalkboxes
 		    || (_specificWalkboxesDrawn && findInDbgDrawList(debuggerObjTypeWalkbox, i, _vm->_scene->getSetId(), _vm->_scene->getSceneId()) != -1)
 		) {
 			Set::Walkbox *walkbox = &_vm->_scene->_set->_walkboxes[i];
-			for (int j = 0; j < walkbox->vertexCount; j++) {
+			for (int j = 0; j < walkbox->vertexCount; ++j) {
 				Vector3 start = _vm->_view->calculateScreenPosition(walkbox->vertices[j]);
 				Vector3 end = _vm->_view->calculateScreenPosition(walkbox->vertices[(j + 1) % walkbox->vertexCount]);
 				_vm->_surfaceFront.drawLine(start.x, start.y, end.x, end.y, _vm->_surfaceFront.format.RGBToColor(255, 255, 0));
 				Vector3 pos = _vm->_view->calculateScreenPosition(0.5 * (walkbox->vertices[j] + walkbox->vertices[(j + 1) % walkbox->vertexCount]));
-				_vm->_mainFont->drawColor(walkbox->name, _vm->_surfaceFront, pos.x, pos.y, _vm->_surfaceFront.format.RGBToColor(255, 255, 0));
+				_vm->_mainFont->drawString(&_vm->_surfaceFront, walkbox->name, pos.x, pos.y, _vm->_surfaceFront.w, _vm->_surfaceFront.format.RGBToColor(255, 255, 0));
 			}
 		}
 	}
@@ -2441,14 +2499,14 @@ void Debugger::drawWalkboxes() {
 
 void Debugger::drawScreenEffects() {
 	//draw aesc
-	for (uint i = 0; i < _vm->_screenEffects->_entries.size(); i++) {
+	for (uint i = 0; i < _vm->_screenEffects->_entries.size(); ++i) {
 		if (_viewScreenEffects
 		    || (_specificEffectsDrawn && findInDbgDrawList(debuggerObjTypeEffect, i, _vm->_scene->getSetId(), _vm->_scene->getSceneId()) != -1)
 		) {
 			ScreenEffects::Entry &entry = _vm->_screenEffects->_entries[i];
 			int j = 0;
-			for (int y = 0; y < entry.height; y++) {
-				for (int x = 0; x < entry.width; x++) {
+			for (int y = 0; y < entry.height; ++y) {
+				for (int x = 0; x < entry.width; ++x) {
 					Common::Rect r((entry.x + x) * 2, (entry.y + y) * 2, (entry.x + x) * 2 + 2, (entry.y + y) * 2 + 2);
 
 					int ec = entry.data[j++];
@@ -2506,7 +2564,7 @@ int Debugger::findInDbgDrawList(DebuggerDrawnObjectType drObjType, int drObjId, 
 			&& (drObjId == -1 || drObjId == _specificDrawnObjectsList[i].objId)
 		    && (drObjSetId == -1 || _specificDrawnObjectsList[i].setId == -1 || drObjSetId == _specificDrawnObjectsList[i].setId)
 		    && (drObjSceneId == -1 || _specificDrawnObjectsList[i].sceneId == -1 || drObjSceneId == _specificDrawnObjectsList[i].sceneId)
-		){
+		) {
 			// TODO for actors, 3d objects, items and waypoints it's probably preferable to ignore the sceneId (?)
 			return i;
 		}

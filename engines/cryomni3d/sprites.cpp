@@ -86,7 +86,7 @@ void Sprites::setupMapTable(const uint *table, uint size) {
 	_map = nullptr;
 	// Reset the reverse mapping
 	for (Common::Array<CryoCursor *>::iterator it = _cursors.begin(); it != _cursors.end(); it++) {
-		(*it)->_constantId = -1;
+		(*it)->_constantId = uint(-1);
 	}
 	if (table) {
 		_map = new Common::Array<uint>(table, size);
@@ -185,7 +185,7 @@ uint Sprites::calculateSpriteId(uint baseId, uint offset) const {
 			error("Calculate sprite is out of bounds: %d/%d", baseId, _cursors.size());
 		}
 		uint spriteId = _cursors[baseId]->_constantId;
-		if (spriteId == -1u) {
+		if (spriteId == uint(-1)) {
 			error("Sprite %d is unreachable", baseId);
 		}
 		return spriteId;
@@ -211,7 +211,7 @@ const Graphics::Cursor &Sprites::getCursor(uint spriteId) const {
 }
 
 Sprites::CryoCursor::CryoCursor() : _width(0), _height(0), _offX(0), _offY(0), _data(nullptr),
-	refCnt(1) {
+	refCnt(1), _constantId(uint(-1)) {
 }
 
 Sprites::CryoCursor::~CryoCursor() {

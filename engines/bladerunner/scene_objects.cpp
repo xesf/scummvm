@@ -27,8 +27,6 @@
 #include "bladerunner/obstacles.h"
 #include "bladerunner/savefile.h"
 #include "bladerunner/view.h"
-//#include "bladerunner/scene.h"          // asdf to REMOVE
-//#include "bladerunner/game_constants.h" // asdf to REMOVE
 
 namespace BladeRunner {
 
@@ -139,7 +137,7 @@ bool SceneObjects::existsOnXZ(int exceptSceneObjectId, float x, float z, bool mo
 	int count = _count;
 
 	if (count > 0) {
-		for (int i = 0; i < count; i++) {
+		for (int i = 0; i < count; ++i) {
 			const SceneObject *sceneObject = &_sceneObjects[_sceneObjectsSortedByDistance[i]];
 			bool isObstacle = false;
 			if (sceneObject->type == kSceneObjectTypeActor) {

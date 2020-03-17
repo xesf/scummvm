@@ -31,11 +31,6 @@ public:
 
 public:
 	virtual bool hasFeature(OSystem::Feature f) const override;
-	virtual void setFeatureState(OSystem::Feature f, bool enable) override;
-
-	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const override;
-	virtual int getDefaultGraphicsMode() const override;
-	virtual bool setGraphicsMode(int mode) override;
 };
 
 #endif

@@ -62,12 +62,12 @@ class EditGameDialog : public OptionsDialog {
 public:
 	EditGameDialog(const String &domain);
 
-	void open();
-	virtual void apply();
-	virtual void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
+	void open() override;
+	void apply() override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
 
 protected:
-	virtual void setupGraphicsTab();
+	void setupGraphicsTab() override;
 
 	EditTextWidget *_descriptionWidget;
 	DomainEditTextWidget *_domainWidget;
@@ -84,6 +84,7 @@ protected:
 	PopUpWidget *_platformPopUp;
 
 	CheckboxWidget *_globalGraphicsOverride;
+	CheckboxWidget *_globalShaderOverride;
 	CheckboxWidget *_globalAudioOverride;
 	CheckboxWidget *_globalMIDIOverride;
 	CheckboxWidget *_globalMT32Override;

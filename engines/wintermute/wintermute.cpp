@@ -29,6 +29,7 @@
 #include "common/file.h"
 #include "common/fs.h"
 #include "common/tokenizer.h"
+#include "common/translation.h"
 
 #include "engines/util.h"
 #include "engines/wintermute/ad/ad_game.h"
@@ -54,7 +55,6 @@ WintermuteEngine::WintermuteEngine() : Engine(g_system) {
 	_game = new AdGame("");
 	_debugger = nullptr;
 	_dbgController = nullptr;
-	_trigDebug = false;
 	_gameDescription = nullptr;
 }
 
@@ -82,14 +82,13 @@ WintermuteEngine::WintermuteEngine(OSystem *syst, const WMEGameDescription *desc
 	_game = nullptr;
 	_debugger = nullptr;
 	_dbgController = nullptr;
-	_trigDebug = false;
 }
 
 WintermuteEngine::~WintermuteEngine() {
 	// Dispose your resources here
 	deinit();
 	delete _game;
-	delete _debugger;
+	//_debugger deleted by Engine
 
 	// Remove all of our debug levels here
 	DebugMan.clearAllDebugChannels();
@@ -114,6 +113,10 @@ Common::Error WintermuteEngine::run() {
 	Graphics::PixelFormat format(4, 8, 8, 8, 8, 24, 16, 8, 0);
 	if (_gameDescription->adDesc.flags & GF_LOWSPEC_ASSETS) {
 		initGraphics(320, 240, &format);
+#ifdef ENABLE_FOXTAIL
+	} else if (BaseEngine::isFoxTailCheck(_gameDescription->targetExecutable)) {
+		initGraphics(640, 360, &format);
+#endif
 	} else {
 		initGraphics(800, 600, &format);
 	}
@@ -124,6 +127,7 @@ Common::Error WintermuteEngine::run() {
 	// Create debugger console. It requires GFX to be initialized
 	_dbgController = new DebuggerController(this);
 	_debugger = new Console(this);
+	setDebugger(_debugger);
 
 //	DebugMan.enableDebugChannel("enginelog");
 	debugC(1, kWintermuteDebugLog, "Engine Debug-LOG enabled");
@@ -144,18 +148,54 @@ Common::Error WintermuteEngine::run() {
 }
 
 int WintermuteEngine::init() {
-	BaseEngine::createInstance(_targetName, _gameDescription->adDesc.gameId, _gameDescription->adDesc.language, _gameDescription->targetExecutable);
+	BaseEngine::createInstance(_targetName, _gameDescription->adDesc.gameId, _gameDescription->adDesc.language, _gameDescription->targetExecutable, _gameDescription->adDesc.flags);
 
 	// check dependencies for games with high resolution assets
 	#if not defined(USE_PNG) || not defined(USE_JPEG) || not defined(USE_VORBIS)
 		if (!(_gameDescription->adDesc.flags & GF_LOWSPEC_ASSETS)) {
-			GUI::MessageDialog dialog("This game requires PNG, JPEG and Vorbis support.");
+			GUI::MessageDialog dialog(_("This game requires PNG, JPEG and Vorbis support."));
 			dialog.runModal();
 			delete _game;
 			_game = nullptr;
 			return false;
 		}
 	#endif
+
+	// check dependencies for games with FoxTail subengine
+	#if not defined(ENABLE_FOXTAIL)
+		if (BaseEngine::isFoxTailCheck(_gameDescription->targetExecutable)) {
+			GUI::MessageDialog dialog(_("This game requires the FoxTail subengine, which is not compiled in."));
+			dialog.runModal();
+			delete _game;
+			_game = nullptr;
+			return false;
+		}
+	#endif
+
+	// check dependencies for games with HeroCraft subengine
+	#if not defined(ENABLE_HEROCRAFT)
+		if (_gameDescription->targetExecutable == WME_HEROCRAFT) {
+			GUI::MessageDialog dialog(_("This game requires the HeroCraft subengine, which is not compiled in."));
+			dialog.runModal();
+			delete _game;
+			_game = nullptr;
+			return false;
+		}
+	#endif
+
+	Common::ArchiveMemberList actors3d;
+	if (BaseEngine::instance().getFileManager()->listMatchingMembers(actors3d, "*.act3d")) {
+		GUI::MessageDialog dialog(
+				_("This game requires 3D characters support, which is out of ScummVM's scope."),
+				_("Start anyway"),
+				_("Cancel")
+			);
+		if (dialog.runModal() != GUI::kMessageOK) {
+			delete _game;
+			_game = nullptr;
+			return false;
+		}
+	}
 
 	_game = new AdGame(_targetName);
 	if (!_game) {
@@ -241,16 +281,10 @@ int WintermuteEngine::messageLoop() {
 		if (!_game) {
 			break;
 		}
-		_debugger->onFrame();
 
 		Common::Event event;
 		while (_system->getEventManager()->pollEvent(event)) {
 			BasePlatform::handleEvent(&event);
-		}
-
-		if (_trigDebug) {
-			_debugger->attach();
-			_trigDebug = false;
 		}
 
 		if (_game && _game->_renderer->_active && _game->_renderer->isReady()) {
@@ -299,7 +333,7 @@ Common::Error WintermuteEngine::loadGameState(int slot) {
 	return Common::kNoError;
 }
 
-Common::Error WintermuteEngine::saveGameState(int slot, const Common::String &desc) {
+Common::Error WintermuteEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
 	BaseEngine::instance().getGameRef()->saveGame(slot, desc.c_str(), false);
 	return Common::kNoError;
 }

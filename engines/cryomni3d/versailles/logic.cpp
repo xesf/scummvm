@@ -106,7 +106,7 @@ void CryOmni3DEngine_Versailles::setupObjects() {
 	SET_OBJECT_CB(112, 126);
 	SET_OBJECT_GENERIC_CB(90, 127, 17);
 	SET_OBJECT(216, 128);
-	SET_OBJECT_GENERIC_CB(32, 129, 18);
+	SET_OBJECT_CB(32, 129);
 	SET_OBJECT(37, 130); // 35
 	SET_OBJECT_GENERIC_CB(134, 131, 19);
 	SET_OBJECT_GENERIC_CB(150, 132, 20);
@@ -184,14 +184,54 @@ void CryOmni3DEngine_Versailles::obj_126() {
 }
 
 void CryOmni3DEngine_Versailles::obj_126hk(Graphics::ManagedSurface &surface) {
-	Graphics::Surface bmpLetters[26];
-	loadBMPs("bomb_%02d.bmp", bmpLetters, 26);
+	Graphics::Surface bmpLetters[28];
+	loadBMPs("bomb_%02d.bmp", bmpLetters, 28);
 
-	drawEpigraphLetters(surface, bmpLetters, kEpigraphPassword);
+	drawEpigraphLetters(surface, bmpLetters, _epigraphPassword);
 
-	for (uint i = 0; i < 26; i++) {
+	for (uint i = 0; i < 28; i++) {
 		bmpLetters[i].free();
 	}
+
+	if (_messages.size() <= 148) {
+		return;
+	}
+
+	Common::String &translation = _messages[148];
+
+	if (translation.size() == 0) {
+		return;
+	}
+
+	_fontManager.setCurrentFont(1);
+	_fontManager.setTransparentBackground(true);
+	_fontManager.setForeColor(0);
+	_fontManager.setSurface(&surface);
+	_fontManager.displayStr(9, 424, translation);
+}
+
+void CryOmni3DEngine_Versailles::obj_129() {
+	displayObject(kImagesObjects[18], &CryOmni3DEngine_Versailles::obj_129hk);
+}
+
+void CryOmni3DEngine_Versailles::obj_129hk(Graphics::ManagedSurface &surface) {
+	if (_messages.size() <= 149) {
+		return;
+	}
+
+	Common::String &translation = _messages[149];
+
+	if (translation.size() == 0) {
+		return;
+	}
+
+	surface.fillRect(Common::Rect(0, 455, 640, 480), 247);
+
+	_fontManager.setCurrentFont(8);
+	_fontManager.setTransparentBackground(true);
+	_fontManager.setForeColor(242);
+	_fontManager.setSurface(&surface);
+	_fontManager.displayStr(10, 460, translation);
 }
 
 void CryOmni3DEngine_Versailles::obj_142() {
@@ -745,7 +785,7 @@ IMG_CB(32120) {
 					_gameVariables[GameVariables::kSketchState] = 3;
 					playInGameVideo("23I_11");
 					// Force reload of the place
-					if (_nextPlaceId == -1u) {
+					if (_nextPlaceId == uint(-1)) {
 						_nextPlaceId = _currentPlaceId;
 					}
 					_inventory.removeByIconID(38);
@@ -760,7 +800,7 @@ IMG_CB(32120) {
 					_gameVariables[GameVariables::kSketchState] = 4;
 					playInGameVideo("23I_12");
 					// Force reload of the place
-					if (_nextPlaceId == -1u) {
+					if (_nextPlaceId == uint(-1)) {
 						_nextPlaceId = _currentPlaceId;
 					}
 					_inventory.removeByIconID(38);
@@ -915,7 +955,7 @@ IMG_CB(34132) {
 IMG_CB(34172) {
 	playInGameVideo("43X3_10");
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 	fimg->_exit = true;
@@ -934,7 +974,7 @@ IMG_CB(34173) {
 			/*
 			playInGameVideo("43X3_21");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 			    _nextPlaceId = _currentPlaceId;
 			}
 			*/
@@ -1075,7 +1115,7 @@ IMG_CB(34174c) {
 
 	playInGameVideo("cofouv");
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 
@@ -1212,7 +1252,7 @@ bool CryOmni3DEngine_Versailles::handleSafe(ZonFixedImage *fimg) {
 				// Animate handle
 				playInGameVideo("43x3_poi");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 
@@ -1377,7 +1417,7 @@ IMG_CB(41801) {
 					// Animate opening
 					playInGameVideo("12E2_11");
 					// Force reload of the place
-					if (_nextPlaceId == -1u) {
+					if (_nextPlaceId == uint(-1)) {
 						_nextPlaceId = _currentPlaceId;
 					}
 
@@ -1403,7 +1443,7 @@ IMG_CB(41801b) {
 			// Animate closing
 			playInGameVideo("12E2_13");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 			fimg->_exit = true;
@@ -1436,7 +1476,7 @@ IMG_CB(41801c) {
 			// Animate closing
 			playInGameVideo("12E2_13");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 			fimg->_exit = true;
@@ -1510,7 +1550,7 @@ IMG_CB(41802) {
 			if (objID == 100) {
 				playInGameVideo("12E2_24");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				_inventory.removeByNameID(100);
@@ -1522,7 +1562,7 @@ IMG_CB(41802) {
 				// Lampoon about arts
 				playInGameVideo("PAP-BRUL");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				doGameOver();
@@ -1557,7 +1597,7 @@ IMG_CB(41802b) {
 			if (objID == 100) {
 				playInGameVideo("12E2_24");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				_inventory.removeByNameID(100);
@@ -1569,7 +1609,7 @@ IMG_CB(41802b) {
 				// Lampoon about arts
 				playInGameVideo("PAP-BRUL");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				doGameOver();
@@ -1602,7 +1642,7 @@ IMG_CB(41802c) {
 			if (objID == 100) {
 				playInGameVideo("12E2_24");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				_inventory.removeByNameID(100);
@@ -1614,7 +1654,7 @@ IMG_CB(41802c) {
 				// Lampoon about arts
 				playInGameVideo("PAP-BRUL");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				doGameOver();
@@ -1637,7 +1677,7 @@ IMG_CB(41802d) {
 			if (objID == 100) {
 				playInGameVideo("12E2_24");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				_inventory.removeByNameID(100);
@@ -1649,7 +1689,7 @@ IMG_CB(41802d) {
 				// Lampoon about arts
 				playInGameVideo("PAP-BRUL");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				doGameOver();
@@ -1719,7 +1759,7 @@ IMG_CB(43145) {
 			if (fimg->_currentZone == 0) {
 				playInGameVideo("30L_51");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 
@@ -1731,7 +1771,7 @@ IMG_CB(43145) {
 			} else if (fimg->_currentZone == 1) {
 				playInGameVideo("30L_52");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 
@@ -1811,7 +1851,7 @@ IMG_CB(43146) {
 			if (fimg->_currentZone == 0) {
 				playInGameVideo("30L_41");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 
@@ -1823,7 +1863,7 @@ IMG_CB(43146) {
 			} else if (fimg->_currentZone == 1) {
 				playInGameVideo("30L_42");
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 
@@ -2009,7 +2049,7 @@ IMG_CB(43190) {
 		if (fimg->_zoneUse) {
 			playInGameVideo("31L1_2A");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 			ZonFixedImage::CallbackFunctor *functor =
@@ -2032,7 +2072,7 @@ IMG_CB(43190b) {
 		if (fimg->_zoneUse) {
 			playInGameVideo("31L1_2B");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 			ZonFixedImage::CallbackFunctor *functor =
@@ -2055,7 +2095,7 @@ IMG_CB(43190c) {
 		if (fimg->_zoneUse) {
 			playInGameVideo("31L1_2C");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 			ZonFixedImage::CallbackFunctor *functor =
@@ -2078,7 +2118,7 @@ IMG_CB(43190d) {
 		if (fimg->_zoneUse) {
 			playInGameVideo("31L1_2D");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 			ZonFixedImage::CallbackFunctor *functor =
@@ -2340,11 +2380,11 @@ IMG_CB(44161f) {
 
 bool CryOmni3DEngine_Versailles::handleEpigraph(ZonFixedImage *fimg) {
 	bool success = false;
-	Graphics::Surface bmpLetters[26];
+	Graphics::Surface bmpLetters[28];
 	Common::String password;
 	Graphics::ManagedSurface tempSurf;
 
-	loadBMPs("bomb_%02d.bmp", bmpLetters, 26);
+	loadBMPs("bomb_%02d.bmp", bmpLetters, 28);
 
 	fimg->load("EPIL.GIF");
 	const Graphics::Surface *fimgSurface = fimg->surface();
@@ -2361,7 +2401,7 @@ bool CryOmni3DEngine_Versailles::handleEpigraph(ZonFixedImage *fimg) {
 				continue;
 			}
 			// Find which letter got clicked
-			char letter = kEpigraphContent[fimg->_currentZone];
+			char letter = _epigraphContent[fimg->_currentZone];
 			password += letter;
 			// Reset the surface and redraw digits on it
 			tempSurf.blitFrom(*fimgSurface);
@@ -2379,7 +2419,7 @@ bool CryOmni3DEngine_Versailles::handleEpigraph(ZonFixedImage *fimg) {
 				}
 				if (keyCode >= Common::KEYCODE_a &&
 				        keyCode <= Common::KEYCODE_z &&
-				        strchr(kEpigraphContent, keyCode - Common::KEYCODE_a + 'A')) {
+				        _epigraphContent.contains(keyCode - Common::KEYCODE_a + 'A')) {
 					password += keyCode - Common::KEYCODE_a + 'A';
 				} else {
 					continue;
@@ -2391,27 +2431,28 @@ bool CryOmni3DEngine_Versailles::handleEpigraph(ZonFixedImage *fimg) {
 			fimg->updateSurface(&tempSurf.rawSurface());
 		}
 
-		if (password == kEpigraphPassword) {
+		if (password == _epigraphPassword) {
 			success = true;
 			break;
 		}
 	}
 
-	for (uint i = 0; i < 26; i++) {
+	for (uint i = 0; i < 28; i++) {
 		bmpLetters[i].free();
 	}
 	return success;
 }
 
-const char *CryOmni3DEngine_Versailles::kEpigraphContent = "FELIXFORTUNADIVINUMEXPLORATUMACTUIIT";
-const char *CryOmni3DEngine_Versailles::kEpigraphPassword = "LELOUPETLATETE";
-
 void CryOmni3DEngine_Versailles::drawEpigraphLetters(Graphics::ManagedSurface &surface,
-        const Graphics::Surface(&bmpLetters)[26], const Common::String &letters) {
+        const Graphics::Surface(&bmpLetters)[28], const Common::String &letters) {
 	for (uint i = 0; i < letters.size() && i < kEpigraphMaxLetters; i++) {
 		uint letterId = 0;
 		if (letters[i] >= 'A' && letters[i] <= 'Z') {
 			letterId = letters[i] - 'A';
+		} else if (letters[i] == ' ') {
+			letterId = 26;
+		} else if (letters[i] == '\'') {
+			letterId = 27;
 		}
 		const Graphics::Surface &letter = bmpLetters[letterId];
 		Common::Point dst(34 * i + 4, 380);
@@ -2575,7 +2616,7 @@ IMG_CB(88001) {
 
 			playInGameVideo("33P_10");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 
@@ -2640,7 +2681,7 @@ IMG_CB(88001c) {
 
 			playInGameVideo("33P_14");
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 
@@ -2679,7 +2720,7 @@ IMG_CB(88003) {
 	// Dispatch to the correct state
 	if (_gameVariables[GameVariables::kBombState] >= 1 &&
 	        _gameVariables[GameVariables::kBombState] <= 5) {
-		FixedImgCallback callback;
+		FixedImgCallback callback = nullptr;
 		switch (_gameVariables[GameVariables::kBombState]) {
 		case 1:
 			callback = &CryOmni3DEngine_Versailles::img_88003b;
@@ -2695,6 +2736,9 @@ IMG_CB(88003) {
 			break;
 		case 5:
 			callback = &CryOmni3DEngine_Versailles::img_88003f;
+			break;
+		default:
+			error("BUG: Invalid bomb state");
 			break;
 		}
 		ZonFixedImage::CallbackFunctor *functor =
@@ -2907,7 +2951,7 @@ IMG_CB(88003f) {
 				playInGameVideo("COFFRE");
 				_forcePaletteUpdate = true;
 				// Force reload of the place
-				if (_nextPlaceId == -1u) {
+				if (_nextPlaceId == uint(-1)) {
 					_nextPlaceId = _currentPlaceId;
 				}
 				playTransitionEndLevel(7);
@@ -2925,24 +2969,31 @@ IMG_CB(88003f) {
 bool CryOmni3DEngine_Versailles::handleBomb(ZonFixedImage *fimg) {
 	bool success = false;
 	Common::RandomSource rnd("VersaillesBomb");
-	Graphics::Surface bmpLetters[26];
-	unsigned char bombPossibilites[60][5];
-	unsigned char bombCurrentLetters[60];
+	Graphics::Surface bmpLetters[28];
+	uint32 bombPossibilites[60][5];
+	byte bombCurrentLetters[60];
 	Graphics::ManagedSurface tempSurf;
 
-	const uint kBombPasswordLength = strlen(kBombPassword);
-	if (kBombPasswordLength >= kBombPasswordMaxLength) {
+	const uint bombPasswordLength = _bombPassword.size();
+	if (bombPasswordLength >= kBombPasswordMaxLength) {
 		error("Bomb password is too long");
 	}
 
-	loadBMPs("bomb_%02d.bmp", bmpLetters, 26);
-	for (uint i = 0; i < kBombPasswordLength; i++) {
-		bombPossibilites[i][0] = toupper(kBombPassword[i]);
+	uint max = _bombAlphabet.size() - 1;
+	if (getLanguage() != Common::JA_JPN) {
+		// In bitmap mode we only have 28 images
+		assert(max < 28);
+		// BUG: in game the rand is modulo 27
+		max = 26;
+		loadBMPs("bomb_%02d.bmp", bmpLetters, 28);
+	}
+	for (uint i = 0; i < bombPasswordLength; i++) {
+		bombPossibilites[i][0] = _bombPassword[i];
 		for (uint j = 1; j < 5; j++) {
 			bool foundSameLetter;
 			do {
 				foundSameLetter = false;
-				bombPossibilites[i][j] = rnd.getRandomNumberRng('A', 'Z');
+				bombPossibilites[i][j] = _bombAlphabet[rnd.getRandomNumber(max)];
 				for (uint k = 0; k < j; k++) {
 					if (bombPossibilites[i][k] == bombPossibilites[i][j]) {
 						foundSameLetter = true;
@@ -2953,7 +3004,7 @@ bool CryOmni3DEngine_Versailles::handleBomb(ZonFixedImage *fimg) {
 		bombCurrentLetters[i] = rnd.getRandomNumber(4);
 	}
 
-	if (kBombPasswordLength <= kBombPasswordSmallLength) {
+	if (bombPasswordLength <= kBombPasswordSmallLength) {
 		fimg->load("70z_16.GIF");
 	} else {
 		fimg->load("70z_17.GIF");
@@ -2961,7 +3012,7 @@ bool CryOmni3DEngine_Versailles::handleBomb(ZonFixedImage *fimg) {
 	const Graphics::Surface *fimgSurface = fimg->surface();
 	tempSurf.create(fimgSurface->w, fimgSurface->h, fimgSurface->format);
 	tempSurf.blitFrom(*fimgSurface);
-	drawBombLetters(tempSurf, bmpLetters, kBombPasswordLength, bombPossibilites, bombCurrentLetters);
+	drawBombLetters(tempSurf, bmpLetters, bombPasswordLength, bombPossibilites, bombCurrentLetters);
 	drawCountdown(&tempSurf);
 	fimg->updateSurface(&tempSurf.rawSurface());
 
@@ -2971,12 +3022,12 @@ bool CryOmni3DEngine_Versailles::handleBomb(ZonFixedImage *fimg) {
 			break;
 		}
 		if (fimg->_zoneUse) {
-			if (fimg->_currentZone < kBombPasswordLength) {
+			if (fimg->_currentZone < bombPasswordLength) {
 				// Safe digit
 				bombCurrentLetters[fimg->_currentZone] = (bombCurrentLetters[fimg->_currentZone] + 1) % 5;
 				// Reset the surface and redraw letters on it
 				tempSurf.blitFrom(*fimgSurface);
-				drawBombLetters(tempSurf, bmpLetters, kBombPasswordLength, bombPossibilites, bombCurrentLetters);
+				drawBombLetters(tempSurf, bmpLetters, bombPasswordLength, bombPossibilites, bombCurrentLetters);
 				drawCountdown(&tempSurf);
 				fimg->updateSurface(&tempSurf.rawSurface());
 
@@ -2984,14 +3035,15 @@ bool CryOmni3DEngine_Versailles::handleBomb(ZonFixedImage *fimg) {
 
 				// Check if password is OK
 				success = true;
-				for (uint i = 0; i < kBombPasswordLength; i++) {
-					unsigned char letterChar = bombPossibilites[i][bombCurrentLetters[i]];
-					if (letterChar != kBombPassword[i]) {
+				for (uint i = 0; i < bombPasswordLength; i++) {
+					uint16 letterId = bombPossibilites[i][bombCurrentLetters[i]];
+					if (letterId != _bombPassword[i]) {
 						success = false;
 						break;
 					}
 				}
 				if (success) {
+					handleBombTranslation(tempSurf);
 					break;
 				}
 			}
@@ -3003,50 +3055,185 @@ bool CryOmni3DEngine_Versailles::handleBomb(ZonFixedImage *fimg) {
 		}
 	}
 
-	for (uint i = 0; i < 26; i++) {
+	for (uint i = 0; i < 28; i++) {
 		bmpLetters[i].free();
 	}
 	return success;
 }
 
-const char *CryOmni3DEngine_Versailles::kBombPassword = "JEMENVAISMAISLETATDEMEURERATOUJOURS";
-// We use brace elision here because it's dumped from the EXE
+void CryOmni3DEngine_Versailles::handleBombTranslation(Graphics::ManagedSurface &surface) {
+	if (_messages.size() <= 150) {
+		return;
+	}
+
+	Common::String &translation = _messages[150];
+
+	if (translation.size() == 0) {
+		return;
+	}
+
+	surface.fillRect(Common::Rect(0, 430, 640, 480), 247);
+
+	_fontManager.setCurrentFont(1);
+	_fontManager.setTransparentBackground(true);
+	_fontManager.setForeColor(242);
+	_fontManager.setSurface(&surface);
+	uint w = _fontManager.getStrWidth(translation);
+	_fontManager.displayStr((640 - w) / 2, 440, translation);
+
+	g_system->copyRectToScreen(surface.getPixels(), surface.pitch, 0, 0,
+	                           surface.w, surface.h);
+	g_system->updateScreen();
+
+	uint32 end = g_system->getMillis() + 5000;
+	bool exitImg = false;
+	while (!shouldAbort() && !exitImg && g_system->getMillis() < end) {
+		if (pollEvents()) {
+			if (checkKeysPressed() || getCurrentMouseButton() == 1) {
+				exitImg = true;
+			}
+		}
+		g_system->updateScreen();
+		g_system->delayMillis(10);
+	}
+}
+
 const uint16 CryOmni3DEngine_Versailles::kBombLettersPos[2][kBombPasswordMaxLength][2] = {
 	{
-		26, 91, 84, 89, 141, 89, 202, 88, 261, 87, 322, 86, 384, 85, 448, 84,
-		512, 83, 576, 83, 26, 175, 84, 175, 142, 174, 202, 174, 260, 174, 322,
-		174, 384, 173, 448, 173, 512, 173, 576, 172, 26, 261, 84, 261, 141,
-		261, 202, 261, 261, 262, 322, 262, 383, 262, 447, 263, 512, 263, 576,
-		263, 26, 344, 84, 345, 142, 346, 202, 347, 260, 348, 322, 349, 384,
-		350, 448, 351, 512, 352, 576, 352
+		{26, 91},
+		{84, 89},
+		{141, 89},
+		{202, 88},
+		{261, 87},
+		{322, 86},
+		{384, 85},
+		{448, 84},
+		{512, 83},
+		{576, 83},
+		{26, 175},
+		{84, 175},
+		{142, 174},
+		{202, 174},
+		{260, 174},
+		{322, 174},
+		{384, 173},
+		{448, 173},
+		{512, 173},
+		{576, 172},
+		{26, 261},
+		{84, 261},
+		{141, 261},
+		{202, 261},
+		{261, 262},
+		{322, 262},
+		{383, 262},
+		{447, 263},
+		{512, 263},
+		{576, 263},
+		{26, 344},
+		{84, 345},
+		{142, 346},
+		{202, 347},
+		{260, 348},
+		{322, 349},
+		{384, 350},
+		{448, 351},
+		{512, 352},
+		{576, 352}
 	},
 	{
-		42, 26, 100, 24, 155, 22, 214, 19, 271, 18, 330, 15, 389, 14, 451, 11,
-		515, 8, 576, 6, 45, 102, 100, 102, 156, 101, 215, 100, 272, 99, 331,
-		98, 391, 97, 453, 96, 515, 94, 578, 94, 44, 184, 101, 184, 157, 184,
-		215, 183, 272, 183, 331, 183, 391, 182, 453, 182, 515, 182, 577, 181,
-		44, 267, 101, 267, 157, 267, 215, 268, 272, 268, 331, 268, 390, 269,
-		453, 269, 515, 269, 578, 269, 45, 348, 101, 349, 156, 349, 215, 351,
-		271, 351, 331, 351, 391, 353, 453, 354, 515, 355, 577, 356, 44, 434,
-		101, 435, 156, 436, 215, 437, 272, 437, 331, 437, 391, 439, 453, 440,
-		515, 441, 578, 442
+		{42, 26},
+		{100, 24},
+		{155, 22},
+		{214, 19},
+		{271, 18},
+		{330, 15},
+		{389, 14},
+		{451, 11},
+		{515, 8},
+		{576, 6},
+		{45, 102},
+		{100, 102},
+		{156, 101},
+		{215, 100},
+		{272, 99},
+		{331, 98},
+		{391, 97},
+		{453, 96},
+		{515, 94},
+		{578, 94},
+		{44, 184},
+		{101, 184},
+		{157, 184},
+		{215, 183},
+		{272, 183},
+		{331, 183},
+		{391, 182},
+		{453, 182},
+		{515, 182},
+		{577, 181},
+		{44, 267},
+		{101, 267},
+		{157, 267},
+		{215, 268},
+		{272, 268},
+		{331, 268},
+		{390, 269},
+		{453, 269},
+		{515, 269},
+		{578, 269},
+		{45, 348},
+		{101, 349},
+		{156, 349},
+		{215, 351},
+		{271, 351},
+		{331, 351},
+		{391, 353},
+		{453, 354},
+		{515, 355},
+		{577, 356},
+		{44, 434},
+		{101, 435},
+		{156, 436},
+		{215, 437},
+		{272, 437},
+		{331, 437},
+		{391, 439},
+		{453, 440},
+		{515, 441},
+		{578, 442}
 	},
 };
 
 void CryOmni3DEngine_Versailles::drawBombLetters(Graphics::ManagedSurface &surface,
-        const Graphics::Surface(&bmpLetters)[26], const uint kBombPasswordLength,
-        const unsigned char (&bombPossibilites)[kBombPasswordMaxLength][5],
-        const unsigned char (&bombCurrentLetters)[kBombPasswordMaxLength]) {
-	uint table = kBombPasswordLength <= kBombPasswordSmallLength ? 0 : 1;
-	for (uint i = 0; i < kBombPasswordLength; i++) {
-		unsigned char letterChar = bombPossibilites[i][bombCurrentLetters[i]];
-		uint letterId = 0;
-		if (letterChar >= 'A' && letterChar <= 'Z') {
-			letterId = letterChar - 'A';
+        const Graphics::Surface(&bmpLetters)[28], const uint bombPasswordLength,
+        const uint32(&bombPossibilites)[kBombPasswordMaxLength][5],
+        const byte(&bombCurrentLetters)[kBombPasswordMaxLength]) {
+	uint table = bombPasswordLength <= kBombPasswordSmallLength ? 0 : 1;
+	if (getLanguage() == Common::JA_JPN) {
+		_fontManager.setCurrentFont(1);
+		_fontManager.setTransparentBackground(true);
+		_fontManager.setForeColor(0);
+		_fontManager.setSurface(&surface);
+
+		for (uint i = 0; i < bombPasswordLength; i++) {
+			Common::Rect rct(34, 34);
+			rct.moveTo(kBombLettersPos[table][i][0], kBombLettersPos[table][i][1]);
+			surface.fillRect(rct, 239);
+
+			uint32 letter = bombPossibilites[i][bombCurrentLetters[i]];
+			Common::U32String str(&letter, 1);
+
+			_fontManager.displayStr(rct.left + (34 - _fontManager.getStrWidth(str)) / 2,
+			                        rct.top + 5, str);
 		}
-		const Graphics::Surface &letter = bmpLetters[letterId];
-		Common::Point dst(kBombLettersPos[table][i][0], kBombLettersPos[table][i][1]);
-		surface.transBlitFrom(letter, dst);
+	} else {
+		for (uint i = 0; i < bombPasswordLength; i++) {
+			uint letterId = _bombAlphabet.find(bombPossibilites[i][bombCurrentLetters[i]]);
+			const Graphics::Surface &letter = bmpLetters[letterId];
+			Common::Point dst(kBombLettersPos[table][i][0], kBombLettersPos[table][i][1]);
+			surface.transBlitFrom(letter, dst);
+		}
 	}
 }
 
@@ -3072,7 +3259,7 @@ IMG_CB(88004b) {
 	// Open the toilets
 	playInGameVideo("31j32");
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 	fimg->load("31j32.gif");
@@ -3090,11 +3277,11 @@ IMG_CB(88004b) {
 			break;
 		}
 	}
-	if (!shouldQuit()) {
+	if (!shouldAbort()) {
 		// Close the toilets
 		playInGameVideo("31j32b");
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 	}
@@ -3128,7 +3315,7 @@ FILTER_EVENT(1, 2) {
 		_dialogsMan.play("11E_HUI");
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 		return false;
@@ -3140,8 +3327,8 @@ FILTER_EVENT(1, 2) {
 INIT_PLACE(1, 3) {
 	if (!_gameVariables[GameVariables::kHasPlayedLebrun]) {
 		Common::File *audioFile = new Common::File();
-		if (!audioFile->open("LEB001__.WAV")) {
-			warning("Failed to open sound file %s", "LEB001__.WAV");
+		if (!audioFile->open(_localizedFilenames[LocalizedFilenames::kLeb001])) {
+			warning("Failed to open sound file %s", _localizedFilenames[LocalizedFilenames::kLeb001].c_str());
 			delete audioFile;
 			return;
 		}
@@ -3163,7 +3350,7 @@ INIT_PLACE(1, 3) {
 
 FILTER_EVENT(1, 3) {
 	if (*event == 11301) {
-		while (!g_engine->shouldQuit() && _mixer->isSoundIDActive(SoundIds::kLeb001)) {
+		while (!shouldAbort() && _mixer->isSoundIDActive(SoundIds::kLeb001)) {
 			g_system->updateScreen();
 			g_system->delayMillis(10);
 			pollEvents();
@@ -3243,7 +3430,7 @@ FILTER_EVENT(1, 14) {
 	playInGameVideo(video);
 
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 
@@ -3271,7 +3458,7 @@ FILTER_EVENT(2, 1) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3300,7 +3487,7 @@ FILTER_EVENT(2, 1) {
 			playInGameVideo(video);
 
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 
@@ -3321,7 +3508,7 @@ FILTER_EVENT(2, 2) {
 	}
 
 	const char *video = nullptr;
-	FixedImgCallback callback;
+	FixedImgCallback callback = nullptr;
 
 	const Object *obj = _inventory.selectedObject();
 	bool deselectObj = false;
@@ -3380,7 +3567,7 @@ FILTER_EVENT(2, 2) {
 	playInGameVideo(video);
 
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 
@@ -3410,7 +3597,7 @@ FILTER_EVENT(2, 5) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3439,7 +3626,7 @@ INIT_PLACE(2, 9) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3464,7 +3651,7 @@ FILTER_EVENT(2, 9) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3493,7 +3680,7 @@ FILTER_EVENT(2, 11) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3538,7 +3725,7 @@ FILTER_EVENT(2, 12) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3576,7 +3763,7 @@ FILTER_EVENT(3, 3) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3596,7 +3783,7 @@ FILTER_EVENT(3, 10) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3614,7 +3801,7 @@ FILTER_EVENT(3, 10) {
 			}
 			_forcePaletteUpdate = true;
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 		}
@@ -3646,7 +3833,7 @@ FILTER_EVENT(3, 13) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3714,7 +3901,7 @@ FILTER_EVENT(3, 18) {
 
 	_forcePaletteUpdate = true;
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 	return true;
@@ -3747,7 +3934,7 @@ FILTER_EVENT(3_5, 20) {
 	playInGameVideo("31j31");
 
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 
@@ -3785,7 +3972,7 @@ FILTER_EVENT(3, 22) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3836,7 +4023,7 @@ bool CryOmni3DEngine_Versailles::filterEventLevel3Obj23151() {
 
 	_forcePaletteUpdate = true;
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 
@@ -3863,7 +4050,7 @@ INIT_PLACE(4, 9) {
 		_dialogsMan.play("4_MAI");
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 	}
@@ -3876,7 +4063,7 @@ FILTER_EVENT(4, 10) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3897,7 +4084,7 @@ FILTER_EVENT(4, 10) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -3945,7 +4132,7 @@ FILTER_EVENT(4, 12_13_14) {
 	playInGameVideo(video);
 
 	// Force reload of the place
-	if (_nextPlaceId == -1u) {
+	if (_nextPlaceId == uint(-1)) {
 		_nextPlaceId = _currentPlaceId;
 	}
 
@@ -3978,7 +4165,7 @@ FILTER_EVENT(4, 16) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -4050,7 +4237,7 @@ FILTER_EVENT(5, 9) {
 
 			_forcePaletteUpdate = true;
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 
@@ -4081,7 +4268,7 @@ FILTER_EVENT(5, 9) {
 
 			_forcePaletteUpdate = true;
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 
@@ -4108,7 +4295,7 @@ FILTER_EVENT(5, 14) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -4220,6 +4407,9 @@ void CryOmni3DEngine_Versailles::filterEventLevel5UpdatePlaceStates() {
 			// Ladder is on the scaffolding
 			setPlaceState(16, 5);
 			break;
+		default:
+			error("BUG: Invalid ladder state");
+			break;
 		}
 	} else {
 		// Curtain is opened
@@ -4235,6 +4425,9 @@ void CryOmni3DEngine_Versailles::filterEventLevel5UpdatePlaceStates() {
 		case 2:
 			// Ladder is on the scaffolding
 			setPlaceState(16, 6);
+			break;
+		default:
+			error("BUG: Invalid ladder state");
 			break;
 		}
 	}
@@ -4277,7 +4470,7 @@ FILTER_EVENT(5, 27) {
 
 			_forcePaletteUpdate = true;
 			// Force reload of the place
-			if (_nextPlaceId == -1u) {
+			if (_nextPlaceId == uint(-1)) {
 				_nextPlaceId = _currentPlaceId;
 			}
 
@@ -4357,7 +4550,7 @@ FILTER_EVENT(5, 34) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 		// Handled here
@@ -4437,7 +4630,7 @@ FILTER_EVENT(6, 19) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 
@@ -4554,7 +4747,7 @@ FILTER_EVENT(7, 20) {
 
 		_forcePaletteUpdate = true;
 		// Force reload of the place
-		if (_nextPlaceId == -1u) {
+		if (_nextPlaceId == uint(-1)) {
 			_nextPlaceId = _currentPlaceId;
 		}
 		// Handled here

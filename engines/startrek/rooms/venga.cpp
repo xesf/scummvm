@@ -60,7 +60,7 @@ void Room::vengaTick() {
 		_awayMission->veng.counterUntilElasiDestroyShip--;
 		if (_awayMission->veng.counterUntilElasiDestroyShip == 0 && !_awayMission->veng.firedTorpedo) {
 			// Elasi fire torpedoes at you since you wouldn't lower your shields.
-			showText(TX_VENA_F40);
+			showDescription(40 + COMMON_MESSAGE_OFFSET, true);
 			showGameOverMenu();
 			return;
 		}
@@ -76,19 +76,19 @@ void Room::vengaTick() {
 }
 
 void Room::vengaElasiBeamOver() {
-	showText(TX_VENA_F32);
+	showDescription(32 + COMMON_MESSAGE_OFFSET, true);
 	showGameOverMenu();
 }
 
 void Room::vengaUsePhaserAnywhere() {
-	showText(TX_SPEAKER_SPOCK, TX_VENA_F34);
+	showText(TX_SPEAKER_SPOCK, 34 + COMMON_MESSAGE_OFFSET, true);
 }
 
 void Room::vengaLookAtHypo() {
 	if (_awayMission->veng.oilInHypo)
-		showText(TX_VEN4N007);
+		showDescription(TX_VEN4N007);
 	else
-		showText(TX_VEN4N010);
+		showDescription(TX_VEN4N010);
 }
 
 void Room::vengaUseCommunicator() {
@@ -127,6 +127,9 @@ void Room::vengaUseMccoyOnDeadGuy() {
 	case 4:
 	case 5:
 		showText(TX_SPEAKER_MCCOY, TX_VEN0_016);
+		break;
+
+	default:
 		break;
 	}
 }

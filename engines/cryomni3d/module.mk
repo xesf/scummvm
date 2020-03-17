@@ -1,10 +1,13 @@
 MODULE := engines/cryomni3d
 
 MODULE_OBJS = \
+	fonts/cryoextfont.o \
+	fonts/cryofont.o \
 	image/codecs/hlz.o \
 	image/hlz.o \
 	video/hnm_decoder.o \
 	cryomni3d.o \
+	datstream.o \
 	detection.o \
 	dialogs_manager.o \
 	fixed_image.o \

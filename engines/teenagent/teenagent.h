@@ -61,6 +61,7 @@ class Scene;
 class MusicPlayer;
 class Resources;
 class Inventory;
+class Pack;
 
 // Engine Debug Flags
 enum {
@@ -85,14 +86,13 @@ public:
 	TeenAgentEngine(OSystem *system, const ADGameDescription *gd);
 	~TeenAgentEngine();
 
-	virtual Common::Error run();
-	virtual Common::Error loadGameState(int slot);
-	virtual Common::Error saveGameState(int slot, const Common::String &desc);
-	virtual bool canLoadGameStateCurrently() { return true; }
-	virtual bool canSaveGameStateCurrently() { return !_sceneBusy; }
-	virtual bool hasFeature(EngineFeature f) const;
-
-	GUI::Debugger *getDebugger() { return console; }
+	Common::Error run() override;
+	Common::String getSaveStateName(int slot) const override;
+	Common::Error loadGameState(int slot) override;
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	bool canLoadGameStateCurrently() override { return true; }
+	bool canSaveGameStateCurrently() override { return !_sceneBusy; }
+	bool hasFeature(EngineFeature f) const override;
 
 	void init();
 
@@ -137,7 +137,7 @@ public:
 
 	void playMusic(byte id); //schedules play
 	void playSound(byte id, byte skipFrames);
-	void playSoundNow(byte id);
+	void playSoundNow(Pack *pack, byte id);
 	void enableObject(byte id, byte sceneId = 0);
 	void disableObject(byte id, byte sceneId = 0);
 	void hideActor();
@@ -158,7 +158,6 @@ public:
 	Inventory *inventory;
 	MusicPlayer *music;
 	Dialog *dialog;
-	Console *console;
 
 	void setMusic(byte id);
 

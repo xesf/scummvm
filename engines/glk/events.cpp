@@ -181,15 +181,18 @@ void Events::pollEvents() {
 
 	do {
 		checkForNextFrameCounter();
-		g_system->getEventManager()->pollEvent(event);
+		if (!g_system->getEventManager()->pollEvent(event))
+			return;
 
 		switch (event.type) {
-		case Common::EVENT_KEYDOWN:
+		case Common::EVENT_KEYDOWN: {
 			if (!isModifierKey(event.kbd.keycode)) {
+				// Handle all other keypresses
 				setCursor(CURSOR_NONE);
 				handleKeyDown(event.kbd);
 			}
 			return;
+		}
 
 		case Common::EVENT_LBUTTONDOWN:
 		case Common::EVENT_RBUTTONDOWN:
@@ -376,15 +379,25 @@ bool Events::isModifierKey(const Common::KeyCode &keycode) const {
 		|| keycode == Common::KEYCODE_SCROLLOCK;
 }
 
-void Events::waitForPress() {
+uint Events::getKeypress() {
 	Common::Event e;
 
-	do {
+	while (!g_vm->shouldQuit()) {
 		g_system->getEventManager()->pollEvent(e);
 		g_system->delayMillis(10);
 		checkForNextFrameCounter();
-	} while (!g_vm->shouldQuit() && (e.type != Common::EVENT_KEYDOWN || isModifierKey(e.kbd.keycode))
-		&& e.type != Common::EVENT_LBUTTONDOWN && e.type != Common::EVENT_RBUTTONDOWN && e.type != Common::EVENT_MBUTTONDOWN);
+
+		if (e.type == Common::EVENT_KEYDOWN && !isModifierKey(e.kbd.keycode))
+			return e.kbd.keycode;
+		if (e.type == Common::EVENT_LBUTTONDOWN)
+			return Common::KEYCODE_SPACE;
+	}
+
+	return 0;
+}
+
+void Events::waitForPress() {
+	getKeypress();
 }
 
 void Events::setCursor(CursorId cursorId) {

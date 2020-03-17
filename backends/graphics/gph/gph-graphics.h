@@ -43,7 +43,7 @@ public:
 	void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL) override;
 	const OSystem::GraphicsMode *getSupportedGraphicsModes() const override;
 	int getGraphicsModeScale(int mode) const override;
-	void setGraphicsModeIntern() override;
+	ScalerProc *getGraphicsScalerProc(int mode) const override;
 	void internUpdateScreen() override;
 	void showOverlay() override;
 	void hideOverlay() override;
@@ -53,6 +53,9 @@ public:
 	void warpMouse(int x, int y) override;
 
 	virtual void transformMouseCoordinates(Common::Point &point);
+
+protected:
+	void setupHardwareSize() override;
 };
 
 #endif /* BACKENDS_GRAPHICS_GPH_H */

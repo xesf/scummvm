@@ -34,6 +34,7 @@
 #include "graphics/palette.h"
 
 #include "cryomni3d/cryomni3d.h"
+#include "cryomni3d/datstream.h"
 
 #include "cryomni3d/image/hlz.h"
 #include "cryomni3d/video/hnm_decoder.h"
@@ -42,7 +43,8 @@ namespace CryOmni3D {
 
 CryOmni3DEngine::CryOmni3DEngine(OSystem *syst,
                                  const CryOmni3DGameDescription *gamedesc) : Engine(syst), _gameDescription(gamedesc),
-	_fontManager(), _sprites(), _dragStatus(kDragStatus_NoDrag), _autoRepeatNextEvent(-1u) {
+	_canLoadSave(false), _fontManager(), _sprites(), _dragStatus(kDragStatus_NoDrag), _lastMouseButton(0),
+	_autoRepeatNextEvent(uint(-1)), _hnmHasClip(false) {
 	if (!_mixer->isReady()) {
 		error("Sound initialization failed");
 	}
@@ -76,6 +78,26 @@ void CryOmni3DEngine::pauseEngineIntern(bool pause) {
 	    _system->updateScreen();
 	}
 	*/
+}
+
+DATSeekableStream *CryOmni3DEngine::getStaticData(uint32 gameId, uint16 version) const {
+	Common::File *datFile = new Common::File();
+
+	if (!datFile->open("cryomni3d.dat")) {
+		delete datFile;
+		error("Failed to open cryomni3d.dat file");
+		return nullptr;
+	}
+
+	DATSeekableStream *gameStream = DATSeekableStream::getGame(datFile, gameId, version, getLanguage(),
+	                                getPlatform());
+	if (!gameStream) {
+		delete datFile;
+		error("Failed to find game in cryomni3d.dat file");
+		return nullptr;
+	}
+
+	return gameStream;
 }
 
 Common::String CryOmni3DEngine::prepareFileName(const Common::String &baseName,
@@ -137,7 +159,7 @@ void CryOmni3DEngine::playHNM(const Common::String &filename, Audio::Mixer::Soun
 
 	bool skipVideo = false;
 	uint frameNum = 0;
-	while (!g_engine->shouldQuit() && !videoDecoder->endOfVideo() && !skipVideo) {
+	while (!shouldAbort() && !videoDecoder->endOfVideo() && !skipVideo) {
 		if (videoDecoder->needsUpdate()) {
 			const Graphics::Surface *frame = videoDecoder->decodeNextFrame();
 
@@ -150,7 +172,16 @@ void CryOmni3DEngine::playHNM(const Common::String &filename, Audio::Mixer::Soun
 				if (beforeDraw) {
 					(this->*beforeDraw)(frameNum);
 				}
-				g_system->copyRectToScreen(frame->getPixels(), frame->pitch, 0, 0, width, height);
+
+				if (_hnmHasClip) {
+					Common::Rect rct(width, height);
+					rct.clip(_hnmClipping);
+					g_system->copyRectToScreen(frame->getPixels(), frame->pitch, rct.left, rct.top, rct.width(),
+					                           rct.height());
+				} else {
+					g_system->copyRectToScreen(frame->getPixels(), frame->pitch, 0, 0, width, height);
+				}
+
 				if (afterDraw) {
 					(this->*afterDraw)(frameNum);
 				}
@@ -172,14 +203,14 @@ void CryOmni3DEngine::playHNM(const Common::String &filename, Audio::Mixer::Soun
 Image::ImageDecoder *CryOmni3DEngine::loadHLZ(const Common::String &filename) {
 	Common::String fname(prepareFileName(filename, "hlz"));
 
-	Image::ImageDecoder *imageDecoder = new Image::HLZFileDecoder();
-
 	Common::File file;
 
 	if (!file.open(fname)) {
 		warning("Failed to open hlz file %s/%s", filename.c_str(), fname.c_str());
 		return nullptr;
 	}
+
+	Image::ImageDecoder *imageDecoder = new Image::HLZFileDecoder();
 
 	if (!imageDecoder->loadStream(file)) {
 		warning("Failed to open hlz file %s", fname.c_str());
@@ -191,11 +222,11 @@ Image::ImageDecoder *CryOmni3DEngine::loadHLZ(const Common::String &filename) {
 	return imageDecoder;
 }
 
-void CryOmni3DEngine::displayHLZ(const Common::String &filename) {
+bool CryOmni3DEngine::displayHLZ(const Common::String &filename, uint32 timeout) {
 	Image::ImageDecoder *imageDecoder = loadHLZ(filename);
 
 	if (!imageDecoder) {
-		return;
+		return false;
 	}
 
 	if (imageDecoder->hasPalette()) {
@@ -207,10 +238,16 @@ void CryOmni3DEngine::displayHLZ(const Common::String &filename) {
 	g_system->copyRectToScreen(frame->getPixels(), frame->pitch, 0, 0, frame->w, frame->h);
 	g_system->updateScreen();
 
+	uint32 end;
+	if (timeout == uint(-1)) {
+		end = uint(-1);
+	} else {
+		end = g_system->getMillis() + timeout;
+	}
 	bool exitImg = false;
-	while (!g_engine->shouldQuit() && !exitImg) {
+	while (!shouldAbort() && !exitImg && g_system->getMillis() < end) {
 		if (pollEvents()) {
-			if (checkKeysPressed(1, Common::KEYCODE_ESCAPE) || getCurrentMouseButton() == 1) {
+			if (checkKeysPressed() || getCurrentMouseButton() == 1) {
 				exitImg = true;
 			}
 		}
@@ -219,17 +256,17 @@ void CryOmni3DEngine::displayHLZ(const Common::String &filename) {
 	}
 
 	delete imageDecoder;
+
+	return exitImg || shouldAbort();
 }
 
 void CryOmni3DEngine::setCursor(const Graphics::Cursor &cursor) const {
-	g_system->setMouseCursor(cursor.getSurface(), cursor.getWidth(), cursor.getHeight(),
-	                         cursor.getHotspotX(), cursor.getHotspotY(), cursor.getKeyColor());
+	CursorMan.replaceCursor(&cursor);
 }
 
 void CryOmni3DEngine::setCursor(uint cursorId) const {
 	const Graphics::Cursor &cursor = _sprites.getCursor(cursorId);
-	g_system->setMouseCursor(cursor.getSurface(), cursor.getWidth(), cursor.getHeight(),
-	                         cursor.getHotspotX(), cursor.getHotspotY(), cursor.getKeyColor());
+	CursorMan.replaceCursor(&cursor);
 }
 
 bool CryOmni3DEngine::pollEvents() {
@@ -286,7 +323,7 @@ bool CryOmni3DEngine::pollEvents() {
 			if (ABS(delta.x) > 2 || ABS(delta.y) > 2) {
 				// We moved from the start point
 				_dragStatus = kDragStatus_Dragging;
-			} else if (_autoRepeatNextEvent != -1u) {
+			} else if (_autoRepeatNextEvent != uint(-1)) {
 				// Check for auto repeat duration
 				if (_autoRepeatNextEvent < g_system->getMillis()) {
 					_dragStatus = kDragStatus_Pressed;
@@ -296,7 +333,7 @@ bool CryOmni3DEngine::pollEvents() {
 			// We just finished dragging
 			_dragStatus = kDragStatus_Finished;
 			// Cancel auto repeat
-			_autoRepeatNextEvent = -1;
+			_autoRepeatNextEvent = uint(-1);
 		}
 	}
 	// Else we weren't dragging and still aren't
@@ -309,7 +346,7 @@ void CryOmni3DEngine::setAutoRepeatClick(uint millis) {
 }
 
 void CryOmni3DEngine::waitMouseRelease() {
-	while (getCurrentMouseButton() != 0 && !g_engine->shouldQuit()) {
+	while (getCurrentMouseButton() != 0 && !shouldAbort()) {
 		pollEvents();
 		g_system->updateScreen();
 		g_system->delayMillis(10);
@@ -396,7 +433,7 @@ void CryOmni3DEngine::fadeOutPalette() {
 		delta[i] = palWork[i] / 25;
 	}
 
-	for (uint step = 0; step < 25 && !g_engine->shouldQuit(); step++) {
+	for (uint step = 0; step < 25 && !shouldAbort(); step++) {
 		for (uint i = 0; i < 256 * 3; i++) {
 			palWork[i] -= delta[i];
 			palOut[i] = palWork[i] >> 8;
@@ -427,7 +464,7 @@ void CryOmni3DEngine::fadeInPalette(const byte *palette) {
 	}
 
 	setBlackPalette();
-	for (uint step = 0; step < 25 && !g_engine->shouldQuit(); step++) {
+	for (uint step = 0; step < 25 && !shouldAbort(); step++) {
 		for (uint i = 0; i < 256 * 3; i++) {
 			palWork[i] += delta[i];
 			palOut[i] = palWork[i] >> 8;

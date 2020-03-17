@@ -37,7 +37,7 @@
 #include "engines/util.h"
 #include "video/qt_decoder.h"
 
-#include "startrek/filestream.h"
+#include "startrek/console.h"
 #include "startrek/iwfile.h"
 #include "startrek/lzss.h"
 #include "startrek/room.h"
@@ -70,6 +70,7 @@ StarTrekEngine::StarTrekEngine(OSystem *syst, const StarTrekGameDescription *gam
 	_activeMenu = nullptr;
 	_sound = nullptr;
 	_macResFork = nullptr;
+	_room = nullptr;
 
 	memset(_actionOnWalkCompletionInUse, 0, sizeof(_actionOnWalkCompletionInUse));
 
@@ -95,6 +96,8 @@ StarTrekEngine::StarTrekEngine(OSystem *syst, const StarTrekGameDescription *gam
 
 	_missionToLoad = "DEMON";
 	_roomIndexToLoad = 0;
+	_mapFile = nullptr;
+	_iwFile = nullptr;
 
 	_showSubtitles = true;
 	Common::fill(_r3List, _r3List + NUM_SPACE_OBJECTS, (R3 *)nullptr);
@@ -102,11 +105,15 @@ StarTrekEngine::StarTrekEngine(OSystem *syst, const StarTrekGameDescription *gam
 
 	for (int i = 0; i < NUM_OBJECTS; i++)
 		_itemList[i] = g_itemList[i];
+
+	for (int i = 0; i < MAX_BAN_FILES; i++)
+		_banFiles[i] = nullptr;
 }
 
 StarTrekEngine::~StarTrekEngine() {
 	delete _activeMenu->nextMenu;
 	delete _activeMenu;
+
 	delete _gfx;
 	delete _sound;
 	delete _macResFork;
@@ -115,6 +122,7 @@ StarTrekEngine::~StarTrekEngine() {
 Common::Error StarTrekEngine::run() {
 	_gfx = new Graphics(this);
 	_sound = new Sound(this);
+	setDebugger(new Console(this));
 
 	if (getPlatform() == Common::kPlatformMacintosh) {
 		_macResFork = new Common::MacResManager();
@@ -123,9 +131,11 @@ Common::Error StarTrekEngine::run() {
 		assert(_macResFork->hasDataFork() && _macResFork->hasResFork());
 	}
 
-	const ::Graphics::PixelFormat format = ::Graphics::PixelFormat::createFormatCLUT8();
-	initGraphics(SCREEN_WIDTH, SCREEN_HEIGHT, &format);
+	initGraphics(SCREEN_WIDTH, SCREEN_HEIGHT);
 	initializeEventsAndMouse();
+
+	_gfx->setMouseBitmap("pushbtn");
+	_gfx->toggleMouse(true);
 
 	bool shouldPlayIntro = true;
 	bool loadedSave = false;
@@ -189,6 +199,7 @@ Common::Error StarTrekEngine::runGameMode(int mode, bool resume) {
 
 			case GAMEMODE_BEAMDOWN:
 			case GAMEMODE_BEAMUP:
+			default:
 				break;
 			}
 
@@ -219,6 +230,9 @@ Common::Error StarTrekEngine::runGameMode(int mode, bool resume) {
 				_sound->stopAllVocSounds();
 				_sound->playVoc("bridloop");
 				continue; // Back to start of loop
+
+			default:
+				break;
 			}
 		}
 
@@ -236,6 +250,9 @@ Common::Error StarTrekEngine::runGameMode(int mode, bool resume) {
 		case GAMEMODE_BEAMDOWN:
 		case GAMEMODE_BEAMUP:
 			error("Can't be here.");
+			break;
+
+		default:
 			break;
 		}
 	}
@@ -256,11 +273,10 @@ void StarTrekEngine::runTransportSequence(const Common::String &name) {
 	actorFunc1();
 	initActors();
 
-	SharedPtr<Bitmap> bgImage = _gfx->loadBitmap("transprt");
-	_gfx->setBackgroundImage(bgImage);
+	_gfx->setBackgroundImage("transprt");
 	_gfx->clearPri();
 	_gfx->loadPalette("palette");
-	_gfx->drawDirectToScreen(bgImage);
+	_gfx->copyBackgroundScreen();
 	_system->updateScreen();
 	_system->delayMillis(10);
 
@@ -292,12 +308,12 @@ void StarTrekEngine::runTransportSequence(const Common::String &name) {
 	_gfx->drawAllSprites();
 	_gfx->fadeinScreen();
 
-	playSoundEffectIndex(0x0a);
+	_sound->playSoundEffectIndex(0x0a);
 
 	if (name.equalsIgnoreCase("teled"))
-		playSoundEffectIndex(0x08);
+		_sound->playSoundEffectIndex(0x08);
 	else
-		playSoundEffectIndex(0x09);
+		_sound->playSoundEffectIndex(0x09);
 
 	while (_actorList[0].field62 == 0) {
 		TrekEvent event;
@@ -319,75 +335,6 @@ void StarTrekEngine::runTransportSequence(const Common::String &name) {
 	initActors();
 }
 
-void StarTrekEngine::playSoundEffectIndex(int index) {
-	if (!(getFeatures() & GF_CDROM))
-		_sound->playMidiTrack(index);
-	else {
-		switch (index) {
-		case 0x04:
-			_sound->playVoc("tricorde");
-			break;
-		case 0x05:
-			_sound->playVoc("STDOOR1");
-			break;
-		case 0x06:
-			_sound->playVoc("PHASSHOT");
-			break;
-		case 0x07:
-			_sound->playMidiTrack(index);
-			break;
-		case 0x08:
-			_sound->playVoc("TRANSDEM");
-			break;
-		case 0x09: // Beaming in?
-			_sound->playVoc("TRANSMAT");
-			break;
-		case 0x0a: // Beaming out?
-			_sound->playVoc("TRANSENE");
-			break;
-		case 0x10: // Menu selection sound
-			_sound->playMidiTrack(index);
-			break;
-		case 0x22:
-			_sound->playVoc("HAILING");
-			break;
-		case 0x24:
-			_sound->playVoc("PHASSHOT");
-			break;
-		case 0x25:
-			_sound->playVoc("PHOTSHOT");
-			break;
-		case 0x26:
-			_sound->playVoc("HITSHIEL");
-			break;
-		case 0x27:
-			_sound->playMidiTrack(index);
-			break;
-		case 0x28:
-			_sound->playVoc("REDALERT");
-			break;
-		case 0x29:
-			_sound->playVoc("WARP");
-			break;
-		default:
-			debugC(kDebugSound, 6, "Unmapped sound 0x%x", index);
-			break;
-		}
-	}
-}
-
-void StarTrekEngine::playMidiMusicTracks(int startTrack, int loopTrack) {
-	_sound->playMidiMusicTracks(startTrack, loopTrack);
-}
-
-void StarTrekEngine::playSpeech(const Common::String &filename) {
-	_sound->playSpeech(filename.c_str());
-}
-
-void StarTrekEngine::stopPlayingSpeech() {
-	_sound->stopPlayingSpeech();
-}
-
 /**
  * TODO:
  *   - Should return nullptr on failure to open a file?
@@ -395,7 +342,7 @@ void StarTrekEngine::stopPlayingSpeech() {
  *   - This is supposed to read from a "patches" folder which overrides files in the
  *     packed blob.
  */
-SharedPtr<FileStream> StarTrekEngine::loadFile(Common::String filename, int fileIndex) {
+Common::MemoryReadStreamEndian *StarTrekEngine::loadFile(Common::String filename, int fileIndex) {
 	filename.toUppercase();
 
 	Common::String basename, extension;
@@ -430,7 +377,7 @@ SharedPtr<FileStream> StarTrekEngine::loadFile(Common::String filename, int file
 		byte *data = (byte *)malloc(size);
 		file->read(data, size);
 		delete file;
-		return SharedPtr<FileStream>(new FileStream(data, size, bigEndian));
+		return new Common::MemoryReadStreamEndian(data, size, bigEndian);
 	}
 
 	Common::SeekableReadStream *indexFile = 0;
@@ -560,10 +507,14 @@ SharedPtr<FileStream> StarTrekEngine::loadFile(Common::String filename, int file
 	stream->read(data, size);
 	delete stream;
 
-	return SharedPtr<FileStream>(new FileStream(data, size, bigEndian));
+	return new Common::MemoryReadStreamEndian(data, size, bigEndian);
 }
 
-SharedPtr<FileStream> StarTrekEngine::loadFileWithParams(Common::String filename, bool unk1, bool unk2, bool unk3) {
+Common::MemoryReadStreamEndian *StarTrekEngine::loadBitmapFile(Common::String baseName) {
+	return loadFile(baseName + ".BMP");
+}
+
+Common::MemoryReadStreamEndian *StarTrekEngine::loadFileWithParams(Common::String filename, bool unk1, bool unk2, bool unk3) {
 	return loadFile(filename);
 }
 
@@ -619,15 +570,29 @@ uint16 StarTrekEngine::getRandomWord() {
 }
 
 Common::String StarTrekEngine::getLoadedText(int textIndex) {
-	SharedPtr<FileStream> txtFile = loadFile(_txtFilename + ".txt");
+	Common::MemoryReadStreamEndian *txtFile = loadFile(_txtFilename + ".txt");
 
-	byte *data = txtFile->_data;
-	while (textIndex != 0) {
-		while (*(data++) != '\0');
-		textIndex--;
+	Common::String str;
+	byte cur;
+	int curIndex = 0;
+
+	while (!txtFile->eos()) {
+		do {
+			cur = txtFile->readByte();
+			str += cur;
+		} while (cur != '\0');
+
+		if (curIndex == textIndex) {
+			delete txtFile;
+			return str;
+		}
+
+		curIndex++;
+		str = "";
 	}
-
-	return (char *)data;
+	
+	delete txtFile;
+	return "";
 }
 
 } // End of namespace StarTrek

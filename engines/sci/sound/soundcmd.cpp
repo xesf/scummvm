@@ -616,6 +616,10 @@ void SoundCommandParser::processUpdateCues(reg_t obj) {
 		writeSelectorValue(_segMan, obj, SELECTOR(min), musicSlot->ticker / 3600);
 		writeSelectorValue(_segMan, obj, SELECTOR(sec), musicSlot->ticker % 3600 / 60);
 		writeSelectorValue(_segMan, obj, SELECTOR(frame), musicSlot->ticker % 60 / 2);
+
+		if (_soundVersion >= SCI_VERSION_1_MIDDLE) {
+			writeSelectorValue(_segMan, obj, SELECTOR(vol), musicSlot->volume);
+		}
 	}
 }
 
@@ -834,7 +838,8 @@ void SoundCommandParser::updateSci0Cues() {
 		// Is the sound stopped, and the sound object updated too? If yes, skip
 		// this sound, as SCI0 only allows one active song.
 		if  ((*i)->isQueued) {
-			pWaitingForPlay = (*i);
+			if (!pWaitingForPlay || pWaitingForPlay->priority < (*i)->priority)		// fix #9907
+				pWaitingForPlay = (*i);
 			// FIXME(?): In iceman 2 songs are queued when playing the door
 			// sound - if we use the first song for resuming then it's the wrong
 			// one. Both songs have same priority. Maybe the new sound function

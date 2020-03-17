@@ -70,34 +70,34 @@ Actor::~Actor() {
 }
 
 void Actor::setup(int actorId) {
-	_id    = actorId;
-	_setId = -1;
+	_id             = actorId;
+	_setId          = -1;
 
-	_position     = Vector3(0.0, 0.0, 0.0);
-	_facing       = 512;
-	_targetFacing = -1;
-	_walkboxId    = -1;
+	_position       = Vector3(0.0, 0.0, 0.0);
+	_facing         = 512;
+	_targetFacing   = -1;
+	_walkboxId      = -1;
 
 	_animationId    = 0;
 	_animationFrame = 0;
 	_fps            = 15;
-	_frameMs       = 1000 / _fps;
+	_frameMs        = 1000 / _fps;
 
 	_mustReachWalkDestination = false;	// Original's _inWalkLoop. Moved here from our constructor, since it's here in the original's init()
-	_isMoving            = false;
-	_isTarget            = false;
-	_inCombat            = false;
-	_isInvisible         = false;
-	_isImmuneToObstacles = false;
-	_isRetired           = false;
+	_isMoving                 = false;
+	_isTarget                 = false;
+	_inCombat                 = false;
+	_isInvisible              = false;
+	_isImmuneToObstacles      = false;
+	_isRetired                = false;
 
-	_width         = 0;
-	_height        = 0;
-	_retiredWidth  = 0;
-	_retiredHeight = 0;
-	_scale         = 1.0f;
+	_width                    = 0;
+	_height                   = 0;
+	_retiredWidth             = 0;
+	_retiredHeight            = 0;
+	_scale                    = 1.0f;
 
-	_timer4RemainDefault = 60000;
+	_timer4RemainDefault      = 60000;
 
 	_movementTrackWalkingToWaypointId = -1;
 	_movementTrackDelayOnNextWaypoint = -1;
@@ -106,19 +106,21 @@ void Actor::setup(int actorId) {
 		_timersLeft[i] = 0;
 		_timersLast[i] = _vm->_time->current();
 	}
-	_timersLeft[kActorTimerClueExchange] = _timer4RemainDefault; // This was in original code. We need to init this timer in order to kick off periodic updates for acquireCluesByRelations
+	// This was in original code.
+	// We need to init this timer in order to kick off periodic updates for acquireCluesByRelations
+	_timersLeft[kActorTimerClueExchange] = _timer4RemainDefault;
 
-	_honesty              = 50;
-	_intelligence         = 50;
-	_combatAggressiveness = 50;
-	_stability            = 50;
+	_honesty                     = 50;
+	_intelligence                = 50;
+	_combatAggressiveness        = 50;
+	_stability                   = 50;
 
-	_currentHP  = 50;
-	_maxHP      = 50;
+	_currentHP                   = 50;
+	_maxHP                       = 50;
 
-	_damageAnimIfMoving       = true;	// Set to true (like in original). And moved here from our constructor, since it's here in the original's init().
+	_damageAnimIfMoving          = true; // Set to true (like in original). And moved here from our constructor, since it's here in the original's init().
 
-	_goalNumber = -1;
+	_goalNumber                  = -1;
 
 	_movementTrackPaused         = false;
 	_movementTrackNextWaypointId = -1;
@@ -126,7 +128,7 @@ void Actor::setup(int actorId) {
 	_movementTrackNextAngle      = -1;
 	_movementTrackNextRunning    = false;
 
-	_animationMode   = -1;
+	_animationMode               = -1;
 	_screenRectangle = Common::Rect(-1, -1, -1, -1);
 
 	_animationModeCombatIdle = kAnimationModeCombatIdle;
@@ -140,7 +142,7 @@ void Actor::setup(int actorId) {
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
 	// if player actor was not idle and had an active _walkInfo then
-	// upon starting a new game, the player actpr wpi;d be put on the old _walkInfo
+	// upon starting a new game, the player actor would be put on the old _walkInfo
 	_walkInfo->reset();
 //	// delete _walkInfo and re-allocate it (a reset method would probably be better)
 //	if (_walkInfo != nullptr) {
@@ -216,12 +218,49 @@ void Actor::setFPS(int fps) {
 }
 
 void Actor::increaseFPS() {
+#if BLADERUNNER_ORIGINAL_BUGS
 	int fps = MIN(_fps + 3, 30);
 	setFPS(fps);
+#else
+	int oldFps = _fps; // new aux variable
+	int fps = MIN(_fps + 3, 30);
+	setFPS(fps);
+
+	// Note: When stamina drain is disabled, McCoy returns to normal fps
+	// (which is the default for his animations ie. 15 fps)
+	// on his actor->tick() method, when he switches from running to walking animation
+	// and setFPS(-2) is called
+	if (!_vm->_disableStaminaDrain) {
+		// Only McCoy is using the stamina timer in the game
+		if (_id == kActorMcCoy) {
+			if (_vm->_cutContent) {
+				if (_fps > 20 && oldFps < _fps) {
+					// only start the stamina timer
+					// when McCOy's fps are more than 20 fps and purely increased
+					// and only if the new drain interval is smaller than the previous one
+					// the start drain interval is supposed to be slow
+					// starting from 10 seconds and decreasing as low as 1 second
+					// (It will barely come into play basically)
+					int nextStaminaDrainInterval = (31 - _fps) * 1000;
+					if (nextStaminaDrainInterval < timerLeft(kActorTimerRunningStaminaFPS)) {
+						timerStart(kActorTimerRunningStaminaFPS, nextStaminaDrainInterval);
+					}
+				}
+			} else {
+				// just prevent any rogue state for stamina timer being 0
+				// at any time when McCoy's fps get increased
+				if (timerLeft(kActorTimerRunningStaminaFPS) == 0) {
+					timerStart(kActorTimerRunningStaminaFPS, 200);
+				}
+			}
+		}
+	}
+#endif // BLADERUNNER_ORIGINAL_BUGS
 }
 
-void Actor::timerStart(int timerId, int interval) {
+void Actor::timerStart(int timerId, int32 interval) {
 	assert(timerId >= 0 && timerId < kActorTimers);
+
 	_timersLeft[timerId] = interval;
 	_timersLast[timerId] = _vm->_time->current();
 }
@@ -231,13 +270,15 @@ void Actor::timerReset(int timerId) {
 	_timersLeft[timerId] = 0;
 }
 
-int Actor::timerLeft(int timerId) {
+// timerLeft can be negative - This is required for
+// the actor's animation update timer mostly (timer kActorTimerAnimationFrame)
+int32 Actor::timerLeft(int timerId) {
 	assert(timerId >= 0 && timerId < kActorTimers);
 	return _timersLeft[timerId];
 }
 
 void Actor::timersUpdate() {
-	for (int i = 0; i <= 6; i++) {
+	for (int i = 0; i < kActorTimers; ++i) {
 		timerUpdate(i);
 	}
 }
@@ -248,10 +289,10 @@ void Actor::timerUpdate(int timerId) {
 	}
 
 	uint32 timeNow = _vm->_time->current();
-	int timeDiff = timeNow - _timersLast[timerId];
+	uint32 timeDiff = timeNow - _timersLast[timerId]; // unsigned difference is intentional
 	_timersLast[timerId] = timeNow;
-	_timersLeft[timerId] -= timeDiff;
 
+	_timersLeft[timerId] = _timersLeft[timerId] - timeDiff;
 	if (_timersLeft[timerId] <= 0) {
 		switch (timerId) {
 		case kActorTimerAIScriptCustomTask0:
@@ -283,16 +324,44 @@ void Actor::timerUpdate(int timerId) {
 			// Actor animation frame timer
 			break;
 		case kActorTimerRunningStaminaFPS:
-			if (isRunning()) {
-				if (_fps > 15) {
-					int newFps = _fps - 2;
-					if (newFps < 15) {
-						newFps = 15;
+			// If stamina drain is disabled then
+			// the timer will become zero and won't get initialized again
+			// This is better than entirely skipping updating this specific timer
+			// which would include constantly checking for it in a frequently repeated loop
+			// If stamina drain is re-enabled, the timer will get initialized
+			// either:
+			// Vanilla mode: when McCoy starts running,
+			//               or if starting new game
+			//               or if loading a game where the timer was stored as 0
+			// Restored Content mode: when McCoy starts running fast enough
+			if (!_vm->_disableStaminaDrain) {
+				if (isRunning()) {
+					if (_fps > 15) {
+						int newFps = _fps - 2;
+						if (newFps < 15) {
+							newFps = 15;
+						}
+						setFPS(newFps);
 					}
-					setFPS(newFps);
 				}
+#if BLADERUNNER_ORIGINAL_BUGS
+				_timersLeft[kActorTimerRunningStaminaFPS] = 200;
+#else
+				if (_vm->_cutContent) {
+					if (isRunning()) {
+						// drain faster if closer to max fps (30), else slower
+						_timersLeft[kActorTimerRunningStaminaFPS] = (31 - _fps) * 200;
+					} else {
+						// not running - stop the timer
+						timerReset(kActorTimerRunningStaminaFPS);
+					}
+				} else {
+					_timersLeft[kActorTimerRunningStaminaFPS] = 200;
+				}
+#endif // BLADERUNNER_ORIGINAL_BUGS
 			}
-			_timersLeft[kActorTimerRunningStaminaFPS] = 200;
+			break;
+		default:
 			break;
 		}
 	}
@@ -302,7 +371,7 @@ void Actor::movementTrackNext(bool omitAiScript) {
 	bool hasNextMovement;
 	bool running;
 	int angle;
-	int delay;
+	int32 delay;
 	int waypointId;
 	Vector3 waypointPosition;
 	bool arrived;
@@ -376,8 +445,14 @@ void Actor::movementTrackWaypointReached() {
 			if (!_movementTrackDelayOnNextWaypoint) {
 				_movementTrackDelayOnNextWaypoint = 1;
 			}
+#if !BLADERUNNER_ORIGINAL_BUGS
+			// Honor the heading defined by the AI_Movement_Track_Append_With_Facing method
+			if (_movementTrackNextAngle >= 0) {
+				faceHeading(_movementTrackNextAngle, true);
+			}
+#endif
 			if (_vm->_aiScripts->reachedMovementTrackWaypoint(_id, _movementTrackWalkingToWaypointId)) {
-				int delay = _movementTrackDelayOnNextWaypoint;
+				int32 delay = _movementTrackDelayOnNextWaypoint;
 				if (delay > 1) {
 					changeAnimationMode(kAnimationModeIdle, false);
 					delay = _movementTrackDelayOnNextWaypoint; // todo: analyze if movement is changed in some aiscript->ChangeAnimationMode?
@@ -386,7 +461,7 @@ void Actor::movementTrackWaypointReached() {
 			}
 		}
 		_movementTrackWalkingToWaypointId = -1;
-		_movementTrackDelayOnNextWaypoint = 0;
+		_movementTrackDelayOnNextWaypoint =  0;
 	}
 }
 
@@ -493,9 +568,18 @@ bool Actor::loopWalk(const Vector3 &destination, int proximity, bool interruptib
 		_vm->playerGainsControl();
 	}
 
+#if BLADERUNNER_ORIGINAL_BUGS
 	if (!wasInterrupted && proximity == 0 && !_vm->_playerActorIdle) {
 		setAtXYZ(destination, _facing, true, false, false);
 	}
+#else
+	if (!wasInterrupted && proximity == 0
+	    && (_id == kActorMcCoy && !_vm->_playerActorIdle)
+	    && !isRetired()
+	) {
+		setAtXYZ(destination, _facing, true, false, false);
+	}
+#endif // BLADERUNNER_ORIGINAL_BUGS
 
 	if (_id != kActorMcCoy) {
 		_vm->_mouse->enable();
@@ -595,12 +679,12 @@ void Actor::run() {
 }
 
 bool Actor::tick(bool forceDraw, Common::Rect *screenRect) {
-	int timeLeft = 0;
+	int32 timeLeft = 0;
 	bool needsUpdate = false;
 	if (_fps > 0) {
 		timerUpdate(kActorTimerAnimationFrame);
 		timeLeft = timerLeft(kActorTimerAnimationFrame);
-		needsUpdate = timeLeft <= 0;
+		needsUpdate = (timeLeft <= 0);
 	} else if (_fps == 0) {
 		needsUpdate = false;
 	} else if (forceDraw) {
@@ -640,14 +724,12 @@ bool Actor::tick(bool forceDraw, Common::Rect *screenRect) {
 			_targetFacing = -1;
 
 			bool walkInterrupted = _walkInfo->tick(_id, -positionChange.y, _mustReachWalkDestination);
-
 			Vector3 pos;
 			int facing;
 			_walkInfo->getCurrentPosition(_id, &pos, &facing);
 			setAtXYZ(pos, facing, false, _isMoving, false);
 			if (walkInterrupted) {
 				_vm->_actors[_id]->changeAnimationMode(kAnimationModeIdle);
-
 				movementTrackWaypointReached();
 				if (inCombat()) {
 					changeAnimationMode(_animationModeCombatIdle, false);
@@ -656,6 +738,7 @@ bool Actor::tick(bool forceDraw, Common::Rect *screenRect) {
 				}
 			}
 		} else {
+			// actor is not walking / is idle
 			if (angleChange != 0.0f) {
 				int facingChange = angleChange * (512.0f / M_PI);
 				if (facingChange != 0) {
@@ -667,6 +750,20 @@ bool Actor::tick(bool forceDraw, Common::Rect *screenRect) {
 					while (_facing >= 1024) {
 						_facing -= 1024;
 					}
+				}
+			}
+
+			if (_vm->_cutContent) {
+				// the following Generic Walker models don't have an animation Id that is idle
+				// so we use a frame of their walking animation to show them as stopped
+				// However, we also need to override the positionChange vector for their walking animation too
+				if ( (_id == kActorGenwalkerA || _id == kActorGenwalkerB || _id == kActorGenwalkerC)
+				     &&
+				     (_animationId == 436 || _animationId == 434 || _animationId == 435 || _animationId == 422 || _animationId == 423)
+				) {
+					positionChange.x = 0.0f;
+					positionChange.y = 0.0f;
+					positionChange.z = 0.0f;
 				}
 			}
 
@@ -713,7 +810,8 @@ bool Actor::tick(bool forceDraw, Common::Rect *screenRect) {
 	}
 
 	if (needsUpdate) {
-		int nextFrameTime = timeLeft + _frameMs;
+		// timeLeft is supposed to be negative or 0 here in the original!
+		int32 nextFrameTime = timeLeft + _frameMs;
 		if (nextFrameTime <= 0) {
 			nextFrameTime = 1;
 		}
@@ -769,19 +867,21 @@ void Actor::setSetId(int setId) {
 
 	int i;
 
+	// leaving _setId for setId
 	if (_setId > 0) {
-		for (i = 0; i < (int)_vm->_gameInfo->getActorCount(); i++) {
+		for (i = 0; i < (int)_vm->_gameInfo->getActorCount(); ++i) {
 			if (_vm->_actors[i]->_id != _id && _vm->_actors[i]->_setId == _setId) {
-				_vm->_aiScripts->otherAgentExitedThisScene(i, _id);
+				_vm->_aiScripts->otherAgentExitedThisSet(i, _id);
 			}
 		}
 	}
+	// _setId updated to new (arrived in) setId
 	_setId = setId;
-	_vm->_aiScripts->enteredScene(_id, _setId);
+	_vm->_aiScripts->enteredSet(_id, _setId);
 	if (_setId > 0) {
-		for (i = 0; i < (int)_vm->_gameInfo->getActorCount(); i++) {
+		for (i = 0; i < (int)_vm->_gameInfo->getActorCount(); ++i) {
 			if (_vm->_actors[i]->_id != _id && _vm->_actors[i]->_setId == _setId) {
-				_vm->_aiScripts->otherAgentEnteredThisScene(i, _id);
+				_vm->_aiScripts->otherAgentEnteredThisSet(i, _id);
 			}
 		}
 	}
@@ -959,7 +1059,7 @@ void Actor::modifyFriendlinessToOther(int otherActorId, signed int change) {
 }
 
 void Actor::setFriendlinessToOther(int otherActorId, int friendliness) {
-	_friendlinessToOther[otherActorId] = friendliness;
+	_friendlinessToOther[otherActorId] = CLIP(friendliness, 0, 100);
 }
 
 bool Actor::checkFriendlinessAndHonesty(int otherActorId) {
@@ -978,19 +1078,19 @@ bool Actor::checkFriendlinessAndHonesty(int otherActorId) {
 }
 
 void Actor::setHonesty(int honesty) {
-	_honesty = honesty;
+	_honesty = CLIP(honesty, 0, 100);
 }
 
 void Actor::setIntelligence(int intelligence) {
-	_intelligence = intelligence;
+	_intelligence = CLIP(intelligence, 0, 100);
 }
 
 void Actor::setStability(int stability) {
-	_stability = stability;
+	_stability = CLIP(stability, 0, 100);
 }
 
 void Actor::setCombatAggressiveness(int combatAggressiveness) {
-	_combatAggressiveness = combatAggressiveness;
+	_combatAggressiveness = CLIP(combatAggressiveness, 0, 100);
 }
 
 void Actor::setInvisible(bool isInvisible) {
@@ -1047,15 +1147,18 @@ void Actor::setTarget(bool target) {
 }
 
 void Actor::setCurrentHP(int hp) {
-	_currentHP = hp;
+	_currentHP = CLIP(hp, 0, 100);
 	if (hp > 0) {
 		retire(false, 0, 0, -1);
 	}
 }
 
 void Actor::setHealth(int hp, int maxHp) {
-	_currentHP = hp;
-	_maxHP = maxHp;
+	if (hp > maxHp) {
+		hp = maxHp;
+	}
+	_currentHP = CLIP(hp,    0, 100);
+	_maxHP     = CLIP(maxHp, 0, 100);
 	if (hp > 0) {
 		retire(false, 0, 0, -1);
 	}
@@ -1083,7 +1186,7 @@ void Actor::combatModeOn(int initialState, bool rangedAttack, int enemyId, int w
 	}
 	stopWalking(false);
 	changeAnimationMode(_animationModeCombatIdle, false);
-	for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); i++) {
+	for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); ++i) {
 		Actor *otherActor = _vm->_actors[i];
 		if (i != _id && otherActor->_setId == _setId && !otherActor->_isRetired) {
 			_vm->_aiScripts->otherAgentEnteredCombatMode(i, _id, true);
@@ -1098,7 +1201,7 @@ void Actor::combatModeOff() {
 	_inCombat = false;
 	stopWalking(false);
 	changeAnimationMode(kAnimationModeIdle, false);
-	for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); i++) {
+	for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); ++i) {
 		Actor *otherActor = _vm->_actors[i];
 		if (i != _id && otherActor->_setId == _setId && !otherActor->_isRetired) {
 			_vm->_aiScripts->otherAgentEnteredCombatMode(i, _id, false);
@@ -1172,7 +1275,7 @@ void Actor::speechPlay(int sentenceId, bool voiceOver) {
 		pan = (75 * (2 *  CLIP<int>(screenPosition.x, 0, 640) - 640)) / 640; // map [0..640] to [-75..75]
 	}
 
-	_vm->_subtitles->getInGameSubsText(_id, sentenceId);
+	_vm->_subtitles->loadInGameSubsText(_id, sentenceId);
 	_vm->_subtitles->show();
 
 	_vm->_audioSpeech->playSpeech(name, pan);
@@ -1214,13 +1317,14 @@ bool Actor::hasClue(int clueId) const {
 bool Actor::copyClues(int actorId) {
 	bool newCluesAcquired = false;
 	Actor *otherActor = _vm->_actors[actorId];
-	for (int i = 0; i < (int)_vm->_gameInfo->getClueCount(); i++) {
-		if (hasClue(i) && !_clues->isPrivate(i) && otherActor->canAcquireClue(i) && !otherActor->hasClue(i)) {
+	for (int i = 0; i < (int)_vm->_gameInfo->getClueCount(); ++i) {
+		int clueId = i;
+		if (hasClue(clueId) && !_clues->isPrivate(clueId) && otherActor->canAcquireClue(clueId) && !otherActor->hasClue(clueId)) {
 			int fromActorId = _id;
 			if (_id == BladeRunnerEngine::kActorVoiceOver) {
-				fromActorId = _clues->getFromActorId(i);
+				fromActorId = _clues->getFromActorId(clueId);
 			}
-			otherActor->acquireClue(i, false, fromActorId);
+			otherActor->acquireClue(clueId, false, fromActorId);
 			newCluesAcquired = true;
 		}
 	}
@@ -1229,7 +1333,7 @@ bool Actor::copyClues(int actorId) {
 
 void Actor::acquireCluesByRelations() {
 	if (_setId >= 0 && _setId != kSetFreeSlotG && _setId != _vm->_actors[0]->_setId) {
-		for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); i++) {
+		for (int i = 0; i < (int)_vm->_gameInfo->getActorCount(); ++i) {
 			if (i != _id && _vm->_actors[i]->_setId == _setId && i && _id
 					&& checkFriendlinessAndHonesty(i)
 					&& _vm->_actors[i]->checkFriendlinessAndHonesty(_id)) {
@@ -1289,9 +1393,17 @@ bool Actor::findEmptyPositionAround(const Vector3 &startPosition, const Vector3 
 			}
 		} else { // looks like a bug as it might not find anything when there is no walkbox at this angle
 			facingLeft += 20;
+#if BLADERUNNER_ORIGINAL_BUGS
 			if (facingLeft > 1024) {
 				facingLeft -= 1024;
 			}
+#else
+			// if facingLeft + 20 == 1024 then it could cause the assertion fault
+			// in common/sinetables.cpp for SineTable::at(int index) -> assert((index >= 0) && (index < _nPoints))
+			if (facingLeft >= 1024) {
+				facingLeft -= 1024;
+			}
+#endif
 			facingLeftCounter += 20;
 		}
 
@@ -1400,7 +1512,7 @@ void Actor::save(SaveFileWriteStream &f) {
 	uint32 now = _vm->_time->getPauseStart();
 	for (int i = 0; i < kActorTimers; ++i) {
 		// this effectively stores the next timeDiff to be applied to timer i (in timerUpdate)
-		f.writeInt(now - _timersLast[i]);
+		f.writeInt(now - _timersLast[i]); // Unsigned difference is intentional
 	}
 
 	int actorCount = _vm->_gameInfo->getActorCount();
@@ -1429,7 +1541,7 @@ void Actor::load(SaveFileReadStream &f) {
 	_position = f.readVector3();
 	_facing = f.readInt();
 	_targetFacing = f.readInt();
-	_timer4RemainDefault = f.readInt();
+	_timer4RemainDefault = f.readUint32LE();
 
 	_honesty = f.readInt();
 	_intelligence = f.readInt();
@@ -1474,17 +1586,31 @@ void Actor::load(SaveFileReadStream &f) {
 	_scale = f.readFloat();
 
 	for (int i = 0; i < kActorTimers; ++i) {
-		_timersLeft[i] = f.readInt();
+		_timersLeft[i] = (int32)f.readUint32LE();
 	}
+
 	// Bugfix: Special initialization case for timer 4 (kActorTimerClueExchange) when its value is restored as 0
 	// This should be harmless, but will remedy any broken save-games where the timer 4 was saved as 0.
 	if (_timersLeft[kActorTimerClueExchange] == 0) {
 		_timersLeft[kActorTimerClueExchange] = _timer4RemainDefault;
 	}
 
+	// Bugfix: Similar to the above
+	// Special initialization case for timer 6 (kActorTimerRunningStaminaFPS) when its value is restored as 0
+	// This was due to an original game bug and it concerns only McCoy (player's actor)
+	// This should be harmless, but will remedy any broken save-games where the timer 6 was saved as 0.
+	// Also, in restored content mode we allow this counter to be 0 and only start it
+	// when McCoy's FPS get increased (starts running with sufficient speed),
+	// so the fix is not needed for RC mode
+	if (!_vm->_cutContent) {
+		if (_id == kActorMcCoy && _timersLeft[kActorTimerRunningStaminaFPS] == 0) {
+			_timersLeft[kActorTimerClueExchange] = 200;
+		}
+	}
+
 	uint32 now = _vm->_time->getPauseStart();
 	for (int i = 0; i < kActorTimers; ++i) {
-		_timersLast[i] = now - f.readInt();
+		_timersLast[i] = now - f.readUint32LE(); // we require an unsigned difference here, since _timersLast is essentially keeping time
 	}
 
 	int actorCount = _vm->_gameInfo->getActorCount();

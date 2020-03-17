@@ -39,12 +39,14 @@ class CryOmni3DEngine;
 namespace Versailles {
 class Versailles_Documentation {
 public:
-	Versailles_Documentation() : _engine(nullptr), _fontManager(nullptr), _messages(nullptr),
-		_linksData(nullptr), _linksSize(0) { }
-	~Versailles_Documentation() { delete _linksData; }
+	Versailles_Documentation() : _engine(nullptr), _fontManager(nullptr), _sprites(nullptr),
+		_messages(nullptr), _linksData(nullptr), _linksSize(0),
+		_currentInTimeline(false), _currentMapLayout(false), _currentHasMap(false) { }
+	~Versailles_Documentation() { delete [] _linksData; }
 
 	void init(const Sprites *sprites, FontManager *fontManager, const Common::StringArray *messages,
-	          CryOmni3DEngine *engine);
+	          CryOmni3DEngine *engine, const Common::String &allDocsFileName,
+	          const Common::String &linksDocsFileName);
 	void handleDocArea();
 	void handleDocInGame(const Common::String &record);
 
@@ -93,12 +95,12 @@ private:
 	};
 	static const TimelineEntry kTimelineEntries[];
 
-	static char *getDocPartAddress(char *start, char *end, const char *patterns[]);
-	static const char *getDocTextAddress(char *start, char *end);
-	static const char *getRecordTitle(char *start, char *end);
-	static const char *getRecordSubtitle(char *start, char *end);
-	static const char *getRecordCaption(char *start, char *end);
-	static void getRecordHyperlinks(char *start, char *end, Common::StringArray &hyperlinks);
+	char *getDocPartAddress(char *start, char *end, const char *patterns[]);
+	const char *getDocTextAddress(char *start, char *end);
+	const char *getRecordTitle(char *start, char *end);
+	const char *getRecordSubtitle(char *start, char *end);
+	const char *getRecordCaption(char *start, char *end);
+	void getRecordHyperlinks(char *start, char *end, Common::StringArray &hyperlinks);
 
 	Common::String getRecordTitle(const Common::String &record);
 	Common::String getRecordData(const Common::String &record, Common::String &title,
@@ -109,8 +111,8 @@ private:
 	void loadLinksFile();
 	void getLinks(const Common::String &record, Common::Array<LinkInfo> &links);
 
-	static const char *kAllDocsFile;
-	static const char *kLinksDocsFile;
+	Common::String _allDocsFileName;
+	Common::String _linksDocsFileName;
 
 	static const uint kPopupMenuMargin = 5;
 
@@ -118,6 +120,8 @@ private:
 	FontManager *_fontManager;
 	const Sprites *_sprites;
 	const Common::StringArray *_messages;
+
+	bool _multilineAttributes;
 
 	Common::StringArray _recordsOrdered;
 	Common::HashMap<Common::String, RecordInfo> _records;

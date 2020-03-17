@@ -118,7 +118,7 @@ bool SceneScriptNR02::ClickedOnItem(int itemId, bool a2) {
 	if (itemId == kItemGordosLighterReplicant
 	 || itemId == kItemGordosLighterHuman
 	) {
-		if(!Loop_Actor_Walk_To_XYZ(kActorMcCoy, 109.38f, -24.0f, 420.5f, 0, true, false, false)) {
+		if (!Loop_Actor_Walk_To_XYZ(kActorMcCoy, 109.38f, -24.0f, 420.5f, 0, true, false, false)) {
 			Actor_Face_Heading(kActorMcCoy, 423, false);
 			if (itemId == kItemGordosLighterReplicant) {
 				Item_Remove_From_World(kItemGordosLighterReplicant);
@@ -251,7 +251,7 @@ void SceneScriptNR02::playNextMusic() {
 	} else if (track == 2) {
 		Music_Play(kMusicTaffy4, 41, 0, 2, -1, 0, 0);
 	}
-	track++;
+	++track;
 	if (track > 2) {
 		track = 0;
 	}

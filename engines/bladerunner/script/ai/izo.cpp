@@ -106,14 +106,48 @@ void AIScriptIzo::CompletedMovementTrack() {
 		return; //true;
 
 	case kGoalIzoRC03Walk:
+		// fall through
 	case kGoalIzoRC03Run:
 		Actor_Set_Goal_Number(kActorIzo, kGoalIzoRC03RunAway);
+#if BLADERUNNER_ORIGINAL_BUGS
 		Actor_Set_Goal_Number(kActorSteele, kGoalSteeleApprehendIzo);
+		// causes unwanted repetition of the apprehend
+		// also may cause a freeze if McCoy exits the scene
 		Scene_Exits_Enable();
+#else
+		// prevent re-apprehending of Izo
+		if (Actor_Query_Goal_Number(kActorIzo) != kGoalIzoGetArrested
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoGotArrested
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoRC03RanAwayDone
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoDie
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoDieHidden
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoEscape
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleApprehendIzo
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleArrestIzo
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleIzoBlockedByMcCoy
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleShootIzo
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleLeaveRC03
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleGoToPoliceStation
+		) {
+			Actor_Set_Goal_Number(kActorSteele, kGoalSteeleApprehendIzo);
+		}
+#endif // BLADERUNNER_ORIGINAL_BUGS
 		return; //true;
 
 	case kGoalIzoRC03RunAway:
+#if BLADERUNNER_ORIGINAL_BUGS
+		// Enabling exits here will cause in some cases
+		// McCoy to be able to exit the scene if player clicks fast
+		// in which case the apprehending of Izo will take place off-screen
+		// and the player will listen to it as if it happened in the current scene
 		Scene_Exits_Enable();
+#else
+		// In some occasions Izo will be block and won't reach exactly the 174 waypoint
+		// but he'll stand still at a distance from it (this would still trigger the CompletedMovementTrack() )
+		// In this case, Izo would remain stuck standing still in RC03 forever (in Act 2)
+		// This makes him teleport elsewhere (behavior similar to when he's arrested)
+		Actor_Set_Goal_Number(kActorIzo, kGoalIzoRC03RanAwayDone);
+#endif // BLADERUNNER_ORIGINAL_BUGS
 		return; //true;
 
 	case kGoalIzoGetArrested:
@@ -171,22 +205,41 @@ void AIScriptIzo::ClickedByPlayer() {
 		Actor_Says(kActorMcCoy, 2715, 14);
 		Actor_Set_Goal_Number(kActorIzo, kGoalIzoRC03Run);
 		Actor_Says(kActorMcCoy, 1800, 14);
+#if BLADERUNNER_ORIGINAL_BUGS
 		Actor_Set_Goal_Number(kActorSteele, kGoalSteeleApprehendIzo);
+#else
+		// prevent re-apprehending of Izo
+		if (Actor_Query_Goal_Number(kActorIzo) != kGoalIzoGetArrested
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoGotArrested
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoRC03RanAwayDone
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoDie
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoDieHidden
+		    && Actor_Query_Goal_Number(kActorIzo) != kGoalIzoEscape
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleApprehendIzo
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleArrestIzo
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleIzoBlockedByMcCoy
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleShootIzo
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleLeaveRC03
+		    && Actor_Query_Goal_Number(kActorSteele) != kGoalSteeleGoToPoliceStation
+		) {
+			Actor_Set_Goal_Number(kActorSteele, kGoalSteeleApprehendIzo);
+		}
+#endif // BLADERUNNER_ORIGINAL_BUGS
 		return; //true;
 	}
 
 	return; //false;
 }
 
-void AIScriptIzo::EnteredScene(int sceneId) {
+void AIScriptIzo::EnteredSet(int setId) {
 	// return false;
 }
 
-void AIScriptIzo::OtherAgentEnteredThisScene(int otherActorId) {
+void AIScriptIzo::OtherAgentEnteredThisSet(int otherActorId) {
 	// return false;
 }
 
-void AIScriptIzo::OtherAgentExitedThisScene(int otherActorId) {
+void AIScriptIzo::OtherAgentExitedThisSet(int otherActorId) {
 	// return false;
 }
 
@@ -266,6 +319,7 @@ bool AIScriptIzo::GoalChanged(int currentGoalNumber, int newGoalNumber) {
 	 || newGoalNumber == kGoalIzoDie
 	 || newGoalNumber == kGoalIzoDieHidden
 	 || newGoalNumber == kGoalIzoGotArrested
+	 || newGoalNumber == kGoalIzoRC03RanAwayDone
 	 || newGoalNumber == kGoalIzoEscape
 	) {
 		Spinner_Set_Selectable_Destination_Flag(kSpinnerDestinationDNARow, true);
@@ -304,8 +358,8 @@ bool AIScriptIzo::GoalChanged(int currentGoalNumber, int newGoalNumber) {
 
 	case kGoalIzoRunToRC03:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append_Run(kActorIzo, 153, 0);
-		AI_Movement_Track_Append(kActorIzo, 154, 0);
+		AI_Movement_Track_Append_Run(kActorIzo, 153, 0); // kSetUG02
+		AI_Movement_Track_Append(kActorIzo, 154, 0);     // kSetRC03
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
@@ -314,40 +368,52 @@ bool AIScriptIzo::GoalChanged(int currentGoalNumber, int newGoalNumber) {
 
 	case kGoalIzoEscape:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 153, 0);
-		AI_Movement_Track_Append(kActorIzo, 39, 120);
-		AI_Movement_Track_Append(kActorIzo, 33, 0);
+		AI_Movement_Track_Append(kActorIzo, 153, 0);  // kSetUG02
+		AI_Movement_Track_Append(kActorIzo, 39, 120); // kSetFreeSlotG
+		AI_Movement_Track_Append(kActorIzo, 33, 0);   // kSetFreeSlotA
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case kGoalIzoRC03Walk:
 		Game_Flag_Set(kFlagDNARowAvailable);
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 349, 0);
+		AI_Movement_Track_Append(kActorIzo, 349, 0); // kSetRC03
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case kGoalIzoRC03Run:
 		Game_Flag_Set(kFlagDNARowAvailable);
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append_Run(kActorIzo, 349, 0);
+		AI_Movement_Track_Append_Run(kActorIzo, 349, 0); // kSetRC03
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case kGoalIzoRC03RunAway:
 		Game_Flag_Set(kFlagDNARowAvailable);
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append_Run(kActorIzo, 174, 0);
+#if BLADERUNNER_ORIGINAL_BUGS
+		AI_Movement_Track_Append_Run(kActorIzo, 174, 0); // kSetRC03
+#else
+		// set a waypoint near 174 but not exactly same coordinates
+		// to make colliding with Steele or McCoy less likely
+		World_Waypoint_Set(553, kSetRC03, 346.96f, -4.01f, 419.16f);
+
+		// prevent Izo from getting stuck in-scene RC03
+		// Note: this alone won't work as a fix;
+		// it still requires the additional fix in CompletedMovementTrack()
+		AI_Movement_Track_Append_Run(kActorIzo, 553, 0); // kSetRC03
+		AI_Movement_Track_Append_Run(kActorIzo, 33, 0);  // kSetFreeSlotA
+#endif // BLADERUNNER_ORIGINAL_BUGS
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case 115:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 39, 60);
+		AI_Movement_Track_Append(kActorIzo, 39, 60);     // kSetFreeSlotG
 		if (Game_Flag_Query(kFlagIzoIsReplicant)) {
-			AI_Movement_Track_Append(kActorIzo, 33, 0);
+			AI_Movement_Track_Append(kActorIzo, 33, 0);  // kSetFreeSlotA
 		} else {
-			AI_Movement_Track_Append(kActorIzo, 34, 0);
+			AI_Movement_Track_Append(kActorIzo, 34, 0);  // kSetFreeSlotB
 		}
 		AI_Movement_Track_Repeat(kActorIzo);
 		Game_Flag_Set(kFlagDNARowAvailable);
@@ -356,30 +422,30 @@ bool AIScriptIzo::GoalChanged(int currentGoalNumber, int newGoalNumber) {
 	case kGoalIzoGetArrested:
 		Actor_Set_Targetable(kActorIzo, false);
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 174, 0);
-		AI_Movement_Track_Append(kActorIzo, 33, 0);
+		AI_Movement_Track_Append(kActorIzo, 174, 0); // kSetRC03
+		AI_Movement_Track_Append(kActorIzo, 33, 0);  // kSetFreeSlotA
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case kGoalIzoGoToHC01:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 39, Random_Query(15, 30));
-		AI_Movement_Track_Append(kActorIzo, 149, 0);
-		AI_Movement_Track_Append(kActorIzo, 323, Random_Query(90, 120));
+		AI_Movement_Track_Append(kActorIzo, 39, Random_Query(15, 30));   // kSetFreeSlotG
+		AI_Movement_Track_Append(kActorIzo, 149, 0);                     // kSetHC01_HC02_HC03_HC04
+		AI_Movement_Track_Append(kActorIzo, 323, Random_Query(90, 120)); // kSetHC01_HC02_HC03_HC04
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case kGoalIzoGoToHC03:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 149, 0);
+		AI_Movement_Track_Append(kActorIzo, 149, 0);                       // kSetHC01_HC02_HC03_HC04
 		if (Game_Flag_Query(kFlagIzoIsReplicant)) {
-			AI_Movement_Track_Append(kActorIzo, 39, 5);
-			AI_Movement_Track_Append(kActorIzo, 34, Random_Query(10, 20));
-			AI_Movement_Track_Append(kActorIzo, 39, 5);
-			AI_Movement_Track_Append(kActorIzo, 33, Random_Query(10, 20));
+			AI_Movement_Track_Append(kActorIzo, 39, 5);                    // kSetFreeSlotG
+			AI_Movement_Track_Append(kActorIzo, 34, Random_Query(10, 20)); // kSetFreeSlotB
+			AI_Movement_Track_Append(kActorIzo, 39, 5);                    // kSetFreeSlotG
+			AI_Movement_Track_Append(kActorIzo, 33, Random_Query(10, 20)); // kSetFreeSlotA
 		} else {
-			AI_Movement_Track_Append(kActorIzo, 39, Random_Query(5, 15));
-			AI_Movement_Track_Append(kActorIzo, 34, Random_Query(20, 40));
+			AI_Movement_Track_Append(kActorIzo, 39, Random_Query(5, 15));  // kSetFreeSlotG
+			AI_Movement_Track_Append(kActorIzo, 34, Random_Query(20, 40)); // kSetFreeSlotB
 		}
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
@@ -388,15 +454,17 @@ bool AIScriptIzo::GoalChanged(int currentGoalNumber, int newGoalNumber) {
 		AI_Movement_Track_Flush(kActorIzo);
 		return true;
 
+	case kGoalIzoRC03RanAwayDone:
+		// fall through
 	case kGoalIzoGotArrested:
 		Game_Flag_Set(kFlagDNARowAvailable);
 		Actor_Put_In_Set(kActorIzo, kSetFreeSlotA);
-		Actor_Set_At_Waypoint(kActorIzo, 33, 0);
+		Actor_Set_At_Waypoint(kActorIzo, 33, 0); // kSetFreeSlotA
 		return true;
 
 	case kGoalIzoDieHidden:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 41, 0);
+		AI_Movement_Track_Append(kActorIzo, 41, 0); // kSetFreeSlotI
 		AI_Movement_Track_Repeat(kActorIzo);
 		Actor_Set_Goal_Number(kActorIzo, 999);
 		return true;
@@ -430,14 +498,14 @@ bool AIScriptIzo::GoalChanged(int currentGoalNumber, int newGoalNumber) {
 
 	case 301:
 		AI_Movement_Track_Flush(kActorIzo);
-		AI_Movement_Track_Append(kActorIzo, 34, 1);
+		AI_Movement_Track_Append(kActorIzo, 34, 1); // kSetFreeSlotB
 		AI_Movement_Track_Repeat(kActorIzo);
 		return true;
 
 	case 400:
 		AI_Movement_Track_Flush(kActorIzo);
 		Actor_Put_In_Set(kActorIzo, kSetFreeSlotA);
-		Actor_Set_At_Waypoint(kActorIzo, 33, 0);
+		Actor_Set_At_Waypoint(kActorIzo, 33, 0); // kSetFreeSlotA
 		return true;
 
 	case 999:
@@ -457,7 +525,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 	case 0:
 		if (_var4 == 1) {
 			*animation = 298;
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(298)) {
 				_animationFrame = 0;
 				_var4 = 0;
@@ -465,7 +533,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 		} else if (_var4 == 0) {
 			*animation = 297;
 			if (_var3) {
-				_var3--;
+				--_var3;
 			} else {
 				_animationFrame += _var2;
 				if (_animationFrame < 0) {
@@ -496,7 +564,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 			_flag = 0;
 		} else {
 			*animation = 299;
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(299)) {
 				_animationFrame = 0;
 			}
@@ -510,7 +578,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 	case 6:
 	case 7:
 		*animation = _animationState + 298;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(*animation)) {
 			_animationFrame = 0;
 			_animationState = 1;
@@ -520,7 +588,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 8:
 		*animation = 277;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(277)) {
 			_animationFrame = 0;
 		}
@@ -528,7 +596,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 9:
 		*animation = 287;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(287)) {
 			_animationFrame = 0;
 			_animationState = 8;
@@ -538,7 +606,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 10:
 		*animation = 288;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(288)) {
 			*animation = 297;
 			_animationFrame = 0;
@@ -549,7 +617,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 11:
 		*animation = 289;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame == 6) {
 			int snd;
 			if (Random_Query(1, 2) == 1) {
@@ -572,7 +640,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 			_animationFrame = 0;
 			_animationState = 8;
 			*animation = 277;
-			Actor_Change_Animation_Mode(kActorIzo, 4);
+			Actor_Change_Animation_Mode(kActorIzo, kAnimationModeCombatIdle);
 		}
 		break;
 
@@ -592,19 +660,19 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 		if (_animationState == 17) {
 			*animation = 281;
 		}
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(*animation)) {
 			_animationFrame = 0;
 			_animationState = 8;
 			*animation = 277;
-			Actor_Change_Animation_Mode(kActorIzo, 4);
+			Actor_Change_Animation_Mode(kActorIzo, kAnimationModeCombatIdle);
 		}
 		break;
 
 	case 14:
 	case 15:
 		*animation = _animationFrame + 280;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= 2
 		 && (Actor_Query_Goal_Number(kActorIzo) == kGoalIzoRC03Walk
 		  || Actor_Query_Goal_Number(kActorIzo) == kGoalIzoRC03Run
@@ -622,7 +690,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 				_animationFrame = 0;
 				_animationState = 0;
 				_var4 = 0;
-				Actor_Change_Animation_Mode(kActorIzo, 0);
+				Actor_Change_Animation_Mode(kActorIzo, kAnimationModeIdle);
 			}
 		}
 		break;
@@ -635,7 +703,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 		if (_animationState == 19) {
 			*animation = 296;
 		}
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame > Slice_Animation_Query_Number_Of_Frames(*animation) - 1) {
 			_animationFrame = Slice_Animation_Query_Number_Of_Frames(*animation) - 1;
 			_animationState = 30;
@@ -682,7 +750,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 		if (_animationState == 28) {
 			*animation = 306;
 		}
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(*animation)) {
 			_animationFrame = 0;
 		}
@@ -695,7 +763,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 31:
 		*animation = 308;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(308)) {
 			_animationFrame = 0;
 		}
@@ -703,7 +771,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 32:
 		*animation = 309;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(309)) {
 			_animationFrame = 0;
 			_animationState = 31;
@@ -714,7 +782,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 	case 33:
 		*animation = 310;
 		if (_animationFrame || !_flag) {
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(310)) {
 				_animationFrame = 0;
 			}
@@ -727,7 +795,7 @@ bool AIScriptIzo::UpdateAnimation(int *animation, int *frame) {
 
 	case 34:
 		*animation = 311;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame == 6) {
 			Scene_Loop_Set_Default(0); // // HC01 - MainLoop
 			Scene_Loop_Start_Special(kSceneLoopModeOnce, 2, true); // HC01 - IzoFlashLoop
@@ -1120,7 +1188,7 @@ void AIScriptIzo::modifyWaypoints() {
 		break;
 
 	default:
-		AI_Movement_Track_Append(kActorIzo, 34, 60);
+		AI_Movement_Track_Append(kActorIzo, 34, 60); // kSetFreeSlotB
 		break;
 	}
 }

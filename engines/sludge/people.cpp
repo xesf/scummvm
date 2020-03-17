@@ -566,7 +566,7 @@ bool PeopleManager::walkMe(OnScreenPerson *thisPerson, bool move) {
 		yDiff = (thisPerson->thisStepY - thisPerson->y) * 2;
 		s = thisPerson->scale * thisPerson->walkSpeed;
 		if (s < 0.2)
-			s = 0.2;
+			s = (float)0.2;
 
 		maxDiff = (ABS(xDiff) >= ABS(yDiff)) ? ABS(xDiff) : ABS(yDiff);
 
@@ -837,7 +837,7 @@ void PeopleManager::killMostPeople() {
 	for (OnScreenPersonList::iterator it = _allPeople->begin(); it != _allPeople->end(); ++it) {
 		if (!((*it)->extra & EXTRA_NOREMOVE)) {
 			OnScreenPerson *killPeople = (*it);
-			_allPeople->reverse_erase(it);
+			it = _allPeople->reverse_erase(it);
 
 			// Gone from the list... now free some memory
 			if (killPeople->continueAfterWalking)

@@ -54,14 +54,14 @@ void Combat::reset() {
 	_ammoDamage[1] = 20;
 	_ammoDamage[2] = 30;
 
-	for (int i = 0; i < kSoundCount; i++) {
+	for (int i = 0; i < kSoundCount; ++i) {
 		_hitSoundId[i] = -1;
 		_missSoundId[i] = -1;
 	}
 }
 
 void Combat::activate() {
-	if(_enabled) {
+	if (_enabled) {
 		_vm->_playerActor->combatModeOn(-1, true, -1, -1, kAnimationModeCombatIdle, kAnimationModeCombatWalk, kAnimationModeCombatRun, -1, -1, -1, _vm->_combat->_ammoDamage[_vm->_settings->getAmmoType()], 0, false);
 		_active = true;
 	}
@@ -158,6 +158,11 @@ void Combat::shoot(int actorId, Vector3 &to, int screenX) {
 		if (actor->inCombat()) {
 			actor->combatModeOff();
 		}
+#if BLADERUNNER_ORIGINAL_BUGS
+#else
+		// make sure the dead enemy won't pick a pending movement track and re-spawn
+		actor->_movementTrack->flush();
+#endif
 		actor->stopWalking(false);
 		actor->changeAnimationMode(kAnimationModeDie, false);
 

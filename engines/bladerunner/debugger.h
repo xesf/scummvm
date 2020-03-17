@@ -55,7 +55,7 @@ enum DebuggerDrawnObjectType {
 class Debugger : public GUI::Debugger{
 	BladeRunnerEngine *_vm;
 
-	static const int kMaxSpecificObjectsDrawnCount = 100;
+	static const uint kMaxSpecificObjectsDrawnCount = 100;
 
 	struct DebuggerDrawnObject {
 		int                     sceneId;
@@ -88,7 +88,7 @@ public:
 	bool _showMouseClickInfo;
 
 	Debugger(BladeRunnerEngine *vm);
-	~Debugger();
+	~Debugger() override;
 
 	bool cmdAnimation(int argc, const char **argv);
 	bool cmdHealth(int argc, const char **argv);
@@ -113,6 +113,7 @@ public:
 	bool cmdItem(int argc, const char **argv);
 	bool cmdRegion(int argc, const char **argv);
 	bool cmdClick(int argc, const char **argv);
+	bool cmdDifficulty(int argc, const char **argv);
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
 	bool cmdEffect(int argc, const char **argv);
@@ -120,6 +121,7 @@ public:
 	bool cmdList(int argc, const char **argv);
 	bool cmdVk(int argc, const char **argv);
 
+	Common::String getDifficultyDescription(int difficultyValue);
 	void drawDebuggerOverlay();
 
 	void drawBBox(Vector3 start, Vector3 end, View *view, Graphics::Surface *surface, int color);

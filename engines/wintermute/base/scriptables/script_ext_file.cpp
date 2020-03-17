@@ -199,7 +199,7 @@ bool SXFile::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 	else if (strcmp(name, "Delete") == 0) {
 		stack->correctParams(0);
 		close();
-		error("SXFile-Method: \"Delete\" not supported");
+		warning("SXFile-Method: \"Delete\" not supported");
 		//stack->pushBool(BasePlatform::deleteFile(_filename) != false);
 		stack->pushBool(false);
 		return STATUS_OK;
@@ -213,9 +213,11 @@ bool SXFile::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 		/* const char *dest = */ stack->pop()->getString();
 		/* bool overwrite = */ stack->pop()->getBool(true);
 
-		close();
-		error("SXFile-Method: Copy not supported");
-		//stack->pushBool(BasePlatform::copyFile(_filename, Dest, !Overwrite) != false);
+		// Known game that need this: 
+		// * Space Madness (to copy bonus wallpapers from data.dcp to /saves/ folder)
+		// * games by Rootfix intertainment (to save temporary screenshot as savegame screenshot)
+		warning("SXFile-Method: Copy not supported");
+
 		stack->pushBool(false);
 		return STATUS_OK;
 	}
@@ -346,7 +348,6 @@ bool SXFile::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 			writeLine = Common::String::format("%s", line);
 		}
 		_writeFile->writeString(writeLine);
-		_writeFile->writeByte(0);
 		stack->pushBool(true);
 
 		return STATUS_OK;
@@ -815,9 +816,8 @@ bool SXFile::persist(BasePersistenceManager *persistMgr) {
 	return STATUS_OK;
 }
 
-// Should replace fopen(..., "wb+") and fopen(..., "w+")
 Common::WriteStream *SXFile::openForWrite(const Common::String &filename, bool binary) {
-	error("SXFile::openForWrite - WriteFiles not supported");
+	return BaseFileManager::getEngineInstance()->openFileForWrite(_filename);
 }
 
 // Should replace fopen(..., "ab+") and fopen(..., "a+")

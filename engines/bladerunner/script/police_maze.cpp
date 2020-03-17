@@ -32,6 +32,7 @@
 #include "bladerunner/time.h"
 #include "bladerunner/subtitles.h"
 #include "bladerunner/debugger.h"
+#include "bladerunner/settings.h"
 // ----------------------
 // Maze point system info
 // ----------------------
@@ -90,20 +91,20 @@ PoliceMaze::PoliceMaze(BladeRunnerEngine *vm) : ScriptBase(vm) {
 	_pm_var1 = 0;
 	_pm_var2 = 0;
 
-	for (int i = 0; i < kNumMazeTracks; i++) {
+	for (int i = 0; i < kNumMazeTracks; ++i) {
 		_tracks[i] = new PoliceMazeTargetTrack(vm);
 	}
 }
 
 PoliceMaze::~PoliceMaze() {
-	for (int i = 0; i < kNumMazeTracks; i++) {
+	for (int i = 0; i < kNumMazeTracks; ++i) {
 		delete _tracks[i];
 		_tracks[i] = nullptr;
 	}
 }
 
 void PoliceMaze::clear(bool isLoadingGame) {
-	for (int i = 0; i < kNumMazeTracks; i++) {
+	for (int i = 0; i < kNumMazeTracks; ++i) {
 		if (_tracks[i]->isPresent()) {
 			_tracks[i]->clear(isLoadingGame);
 		}
@@ -119,10 +120,10 @@ void PoliceMaze::setPauseState(bool state) {
 	warning("PAUSE: %d", state);
 	_isPaused = state;
 
-	uint32 t = _vm->_time->current();
+	uint32 timeNow = _vm->_time->current();
 
-	for (int i = 0; i < kNumMazeTracks; i++) {
-		_tracks[i]->setTime(t);
+	for (int i = 0; i < kNumMazeTracks; ++i) {
+		_tracks[i]->setTime(timeNow);
 	}
 }
 
@@ -140,12 +141,12 @@ void PoliceMaze::tick() {
 		return;
 	}
 
-	for (int i = 0; i < kNumMazeTracks; i++) {
+	for (int i = 0; i < kNumMazeTracks; ++i) {
 		_tracks[i]->tick();
 	}
 
 	bool notFound = true;
-	for (int i = 0; i < kNumMazeTracks; i++) {
+	for (int i = 0; i < kNumMazeTracks; ++i) {
 		if (!_tracks[i]->isPaused()) {
 			notFound = false;
 			break;
@@ -233,7 +234,7 @@ void PoliceMazeTargetTrack::add(int trackId, float startX, float startY, float s
 		double coefY = (endY - startY) * coef;
 		double coefZ = (endZ - startZ) * coef;
 
-		for (int i = 0; i < steps - 1; i++) {
+		for (int i = 0; i < steps - 1; ++i) {
 			_points[i].x = i * coefX + startX;
 			_points[i].y = i * coefY + startY;
 			_points[i].z = i * coefZ + startZ;
@@ -255,22 +256,36 @@ bool PoliceMazeTargetTrack::tick() {
 
 	uint32 oldTime = _time;
 	_time = _vm->_time->current();
-	int32 timeDiff = _time - oldTime;
-	_timeLeftUpdate -= timeDiff;
+	uint32 timeDiff = _time - oldTime;  // unsigned difference is intentional
+	_timeLeftUpdate = _timeLeftUpdate - (int32)timeDiff; // should be ok
 
 	if (_timeLeftUpdate > 0) {
 		return false;
 	}
 
-	_timeLeftUpdate = 66;
+#if BLADERUNNER_ORIGINAL_BUGS
+#else
+	// here _timeLeftUpdate is <= 0
+	if (_vm->_settings->getDifficulty() > kGameDifficultyEasy) {
+		timeDiff = abs(_timeLeftUpdate);
+	}
+#endif // BLADERUNNER_ORIGINAL_BUGS
+	_timeLeftUpdate = 66; // update the target track 15 times per second
 
 	if (_isPaused) {
 		return false;
 	}
 
 	if (_isWaiting) {
+#if BLADERUNNER_ORIGINAL_BUGS
 		_timeLeftWait -= timeDiff;
-
+#else
+		if (_vm->_settings->getDifficulty() == kGameDifficultyEasy) {
+			_timeLeftWait -= timeDiff; // original behavior
+		} else {
+			_timeLeftWait = _timeLeftWait - (int32)(timeDiff + _timeLeftUpdate); // this deducts an amount >= 66 // should be ok
+		}
+#endif // BLADERUNNER_ORIGINAL_BUGS
 		if (_timeLeftWait > 0) {
 			return true;
 		}
@@ -311,10 +326,10 @@ bool PoliceMazeTargetTrack::tick() {
 
 	if (_isMoving) {
 		if (_pointIndex < _pointTarget) {
-			_pointIndex++;
+			++_pointIndex;
 			advancePoint = true;
 		} else if (_pointIndex > _pointTarget) {
-			_pointIndex--;
+			--_pointIndex;
 			advancePoint = true;
 		} else {
 			_isMoving = 0;
@@ -331,7 +346,7 @@ bool PoliceMazeTargetTrack::tick() {
 	bool cont = true;
 
 	while (cont) {
-		_dataIndex++;
+		++_dataIndex;
 
 		switch (_data[_dataIndex - 1]) {
 		case kPMTIActivate:
@@ -364,7 +379,7 @@ bool PoliceMazeTargetTrack::tick() {
 		case kPMTIShoot:
 			{
 				int soundId = _data[_dataIndex++];
-				_dataIndex++; // second argument is not used
+				++_dataIndex; // second argument is not used
 #if BLADERUNNER_DEBUG_CONSOLE
 				debug("ItemId: %3i, Shoot, SoundId: %i", _itemId, soundId);
 #endif
@@ -510,6 +525,9 @@ bool PoliceMazeTargetTrack::tick() {
 				case 3:
 					_vm->_policeMaze->_tracks[trackId3]->resetPaused();
 					break;
+
+				default:
+					break;
 				}
 
 				break;
@@ -589,6 +607,9 @@ bool PoliceMazeTargetTrack::tick() {
 				debug("ItemId: %3i, Wait random, Min: %i, Max: %i", _itemId, randomMin, randomMax);
 #endif
 				_timeLeftWait = Random_Query(randomMin, randomMax);
+#if BLADERUNNER_DEBUG_CONSOLE
+				debug("ItemId: %3i, Wait for = %i", _itemId, _timeLeftWait);
+#endif
 				_isWaiting = true;
 
 				cont = false;

@@ -323,7 +323,7 @@ void SceneScriptNR05::talkToEarlyQ() {
 	int answer = Dialogue_Menu_Query_Input();
 	Dialogue_Menu_Disappear();
 
-	switch(answer){
+	switch (answer) {
 	case 890: // JEWELRY
 		Actor_Says(kActorMcCoy, 3505, kAnimationModeTalk);
 		Actor_Modify_Friendliness_To_Other(kActorEarlyQ, kActorMcCoy, -1);
@@ -411,7 +411,7 @@ void SceneScriptNR05::playNextMusic() {
 		} else if (track == 2) {
 			Music_Play(kMusicArkDnce1, 41, -80, 2, -1, 0, 0);
 		}
-		track++;
+		++track;
 		if (track > 2) {
 			track = 0;
 		}

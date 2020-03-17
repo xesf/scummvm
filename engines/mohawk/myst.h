@@ -172,12 +172,11 @@ public:
 	VideoEntryPtr findVideo(const Common::String &name, MystStack stack);
 	void playMovieBlocking(const Common::String &name, MystStack stack, uint16 x, uint16 y);
 	void playFlybyMovie(MystStack stack);
+	void playSkippableMovie(const VideoEntryPtr &video, bool looping);
 	void waitUntilMovieEnds(const VideoEntryPtr &video);
 	Common::String selectLocalizedMovieFilename(const Common::String &movieName);
 
 	void playSoundBlocking(uint16 id);
-
-	GUI::Debugger *getDebugger() override { return _console; }
 
 	/**
 	 * Is the game currently interactive
@@ -189,9 +188,13 @@ public:
 	bool canLoadGameStateCurrently() override;
 	bool canSaveGameStateCurrently() override;
 	Common::Error loadGameState(int slot) override;
-	Common::Error saveGameState(int slot, const Common::String &desc) override;
-	void tryAutoSaving();
+	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
+	Common::String getSaveStateName(int slot) const override {
+		return Common::String::format("myst-%03d.mys", slot);
+	}
+
 	bool hasFeature(EngineFeature f) const override;
+	static Common::Array<Common::Keymap *> initKeymaps(const char *target);
 
 	void resumeFromMainMenu();
 
@@ -200,7 +203,6 @@ public:
 	void runOptionsDialog();
 
 private:
-	MystConsole *_console;
 	MystOptionsDialog *_optionsDialog;
 	ResourceCache _cache;
 
@@ -208,12 +210,12 @@ private:
 
 	MystCardPtr _card;
 	MystCardPtr _prevCard;
-	uint32 _lastSaveTime;
 
 	bool hasGameSaveSupport() const;
 	void pauseEngineIntern(bool pause) override;
 
 	void goToMainMenu();
+	bool isGameStarted() const;
 
 	void dropPage();
 

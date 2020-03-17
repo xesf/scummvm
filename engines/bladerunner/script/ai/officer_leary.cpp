@@ -122,7 +122,6 @@ bool AIScriptOfficerLeary::Update() {
 		switch (Actor_Query_Which_Set_In(kActorOfficerLeary)) {
 		case kSetDR01_DR02_DR04:
 			if (Actor_Query_Which_Set_In(kActorOfficerLeary) == Player_Query_Current_Set()) {
-//				asdf restore
 				Actor_Set_Goal_Number(kActorOfficerLeary, kGoalOfficerLearyAttackMcCoyAct4);
 				Non_Player_Actor_Combat_Mode_On(kActorOfficerLeary, kActorCombatStateIdle, true, kActorMcCoy, 0, kAnimationModeCombatIdle, kAnimationModeCombatWalk, kAnimationModeCombatRun, -1, -1, -1, 10, 300, false);
 			}
@@ -164,21 +163,23 @@ bool AIScriptOfficerLeary::Update() {
 			}
 			break;
 		case kSetUG04:
+			// fall through
 		case kSetUG05:
+			// fall through
 		case kSetUG06:
 			if (Actor_Query_Which_Set_In(kActorOfficerLeary) == Player_Query_Current_Set()) {
 				Actor_Set_Goal_Number(kActorOfficerLeary, kGoalOfficerLearyAttackMcCoyAct4);
 				Non_Player_Actor_Combat_Mode_On(kActorOfficerLeary, kActorCombatStateIdle, true, kActorMcCoy, 10, kAnimationModeCombatIdle, kAnimationModeCombatWalk, kAnimationModeCombatRun, -1, -1, -1, 10, 300, false);
 			}
 			break;
-// asdf Missing UG07 case -  would be a type 10 combat, 12 flee?
+// TODO Missing UG07 case -  would be a type 10 combat, 12 flee?
 		case kSetUG08:
 			if (Actor_Query_Which_Set_In(kActorOfficerLeary) == Player_Query_Current_Set()) {
 				Actor_Set_Goal_Number(kActorOfficerLeary, kGoalOfficerLearyAttackMcCoyAct4);
 				Non_Player_Actor_Combat_Mode_On(kActorOfficerLeary, kActorCombatStateIdle, true, kActorMcCoy, 13, kAnimationModeCombatIdle, kAnimationModeCombatWalk, kAnimationModeCombatRun, -1, -1, -1, 10, 300, false);
 			}
 			break;
-// asdf Missing UG09 case -  would be a type ?? //
+// TODO Missing UG09 case -  would be a type ?? //
 		case kSetUG10:
 			if (Actor_Query_Which_Set_In(kActorOfficerLeary) == Player_Query_Current_Set()) {
 				Actor_Set_Goal_Number(kActorOfficerLeary, kGoalOfficerLearyAttackMcCoyAct4);
@@ -247,7 +248,7 @@ void AIScriptOfficerLeary::CompletedMovementTrack() {
 	}
 	if (goal == 308) {
 		// goal 308 (and 309) are never triggered in the original code
-		Actor_Change_Animation_Mode(kActorOfficerLeary, 4);
+		Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeCombatIdle);
 		Actor_Face_Actor(kActorOfficerLeary, kActorMcCoy, true);
 		Actor_Set_Goal_Number(kActorOfficerLeary, 309);
 	}
@@ -264,11 +265,11 @@ void AIScriptOfficerLeary::ReceivedClue(int clueId, int fromActorId) {
 
 void AIScriptOfficerLeary::ClickedByPlayer() {}
 
-void AIScriptOfficerLeary::EnteredScene(int sceneId) {}
+void AIScriptOfficerLeary::EnteredSet(int setId) {}
 
-void AIScriptOfficerLeary::OtherAgentEnteredThisScene(int otherActorId) {}
+void AIScriptOfficerLeary::OtherAgentEnteredThisSet(int otherActorId) {}
 
-void AIScriptOfficerLeary::OtherAgentExitedThisScene(int otherActorId) {}
+void AIScriptOfficerLeary::OtherAgentExitedThisSet(int otherActorId) {}
 
 void AIScriptOfficerLeary::OtherAgentEnteredCombatMode(int otherActorId, int combatMode) {}
 
@@ -385,8 +386,7 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 	case kGoalOfficerLearyHuntingAroundAct4:
 //		debug("Flushing Leary movement track");
 		AI_Movement_Track_Flush(kActorOfficerLeary);
-		switch (Random_Query(1, 10)) { // asdf restore
-//		switch (1) {
+		switch (Random_Query(1, 10)) {
 		case 1:
 			// kSetNR01
 //			debug("leary 1 kSetNR01");
@@ -472,8 +472,7 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 			break;
 #endif // BLADERUNNER_ORIGINAL_BUGS
 		case 8:
-			switch (Random_Query(1, 7)) { // asdf restore
-//			switch (1) {
+			switch (Random_Query(1, 7)) {
 			case 1:
 				// kSetUG10 -> kSetFreeSlotC
 //				debug("leary 8-1  kSetUG10 -> kSetFreeSlotC");
@@ -512,6 +511,7 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 				AI_Movement_Track_Repeat(kActorOfficerLeary);
 				break;
 			case 5:
+#if BLADERUNNER_ORIGINAL_BUGS
 				// kSetUG06 -> kSetFreeSlotC
 //				debug("leary 8-5 kSetUG06 -> kSetFreeSlotC");
 				AI_Movement_Track_Append(kActorOfficerLeary, 413, 10);
@@ -521,9 +521,27 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 				AI_Movement_Track_Append(kActorOfficerLeary, 35, 30); // kSetFreeSlotC
 				AI_Movement_Track_Repeat(kActorOfficerLeary);
 				break;
+#else
+				// Don't allow police officers to shoot McCoy while he is
+				// disabled reciting his monologue at start of Act 4
+				if (Game_Flag_Query(kFlagUG06Chapter4Started)) {
+					// kSetUG06 -> kSetFreeSlotC
+					// debug("leary 8-5 kSetUG06 -> kSetFreeSlotC");
+					AI_Movement_Track_Append(kActorOfficerLeary, 413, 10);
+					AI_Movement_Track_Append(kActorOfficerLeary, 414, 0);
+					AI_Movement_Track_Append_With_Facing(kActorOfficerLeary, 431, 0, 1017);
+					AI_Movement_Track_Append(kActorOfficerLeary, 432, 10);
+					AI_Movement_Track_Append(kActorOfficerLeary, 35, 30); // kSetFreeSlotC
+					AI_Movement_Track_Repeat(kActorOfficerLeary);
+					break;
+				}
+#endif // BLADERUNNER_ORIGINAL_BUGS
+				// fall through
+
 			case 6:
 				// kSetUG07 -> kSetFreeSlotC
-//				debug("leary 8-6 kSetUG07 -> kSetFreeSlotC");
+#if BLADERUNNER_ORIGINAL_BUGS
+				// debug("leary 8-6 kSetUG07 -> kSetFreeSlotC");
 				AI_Movement_Track_Append(kActorOfficerLeary, 415, 0);
 				AI_Movement_Track_Append_With_Facing(kActorOfficerLeary, 416, 0, 620);
 				AI_Movement_Track_Append(kActorOfficerLeary, 417, 0);
@@ -531,6 +549,22 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 				AI_Movement_Track_Append(kActorOfficerLeary, 35, 30); // kSetFreeSlotC
 				AI_Movement_Track_Repeat(kActorOfficerLeary);
 				break;
+#else
+				// Don't put police in UG07 after the UG18 Guzza scene
+				// since Clovis may be there too and that does not work well
+				if (!Game_Flag_Query(kFlagUG18GuzzaScene)) {
+					// debug("leary 8-6 kSetUG07 -> kSetFreeSlotC");
+					AI_Movement_Track_Append(kActorOfficerLeary, 415, 0);
+					AI_Movement_Track_Append_With_Facing(kActorOfficerLeary, 416, 0, 620);
+					AI_Movement_Track_Append(kActorOfficerLeary, 417, 0);
+					AI_Movement_Track_Append(kActorOfficerLeary, 418, 0);
+					AI_Movement_Track_Append(kActorOfficerLeary, 35, 30); // kSetFreeSlotC
+					AI_Movement_Track_Repeat(kActorOfficerLeary);
+					break;
+				}
+#endif // BLADERUNNER_ORIGINAL_BUGS
+				// fall through
+
 			case 7:
 				// kSetUG01 -> kSetFreeSlotC
 //				debug("leary 8-7 kSetUG01 -> kSetFreeSlotC");
@@ -542,14 +576,13 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 			default:
 				return false;
 			}
-#if BLADERUNNER_ORIGINAL_BUGS
-			// fall through - a bug in original game
-#else
+#if !BLADERUNNER_ORIGINAL_BUGS
 			break;
 #endif // BLADERUNNER_ORIGINAL_BUGS
+			// a bug in original game - no break here
+			// fall through
 		case 9:
-			if (Random_Query(1, 2) == 2) { // asdf restore
-//			if (1) {
+			if (Random_Query(1, 2) == 2) {
 				// kSetUG09 -> kSetFreeSlotC
 //				debug("leary 9-2 kSetUG09 -> kSetFreeSlotC");
 				AI_Movement_Track_Append(kActorOfficerLeary, 433, 10);
@@ -568,11 +601,11 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 			AI_Movement_Track_Append(kActorOfficerLeary, 420, 10);
 			AI_Movement_Track_Append(kActorOfficerLeary, 35, 30); // kSetFreeSlotC
 			AI_Movement_Track_Repeat(kActorOfficerLeary);
-#if BLADERUNNER_ORIGINAL_BUGS
-			// fall through - a bug in original game
-#else
+#if !BLADERUNNER_ORIGINAL_BUGS
 			return false;
 #endif // BLADERUNNER_ORIGINAL_BUGS
+			// a bug in original game - no break or return here
+			// fall through
 		case 10:
 			// kSetUG12 -> kSetFreeSlotC
 //			debug("leary 10 kSetUG12 -> kSetFreeSlotC");
@@ -586,11 +619,11 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 		default:
 			return false;
 		}
-#if BLADERUNNER_ORIGINAL_BUGS
-		// fall through - a bug in original game
-#else
-		return false;
+#if !BLADERUNNER_ORIGINAL_BUGS
+			return false;
 #endif // BLADERUNNER_ORIGINAL_BUGS
+		// a bug in original game - no break or return here
+		// fall through
 	case kGoalOfficerLearyPrepareToHuntAroundAct4:
 		// aux goal in order to immediately switch back to kGoalOfficerLearyHuntingAroundAct4 goal
 		// and run GoalChanged() for kGoalOfficerLearyHuntingAroundAct4 again
@@ -601,7 +634,7 @@ bool AIScriptOfficerLeary::GoalChanged(int currentGoalNumber, int newGoalNumber)
 		// kSetUG07
 		AI_Movement_Track_Flush(kActorOfficerLeary);
 		AI_Movement_Track_Append_With_Facing(kActorOfficerLeary, 416, 0, 556);
-		Actor_Change_Animation_Mode(kActorOfficerLeary, 4);
+		Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeCombatIdle);
 		AI_Movement_Track_Repeat(kActorOfficerLeary);
 		return true;
 	case 308:
@@ -642,7 +675,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 	switch (_animationState) {
 	case 32:
 		*animation = 603;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(603)) {
 			*animation = 589;
 			_animationState = 0;
@@ -653,7 +686,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 31:
 		*animation = 604;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(604)) {
 			*animation = 601;
 			_animationState = 1;
@@ -663,23 +696,23 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 30:
 		*animation = 587;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(587)) {
 			*animation = 589;
 			_animationState = 0;
 			_animationFrame = 0;
-			Actor_Change_Animation_Mode(kActorOfficerLeary, 0);
+			Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeIdle);
 		}
 		*frame = _animationFrame;
 		return true;
 	case 29:
 		*animation = 586;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(586)) {
 			*animation = 589;
 			_animationState = 0;
 			_animationFrame = 0;
-			Actor_Change_Animation_Mode(kActorOfficerLeary, 0);
+			Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeIdle);
 		}
 		*frame = _animationFrame;
 		return true;
@@ -699,29 +732,29 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 26:
 		*animation = 573;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(573)) {
 			_animationState = 21;
 			_animationFrame = 0;
 			*animation = 571;
-			Actor_Change_Animation_Mode(kActorOfficerLeary, 4);
+			Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeCombatIdle);
 		}
 		*frame = _animationFrame;
 		return true;
 	case 25:
 		*animation = 572;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(572)) {
 			_animationState = 21;
 			_animationFrame = 0;
 			*animation = 571;
-			Actor_Change_Animation_Mode(kActorOfficerLeary, 4);
+			Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeCombatIdle);
 		}
 		*frame = _animationFrame;
 		return true;
 	case 24:
 		*animation = 581;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame == 4) {
 			if (Random_Query(1, 2) == 1) {
 				Sound_Play_Speech_Line(kActorOfficerLeary, 9010, 75, 0, 99);
@@ -736,13 +769,13 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 			_animationState = 21;
 			_animationFrame = 0;
 			*animation = 571;
-			Actor_Change_Animation_Mode(kActorOfficerLeary, 4);
+			Actor_Change_Animation_Mode(kActorOfficerLeary, kAnimationModeCombatIdle);
 		}
 		*frame = _animationFrame;
 		return true;
 	case 23:
 		*animation = 580;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(580)) {
 			*animation = 589;
 			_animationState = 0;
@@ -752,7 +785,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 22:
 		*animation = 579;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(579)) {
 			_animationState = 21;
 			_animationFrame = 0;
@@ -762,7 +795,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 21:
 		*animation = 571;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(571)) {
 			_animationFrame = 0;
 		}
@@ -770,7 +803,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 20:
 		*animation = 571;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame > Slice_Animation_Query_Number_Of_Frames(571) - 1) {
 			_animationFrame = 0;
 		}
@@ -778,7 +811,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 19:
 		*animation = 600;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(600)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -788,7 +821,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 18:
 		*animation = 599;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(599)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -798,7 +831,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 17:
 		*animation = 598;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(598)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -808,7 +841,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 16:
 		*animation = 597;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(597)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -818,7 +851,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 15:
 		*animation = 596;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(596)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -828,7 +861,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 14:
 		*animation = 595;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(595)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -838,7 +871,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 13:
 		*animation = 594;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(594)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -848,7 +881,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 12:
 		*animation = 593;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(593)) {
 			_animationState = 11;
 			_animationFrame = 0;
@@ -868,7 +901,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		}
 
 		*animation = 592;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(592)) {
 			_animationFrame = 0;
 			if (var_45D5BC) {
@@ -886,7 +919,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 10:
 		*animation = 578;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(578)) {
 			_animationFrame = 0;
 		}
@@ -894,7 +927,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 9:
 		*animation = 577;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(577)) {
 			_animationFrame = 0;
 		}
@@ -902,7 +935,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 8:
 		*animation = 575;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(575)) {
 			_animationFrame = 0;
 		}
@@ -910,7 +943,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 7:
 		*animation = 574;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(574)) {
 			_animationFrame = 0;
 		}
@@ -918,7 +951,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 6:
 		*animation = 585;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(585)) {
 			_animationFrame = 0;
 		}
@@ -926,7 +959,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 5:
 		*animation = 584;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(584)) {
 			_animationFrame = 0;
 		}
@@ -934,7 +967,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 4:
 		*animation = 583;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(583)) {
 			_animationFrame = 0;
 		}
@@ -942,7 +975,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 3:
 		*animation = 582;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(582)) {
 			_animationFrame = 0;
 		}
@@ -951,7 +984,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 	case 2:
 		if (Game_Flag_Query(kFlagOfficerLearyTakingNotes)) {
 			*animation = 603;
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(603)) {
 				Game_Flag_Reset(kFlagOfficerLearyTakingNotes);
 				_animationFrame = 0;
@@ -988,7 +1021,7 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 		return true;
 	case 1:
 		*animation = 601;
-		_animationFrame++;
+		++_animationFrame;
 		if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(601)) {
 			_animationFrame = 0;
 		}
@@ -1007,21 +1040,21 @@ bool AIScriptOfficerLeary::UpdateAnimation(int *animation, int *frame) {
 			*animation = 604;
 		} else if (var_45D5B8 == 1) {
 			*animation = 590;
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(590)) {
 				var_45D5B8 = Random_Query(0, 2);
 				_animationFrame = 0;
 			}
 		} else if (var_45D5B8 == 2) {
 			*animation = 591;
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(591)) {
 				var_45D5B8 = Random_Query(0, 2);
 				_animationFrame = 0;
 			}
 		} else if (var_45D5B8 == 0) {
 			*animation = 589;
-			_animationFrame++;
+			++_animationFrame;
 			if (_animationFrame >= Slice_Animation_Query_Number_Of_Frames(589)) {
 				var_45D5B8 = Random_Query(0, 2);
 				_animationFrame = 0;

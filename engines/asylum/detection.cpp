@@ -132,13 +132,16 @@ static const ADFileBasedFallback fileBasedFallback[] = {
 class AsylumMetaEngine : public AdvancedMetaEngine {
 public:
 	AsylumMetaEngine() : AdvancedMetaEngine(Asylum::gameDescriptions, sizeof(ADGameDescription), asylumGames) {
-		_singleId = "asylum";
 		_md5Bytes = 0;
 		_guiOptions = GUIO1(GUIO_NONE);
 	}
 
+	const char *getEngineId() const override {
+		return "asylum";
+	}
+
 	virtual const char *getName() const {
-		return "Asylum";
+		return "Sanitarium";
 	}
 
 	virtual const char *getOriginalCopyright() const {

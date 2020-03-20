@@ -34,16 +34,16 @@
 
 namespace Asylum {
 
-Speech::Speech(AsylumEngine *engine): _vm(engine), _textData(0), _textDataPos(0) {
+Speech::Speech(AsylumEngine *engine): _vm(engine), _textData(NULL), _textDataPos(NULL) {
 	_tick            = _vm->getTick();
 	_soundResourceId = kResourceNone;
-	_textResourceId  = kResourceNone;
+	_textResourceId  = kResourceInvalid;
 }
 
 Speech::~Speech() {
 	// Text resource data is disposed as part of the resource manager
-	_textData = 0;
-	_textDataPos = 0;
+	_textData = NULL;
+	_textDataPos = NULL;
 
 	// Zero-out passed pointers
 	_vm = NULL;
@@ -251,24 +251,24 @@ void Speech::prepareSpeech() {
 void Speech::process() {
 	_tick = 0;
 
-	char *txt = getText()->get(_textResourceId);
+	char *text = getText()->get(_textResourceId);
 
-	if (*(txt + strlen((const char *)txt) - 2) == 1) {
+	if (text == NULL || *(text + strlen((const char *)text) - 2) == 1) {
 		_textResourceId = kResourceNone;
-		_textData = 0;
-		_textDataPos = 0;
-	} else if (*txt == '{') {
-		_textData = txt + 3;
-		_textDataPos = 0;
+		_textData = NULL;
+		_textDataPos = NULL;
+	} else if (*text == '{') {
+		_textData = text + 3;
+		_textDataPos = NULL;
 
 		getText()->loadFont(getWorld()->font1);
 		getSound()->playSound(_soundResourceId, false, Config.voiceVolume, 0);
 	} else {
-		_textData = 0;
-		_textDataPos = txt;
+		_textData = NULL;
+		_textDataPos = text;
 
-		if (*txt == '/') {
-			_textDataPos = txt + 2;
+		if (*text == '/') {
+			_textDataPos = text + 2;
 		}
 
 		getText()->loadFont(getWorld()->font3);

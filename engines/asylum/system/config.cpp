@@ -70,7 +70,7 @@ ConfigurationManager::ConfigurationManager() {
 	showEncounterSubtitles = true;
 
 	gammaLevel = 0;
-	performance = 0;
+	performance = 5;
 
 	keyShowVersion = 'v';
 	keyQuickLoad = 'L';

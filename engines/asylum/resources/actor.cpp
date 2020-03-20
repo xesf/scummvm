@@ -1833,12 +1833,12 @@ void Actor::addReactionHive(int32 reactionIndex, int32 numberValue01Add) {
 
 	if (count == 8)
 		return;
-
-	if (!hasMoreReactions(reactionIndex, false))
+    
+    if (numberValue01Add) {
+        _numberValue01 += numberValue01Add;
+    } else if (!hasMoreReactions(reactionIndex, false)) {
 		_reaction[count] = reactionIndex;
-
-	if (numberValue01Add)
-		_numberValue01 += numberValue01Add;
+    }
 
 	getSound()->playSound(MAKE_RESOURCE(kResourcePackHive, 0));
 }
@@ -1854,7 +1854,6 @@ void Actor::removeReactionHive(int32 reactionIndex, int32 numberValue01Substract
 	}
 
 	if (!numberValue01Substract || !_numberValue01) {
-
 		uint32 count = 0;
 		for (int i = 0; i < 8; i++)
 			if (_reaction[i])

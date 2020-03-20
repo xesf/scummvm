@@ -120,6 +120,9 @@ int16 Text::getWidth(ResourceId resourceId) {
 }
 
 char* Text::get(ResourceId resourceId) {
+    if (resourceId == kResourceInvalid) {
+        return NULL;
+    }
 	ResourceEntry *textRes = getResource()->get(resourceId);
 	return (char*)textRes->data;
 }

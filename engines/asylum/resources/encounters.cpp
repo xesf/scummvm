@@ -398,7 +398,7 @@ bool Encounter::update() {
 		getSound()->setMusicVolume(Config.musicVolume - 500);
 
 	uint32 tick = _vm->getTick();
-	ResourceId id = kResourceNone;
+	ResourceId id = kResourceInvalid;
 
 	if (_objectId3) {
 		_isDialogOpen = false;
@@ -827,11 +827,11 @@ bool Encounter::setupSpeechTest(ResourceId id) {
 	setupEntities(false);
 
 	char *text = getText()->get(id);
-	if (text[strlen(text) - 2] == 1) {
+	if (text == NULL || text[strlen(text) - 2] == 1) {
 		setupEntities(true);
 		getSpeech()->setTextResourceId(kResourceNone);
-		getSpeech()->setTextData(0);
-		getSpeech()->setTextDataPos(0);
+		getSpeech()->setTextData(NULL);
+		getSpeech()->setTextDataPos(NULL);
 
 		_data_455BCC = false;
 		_data_455B3C = 1;
@@ -896,7 +896,7 @@ bool Encounter::drawBackground() {
 	if (_shouldCloseBackground) {
 		--_background.frameIndex;
 
-		if (_background.frameIndex == 0)
+		if (_background.frameIndex < 0)
 			exitEncounter();
 
 		return false;
@@ -1126,7 +1126,7 @@ void Encounter::drawDialogOptions() {
 			                     _point.y + (int16)(16 * counter / 3));
 
 			if (getKeywordIndex() == keywordIndex)
-				getScreen()->fillRect(coords.x - 1, coords.y + 5, getText()->getWidth(MAKE_RESOURCE(kResourcePackText, 3681 + (keyword & KEYWORD_MASK))), 18, 0);
+				getScreen()->fillRect(coords.x - 1, coords.y + 5, getText()->getWidth(MAKE_RESOURCE(kResourcePackText, 3681 + (keyword & KEYWORD_MASK))) + 2, 18, 0);
 
 			getText()->setPosition(coords);
 			getText()->draw(MAKE_RESOURCE(kResourcePackText, 3681 + (keyword & KEYWORD_MASK)));
@@ -1408,13 +1408,12 @@ bool Encounter::updateScreen() {
 	if (_isDialogOpen) {
 
 		if (!getSpeech()->getTextDataPos() && !getSpeech()->getTextData()) {
-
 			drawDialogOptions();
 			updateDrawingStatus();
 			drawStructs();
 
-			if (_rectIndex == -1 && findRect() == -1)
-				updateFromRect(-1);
+			if (_rectIndex != -1 && findRect() == _rectIndex)
+				updateFromRect(_rectIndex);
 
 			return false;
 		}
@@ -1497,7 +1496,7 @@ void Encounter::runScript() {
 			break;
 
 		case kOpcodeSetOffset:
-			_scriptData.offset = entry.param2 - 1;
+			_scriptData.offset = entry.param2;
 			break;
 
 		case kOpcodeSetOffsetIfCounterNegative:
@@ -1518,7 +1517,7 @@ void Encounter::runScript() {
 			if (_scriptData.counter)
 				break;
 
-			_scriptData.offset = entry.param2 - 1;
+			_scriptData.offset = entry.param2;
 			break;
 
 		case kOpcodeSetOffsetIfCounterIsNotNull:
@@ -1539,12 +1538,12 @@ void Encounter::runScript() {
 			if (_scriptData.counter <= 0)
 				break;
 
-			_scriptData.offset = entry.param2 - 1;
+			_scriptData.offset = entry.param2;
 			break;
 
 		case kOpcodeSetCurrentItemOptions:
 			if (entry.param1)
-				_item->keywords[findKeyword(_item, entry.param2)] &= ~((kKeywordOptionsDisabled << 8) + 1);
+				_item->keywords[findKeyword(_item, entry.param2)] &= -((kKeywordOptionsDisabled << 8) + 1);
 			else
 				_item->keywords[findKeyword(_item, entry.param2)] |= (kKeywordOptionsVisible << 8);
 			break;
@@ -1553,7 +1552,7 @@ void Encounter::runScript() {
 			if (entry.param1)
 				_item->keywords[findKeyword(_item, entry.param2)] |= (kKeywordOptionsDisabled << 8);
 			else
-				_item->keywords[findKeyword(_item, entry.param2)] &= ~((kKeywordOptionsVisible << 8) + 1);
+				_item->keywords[findKeyword(_item, entry.param2)] &= -((kKeywordOptionsVisible << 8) + 1);
 			break;
 
 		case kOpcodeSetItemOptions:
@@ -1672,7 +1671,7 @@ void Encounter::runScript() {
 			break;
 
 		case kOpcodeSetCounterFromGameFlag:
-			_scriptData.counter = _vm->isGameFlagSet((GameFlag)getVariableInv(entry.param2)) ?  1 : 0;
+			_scriptData.counter = _vm->isGameFlagSet((GameFlag)getVariableInv(entry.param2)) ? 1 : 0;
 			break;
 		}
 

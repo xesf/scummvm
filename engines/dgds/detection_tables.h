@@ -26,11 +26,11 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
     {
         // Johnny Castaway Screen Saver
         {
-            "castaway_1.01",
+            "castaway", // v1.01
             0,
             {
-                { "resource.map", 0, "374e6d05c5e0acd88fb5af748948c899", 1461 },
-                { "resource.001", 0, "8bb6c99e9129806b5089a39d24228a36", 1175645 },
+                { "resource.map", 0, NULL, 1461 }, // 374e6d05c5e0acd88fb5af748948c899
+                { "resource.001", 0, NULL, 1175645 }, // 8bb6c99e9129806b5089a39d24228a36
                 AD_LISTEND
             },
             Common::EN_ANY,
@@ -85,6 +85,7 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
             0,
             {
                 { "resource.map", 0, "2f6088095925b9805112925ca8c9063b", 7595 },
+                { "resource.001", 0, "94a5d86e95dfd69926b5ab7177b288f2", 1393208 },
                 AD_LISTEND
             },
             Common::EN_ANY,

@@ -29,8 +29,8 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
             "castaway", // v1.01
             0,
             {
-                { "resource.map", 0, NULL, 1461 }, // 374e6d05c5e0acd88fb5af748948c899
-                { "resource.001", 0, NULL, 1175645 }, // 8bb6c99e9129806b5089a39d24228a36
+                { "resource.map", 0, "374e6d05c5e0acd88fb5af748948c899", 1461 },
+                { "resource.001", 0, "46acc7ab8f6d7f63838ffea5f87380e2", 1175645 },
                 AD_LISTEND
             },
             Common::EN_ANY,
@@ -48,7 +48,7 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
             "dragon",
             0,
             {
-                { "volume.vga", 0, "0d9590fdc883d6d99c06e7935423d180", 7823 },
+                { "volume.vga", 0, "b0583c199614ed1c161a25398c5c7fba", 7823 },
                 AD_LISTEND
             },
             Common::EN_ANY,
@@ -66,7 +66,7 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
             "hoc",
             0,
             {
-                { "volume.rfm", 0, "2da720143c1e857490daded15682df87", 9791 },
+                { "volume.rmf", 0, "677b91bc6961824f1997c187292f174e", 9791 },
                 AD_LISTEND
             },
             Common::EN_ANY,
@@ -84,8 +84,8 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
             "turbosci",
             0,
             {
-                { "resource.map", 0, "2f6088095925b9805112925ca8c9063b", 7595 },
-                { "resource.001", 0, "94a5d86e95dfd69926b5ab7177b288f2", 1393208 },
+                { "resource.map", 0, "639885b4a7c6b8e395b6ca969c94ffd9", 7595 },
+                { "resource.001", 0, "67a4ebacfa73d3f54e9c489d46f3e512", 1393208 },
                 AD_LISTEND
             },
             Common::EN_ANY,
@@ -103,7 +103,7 @@ static const DgdsGameDescription GAME_DESCRIPTIONS[] = {
             "willy",
             0,
             {
-                { "volume.rfm", 0, "ba5cf24ec4b6dc044b03115a0cd5f3ff", 9896 },
+                { "volume.rmf", 0, "c2be5cd4693dfcdbe45dd0e74dd5306d", 9896 },
                 AD_LISTEND
             },
             Common::EN_ANY,

@@ -2,7 +2,8 @@ MODULE := engines/agrippa
  
 MODULE_OBJS := \
     agrippa.o \
-    detection.o
+    detection.o \
+    video.o
  
 MODULE_DIRS += \
     engines/agrippa

@@ -29,7 +29,11 @@
 #include "common/memstream.h"
 #include "common/translation.h"
 
+#include "agrippa/agrippa.h"
+
 namespace Agrippa {
+
+class AgrippaEngine;
 
 static const PlainGameDescriptor AGRIPPA_GAMES[] = {
     { "agrippa", "The X-Files Game" },
@@ -49,7 +53,7 @@ AgrippaMetaEngine::AgrippaMetaEngine() : AdvancedMetaEngine(Agrippa::GAME_DESCRI
 
 bool AgrippaMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
     const Agrippa::AgrippaGameDescription *gd = (const Agrippa::AgrippaGameDescription *)desc;
-    // TODO
+    *engine = new Agrippa::AgrippaEngine(syst);
     return gd != 0;
 }
 

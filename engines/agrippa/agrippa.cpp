@@ -33,6 +33,7 @@
 #include "engines/util.h"
 
 #include "agrippa/console.h"
+#include "agrippa/video.h"
 #include "agrippa/agrippa.h"
  
 namespace Agrippa {
@@ -68,12 +69,37 @@ Common::Error AgrippaEngine::run() {
     initGraphics(640, 480);
  
     _console = new Console(this);
+    _video = new VideoManager(this);
+    _video->play("xv/19812.xmv");
  
     debug("AgrippaEngine::init");
     
     debugC(1, kDebugLevelMain, "Example debug call");
  
+    while (!shouldQuit()) {
+        processFrame();
+    }
+
     return Common::kNoError;
 }
+
+
+Common::Error AgrippaEngine::processFrame() {
+    _video->updateMovies();
+
+    Common::Event event;
+    while (_system->getEventManager()->pollEvent(event)) {
+        // TODO check events
+    }
+
+    _system->updateScreen();
+
+    // Cut down on CPU usage
+    _system->delayMillis(10);
+
+    return Common::kNoError;
+}
+
+
  
 } // End of namespace Agrippa

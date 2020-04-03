@@ -28,10 +28,12 @@
 #include "gui/debugger.h"
 
 #include "console.h"
+#include "video.h"
  
 namespace Agrippa {
  
 class Console;
+class VideoManager;
 
 enum {
     kDebugLevelMain = 1 << 0,
@@ -44,9 +46,11 @@ class AgrippaEngine : public Engine {
         ~AgrippaEngine();
      
         virtual Common::Error run();
+        virtual Common::Error processFrame();
      
     private:
         Console *_console;
+        VideoManager * _video;
      
         // We need random numbers
         Common::RandomSource *_rnd;

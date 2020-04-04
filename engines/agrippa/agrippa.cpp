@@ -65,12 +65,19 @@ AgrippaEngine::~AgrippaEngine() {
 }
  
 Common::Error AgrippaEngine::run() {
-    // Initialize graphics using following:
-    initGraphics(640, 480);
+    Graphics::PixelFormat pixelFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 8, 16, 24, 0); // 24bpp
+
+    initGraphics(640, 480, &pixelFormat);
  
     _console = new Console(this);
     _video = new VideoManager(this);
-    _video->play("xv/19812.xmv");
+    // _video->play("xv/56003.xmv");
+    // _video->play("xv/56002.xmv");
+    _video->play("xv/19668.xmv");
+    // _video->play("xv/56001.xmv");
+    // _video->play("xv/64421.xmv");
+    // _video->play("xv/19812.xmv");
+    // _video->center();
  
     debug("AgrippaEngine::init");
     

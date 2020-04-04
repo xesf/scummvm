@@ -242,7 +242,6 @@ public:
 
     // Generic movie functions
     VideoEntryPtr play(const Common::String &filename);
-    VideoEntryPtr playMovie(const Common::String &filename, Audio::Mixer::SoundType soundType = Audio::Mixer::kPlainSoundType);
     VideoEntryPtr playMovie(uint16 id);
     bool updateMovies();
     void pauseVideos();
@@ -266,15 +265,10 @@ protected:
     // Utility functions for managing entries
     VideoEntryPtr open(uint16 id);
     VideoEntryPtr openFile(const Common::String &filename);
-    VideoEntryPtr open(const Common::String &fileName, Audio::Mixer::SoundType soundType);
 
     VideoList::iterator findEntry(VideoEntryPtr ptr);
 
     bool drawNextFrame(VideoEntryPtr videoEntry);
-
-    // Dithering control
-    bool _enableDither;
-    void checkEnableDither(VideoEntryPtr &entry);
 };
 
 } // End of namespace Agrippa

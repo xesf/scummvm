@@ -20,20 +20,19 @@
  *
  */
 
-#include "agrippa/agrippa.h"
-#include "agrippa/video.h"
-
 #include "common/algorithm.h"
 #include "common/debug.h"
 #include "common/events.h"
 #include "common/textconsole.h"
 #include "common/system.h"
+#include "common/file.h"
 
 #include "graphics/palette.h"
 #include "graphics/surface.h"
-
 #include "video/qt_decoder.h"
 
+#include "agrippa/agrippa.h"
+#include "agrippa/video.h"
 
 namespace Agrippa {
 
@@ -138,8 +137,6 @@ void VideoEntry::setVolume(int volume) {
 }
 
 VideoManager::VideoManager(AgrippaEngine *vm) : _vm(vm) {
-    // Set dithering enabled, if required
-    _enableDither = false; // (_vm->getGameType() == GType_MYST || _vm->getGameType() == GType_MAKINGOF) && !(_vm->getFeatures() & GF_ME);
 }
 
 VideoManager::~VideoManager() {
@@ -165,15 +162,7 @@ void VideoManager::stopVideos() {
 
 VideoEntryPtr VideoManager::play(const Common::String &fileName) {
     VideoEntryPtr ptr = openFile(fileName);
-    if (!ptr)
-        return VideoEntryPtr();
-
-    ptr->start();
-    return ptr;
-}
-
-VideoEntryPtr VideoManager::playMovie(const Common::String &fileName, Audio::Mixer::SoundType soundType) {
-    VideoEntryPtr ptr = open(fileName, soundType);
+    ptr->center();
     if (!ptr)
         return VideoEntryPtr();
 
@@ -238,27 +227,6 @@ bool VideoManager::drawNextFrame(VideoEntryPtr videoEntry) {
         return false;
     }
 
-    Graphics::Surface *convertedFrame = nullptr;
-    Graphics::PixelFormat pixelFormat = _vm->_system->getScreenFormat();
-
-//    if (frame->format != pixelFormat) {
-//        // We don't support downconverting to 8bpp without having
-//        // support in the codec. Set _enableDither if shows up.
-////        if (pixelFormat.bytesPerPixel == 1) {
-////            warning("Cannot convert high color video frame to 8bpp");
-////            return false;
-////        }
-//
-//        // Convert to the current screen format
-//        convertedFrame = frame->convertTo(pixelFormat, video->getPalette());
-//        frame = convertedFrame;
-//    } else if (pixelFormat.bytesPerPixel == 1 && video->hasDirtyPalette()) {
-//        // Set the palette when running in 8bpp mode only
-//        // Don't do this for Myst, which has its own per-stack handling
-//        // if (_vm->getGameType() != GType_MYST)
-//            _vm->_system->getPaletteManager()->setPalette(video->getPalette(), 0, 256);
-//    }
-
     // Clip the video to make sure it stays on the screen (Myst does this a few times)
     Common::Rect targetRect = Common::Rect(video->getWidth(), video->getHeight());
     targetRect.translate(videoEntry->getX(), videoEntry->getY());
@@ -288,12 +256,6 @@ bool VideoManager::drawNextFrame(VideoEntryPtr videoEntry) {
     _vm->_system->copyRectToScreen(frame->getBasePtr(frameRect.left, frameRect.top), frame->pitch,
                                    targetRect.left, targetRect.top, targetRect.width(), targetRect.height());
 
-    // Delete 8bpp conversion surface
-    if (convertedFrame) {
-        convertedFrame->free();
-        delete convertedFrame;
-    }
-
     // We've drawn something to the screen, make sure we update it
     return true;
 }
@@ -313,9 +275,6 @@ VideoEntryPtr VideoManager::open(uint16 id) {
     // Create the entry
     VideoEntryPtr entry(new VideoEntry(video, id));
 
-    // Enable dither if necessary
-    checkEnableDither(entry);
-
     // Add it to the video list
     _videos.push_back(entry);
 
@@ -323,6 +282,11 @@ VideoEntryPtr VideoManager::open(uint16 id) {
 }
 
 VideoEntryPtr VideoManager::openFile(const Common::String &fileName) {
+    // If this video is already playing, return that entry
+    VideoEntryPtr oldVideo = findVideo(fileName);
+    if (oldVideo)
+        return oldVideo;
+    
     // Otherwise, create a new entry
     Video::QuickTimeDecoder *video = new Video::QuickTimeDecoder();
     video->loadFile(fileName);
@@ -330,44 +294,10 @@ VideoEntryPtr VideoManager::openFile(const Common::String &fileName) {
     // Create the entry
     VideoEntryPtr entry(new VideoEntry(video, 0));
 
-    // Enable dither if necessary
-    checkEnableDither(entry);
-
     // Add it to the video list
     _videos.push_back(entry);
 
     return entry;
-}
-
-VideoEntryPtr VideoManager::open(const Common::String &fileName, Audio::Mixer::SoundType soundType) {
-    // If this video is already playing, return that entry
-    VideoEntryPtr oldVideo = findVideo(fileName);
-    // if (oldVideo)
-        return oldVideo;
-
-//    // Otherwise, create a new entry
-//    Common::SeekableReadStream *stream = SearchMan.createReadStreamForMember(fileName);
-//    if (!stream)
-//        return VideoEntryPtr();
-//
-//    Video::VideoDecoder *video = new Video::QuickTimeDecoder();
-//    video->setSoundType(soundType);
-//    if (!video->loadStream(stream)) {
-//        // FIXME: Better error handling
-//        delete video;
-//        return VideoEntryPtr();
-//    }
-//
-//    // Create the entry
-//    VideoEntryPtr entry(new VideoEntry(video, fileName));
-//
-//    // Enable dither if necessary
-//    checkEnableDither(entry);
-//
-//    // Add it to the video list
-//    _videos.push_back(entry);
-//
-//    return entry;
 }
 
 VideoEntryPtr VideoManager::findVideo(uint16 id) {
@@ -415,24 +345,6 @@ void VideoManager::removeEntry(const VideoEntryPtr &video) {
     VideoManager::VideoList::iterator it = findEntry(video);
     if (it != _videos.end())
         _videos.erase(it);
-}
-
-void VideoManager::checkEnableDither(VideoEntryPtr &entry) {
-    // If we're not dithering, bail out
-    if (!_enableDither)
-        return;
-
-    // Set the palette
-    byte palette[256 * 3];
-    g_system->getPaletteManager()->grabPalette(palette, 0, 256);
-    entry->_video->setDitheringPalette(palette);
-
-    if (entry->_video->getPixelFormat().bytesPerPixel != 1) {
-        if (entry->getFileName().empty())
-            error("Failed to set dither for video tMOV %d", entry->getID());
-        else
-            error("Failed to set dither for video %s", entry->getFileName().c_str());
-    }
 }
 
 } // End of namespace Agrippa

@@ -226,6 +226,18 @@ bool VideoManager::drawNextFrame(VideoEntryPtr videoEntry) {
     if (!frame || !videoEntry->isEnabled()) {
         return false;
     }
+    
+    Graphics::Surface *convertedFrame = nullptr;
+    Graphics::PixelFormat pixelFormat = _vm->_system->getScreenFormat();
+
+    if (frame->format != pixelFormat) {
+        // Convert to the current screen format
+        convertedFrame = frame->convertTo(pixelFormat, video->getPalette());
+        frame = convertedFrame;
+    } else if (pixelFormat.bytesPerPixel == 1 && video->hasDirtyPalette()) {
+        // Set the palette when running in 8bpp mode only
+        _vm->_system->getPaletteManager()->setPalette(video->getPalette(), 0, 256);
+    }
 
     // Clip the video to make sure it stays on the screen (Myst does this a few times)
     Common::Rect targetRect = Common::Rect(video->getWidth(), video->getHeight());

@@ -73,11 +73,11 @@ Common::Error AgrippaEngine::run() {
     _video = new VideoManager(this);
     // _video->play("xv/56003.xmv");
     // _video->play("xv/56002.xmv");
-    _video->play("xv/19668.xmv");
+    // _video->play("xv/19668.xmv");
     // _video->play("xv/56001.xmv");
     // _video->play("xv/64421.xmv");
-    // _video->play("xv/19812.xmv");
-    // _video->center();
+    _video->play("xv/19812.xmv");
+    // _video->play("nav1.nmv");
  
     debug("AgrippaEngine::init");
     
@@ -85,6 +85,7 @@ Common::Error AgrippaEngine::run() {
  
     while (!shouldQuit()) {
         processFrame();
+        // _video->pauseVideos();
     }
 
     return Common::kNoError;

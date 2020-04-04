@@ -31,10 +31,10 @@
 #include "graphics/surface.h"
 #include "video/qt_decoder.h"
 
-#include "agrippa/agrippa.h"
-#include "agrippa/video.h"
+#include "virtualcinema/virtualcinema.h"
+#include "virtualcinema/video.h"
 
-namespace Agrippa {
+namespace VirtualCinema {
 
 VideoEntry::VideoEntry() : _video(nullptr), _id(-1), _x(0), _y(0), _loop(false), _enabled(true) {
 }
@@ -136,7 +136,7 @@ void VideoEntry::setVolume(int volume) {
     _video->setVolume(CLIP(volume, 0, 255));
 }
 
-VideoManager::VideoManager(AgrippaEngine *vm) : _vm(vm) {
+VideoManager::VideoManager(VirtualCinemaEngine *vm) : _vm(vm) {
 }
 
 VideoManager::~VideoManager() {
@@ -359,4 +359,4 @@ void VideoManager::removeEntry(const VideoEntryPtr &video) {
         _videos.erase(it);
 }
 
-} // End of namespace Agrippa
+} // End of namespace VirtualCinema

@@ -1,15 +1,15 @@
-MODULE := engines/agrippa
+MODULE := engines/virtualcinema
  
 MODULE_OBJS := \
-    agrippa.o \
+    virtualcinema.o \
     detection.o \
     video.o
  
 MODULE_DIRS += \
-    engines/agrippa
+    engines/virtualcinema
  
 # This module can be built as a plugin
-ifeq ($(ENABLE_AGRIPPA), DYNAMIC_PLUGIN)
+ifeq ($(ENABLE_VIRTUALCINEMA), DYNAMIC_PLUGIN)
 PLUGIN := 1
 endif
  

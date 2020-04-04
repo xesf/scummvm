@@ -20,7 +20,7 @@
  *
  */
 
-#include "agrippa/detection.h"
+#include "virtualcinema/detection.h"
 #include "base/plugins.h"
 #include "common/system.h"
 #include "common/config-manager.h"
@@ -29,63 +29,63 @@
 #include "common/memstream.h"
 #include "common/translation.h"
 
-#include "agrippa/agrippa.h"
+#include "virtualcinema/virtualcinema.h"
 
-namespace Agrippa {
+namespace VirtualCinema {
 
-class AgrippaEngine;
+class VirtualCinemaEngine;
 
-static const PlainGameDescriptor AGRIPPA_GAMES[] = {
+static const PlainGameDescriptor VIRTUALCINEMA_GAMES[] = {
     { "agrippa", "The X-Files Game" },
     { 0, 0 }
 };
 
 } // End of namespace Dgds
 
-#include "agrippa/detection_tables.h"
+#include "virtualcinema/detection_tables.h"
 
-AgrippaMetaEngine::AgrippaMetaEngine() : AdvancedMetaEngine(Agrippa::GAME_DESCRIPTIONS,
-            sizeof(Agrippa::AgrippaGameDescription), Agrippa::AGRIPPA_GAMES) {
+VirtualCinemaMetaEngine::VirtualCinemaMetaEngine() : AdvancedMetaEngine(VirtualCinema::GAME_DESCRIPTIONS,
+            sizeof(VirtualCinema::VirtualCinemaGameDescription), VirtualCinema::VIRTUALCINEMA_GAMES) {
     static const char *const DIRECTORY_GLOBS[2] = { "xv", 0 };
     _maxScanDepth = 2;
     _directoryGlobs = DIRECTORY_GLOBS;
 }
 
-bool AgrippaMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-    const Agrippa::AgrippaGameDescription *gd = (const Agrippa::AgrippaGameDescription *)desc;
-    *engine = new Agrippa::AgrippaEngine(syst);
+bool VirtualCinemaMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
+    const VirtualCinema::VirtualCinemaGameDescription *gd = (const VirtualCinema::VirtualCinemaGameDescription *)desc;
+    *engine = new VirtualCinema::VirtualCinemaEngine(syst);
     return gd != 0;
 }
 
-int AgrippaMetaEngine::getMaximumSaveSlot() const {
+int VirtualCinemaMetaEngine::getMaximumSaveSlot() const {
     return MAX_SAVES;
 }
 
-const char *AgrippaMetaEngine::getSavegamePattern(const char *target) const {
+const char *VirtualCinemaMetaEngine::getSavegamePattern(const char *target) const {
     static char buffer[200];
     snprintf(buffer, 200, "%s.###", target == nullptr ? getEngineId() : target);
     return buffer;
 }
 
-const char *AgrippaMetaEngine::getSavegameFile(int saveGameIdx, const char *target) const {
+const char *VirtualCinemaMetaEngine::getSavegameFile(int saveGameIdx, const char *target) const {
     static char buffer[200];
     snprintf(buffer, 200, "%s.%.3d", target == nullptr ? getEngineId() : target, saveGameIdx);
     return buffer;
 }
 
-SaveStateList AgrippaMetaEngine::listSaves(const char *target) const {
+SaveStateList VirtualCinemaMetaEngine::listSaves(const char *target) const {
     SaveStateList saveList = AdvancedMetaEngine::listSaves(target);
     // TODO
     return saveList;
 }
 
-Common::KeymapArray AgrippaMetaEngine::initKeymaps(const char *target) const {
+Common::KeymapArray VirtualCinemaMetaEngine::initKeymaps(const char *target) const {
     Common::String gameId = getGameId(target);
     // TODO
     return Common::KeymapArray();
 }
 
-Common::String AgrippaMetaEngine::getGameId(const char *target) {
+Common::String VirtualCinemaMetaEngine::getGameId(const char *target) {
     // Store a copy of the active domain
     Common::String currDomain = ConfMan.getActiveDomainName();
 
@@ -98,8 +98,8 @@ Common::String AgrippaMetaEngine::getGameId(const char *target) {
     return gameId;
 }
 
-#if PLUGIN_ENABLED_DYNAMIC(AGRIPPA)
-REGISTER_PLUGIN_DYNAMIC(AGRIPPA, PLUGIN_TYPE_ENGINE, AgrippaMetaEngine);
+#if PLUGIN_ENABLED_DYNAMIC(VIRTUALCINEMA)
+REGISTER_PLUGIN_DYNAMIC(VIRTUALCINEMA, PLUGIN_TYPE_ENGINE, VirtualCinemaMetaEngine);
 #else
-REGISTER_PLUGIN_STATIC(AGRIPPA, PLUGIN_TYPE_ENGINE, AgrippaMetaEngine);
+REGISTER_PLUGIN_STATIC(VIRTUALCINEMA, PLUGIN_TYPE_ENGINE, VirtualCinemaMetaEngine);
 #endif

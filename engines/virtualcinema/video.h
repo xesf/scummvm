@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef AGRIPPA_VIDEO_H
-#define AGRIPPA_VIDEO_H
+#ifndef VIRTUALCINEMA_VIDEO_H
+#define VIRTUALCINEMA_VIDEO_H
 
 #include "audio/mixer.h"
 #include "audio/timestamp.h"
@@ -36,9 +36,9 @@ namespace Video {
 class VideoDecoder;
 }
 
-namespace Agrippa {
+namespace VirtualCinema {
 
-class AgrippaEngine;
+class VirtualCinemaEngine;
 
 /**
  * A video monitored by the VideoManager
@@ -237,7 +237,7 @@ typedef Common::SharedPtr<VideoEntry> VideoEntryPtr;
 
 class VideoManager {
 public:
-    explicit VideoManager(AgrippaEngine *vm);
+    explicit VideoManager(VirtualCinemaEngine *vm);
     virtual ~VideoManager();
 
     // Generic movie functions
@@ -256,7 +256,7 @@ public:
     void removeEntry(const VideoEntryPtr &video);
 
 protected:
-    AgrippaEngine *_vm;
+    VirtualCinemaEngine *_vm;
 
     // Keep tabs on any videos playing
     typedef Common::List<VideoEntryPtr> VideoList;
@@ -271,6 +271,6 @@ protected:
     bool drawNextFrame(VideoEntryPtr videoEntry);
 };
 
-} // End of namespace Agrippa
+} // End of namespace VirtualCinema
 
 #endif

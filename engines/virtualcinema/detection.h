@@ -20,38 +20,45 @@
  *
  */
 
-#ifndef AGRIPPA_DETECTION
-#define AGRIPPA_DETECTION
+#ifndef VIRTUALCINEMA_DETECTION
+#define VIRTUALCINEMA_DETECTION
 
 #include "engines/advancedDetector.h"
 #include "backends/keymapper/keymapper.h"
 
 #define MAX_SAVES 99
 
-namespace Agrippa {
+namespace VirtualCinema {
 
-struct AgrippaGameDescription {
-    ADGameDescription desc;
+enum GameId {
+    GAME_AGRIPPA,
+    GAME_VORTEX,
+    GAME_QUANTUM
 };
 
-} // End of namespace Agrippa
+struct VirtualCinemaGameDescription {
+    ADGameDescription desc;
+    GameId gameId;
+};
 
-class AgrippaMetaEngine : public AdvancedMetaEngine {
+} // End of namespace VirtualCinema
+
+class VirtualCinemaMetaEngine : public AdvancedMetaEngine {
 private:
     /**
      * Gets the game Id given a target string
      */
     static Common::String getGameId(const char *target);
 public:
-    AgrippaMetaEngine();
-    ~AgrippaMetaEngine() override {}
+    VirtualCinemaMetaEngine();
+    ~VirtualCinemaMetaEngine() override {}
 
     const char *getEngineId() const override {
-        return "agrippa";
+        return "virtualcinema";
     }
 
     const char *getName() const override {
-        return "The X-Files Game";
+        return "VirtualCinema";
     }
 
     const char *getOriginalCopyright() const override {

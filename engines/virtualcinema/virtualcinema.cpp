@@ -32,13 +32,13 @@
  
 #include "engines/util.h"
 
-#include "agrippa/console.h"
-#include "agrippa/video.h"
-#include "agrippa/agrippa.h"
+#include "virtualcinema/console.h"
+#include "virtualcinema/video.h"
+#include "virtualcinema/virtualcinema.h"
  
-namespace Agrippa {
+namespace VirtualCinema {
  
-AgrippaEngine::AgrippaEngine(OSystem *syst)
+VirtualCinemaEngine::VirtualCinemaEngine(OSystem *syst)
  : Engine(syst), _console(nullptr) {
      const Common::FSNode gameDataDir(ConfMan.get("path"));
      SearchMan.addSubDirectoryMatching(gameDataDir, "xg");
@@ -51,20 +51,20 @@ AgrippaEngine::AgrippaEngine(OSystem *syst)
     DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
     DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
 
-    _rnd = new Common::RandomSource("Agrippa");
+    _rnd = new Common::RandomSource("VirtualCinema");
  
-    debug("AgrippaEngine::AgrippaEngine");
+    debug("VirtualCinemaEngine::VirtualCinemaEngine");
 }
  
-AgrippaEngine::~AgrippaEngine() {
-    debug("AgrippaEngine::~AgrippaEngine");
+VirtualCinemaEngine::~VirtualCinemaEngine() {
+    debug("VirtualCinemaEngine::~VirtualCinemaEngine");
 
     delete _rnd;
 
     DebugMan.clearAllDebugChannels();
 }
  
-Common::Error AgrippaEngine::run() {
+Common::Error VirtualCinemaEngine::run() {
     Graphics::PixelFormat pixelFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 8, 16, 24, 0); // 24bpp
 
     initGraphics(640, 480, &pixelFormat);
@@ -79,7 +79,7 @@ Common::Error AgrippaEngine::run() {
     _video->play("xv/19812.xmv");
     // _video->play("nav1.nmv");
  
-    debug("AgrippaEngine::init");
+    debug("VirtualCinemaEngine::init");
     
     debugC(1, kDebugLevelMain, "Example debug call");
  
@@ -92,7 +92,7 @@ Common::Error AgrippaEngine::run() {
 }
 
 
-Common::Error AgrippaEngine::processFrame() {
+Common::Error VirtualCinemaEngine::processFrame() {
     _video->updateMovies();
 
     Common::Event event;
@@ -110,4 +110,4 @@ Common::Error AgrippaEngine::processFrame() {
 
 
  
-} // End of namespace Agrippa
+} // End of namespace VirtualCinema

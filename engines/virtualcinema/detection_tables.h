@@ -20,9 +20,9 @@
  *
  */
 
-namespace Agrippa {
+namespace VirtualCinema {
 
-static const AgrippaGameDescription GAME_DESCRIPTIONS[] = {
+static const VirtualCinemaGameDescription GAME_DESCRIPTIONS[] = {
     {
         // The X-Files Game EN US
         {
@@ -37,6 +37,7 @@ static const AgrippaGameDescription GAME_DESCRIPTIONS[] = {
             ADGF_UNSTABLE,
             GUIO0()
         },
+        GAME_AGRIPPA
     },
     
     {
@@ -53,6 +54,7 @@ static const AgrippaGameDescription GAME_DESCRIPTIONS[] = {
             ADGF_UNSTABLE,
             GUIO0()
         },
+        GAME_AGRIPPA
     },
     
     {
@@ -69,6 +71,7 @@ static const AgrippaGameDescription GAME_DESCRIPTIONS[] = {
             ADGF_UNSTABLE,
             GUIO0()
         },
+        GAME_AGRIPPA
     },
     
     {
@@ -85,6 +88,7 @@ static const AgrippaGameDescription GAME_DESCRIPTIONS[] = {
             ADGF_UNSTABLE,
             GUIO0()
         },
+        GAME_AGRIPPA
     },
     
     {
@@ -101,9 +105,10 @@ static const AgrippaGameDescription GAME_DESCRIPTIONS[] = {
             ADGF_UNSTABLE,
             GUIO0()
         },
+        GAME_AGRIPPA
     },
 
     { AD_TABLE_END_MARKER }
 };
 
-} // End of namespace Agrippa
+} // End of namespace VirtualCinema

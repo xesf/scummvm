@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef AGRIPPA_H
-#define AGRIPPA_H
+#ifndef VIRTUALCINEMA_H
+#define VIRTUALCINEMA_H
  
 #include "common/random.h"
 #include "engines/engine.h"
@@ -30,7 +30,7 @@
 #include "console.h"
 #include "video.h"
  
-namespace Agrippa {
+namespace VirtualCinema {
  
 class Console;
 class VideoManager;
@@ -40,10 +40,10 @@ enum {
     kDebugLevelResources = 1 << 1,
 };
 
-class AgrippaEngine : public Engine {
+class VirtualCinemaEngine : public Engine {
     public:
-        AgrippaEngine(OSystem *syst);
-        ~AgrippaEngine();
+        VirtualCinemaEngine(OSystem *syst);
+        ~VirtualCinemaEngine();
      
         virtual Common::Error run();
         virtual Common::Error processFrame();
@@ -56,6 +56,6 @@ class AgrippaEngine : public Engine {
         Common::RandomSource *_rnd;
 };
 
-} // End of namespace Agrippa
+} // End of namespace VirtualCinema
  
 #endif

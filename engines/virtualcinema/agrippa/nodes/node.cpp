@@ -24,9 +24,9 @@
 
 namespace VirtualCinema {
  
-Node::Node(int type, int id, Common::String path, Common::String desc) :
-_type(type), _id(id), _path(path), _desc(desc) {
-    
-}
+//Node::Node(int type, int id, Common::String path, Common::String desc) :
+//_type(type), _id(id), _path(path), _desc(desc) {
+//    
+//}
  
 }

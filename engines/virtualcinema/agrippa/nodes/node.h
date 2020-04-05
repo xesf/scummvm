@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef NODE_H
-#define NODE_H
+#ifndef VIRTUALCINEMA_NODE_H
+#define VIRTUALCINEMA_NODE_H
  
 #include "common/random.h"
 #include "engines/engine.h"
@@ -36,9 +36,10 @@ enum {
     kNodeTypeNavigation = 1 << 3,
 };
 
-class Node {
+struct Node {
 public:
-    Node(int type, int id, Common::String path, Common::String desc);
+    Node(int type, int id, Common::String path, Common::String desc):
+        _type(type), _id(id), _path(path), _desc(desc) {}
     ~Node() {};
     
     int getId() { return _id; };

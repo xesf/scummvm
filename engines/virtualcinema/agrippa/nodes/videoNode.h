@@ -20,36 +20,23 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_INTRO_H
-#define VIRTUALCINEMA_INTRO_H
+#ifndef VIRTUALCINEMA_VIDEONODE_H
+#define VIRTUALCINEMA_VIDEONODE_H
+ 
+#include "common/random.h"
+#include "engines/engine.h"
+#include "gui/debugger.h"
 
-#include "virtualcinema/agrippa/nodes/videoNode.h"
-#include "virtualcinema/agrippa/eventHandler.h"
-#include "virtualcinema/agrippa/agrippa.h"
+#include "node.h"
 
 namespace VirtualCinema {
 
-class Intro : public EventHandler {
+struct VideoNode : public Node {
 public:
-    Intro(AgrippaEngine *vm);
-    ~Intro();
-    
-    bool handleEvent(const AgrippaEvent &evt);
+    VideoNode(int id, Common::String path, Common::String desc):
+        Node(kNodeTypeVideo, id, path, desc) {}
+    ~VideoNode() {};
 
-protected:
-    bool mountEvent(const AgrippaEvent &evt);
-    bool unmountEvent(const AgrippaEvent &evt);
-    bool updateEvent(const AgrippaEvent &evt);
-    bool keyEvent(const AgrippaEvent &evt);
-    bool mouseEvent(const AgrippaEvent &evt);
-    bool cursorEvent(const AgrippaEvent &evt) { return true; };
-    
-private:
-    AgrippaEngine *_vm;
-    bool _skip = false;
-    
-    VideoNode *_currentNode;
-    VideoNode* getIntroNodes();
 };
 
 } // End of namespace VirtualCinema

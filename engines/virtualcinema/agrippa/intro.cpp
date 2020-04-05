@@ -91,9 +91,9 @@ bool Intro::updateEvent(const AgrippaEvent &evt) {
             delete _currentNode;
             _vm->switchEventHandler(NULL); // _vm->getMenu()
         } else {
-            Node *previous = _currentNode;
+            VideoNode *previous = _currentNode;
             Node::NodeList nodes = _currentNode->getTarget();
-            _currentNode = nodes.front();
+            _currentNode = (VideoNode *)nodes.front();
             if (_currentNode != NULL) {
                 _vm->getVideoManager()->play(_currentNode->getPath());
             }
@@ -123,11 +123,11 @@ bool Intro::mouseEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-Node* Intro::getIntroNodes() {
-    Node* N56003 = new Node(kNodeTypeVideo, 56003, "xv/56003.xmv", "Fox Interactive");
-    Node* N56002 = new Node(kNodeTypeVideo, 56002, "xv/56002.xmv", "HyperBole Studios");
-    Node* N19668 = new Node(kNodeTypeVideo, 19668, "xv/19668.xmv", "Warehouse Intro Sequence");
-    Node* N56001 = new Node(kNodeTypeVideo, 56001, "xv/56001.xmv", "X-Files Openning Sequence");
+VideoNode* Intro::getIntroNodes() {
+    VideoNode* N56003 = new VideoNode(56003, "xv/56003.xmv", "Fox Interactive");
+    VideoNode* N56002 = new VideoNode(56002, "xv/56002.xmv", "HyperBole Studios");
+    VideoNode* N19668 = new VideoNode(19668, "xv/19668.xmv", "Warehouse Intro Sequence");
+    VideoNode* N56001 = new VideoNode(56001, "xv/56001.xmv", "X-Files Openning Sequence");
     
     N56003->linkTarget(N56002);
     N56002->linkTarget(N19668);

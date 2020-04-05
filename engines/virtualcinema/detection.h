@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_DETECTION
-#define VIRTUALCINEMA_DETECTION
+#ifndef VIRTUALCINEMA_DETECTION_H
+#define VIRTUALCINEMA_DETECTION_H
 
 #include "engines/advancedDetector.h"
 #include "backends/keymapper/keymapper.h"

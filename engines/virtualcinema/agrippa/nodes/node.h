@@ -41,13 +41,17 @@ public:
     Node(int type, int id, Common::String path, Common::String desc);
     ~Node() {};
     
-    int getId() { return _id; }
-    int getType() { return _type; }
-    const Common::String& getPath() { return _path; }
-    const Common::String& getDesc() { return _desc; }
+    int getId() { return _id; };
+    int getType() { return _type; };
+    const Common::String& getPath() { return _path; };
+    const Common::String& getDesc() { return _desc; };
     
-    void linkSource(Node* source) { _source.push_back(source); }
-    void linkTarget(Node* target) { _target.push_back(target); }
+    typedef Common::List<Node*> NodeList;
+    NodeList getSource() { return _source; };
+    NodeList getTarget() { return _target; };
+    
+    void linkSource(Node* source) { _source.push_back(source); };
+    void linkTarget(Node* target) { _target.push_back(target); };
      
 protected:
     int _id;
@@ -55,8 +59,6 @@ protected:
     Common::String _path;
     Common::String _desc;
     
-    // typedef Common::SharedPtr<Node> NodePtr;
-    typedef Common::List<Node*> NodeList;
     NodeList _source;
     NodeList _target;
 

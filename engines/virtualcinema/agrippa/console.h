@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#ifndef VIRTUALCINEMA_CONSOLE_H
+#define VIRTUALCINEMA_CONSOLE_H
  
 #include "common/random.h"
 #include "engines/engine.h"

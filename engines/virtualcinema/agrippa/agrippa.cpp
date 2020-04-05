@@ -35,6 +35,8 @@
 #include "console.h"
 #include "video.h"
 #include "agrippa.h"
+#include "eventHandler.h"
+#include "intro.h"
 
 #include "nodes/node.h"
  
@@ -60,23 +62,15 @@ AgrippaEngine::AgrippaEngine(OSystem *syst)
  
 AgrippaEngine::~AgrippaEngine() {
     debug("AgrippaEngine::~AgrippaEngine");
+    _handler = NULL;
     delete _rnd;
     DebugMan.clearAllDebugChannels();
 }
 
-Node* AgrippaEngine::getIntroNodes() {
-    Node* N56003 = new Node(kNodeTypeVideo, 56003, "xv/56003.xmv", "Fox Interactive");
-    Node* N56002 = new Node(kNodeTypeVideo, 56002, "xv/56002.xmv", "HyperBole Studios");
-    Node* N19668 = new Node(kNodeTypeVideo, 56002, "xv/19668.xmv", "Warehouse Intro Sequence");
-    Node* N56001 = new Node(kNodeTypeVideo, 56001, "xv/19668.xmv", "X-Files Openning Sequence");
-    
-    N56003->linkTarget(N56002);
-    N56002->linkTarget(N19668);
-    N19668->linkTarget(N56001);
-    
-    return N56003;
+void AgrippaEngine::fillScreen(uint32 col) {
+    _system->fillScreen(col);
 }
- 
+
 Common::Error AgrippaEngine::run() {
     Graphics::PixelFormat pixelFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 8, 16, 24, 0); // 24bpp
 
@@ -85,44 +79,95 @@ Common::Error AgrippaEngine::run() {
     _console = new Console(this);
     _video = new VideoManager(this);
     
-    Node* node = this->getIntroNodes();
-    _video->play(node->getPath());
+    _intro = new Intro(this);
+    _handler = _intro;
     
-    // _video->play("xv/56003.xmv");
-    // _video->play("xv/56002.xmv");
-    // _video->play("xv/19668.xmv");
-    // _video->play("xv/56001.xmv");
-    // _video->play("xv/64421.xmv");
-    // _video->play("xv/19812.xmv");
-    // _video->play("nav1.nmv");
- 
+    AgrippaEvent mountEvt(EVENT_AGRIPPA_MOUNT);
+    if (_handler) {
+        _handler->handleEvent(mountEvt);
+    }
+
     debug("AgrippaEngine::init");
-    
-    debugC(1, kDebugLevelMain, "Example debug call");
- 
+
     while (!shouldQuit()) {
-        processFrame();
-        // _video->pauseVideos();
+        handleEvents();
     }
 
     return Common::kNoError;
 }
 
-Common::Error AgrippaEngine::processFrame() {
-    _video->updateMovies();
-
-    Common::Event event;
+Common::Error AgrippaEngine::handleEvents() {
+    AgrippaEvent event;
     while (_system->getEventManager()->pollEvent(event)) {
-        // TODO check events
-        // ESC or Mouse Click for skipping movies
+        switch (event.type) {
+        default:
+            break;
+
+        case Common::EVENT_KEYDOWN:
+            if (_handler) {
+                _handler->handleEvent(event);
+            }
+            break;
+
+        case Common::EVENT_KEYUP:
+            if (_handler) {
+                _handler->handleEvent(event);
+            }
+            break;
+
+        case Common::EVENT_MOUSEMOVE:
+        case Common::EVENT_LBUTTONDOWN:
+        case Common::EVENT_LBUTTONUP:
+        case Common::EVENT_RBUTTONDOWN:
+        case Common::EVENT_RBUTTONUP:
+        case Common::EVENT_MBUTTONUP:
+        case Common::EVENT_MBUTTONDOWN:
+            if (_handler) {
+                _handler->handleEvent(event);
+            }
+            break;
+
+        case Common::EVENT_QUIT:
+            break;
+        }
     }
-
+    
+    AgrippaEvent updateEvt(EVENT_AGRIPPA_UPDATE);
+    if (_handler) {
+        _handler->handleEvent(updateEvt);
+    }
+    
     _system->updateScreen();
-
-    // cut down on CPU usage
     _system->delayMillis(10);
 
     return Common::kNoError;
+}
+
+void AgrippaEngine::switchEventHandler(EventHandler *handler) {
+    if (handler == NULL) {
+        warning("AgrippaEngine::switchMessageHandler] NULL handler parameter");
+    }
+
+    if (_handler != NULL) {
+        AgrippaEvent deinit(EVENT_AGRIPPA_UNMOUNT);
+        _handler->handleEvent(deinit);
+    }
+
+    // TODO in-game menu
+
+    _handler = handler;
+
+    AgrippaEvent init(EVENT_AGRIPPA_MOUNT);
+    if (_handler)
+        _handler->handleEvent(init);
+}
+
+void AgrippaEngine::notifyEvent(AgrippaEventType type, int32 param1, int32 param2) {
+    if (_handler == NULL)
+        error("AgrippaEngine::notifyEvent Invalid NULL handler");
+
+    AgrippaEvent event(type, param1, param2);
+    _handler->handleEvent(event);
 }
  
 } // End of namespace VirtualCinema

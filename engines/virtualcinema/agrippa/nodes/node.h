@@ -53,10 +53,13 @@ public:
     
     void linkSource(Node* source) { _source.push_back(source); };
     void linkTarget(Node* target) { _target.push_back(target); };
+    
+    void setLooping(bool loop) { _loop = loop; };
      
 protected:
     int _id;
     int _type;
+    bool _loop = false;
     Common::String _path;
     Common::String _desc;
     

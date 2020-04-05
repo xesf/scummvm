@@ -20,31 +20,19 @@
 *
 */
 
-#include "intro.h"
+#include "game.h"
 #include "eventHandler.h"
+#include "nodes/decisionNode.h"
 
 namespace VirtualCinema {
 
-Intro::Intro(AgrippaEngine *vm): _vm(vm) {
+Game::Game(AgrippaEngine *vm): _vm(vm) {
 }
 
-Intro::~Intro() {
+Game::~Game() {
 }
 
-VideoNode* Intro::getIntroNodes() {
-    VideoNode* N56003 = new VideoNode(56003, "xv/56003.xmv", "Fox Interactive");
-    VideoNode* N56002 = new VideoNode(56002, "xv/56002.xmv", "HyperBole Studios");
-    VideoNode* N19668 = new VideoNode(19668, "xv/19668.xmv", "Warehouse Intro Sequence");
-    VideoNode* N56001 = new VideoNode(56001, "xv/56001.xmv", "X-Files Openning Sequence");
-    
-    N56003->linkTarget(N56002);
-    N56002->linkTarget(N19668);
-    N19668->linkTarget(N56001);
-    
-    return N56003;
-}
-
-bool Intro::handleEvent(const AgrippaEvent &evt) {
+bool Game::handleEvent(const AgrippaEvent &evt) {
     switch ((int32)evt.type) {
     default:
         break;
@@ -70,52 +58,57 @@ bool Intro::handleEvent(const AgrippaEvent &evt) {
     return false;
 }
 
-bool Intro::mountEvent(const AgrippaEvent &evt) {
-    _currentNode = getIntroNodes();
-    _vm->getVideoManager()->play(_currentNode->getPath());
-
+bool Game::mountEvent(const AgrippaEvent &evt) {
+    VideoNode* N64421 = new VideoNode(64421, "xv/64421.xmv", "Seattle Office");
+    VideoNode* N19812 = new VideoNode(19812, "xv/19812.xmv", "Willmore Entering Office");
+    DecisionNode* N25683 = new DecisionNode(25683, "xn/25683.xmv", "Emotion Decision - Willmore Entering Office");
+    N25683->setLooping(true);
+    
+    N64421->linkTarget(N19812);
+    N19812->linkTarget(N25683);
+    
+    _currentNode = N64421;
+    VideoEntryPtr video = _vm->getVideoManager()->play(_currentNode->getPath());
+    video.get()->setY(80);
+    
     return true;
 }
 
-bool Intro::unmountEvent(const AgrippaEvent &evt) {
+bool Game::unmountEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-bool Intro::updateEvent(const AgrippaEvent &evt) {
+bool Game::updateEvent(const AgrippaEvent &evt) {
     if (_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->updateMovies();
     }
     
-    if (_skip || !_vm->getVideoManager()->isVideoPlaying()) {
-        _vm->getVideoManager()->stopVideos();
-        _vm->fillScreen(0);
-        if (_currentNode->getId() == 56001) {
-            delete _currentNode;
-            _vm->switchEventHandler(_vm->getMenu());
-        } else {
-            VideoNode *previous = _currentNode;
+    if (!_vm->getVideoManager()->isVideoPlaying()) {
+        if (_currentNode->getId() != 25683) { // for testing purposes
+            _vm->getVideoManager()->stopVideos();
+            _vm->fillScreen(0);
+            Node *previous = _currentNode;
             Node::NodeList nodes = _currentNode->getTarget();
-            _currentNode = (VideoNode *)nodes.front();
+            _currentNode = nodes.front();
             if (_currentNode != NULL) {
-                _vm->getVideoManager()->play(_currentNode->getPath());
+                VideoEntryPtr video = _vm->getVideoManager()->play(_currentNode->getPath());
+                video.get()->setY(80);
             }
             delete previous;
         }
-        _skip = false;
     }
-    
+
     return true;
 }
 
-bool Intro::keyEvent(const AgrippaEvent &evt) {
+bool Game::keyEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-bool Intro::mouseEvent(const AgrippaEvent &evt) {
+bool Game::mouseEvent(const AgrippaEvent &evt) {
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:
     case Common::EVENT_RBUTTONDOWN:
-        _skip = true;
         break;
     default:
         break;

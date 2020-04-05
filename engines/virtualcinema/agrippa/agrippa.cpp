@@ -82,6 +82,7 @@ Common::Error AgrippaEngine::run() {
     
     _intro = new Intro(this);
     _menu = new Menu(this);
+    _game = new Game(this);
     
     CursorMan.showMouse(true);
     

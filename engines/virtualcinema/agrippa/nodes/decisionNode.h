@@ -20,63 +20,23 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_AGRIPPA_H
-#define VIRTUALCINEMA_AGRIPPA_H
+#ifndef VIRTUALCINEMA_DECISIONNODE_H
+#define VIRTUALCINEMA_DECISIONNODE_H
  
 #include "common/random.h"
 #include "engines/engine.h"
 #include "gui/debugger.h"
 
+#include "node.h"
 
-#include "console.h"
-#include "video.h"
-#include "eventHandler.h"
-#include "intro.h"
-#include "menu.h"
-#include "game.h"
-
-#include "nodes/node.h"
- 
 namespace VirtualCinema {
- 
-class Console;
-class VideoManager;
-class Intro;
-class Menu;
-class Game;
 
-enum {
-    kDebugLevelMain = 1 << 0,
-    kDebugLevelResources = 1 << 1,
-};
-
-class AgrippaEngine : public Engine {
+struct DecisionNode : public Node {
 public:
-    AgrippaEngine(OSystem *syst);
-    ~AgrippaEngine();
+    DecisionNode(int id, Common::String path, Common::String desc):
+        Node(kNodeTypeDecision, id, path, desc) {}
+    ~DecisionNode() {};
 
-    virtual Common::Error run();
-    virtual Common::Error handleEvents();
-    
-    void switchEventHandler(EventHandler *handler);
-    void notifyEvent(AgrippaEventType type, int32 param1, int32 param2);
-    
-    VideoManager* getVideoManager() { return _video; };
-    Menu* getMenu() { return _menu; };
-    Game* getGame() { return _game; };
-    
-    void fillScreen(uint32 col);
- 
-private:
-    Common::RandomSource *_rnd;
-    Console *_console;
-
-    EventHandler *_handler;
-    VideoManager * _video;
-
-    Intro *_intro;
-    Menu *_menu;
-    Game *_game;
 };
 
 } // End of namespace VirtualCinema

@@ -20,63 +20,34 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_AGRIPPA_H
-#define VIRTUALCINEMA_AGRIPPA_H
- 
-#include "common/random.h"
-#include "engines/engine.h"
-#include "gui/debugger.h"
+#ifndef VIRTUALCINEMA_GAME_H
+#define VIRTUALCINEMA_GAME_H
 
-
-#include "console.h"
-#include "video.h"
+#include "nodes/videoNode.h"
 #include "eventHandler.h"
-#include "intro.h"
-#include "menu.h"
-#include "game.h"
+#include "agrippa.h"
 
-#include "nodes/node.h"
- 
 namespace VirtualCinema {
- 
-class Console;
-class VideoManager;
-class Intro;
-class Menu;
-class Game;
 
-enum {
-    kDebugLevelMain = 1 << 0,
-    kDebugLevelResources = 1 << 1,
-};
-
-class AgrippaEngine : public Engine {
+class Game : public EventHandler {
 public:
-    AgrippaEngine(OSystem *syst);
-    ~AgrippaEngine();
+    Game(AgrippaEngine *vm);
+    ~Game();
+    
+    bool handleEvent(const AgrippaEvent &evt);
 
-    virtual Common::Error run();
-    virtual Common::Error handleEvents();
+protected:
+    bool mountEvent(const AgrippaEvent &evt);
+    bool unmountEvent(const AgrippaEvent &evt);
+    bool updateEvent(const AgrippaEvent &evt);
+    bool keyEvent(const AgrippaEvent &evt);
+    bool mouseEvent(const AgrippaEvent &evt);
+    bool cursorEvent(const AgrippaEvent &evt) { return true; };
     
-    void switchEventHandler(EventHandler *handler);
-    void notifyEvent(AgrippaEventType type, int32 param1, int32 param2);
-    
-    VideoManager* getVideoManager() { return _video; };
-    Menu* getMenu() { return _menu; };
-    Game* getGame() { return _game; };
-    
-    void fillScreen(uint32 col);
- 
 private:
-    Common::RandomSource *_rnd;
-    Console *_console;
-
-    EventHandler *_handler;
-    VideoManager * _video;
-
-    Intro *_intro;
-    Menu *_menu;
-    Game *_game;
+    AgrippaEngine *_vm;
+    
+    Node *_currentNode;
 };
 
 } // End of namespace VirtualCinema

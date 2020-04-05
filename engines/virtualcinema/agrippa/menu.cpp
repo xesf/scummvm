@@ -119,8 +119,9 @@ bool Menu::updateEvent(const AgrippaEvent &evt) {
     
     switch (_selectedMenuItem) {
     case kMenuItemNew:
-        // _vm->switchEventHandler(_vm->getGame());
-        debug("New Game");
+        _vm->getVideoManager()->stopVideos();
+        _vm->fillScreen(0);
+        _vm->switchEventHandler(_vm->getGame());
         break;
     case kMenuItemLoad:
         break;
@@ -134,7 +135,6 @@ bool Menu::updateEvent(const AgrippaEvent &evt) {
         break;
 
     case kMenuItemQuit:
-        debug("Quit");
         _vm->quitGame();
         break;
 

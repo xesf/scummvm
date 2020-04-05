@@ -23,9 +23,9 @@
 #ifndef VIRTUALCINEMA_INTRO_H
 #define VIRTUALCINEMA_INTRO_H
 
-#include "virtualcinema/agrippa/nodes/videoNode.h"
-#include "virtualcinema/agrippa/eventHandler.h"
-#include "virtualcinema/agrippa/agrippa.h"
+#include "nodes/videoNode.h"
+#include "eventHandler.h"
+#include "agrippa.h"
 
 namespace VirtualCinema {
 

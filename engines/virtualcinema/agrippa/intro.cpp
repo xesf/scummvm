@@ -31,6 +31,19 @@ Intro::Intro(AgrippaEngine *vm): _vm(vm) {
 Intro::~Intro() {
 }
 
+VideoNode* Intro::getIntroNodes() {
+    VideoNode* N56003 = new VideoNode(56003, "xv/56003.xmv", "Fox Interactive");
+    VideoNode* N56002 = new VideoNode(56002, "xv/56002.xmv", "HyperBole Studios");
+    VideoNode* N19668 = new VideoNode(19668, "xv/19668.xmv", "Warehouse Intro Sequence");
+    VideoNode* N56001 = new VideoNode(56001, "xv/56001.xmv", "X-Files Openning Sequence");
+    
+    N56003->linkTarget(N56002);
+    N56002->linkTarget(N19668);
+    N19668->linkTarget(N56001);
+    
+    return N56003;
+}
+
 bool Intro::handleEvent(const AgrippaEvent &evt) {
     switch ((int32)evt.type) {
     default:
@@ -89,7 +102,7 @@ bool Intro::updateEvent(const AgrippaEvent &evt) {
         _vm->fillScreen(0);
         if (_currentNode->getId() == 56001) {
             delete _currentNode;
-            _vm->switchEventHandler(NULL); // _vm->getMenu()
+            _vm->switchEventHandler(_vm->getMenu());
         } else {
             VideoNode *previous = _currentNode;
             Node::NodeList nodes = _currentNode->getTarget();
@@ -121,19 +134,6 @@ bool Intro::mouseEvent(const AgrippaEvent &evt) {
     }
     
     return true;
-}
-
-VideoNode* Intro::getIntroNodes() {
-    VideoNode* N56003 = new VideoNode(56003, "xv/56003.xmv", "Fox Interactive");
-    VideoNode* N56002 = new VideoNode(56002, "xv/56002.xmv", "HyperBole Studios");
-    VideoNode* N19668 = new VideoNode(19668, "xv/19668.xmv", "Warehouse Intro Sequence");
-    VideoNode* N56001 = new VideoNode(56001, "xv/56001.xmv", "X-Files Openning Sequence");
-    
-    N56003->linkTarget(N56002);
-    N56002->linkTarget(N19668);
-    N19668->linkTarget(N56001);
-    
-    return N56003;
 }
 
 }

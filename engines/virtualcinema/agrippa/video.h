@@ -220,6 +220,12 @@ public:
      * Set the volume of the video
      */
     void setVolume(int volume);
+    
+    uint16 getWidth();
+    uint16 getHeight();
+    Common::Rect getRect();
+    bool isPaused() const;
+    void setEndTime(const Audio::Timestamp &endTime);
 
 private:
     // Non-changing variables
@@ -250,7 +256,11 @@ public:
     void resumeVideos();
     void stopVideos();
     bool isVideoPlaying();
-
+    
+    // Utility functions for managing entries
+    VideoEntryPtr open(uint16 id);
+    VideoEntryPtr openFile(const Common::String &filename);
+    
     // Handle functions
     VideoEntryPtr findVideo(uint16 id);
     VideoEntryPtr findVideo(const Common::String &fileName);
@@ -263,10 +273,6 @@ protected:
     // Keep tabs on any videos playing
     typedef Common::List<VideoEntryPtr> VideoList;
     VideoList _videos;
-
-    // Utility functions for managing entries
-    VideoEntryPtr open(uint16 id);
-    VideoEntryPtr openFile(const Common::String &filename);
 
     VideoList::iterator findEntry(VideoEntryPtr ptr);
 

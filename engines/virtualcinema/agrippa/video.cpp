@@ -136,6 +136,32 @@ void VideoEntry::setVolume(int volume) {
     _video->setVolume(CLIP(volume, 0, 255));
 }
 
+uint16 VideoEntry::getWidth() {
+    assert(_video);
+    return _video->getWidth();
+}
+
+uint16 VideoEntry::getHeight() {
+    assert(_video);
+    return _video->getHeight();
+}
+
+Common::Rect VideoEntry::getRect() {
+    return Common::Rect(_x, _y, _x + getWidth(), _y + getHeight());
+}
+
+bool VideoEntry::isPaused() const {
+    assert(_video);
+    return _video->isPaused();
+}
+
+void VideoEntry::setEndTime(const Audio::Timestamp &endTime) {
+    assert(_video);
+    _video->setEndTime(endTime);
+}
+
+// ---------------------------------------------------------------------------------
+
 VideoManager::VideoManager(AgrippaEngine *vm) : _vm(vm) {
 }
 

@@ -30,6 +30,7 @@
 #include "common/file.h"
 #include "common/fs.h"
  
+#include "graphics/cursorman.h"
 #include "engines/util.h"
 
 #include "console.h"
@@ -80,6 +81,10 @@ Common::Error AgrippaEngine::run() {
     _video = new VideoManager(this);
     
     _intro = new Intro(this);
+    _menu = new Menu(this);
+    
+    CursorMan.showMouse(true);
+    
     _handler = _intro;
     
     AgrippaEvent mountEvt(EVENT_AGRIPPA_MOUNT);
@@ -128,6 +133,7 @@ Common::Error AgrippaEngine::handleEvents() {
             break;
 
         case Common::EVENT_QUIT:
+            quitGame();
             break;
         }
     }

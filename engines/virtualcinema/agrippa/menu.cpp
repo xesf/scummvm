@@ -73,7 +73,7 @@ void Menu::mountMenu() {
     _background.get()->moveTo(61, 103);
     _background.get()->setLooping(true);
     
-    mountMenuItems();
+    mountMenuItems(false);
     mountMenuTitle();
     
     _titleRect = _title.get()->getRect();
@@ -86,16 +86,26 @@ void Menu::mountMenuTitle() {
 }
 
 //const Audio::Timestamp &startTime, const Audio::Timestamp &endTime
-void Menu::mountMenuItems() {
+void Menu::mountMenuItems(bool reloaded) {
     _menuItems = _vm->getVideoManager()->play("xg/49587.xmv");
     _menuItems.get()->moveTo(640 - 168, 0);
-    Audio::Timestamp end = _menuItems.get()->getDuration();
-    _menuItems.get()->setEndTime(end - Audio::Timestamp(6000, end.framerate()));
+    if (reloaded) {
+        _menuItems.get()->setBounds(Audio::Timestamp(5000, 600), _menuItems.get()->getDuration());
+        _menuItems.get()->seek(Audio::Timestamp(5000, 600));
+        _menuItems.get()->stop();
+    } else {
+        _menuItems.get()->setEndTime(Audio::Timestamp(5000, 600));
+    }
 }
 
 bool Menu::updateEvent(const AgrippaEvent &evt) {
-    if (!_titleRect.isEmpty() && _title.get()->endOfVideo()) {
-        mountMenuTitle();
+    if (!_titleRect.isEmpty()) {
+        if (_title.get()->endOfVideo()) {
+            mountMenuTitle();
+        }
+        if (_menuItems.get()->endOfVideo()) {
+            mountMenuItems(true);
+        }
     }
     
     if (_vm->getVideoManager()->isVideoPlaying()) {
@@ -106,6 +116,32 @@ bool Menu::updateEvent(const AgrippaEvent &evt) {
         _vm->getVideoManager()->stopVideos();
         mountMenu();
     }
+    
+    switch (_selectedMenuItem) {
+    case kMenuItemNew:
+        // _vm->switchEventHandler(_vm->getGame());
+        debug("New Game");
+        break;
+    case kMenuItemLoad:
+        break;
+    case kMenuItemSave:
+        break;
+    case kMenuItemPrevious:
+        break;
+    case kMenuItemOptions:
+        break;
+    case kMenuItemHelp:
+        break;
+
+    case kMenuItemQuit:
+        debug("Quit");
+        _vm->quitGame();
+        break;
+
+    default:
+        break;
+    }
+    _selectedMenuItem = -1;
     
     return true;
 }
@@ -122,6 +158,21 @@ bool Menu::mouseEvent(const AgrippaEvent &evt) {
                 if (!_title.get()->isPlaying()) {
                     _title.get()->start();
                 }
+            }
+        }
+        for (uint i = 0; i < ARRAYSIZE(_menuItemsRects); i++) {
+            if (_menuItemsRects[i].contains(evt.mouse)) {
+                _menuItems.get()->setBounds(_menuItemsBoundStart[i], _menuItemsBoundEnd[i]);
+                _menuItems.get()->start();
+            }
+        }
+                
+        // debug("%hd %hd", evt.mouse.x, evt.mouse.y);
+        break;
+    case Common::EVENT_LBUTTONDOWN:
+        for (uint i = 0; i < ARRAYSIZE(_menuItemsRects); i++) {
+            if (_menuItemsRects[i].contains(evt.mouse)) {
+                _selectedMenuItem = i;
             }
         }
         break;

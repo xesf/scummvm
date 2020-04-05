@@ -55,9 +55,51 @@ private:
     bool _titlePlaying = false;
     Common::Rect _titleRect;
     
+    int _selectedMenuItem = -1;
+    
     void mountMenu();
     void mountMenuTitle();
-    void mountMenuItems();
+    void mountMenuItems(bool reloaded);
+    
+    enum {
+        kMenuItemNew      = 0,
+        kMenuItemLoad     = 1,
+        kMenuItemSave     = 2,
+        kMenuItemPrevious = 3,
+        kMenuItemOptions  = 4,
+        kMenuItemHelp     = 5,
+        kMenuItemQuit     = 6,
+    };
+    
+    const Common::Rect _menuItemsRects[7] = {
+        Common::Rect( 472, 30,  640, 70),
+        Common::Rect( 472, 70,  640, 120),
+        Common::Rect( 472, 120, 640, 170),
+        Common::Rect( 472, 170, 640, 220),
+        Common::Rect( 472, 220, 640, 270),
+        Common::Rect( 472, 270, 640, 320),
+        Common::Rect( 472, 320, 640, 370),
+        // Common::Rect( 472, 370, 640, 420),
+    };
+    
+    const Audio::Timestamp _menuItemsBoundStart[7] = {
+        Audio::Timestamp(5000,  600),
+        Audio::Timestamp(5900,  600),
+        Audio::Timestamp(6800,  600),
+        Audio::Timestamp(7700,  600),
+        Audio::Timestamp(8600,  600),
+        Audio::Timestamp(9500, 600),
+        Audio::Timestamp(10400, 600),
+    };
+    const Audio::Timestamp _menuItemsBoundEnd[7] = {
+        Audio::Timestamp(5900,  600),
+        Audio::Timestamp(6800,  600),
+        Audio::Timestamp(7700,  600),
+        Audio::Timestamp(8600,  600),
+        Audio::Timestamp(9500, 600),
+        Audio::Timestamp(10400, 600),
+        Audio::Timestamp(11500, 600),
+    };
 };
 
 } // End of namespace VirtualCinema

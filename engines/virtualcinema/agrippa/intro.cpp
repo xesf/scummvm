@@ -88,6 +88,7 @@ bool Intro::updateEvent(const AgrippaEvent &evt) {
         _vm->getVideoManager()->stopVideos();
         _vm->fillScreen(0);
         if (_currentNode->getId() == 56001) {
+            delete _currentNode;
             _vm->switchEventHandler(NULL); // _vm->getMenu()
         } else {
             Node *previous = _currentNode;
@@ -98,9 +99,8 @@ bool Intro::updateEvent(const AgrippaEvent &evt) {
             }
             delete previous;
         }
+        _skip = false;
     }
-    
-    _skip = false;
     
     // _video->pauseVideos();
     return true;

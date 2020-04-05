@@ -20,40 +20,23 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_H
-#define VIRTUALCINEMA_H
+#ifndef CONSOLE_H
+#define CONSOLE_H
  
 #include "common/random.h"
 #include "engines/engine.h"
 #include "gui/debugger.h"
 
-#include "console.h"
-#include "video.h"
+#include "agrippa.h"
  
 namespace VirtualCinema {
- 
-class Console;
-class VideoManager;
 
-enum {
-    kDebugLevelMain = 1 << 0,
-    kDebugLevelResources = 1 << 1,
-};
+class AgrippaEngine;
 
-class VirtualCinemaEngine : public Engine {
+class Console : public GUI::Debugger {
     public:
-        VirtualCinemaEngine(OSystem *syst);
-        ~VirtualCinemaEngine();
-     
-        virtual Common::Error run();
-        virtual Common::Error processFrame();
-     
-    private:
-        Console *_console;
-        VideoManager * _video;
-     
-        // We need random numbers
-        Common::RandomSource *_rnd;
+        Console(AgrippaEngine *vm) {}
+        virtual ~Console(void) {}
 };
 
 } // End of namespace VirtualCinema

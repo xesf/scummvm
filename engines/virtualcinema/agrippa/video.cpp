@@ -31,8 +31,8 @@
 #include "graphics/surface.h"
 #include "video/qt_decoder.h"
 
-#include "virtualcinema/virtualcinema.h"
-#include "virtualcinema/video.h"
+#include "virtualcinema/agrippa/agrippa.h"
+#include "virtualcinema/agrippa/video.h"
 
 namespace VirtualCinema {
 
@@ -136,7 +136,7 @@ void VideoEntry::setVolume(int volume) {
     _video->setVolume(CLIP(volume, 0, 255));
 }
 
-VideoManager::VideoManager(VirtualCinemaEngine *vm) : _vm(vm) {
+VideoManager::VideoManager(AgrippaEngine *vm) : _vm(vm) {
 }
 
 VideoManager::~VideoManager() {

@@ -34,7 +34,7 @@ static const VirtualCinemaGameDescription GAME_DESCRIPTIONS[] = {
             },
             Common::EN_USA,
             Common::kPlatformWindows,
-            ADGF_UNSTABLE,
+            ADGF_TESTING,
             GUIO0()
         },
         GAME_AGRIPPA

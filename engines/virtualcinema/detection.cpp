@@ -29,11 +29,11 @@
 #include "common/memstream.h"
 #include "common/translation.h"
 
-#include "virtualcinema/virtualcinema.h"
+#include "virtualcinema/agrippa/agrippa.h"
 
 namespace VirtualCinema {
 
-class VirtualCinemaEngine;
+class AgrippaEngine;
 
 static const PlainGameDescriptor VIRTUALCINEMA_GAMES[] = {
     { "agrippa", "The X-Files Game" },
@@ -53,7 +53,16 @@ VirtualCinemaMetaEngine::VirtualCinemaMetaEngine() : AdvancedMetaEngine(VirtualC
 
 bool VirtualCinemaMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
     const VirtualCinema::VirtualCinemaGameDescription *gd = (const VirtualCinema::VirtualCinemaGameDescription *)desc;
-    *engine = new VirtualCinema::VirtualCinemaEngine(syst);
+    if (gd) {
+        switch (gd->gameId) {
+        case VirtualCinema::GAME_AGRIPPA:
+            *engine = new VirtualCinema::AgrippaEngine(syst);
+            break;
+        default:
+            error("Game not implemented");
+            break;
+        }
+    }
     return gd != 0;
 }
 

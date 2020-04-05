@@ -1,9 +1,9 @@
 MODULE := engines/virtualcinema
  
 MODULE_OBJS := \
-    virtualcinema.o \
-    detection.o \
-    video.o
+    agrippa/agrippa.o \
+    agrippa/video.o \
+    detection.o
  
 MODULE_DIRS += \
     engines/virtualcinema

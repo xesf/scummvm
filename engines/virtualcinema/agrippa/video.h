@@ -32,13 +32,15 @@
 #include "common/rational.h"
 #include "graphics/pixelformat.h"
 
+#include "agrippa.h"
+
 namespace Video {
 class VideoDecoder;
 }
 
 namespace VirtualCinema {
 
-class VirtualCinemaEngine;
+class AgrippaEngine;
 
 /**
  * A video monitored by the VideoManager
@@ -237,7 +239,7 @@ typedef Common::SharedPtr<VideoEntry> VideoEntryPtr;
 
 class VideoManager {
 public:
-    explicit VideoManager(VirtualCinemaEngine *vm);
+    explicit VideoManager(AgrippaEngine *vm);
     virtual ~VideoManager();
 
     // Generic movie functions
@@ -256,7 +258,7 @@ public:
     void removeEntry(const VideoEntryPtr &video);
 
 protected:
-    VirtualCinemaEngine *_vm;
+    AgrippaEngine *_vm;
 
     // Keep tabs on any videos playing
     typedef Common::List<VideoEntryPtr> VideoList;

@@ -20,23 +20,43 @@
  *
  */
 
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#ifndef AGRIPPA_H
+#define AGRIPPA_H
  
 #include "common/random.h"
 #include "engines/engine.h"
 #include "gui/debugger.h"
 
-#include "virtualcinema.h"
+
+#include "console.h"
+#include "video.h"
+#include "nodes/node.h"
  
 namespace VirtualCinema {
+ 
+class Console;
+class VideoManager;
 
-class VirtualCinemaEngine;
+enum {
+    kDebugLevelMain = 1 << 0,
+    kDebugLevelResources = 1 << 1,
+};
 
-class Console : public GUI::Debugger {
+class AgrippaEngine : public Engine {
     public:
-        Console(VirtualCinemaEngine *vm) {}
-        virtual ~Console(void) {}
+        AgrippaEngine(OSystem *syst);
+        ~AgrippaEngine();
+    
+        virtual Common::Error run();
+        virtual Common::Error processFrame();
+     
+    private:
+        Common::RandomSource *_rnd;
+        Console *_console;
+    
+        VideoManager * _video;
+    
+        Node* getIntroNodes();
 };
 
 } // End of namespace VirtualCinema

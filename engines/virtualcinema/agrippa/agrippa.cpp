@@ -32,14 +32,18 @@
  
 #include "engines/util.h"
 
-#include "virtualcinema/console.h"
-#include "virtualcinema/video.h"
-#include "virtualcinema/virtualcinema.h"
+#include "console.h"
+#include "video.h"
+#include "agrippa.h"
+
+#include "nodes/node.h"
  
 namespace VirtualCinema {
  
-VirtualCinemaEngine::VirtualCinemaEngine(OSystem *syst)
+AgrippaEngine::AgrippaEngine(OSystem *syst)
  : Engine(syst), _console(nullptr) {
+     _rnd = new Common::RandomSource("AgrippaEngine");
+     
      const Common::FSNode gameDataDir(ConfMan.get("path"));
      SearchMan.addSubDirectoryMatching(gameDataDir, "xg");
      SearchMan.addSubDirectoryMatching(gameDataDir, "xn");
@@ -50,36 +54,49 @@ VirtualCinemaEngine::VirtualCinemaEngine(OSystem *syst)
     // Common debug channels
     DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
     DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
-
-    _rnd = new Common::RandomSource("VirtualCinema");
  
-    debug("VirtualCinemaEngine::VirtualCinemaEngine");
+    debug("AgrippaEngine::AgrippaEngine");
 }
  
-VirtualCinemaEngine::~VirtualCinemaEngine() {
-    debug("VirtualCinemaEngine::~VirtualCinemaEngine");
-
+AgrippaEngine::~AgrippaEngine() {
+    debug("AgrippaEngine::~AgrippaEngine");
     delete _rnd;
-
     DebugMan.clearAllDebugChannels();
 }
+
+Node* AgrippaEngine::getIntroNodes() {
+    Node* N56003 = new Node(kNodeTypeVideo, 56003, "xv/56003.xmv", "Fox Interactive");
+    Node* N56002 = new Node(kNodeTypeVideo, 56002, "xv/56002.xmv", "HyperBole Studios");
+    Node* N19668 = new Node(kNodeTypeVideo, 56002, "xv/19668.xmv", "Warehouse Intro Sequence");
+    Node* N56001 = new Node(kNodeTypeVideo, 56001, "xv/19668.xmv", "X-Files Openning Sequence");
+    
+    N56003->linkTarget(N56002);
+    N56002->linkTarget(N19668);
+    N19668->linkTarget(N56001);
+    
+    return N56003;
+}
  
-Common::Error VirtualCinemaEngine::run() {
+Common::Error AgrippaEngine::run() {
     Graphics::PixelFormat pixelFormat = Graphics::PixelFormat(4, 8, 8, 8, 8, 8, 16, 24, 0); // 24bpp
 
     initGraphics(640, 480, &pixelFormat);
  
     _console = new Console(this);
     _video = new VideoManager(this);
+    
+    Node* node = this->getIntroNodes();
+    _video->play(node->getPath());
+    
     // _video->play("xv/56003.xmv");
     // _video->play("xv/56002.xmv");
     // _video->play("xv/19668.xmv");
     // _video->play("xv/56001.xmv");
     // _video->play("xv/64421.xmv");
-    _video->play("xv/19812.xmv");
+    // _video->play("xv/19812.xmv");
     // _video->play("nav1.nmv");
  
-    debug("VirtualCinemaEngine::init");
+    debug("AgrippaEngine::init");
     
     debugC(1, kDebugLevelMain, "Example debug call");
  
@@ -91,23 +108,21 @@ Common::Error VirtualCinemaEngine::run() {
     return Common::kNoError;
 }
 
-
-Common::Error VirtualCinemaEngine::processFrame() {
+Common::Error AgrippaEngine::processFrame() {
     _video->updateMovies();
 
     Common::Event event;
     while (_system->getEventManager()->pollEvent(event)) {
         // TODO check events
+        // ESC or Mouse Click for skipping movies
     }
 
     _system->updateScreen();
 
-    // Cut down on CPU usage
+    // cut down on CPU usage
     _system->delayMillis(10);
 
     return Common::kNoError;
 }
-
-
  
 } // End of namespace VirtualCinema

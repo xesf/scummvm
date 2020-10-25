@@ -43,7 +43,14 @@ namespace Ultima8 {
 // This does NOT need to be in the header
 struct SortItem {
 	SortItem(SortItem *n) : _next(n), _prev(nullptr), _itemNum(0),
-			_shape(nullptr), _order(-1), _depends() { }
+			_shape(nullptr), _order(-1), _depends(), _shapeNum(0),
+			_frame(0), _flags(0), _extFlags(0), _sx(0), _sy(0),
+			_sx2(0), _sy2(0), _x(0), _y(0), _z(0), _xLeft(0),
+			_yFar(0), _zTop(0), _sxLeft(0), _sxRight(0), _sxTop(0),
+			_syTop(0), _sxBot(0), _syBot(0),_f32x32(false), _flat(false),
+			_occl(false), _solid(false), _draw(false), _roof(false),
+			_noisy(false), _anim(false), _trans(false), _fixed(false),
+			_land(false), _occluded(false), _clipped(0) { }
 
 	SortItem                *_next;
 	SortItem                *_prev;
@@ -228,9 +235,7 @@ struct SortItem {
 
 	// Comparison for the sorted lists
 	inline bool ListLessThan(const SortItem *other) const {
-		return _z < other->_z ||
-		       (_z == other->_z && _x < other->_x) ||
-		       (_z == other->_z && _x == other->_x && _y < other->_y);
+		return _z < other->_z || (_z == other->_z && _flat);
 	}
 
 };
@@ -264,8 +269,8 @@ inline bool SortItem::overlap(const SortItem &si2) const {
 	const bool bot_right_clear = dot_bot_right >= 0;
 
 	const bool clear = right_clear || left_clear ||
-	                   (bot_right_clear && bot_left_clear) ||
-	                   (top_right_clear && top_left_clear);
+	                   (bot_right_clear || bot_left_clear) ||
+	                   (top_right_clear || top_left_clear);
 
 	return !clear;
 }
@@ -333,33 +338,12 @@ inline bool SortItem::operator<(const SortItem &si2) const {
 	}
 	// Mixed, or non flat
 	else {
-
-		// Clearly X, Y and Z (useful?)
-		//if (si1._x <= si2._xLeft && si1._y <= si2._yFar && si1._zTop <= si2._z) return true;
-		//else if (si1._xLeft >= si2._x && si1._yFar >= si2._y && si1._z >= si2._zTop) return false;
-
-		//int front1 = si1._x + si1._y;
-		//int rear1 = si1._xLeft + si1._yFar;
-		//int front2 = si2._x + si2._y;
-		//int rear2 = si2._xLeft + si2._yFar;
-
-		// Rear of object is infront of other's front
-		//if (front1 <= rear2) return true;
-		//else if (rear1 >= front2) return false;
-
 		// Clearly in z
 		if (si1._zTop <= si2._z)
 			return true;
 		else if (si1._z >= si2._zTop)
 			return false;
-
-		// Partial in z
-		//if (si1._zTop != si2._zTop) return si1._zTop < si2._zTop;
 	}
-
-	// Clearly in x and y? (useful?)
-	//if (si1._x <= si2._xLeft && si1._y <= si2._yFar) return true;
-	//else if (si1._xLeft >= si2._x && si1._yFar >= si2._y) return false;
 
 	// Clearly in x?
 	if (si1._x <= si2._xLeft) return true;
@@ -402,7 +386,7 @@ inline bool SortItem::operator<(const SortItem &si2) const {
 	// Partial in y?
 	if (si1._y != si2._y) return si1._y < si2._y;
 
-	// Just sort by _shape number - not a number any more (is a pointer)
+	// Just sort by shape number
 	if (si1._shapeNum != si2._shapeNum) return si1._shapeNum < si2._shapeNum;
 
 	// And then by _frame
@@ -598,7 +582,7 @@ inline bool SortItem::operator<<(const SortItem &si2) const {
 
 ItemSorter::ItemSorter() :
 	_shapes(nullptr), _surf(nullptr), _items(nullptr), _itemsTail(nullptr),
-	_itemsUnused(nullptr), _sortLimit(0) {
+	_itemsUnused(nullptr), _sortLimit(0), _camSx(0), _camSy(0), _orderCounter(0) {
 	int i = 2048;
 	while (i--) _itemsUnused = new SortItem(_itemsUnused);
 }
@@ -645,11 +629,10 @@ void ItemSorter::BeginDisplayList(RenderSurface *rs,
 }
 
 void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 frame_num, uint32 flags, uint32 ext_flags, uint16 itemNum) {
-	//if (z > skip_lift) return;
-	//if (Application::tgwds && _shape == 538) return;
 
 	// First thing, get a SortItem to use (first of unused)
-	if (!_itemsUnused) _itemsUnused = new SortItem(0);
+	if (!_itemsUnused)
+		_itemsUnused = new SortItem(0);
 	SortItem *si = _itemsUnused;
 
 	si->_itemNum = itemNum;
@@ -658,31 +641,18 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 	si->_frame = frame_num;
 	const ShapeFrame *_frame = si->_shape->getFrame(si->_frame);
 	if (!_frame) {
-		perr << "Invalid _shape: " << si->_shapeNum << "," << si->_frame
+		perr << "Invalid shape: " << si->_shapeNum << "," << si->_frame
 		     << Std::endl;
 		return;
 	}
 
-	ShapeInfo *info = _shapes->getShapeInfo(shapeNum);
-
-	//if (info->is_editor && !show_editor_items) return;
-	//if (info->z > shape_max_height) return;
-
-	// Dimensions
-	int32 xd, yd, zd;
 	si->_flags = flags;
 	si->_extFlags = ext_flags;
 
-	// X and Y are flipped
-	if (si->_flags & Item::FLG_FLIPPED) {
-		xd = info->_y * 32;  // Multiply by 32 to get actual world size
-		yd = info->_x * 32;  // Multiply by 32 to get actual world size
-	} else {
-		xd = info->_x * 32;  // Multiply by 32 to get actual world size
-		yd = info->_y * 32;  // Multiply by 32 to get actual world size
-	}
-
-	zd = info->_z * 8;   // Multiply by 8 to get actual world size
+	const ShapeInfo *info = _shapes->getShapeInfo(shapeNum);
+	// Dimensions
+	int32 xd, yd, zd;
+	info->getFootpadWorld(xd, yd, zd, flags & Item::FLG_FLIPPED);
 
 	// Worldspace bounding box
 	si->_x = x;
@@ -707,14 +677,6 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 	// Screenspace bounding box bottom extent  (RNB y coord)
 	si->_syBot = si->_x / 8 + si->_y / 8 - si->_z - _camSy;
 
-//	si->_sxLeft += swo2;
-//	si->_sxRight += swo2;
-//	si->_sxBot += swo2;
-//	si->_sxTop += swo2;
-
-//	si->_syTop += sho2;
-//	si->_syBot += sho2;
-
 	// Real Screenspace coords
 	si->_sx = si->_sxBot - _frame->_xoff;   // Left
 	si->_sy = si->_syBot - _frame->_yoff;   // Top
@@ -722,37 +684,25 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 	si->_sy2 = si->_sy + _frame->_height;   // Bottom
 
 	// Do Clipping here
-	si->_clipped = _surf->CheckClipped(Rect(si->_sx, si->_sy, _frame->_width, _frame->_height));
-	if (si->_clipped < 0) return;
+	si->_clipped = _surf->CheckClipped(Rect(si->_sx, si->_sy, si->_sx + _frame->_width, si->_sy + _frame->_height));
+	if (si->_clipped < 0)
+		// Clipped away entirely - don't add to the list.
+		return;
 
 	// These help out with sorting. We calc them now, so it will be faster
 	si->_f32x32 = xd == 128 && yd == 128;
 	si->_flat = zd == 0;
 
-	/*
-	if (Application::tgwds) {
-	    si->_draw = false;
-	    si->_solid = false;
-	    si->_occl = false;
-	    si->roof = false;
-	    si->noisy = false;
-	    si->_anim = false;
-	    si->_trans = false;
-	}
-	else
-	*/
-	{
-		si->_draw = info->is_draw();
-		si->_solid = info->is_solid();
-		si->_occl = info->is_occl() && !(si->_flags & Item::FLG_INVISIBLE) &&
-		           !(si->_extFlags & Item::EXT_TRANSPARENT);
-		si->_roof = info->is_roof();
-		si->_noisy = info->is_noisy();
-		si->_anim = info->_animType != 0;
-		si->_trans = info->is_translucent();
-		si->_fixed = info->is_fixed();
-		si->_land = info->is_land();
-	}
+	si->_draw = info->is_draw();
+	si->_solid = info->is_solid();
+	si->_occl = info->is_occl() && !(si->_flags & Item::FLG_INVISIBLE) &&
+			   !(si->_extFlags & Item::EXT_TRANSPARENT);
+	si->_roof = info->is_roof();
+	si->_noisy = info->is_noisy();
+	si->_anim = info->_animType != 0;
+	si->_trans = info->is_translucent();
+	si->_fixed = info->is_fixed();
+	si->_land = info->is_land();
 
 	si->_occluded = false;
 	si->_order = -1;
@@ -761,7 +711,6 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 	// Stictly speaking the vector will sort of leak memory, since they
 	// are never deleted
 	si->_depends.clear();
-	//si->_depends.erase(si->_depends.begin(), si->_depends.end());    // MSVC.Netism
 
 	// Iterate the list and compare _shapes
 
@@ -769,10 +718,12 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 	SortItem *addpoint = nullptr;
 	for (SortItem *si2 = _items; si2 != nullptr; si2 = si2->_next) {
 		// Get the insert point... which is before the first item that has higher z than us
-		if (!addpoint && si->ListLessThan(si2)) addpoint = si2;
+		if (!addpoint && si->ListLessThan(si2))
+			addpoint = si2;
 
 		// Doesn't overlap
-		if (si2->_occluded || !si->overlap(*si2)) continue;
+		if (si2->_occluded || !si->overlap(*si2))
+			continue;
 
 		// Attempt to find which is infront
 		if (*si < *si2) {
@@ -787,9 +738,11 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 			si2->_depends.insert_sorted(si);
 		} else {
 			// ss occludes si2. Sadly, we can't remove it from the list.
-			if (si->_occl && si->occludes(*si2)) si2->_occluded = true;
+			if (si->_occl && si->occludes(*si2))
+				si2->_occluded = true;
 			// si2 is behind si1, so add it to si1's dependency list
-			else si->_depends.push_back(si2);
+			else
+				si->_depends.push_back(si2);
 		}
 	}
 
@@ -802,195 +755,28 @@ void ItemSorter::AddItem(int32 x, int32 y, int32 z, uint32 shapeNum, uint32 fram
 		si->_next = addpoint;
 		si->_prev = addpoint->_prev;
 		addpoint->_prev = si;
-		if (si->_prev) si->_prev->_next = si;
-		else _items = si;
+		if (si->_prev)
+			si->_prev->_next = si;
+		else
+			_items = si;
 	}
 	// Add it to the end of the list
 	else {
-		if (_itemsTail) _itemsTail->_next = si;
-		if (!_items) _items = si;
+		if (_itemsTail)
+			_itemsTail->_next = si;
+		if (!_items)
+			_items = si;
 		si->_next = nullptr;
 		si->_prev = _itemsTail;
 		_itemsTail = si;
 	}
 }
 
-void ItemSorter::AddItem(Item *add) {
-#if 0
-
+void ItemSorter::AddItem(const Item *add) {
 	int32 x, y, z;
 	add->getLerped(x, y, z);
-	AddItem(x, y, z, add->getShape(), add->getFrame(), add->getFlags(), add->getObjId());
-
-#else
-
-	//if (add->iz > skip_lift) return;
-	//if (Application::tgwds && _shape == 538) return;
-
-	// First thing, get a SortItem to use
-	if (!_itemsUnused) _itemsUnused = new SortItem(0);
-	SortItem *si = _itemsUnused;
-
-	si->_itemNum = add->getObjId();
-	si->_shape = add->getShapeObject();
-	si->_shapeNum = add->getShape();
-	si->_frame = add->getFrame();
-	const ShapeFrame *_frame = si->_shape->getFrame(si->_frame);
-	if (!_frame) {
-		perr << "Invalid _shape: " << si->_shapeNum << "," << si->_frame
-		     << Std::endl;
-		return;
-	}
-
-	ShapeInfo *info = add->getShapeInfo();
-
-	//if (info->is_editor && !show_editor_items) return;
-	//if (info->z > shape_max_height) return;
-
-	// Dimensions
-	int32 xd, yd, zd;
-	si->_flags = add->getFlags();
-	si->_extFlags = add->getExtFlags();
-
-	// X and Y are flipped
-	if (si->_flags & Item::FLG_FLIPPED) {
-		xd = info->_y * 32;  // Multiply by 32 to get actual world size
-		yd = info->_x * 32;  // Multiply by 32 to get actual world size
-	} else {
-		xd = info->_x * 32;  // Multiply by 32 to get actual world size
-		yd = info->_y * 32;  // Multiply by 32 to get actual world size
-	}
-
-	zd = info->_z * 8;   // Multiply by 8 to get actual world size
-
-	// Worldspace bounding box
-	add->getLerped(si->_x, si->_y, si->_z);
-	si->_xLeft = si->_x - xd;
-	si->_yFar = si->_y - yd;
-	si->_zTop = si->_z + zd;
-
-	// Screenspace bounding box left extent    (LNT x coord)
-	si->_sxLeft = si->_xLeft / 4 - si->_y / 4 - _camSx;
-	// Screenspace bounding box right extent   (RFT x coord)
-	si->_sxRight = si->_x / 4 - si->_yFar / 4 - _camSx;
-
-	// Screenspace bounding box top x coord    (LFT x coord)
-	si->_sxTop = si->_xLeft / 4 - si->_yFar / 4 - _camSx;
-	// Screenspace bounding box top extent     (LFT y coord)
-	si->_syTop = si->_xLeft / 8 + si->_yFar / 8 - si->_zTop - _camSy;
-
-	// Screenspace bounding box bottom x coord (RNB x coord)
-	si->_sxBot = si->_x / 4 - si->_y / 4 - _camSx;
-	// Screenspace bounding box bottom extent  (RNB y coord)
-	si->_syBot = si->_x / 8 + si->_y / 8 - si->_z - _camSy;
-
-//	si->_sxLeft += swo2;
-//	si->_sxRight += swo2;
-//	si->_sxBot += swo2;
-//	si->_sxTop += swo2;
-
-//	si->_syTop += sho2;
-//	si->_syBot += sho2;
-
-	// Real Screenspace coords
-	si->_sx = si->_sxBot - _frame->_xoff;   // Left
-	si->_sy = si->_syBot - _frame->_yoff;   // Top
-	si->_sx2 = si->_sx + _frame->_width;    // Right
-	si->_sy2 = si->_sy + _frame->_height;   // Bottom
-
-	// Do Clipping here
-	si->_clipped = _surf->CheckClipped(Rect(si->_sx, si->_sy, _frame->_width, _frame->_height));
-	if (si->_clipped < 0) return;
-
-	// These help out with sorting. We calc them now, so it will be faster
-	si->_f32x32 = xd == 128 && yd == 128;
-	si->_flat = zd == 0;
-
-	/*
-	if (Application::tgwds) {
-	    si->_draw = false;
-	    si->_solid = false;
-	    si->_occl = false;
-	    si->roof = false;
-	    si->noisy = false;
-	    si->_anim = false;
-	    si->_trans = false;
-	}
-	else
-	*/
-	{
-		si->_draw = info->is_draw();
-		si->_solid = info->is_solid();
-		si->_occl = info->is_occl() && !(si->_flags & Item::FLG_INVISIBLE) &&
-		           !(si->_extFlags & Item::EXT_TRANSPARENT);
-		si->_roof = info->is_roof();
-		si->_noisy = info->is_noisy();
-		si->_anim = info->_animType != 0;
-		si->_trans = info->is_translucent();
-		si->_fixed = info->is_fixed();
-		si->_land = info->is_land();
-	}
-
-	si->_occluded = false;
-	si->_order = -1;
-
-	// We will clear all the vector memory
-	// Stictly speaking the vector will sort of leak memory, since they
-	// are never deleted
-	si->_depends.clear();
-	//si->_depends.erase(si->_depends.begin(), si->_depends.end());    // MSVC.Netism
-
-	// Iterate the list and compare _shapes
-
-	// Ok,
-	SortItem *addpoint = nullptr;
-	for (SortItem *si2 = _items; si2 != nullptr; si2 = si2->_next) {
-		// Get the insert point... which is before the first item that has higher z than us
-		if (!addpoint && si->ListLessThan(si2)) addpoint = si2;
-
-		// Doesn't overlap
-		if (si2->_occluded || !si->overlap(*si2)) continue;
-
-		// Attempt to find which is infront
-		if (*si < *si2) {
-			// si2 occludes si
-			if (si2->_occl && si2->occludes(*si)) {
-				// No need to do any more checks, this isn't visible
-				si->_occluded = true;
-				break;
-			}
-
-			// si is behind si2, so add it to si2's dependency list
-			si2->_depends.insert_sorted(si);
-		} else {
-			// si occludes si2. Sadly, we can't remove it from the list.
-			if (si->_occl && si->occludes(*si2)) si2->_occluded = true;
-			// si2 is behind si, so add it to si's dependency list
-			else si->_depends.push_back(si2);
-		}
-	}
-
-	// Add it to the list
-	_itemsUnused = _itemsUnused->_next;
-
-	// have a position
-	//addpoint = 0;
-	if (addpoint) {
-		si->_next = addpoint;
-		si->_prev = addpoint->_prev;
-		addpoint->_prev = si;
-		if (si->_prev) si->_prev->_next = si;
-		else _items = si;
-	}
-	// Add it to the end of the list
-	else {
-		if (_itemsTail) _itemsTail->_next = si;
-		if (!_items) _items = si;
-		si->_next = nullptr;
-		si->_prev = _itemsTail;
-		_itemsTail = si;
-	}
-#endif
+	AddItem(x, y, z, add->getShape(), add->getFrame(),
+			add->getFlags(), add->getExtFlags(), add->getObjId());
 }
 
 SortItem *_prev = 0;
@@ -1024,22 +810,31 @@ void ItemSorter::PaintDisplayList(bool item_highlight) {
 	}
 }
 
+/**
+ * Recursively paint this item and all its dependencies.
+ * Returns true if recursion should stop.
+ */
 bool ItemSorter::PaintSortItem(SortItem *si) {
-	// Don't paint this, or dependencies if occluded
-	if (si->_occluded) return false;
+	// Don't paint this, or dependencies (yet) if occluded
+	if (si->_occluded)
+		return false;
 
-	// Resursion, detection
+	// Resursion detection
 	si->_order = -2;
 
 	// Iterate through our dependancies, and paint them, if possible
 	SortItem::DependsList::iterator it = si->_depends.begin();
 	SortItem::DependsList::iterator end = si->_depends.end();
 	while (it != end) {
-		// Well, it can't. Implies infinite recursive sorting.
-		//if ((*it)->_order == -2) CANT_HAPPEN_MSG("Detected cycle in the dependency graph");
-
-		if ((*it)->_order == -1) if (PaintSortItem((*it))) return true;
-
+		if ((*it)->_order == -2) {
+			//warning("cycle in paint dependency graph %d -> %d -> ... -> %d",
+			//		si->_shapeNum, (*it)->_shapeNum, si->_shapeNum);
+			break;
+		}
+		else if ((*it)->_order == -1) {
+			if (PaintSortItem((*it)))
+				return true;
+		}
 		++it;
 	}
 

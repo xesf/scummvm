@@ -270,7 +270,7 @@ void Subtitles::loadOuttakeSubsText(const Common::String &outtakesName, int fram
  * Used for debug purposes mainly.
  */
 void Subtitles::setGameSubsText(Common::String dbgQuote, bool forceShowWhenNoSpeech) {
-	_currentText = _useUTF8 ? Common::convertUtf8ToUtf32(dbgQuote) : dbgQuote;
+	_currentText = _useUTF8 ? Common::convertUtf8ToUtf32(dbgQuote) : Common::U32String(dbgQuote);
 	_forceShowWhenNoSpeech = forceShowWhenNoSpeech; // overrides not showing subtitles when no one is speaking
 }
 
@@ -368,7 +368,7 @@ void Subtitles::draw(Graphics::Surface &s) {
 	if (_currentText != _prevText) {
 		lines.clear();
 		_prevText = _currentText;
-		_font->wordWrapText(_currentText, kTextMaxWidth, lines, 0, true, true);
+		_font->wordWrapText(_currentText, kTextMaxWidth, lines, 0, Graphics::kWordWrapEvenWidthLines | Graphics::kWordWrapOnExplicitNewLines);
 	}
 
 	int y = s.h - (kMarginBottom + MAX(kPreferedLine, lines.size()) * _font->getFontHeight());

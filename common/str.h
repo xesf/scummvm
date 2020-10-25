@@ -25,10 +25,20 @@
 
 #include "common/scummsys.h"
 #include "common/str-enc.h"
+#include "common/ustr.h"
 
 #include <stdarg.h>
 
 namespace Common {
+
+/**
+ * @defgroup common_str Strings
+ * @ingroup common
+ *
+ * @brief API for working with strings.
+ *
+ * @{
+ */
 
 class U32String;
 
@@ -128,6 +138,9 @@ public:
 	/** Construct a string consisting of the given character. */
 	explicit String(char c);
 
+	/** Construct a new string from the given u32 string. */
+	String(const U32String &str);
+
 	~String();
 
 	String &operator=(const char *str);
@@ -156,6 +169,8 @@ public:
 	bool equalsIgnoreCase(const char *x) const;
 	int compareTo(const char *x) const;             // strcmp clone
 	int compareToIgnoreCase(const char *x) const;   // stricmp clone
+	int compareDictionary(const String &x) const;
+	int compareDictionary(const char *x) const;
 
 	bool hasSuffix(const String &x) const;
 	bool hasSuffix(const char *x) const;
@@ -170,9 +185,13 @@ public:
 	bool contains(const String &x) const;
 	bool contains(const char *x) const;
 	bool contains(char x) const;
+	bool contains(uint32 x) const;
 
 	/** Return uint64 corrensponding to String's contents. */
 	uint64 asUint64() const;
+
+  	/** Return uint64 corrensponding to String's contents. This variant recognizes 0 (oct) and 0x (hex) prefixes. */
+	uint64 asUint64Ext() const;
 
 	/**
 	 * Simple DOS-style pattern matching function (understands * and ? like used in DOS).
@@ -340,7 +359,7 @@ public:
 	size_t findLastOf(const String &chars, size_t pos = npos) const {
 		return findLastOf(chars.c_str(), pos);
 	}
- 
+
 	/** Find first character in the string that's not the specified character */
 	size_t findFirstNotOf(char c, size_t pos = 0) const;
 
@@ -395,6 +414,8 @@ protected:
 	void incRefCount() const;
 	void decRefCount(int *oldRefCount);
 	void initWithCStr(const char *str, uint32 len);
+
+	bool pointerInOwnBuffer(const char *str) const;
 
 	void decodeUTF8(U32String &dst) const;
 	void decodeOneByte(U32String &dst, CodePage page) const;
@@ -557,10 +578,17 @@ size_t strnlen(const char *src, size_t maxSize);
  */
 String toPrintable(const String &src, bool keepNewLines = true);
 
+/** @} */
+
 } // End of namespace Common
 
 extern int scumm_stricmp(const char *s1, const char *s2);
 extern int scumm_strnicmp(const char *s1, const char *s2, uint n);
 extern char *scumm_strdup(const char *in);
+
+extern int scumm_compareDictionary(const char *s1, const char *s2);
+extern const char *scumm_skipArticle(const char *s1);
+
+extern const char *scumm_strcasestr(const char *s, const char *find);
 
 #endif

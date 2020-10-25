@@ -63,7 +63,7 @@ public:
 	ThemeLayout(ThemeLayout *p) :
 		_parent(p), _x(0), _y(0), _w(-1), _h(-1),
 		_defaultW(-1), _defaultH(-1),
-		_textHAlign(Graphics::kTextAlignInvalid) {}
+		_textHAlign(Graphics::kTextAlignInvalid), _useRTL(true) {}
 
 	virtual ~ThemeLayout() {
 		for (uint i = 0; i < _children.size(); ++i)
@@ -114,7 +114,8 @@ protected:
 	virtual ThemeLayout *makeClone(ThemeLayout *newParent) = 0;
 
 public:
-	virtual bool getWidgetData(const Common::String &name, int16 &x, int16 &y, uint16 &w, uint16 &h);
+	virtual bool getWidgetData(const Common::String &name, int16 &x, int16 &y, int16 &w, int16 &h, bool &useRTL);
+	bool getUseRTL() { return _useRTL; }
 
 	virtual Graphics::TextAlign getWidgetTextHAlign(const Common::String &name);
 
@@ -131,6 +132,7 @@ public:
 protected:
 	ThemeLayout *_parent;
 	int16 _x, _y, _w, _h;
+	bool _useRTL;
 	Common::Rect _padding;
 	Common::Array<ThemeLayout *> _children;
 	int16 _defaultW, _defaultH;
@@ -139,11 +141,10 @@ protected:
 
 class ThemeLayoutMain : public ThemeLayout {
 public:
-	ThemeLayoutMain(const Common::String &name, const Common::String &overlays, int16 width, int16 height, bool enabled, int inset) :
+	ThemeLayoutMain(const Common::String &name, const Common::String &overlays, int16 width, int16 height, int inset) :
 			ThemeLayout(nullptr),
 			_name(name),
 			_overlays(overlays),
-			_enabled(enabled),
 			_inset(inset) {
 		_w = _defaultW = width;
 		_h = _defaultH = height;
@@ -169,7 +170,6 @@ protected:
 
 	Common::String _name;
 	Common::String _overlays;
-	bool _enabled;
 	int _inset;
 };
 
@@ -221,14 +221,15 @@ protected:
 
 class ThemeLayoutWidget : public ThemeLayout {
 public:
-	ThemeLayoutWidget(ThemeLayout *p, const Common::String &name, int16 w, int16 h, Graphics::TextAlign align) : ThemeLayout(p), _name(name) {
+	ThemeLayoutWidget(ThemeLayout *p, const Common::String &name, int16 w, int16 h, Graphics::TextAlign align, bool useRTL) : ThemeLayout(p), _name(name) {
 		_w = _defaultW = w;
 		_h = _defaultH = h;
+		_useRTL = useRTL;
 
 		setTextHAlign(align);
 	}
 
-	bool getWidgetData(const Common::String &name, int16 &x, int16 &y, uint16 &w, uint16 &h) override;
+	bool getWidgetData(const Common::String &name, int16 &x, int16 &y, int16 &w, int16 &h, bool &useRTL) override;
 	Graphics::TextAlign getWidgetTextHAlign(const Common::String &name) override;
 
 	void reflowLayout(Widget *widgetChain) override;
@@ -255,7 +256,7 @@ class ThemeLayoutTabWidget : public ThemeLayoutWidget {
 
 public:
 	ThemeLayoutTabWidget(ThemeLayout *p, const Common::String &name, int16 w, int16 h, Graphics::TextAlign align, int tabHeight):
-		ThemeLayoutWidget(p, name, w, h, align) {
+		ThemeLayoutWidget(p, name, w, h, align, p->getUseRTL()) {
 		_tabHeight = tabHeight;
 	}
 
@@ -265,8 +266,8 @@ public:
 		}
 	}
 
-	bool getWidgetData(const Common::String &name, int16 &x, int16 &y, uint16 &w, uint16 &h) override {
-		if (ThemeLayoutWidget::getWidgetData(name, x, y, w, h)) {
+	bool getWidgetData(const Common::String &name, int16 &x, int16 &y, int16 &w, int16 &h, bool &useRTL) override {
+		if (ThemeLayoutWidget::getWidgetData(name, x, y, w, h, useRTL)) {
 			h -= _tabHeight;
 			return true;
 		}
@@ -296,7 +297,7 @@ public:
 		}
 	}
 
-	bool getWidgetData(const Common::String &name, int16 &x, int16 &y, uint16 &w, uint16 &h) override { return false; }
+	bool getWidgetData(const Common::String &name, int16 &x, int16 &y, int16 &w, int16 &h, bool &useRTL) override { return false; }
 	void reflowLayout(Widget *widgetChain) override {}
 #ifdef LAYOUT_DEBUG_DIALOG
 	const char *getName() const { return "SPACE"; }

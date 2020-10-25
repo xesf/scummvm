@@ -104,7 +104,7 @@ bool find_casesensitive_path(Std::string path, Std::string filename, Std::string
 	for (dir_iter = directories.begin(); dir_iter != directories.end();) {
 		string dir = *dir_iter;
 
-		::debug("%s, ", dir.c_str());
+		::debug(1, "%s, ", dir.c_str());
 
 		if (find_path(tmp_path, dir) == false)
 			return false;
@@ -119,7 +119,7 @@ bool find_casesensitive_path(Std::string path, Std::string filename, Std::string
 
 	new_path = tmp_path;
 
-	::debug("\nproper path = %s", new_path.c_str());
+	::debug(1, "\nproper path = %s", new_path.c_str());
 	return true;
 }
 
@@ -135,7 +135,7 @@ bool find_path(Std::string path, Std::string &dir_str) {
 		return false;
 
 	for (item = readdir(dir); item != NULL; item = readdir(dir)) {
-		debug("trying %s, want %s\n", item->d_name, dir_str.c_str());
+		debug("trying %s, want %s", item->d_name, dir_str.c_str());
 		if (strlen(item->d_name) == dir_str.length() && Common::scumm_stricmp(item->d_name, dir_str.c_str()) == 0) {
 			dir_str = item->d_name;
 			return true;

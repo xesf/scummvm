@@ -47,7 +47,7 @@ public:
 		return noGraphicsModes;
 	};
 	virtual int getDefaultGraphicsMode() const { return 0; }
-	virtual bool setGraphicsMode(int mode) { return (mode == 0); }
+	virtual bool setGraphicsMode(int mode, uint flags = OSystem::kGfxModeNoFlags) { return (mode == 0); }
 	virtual void resetGraphicsScale() {}
 	virtual int getGraphicsMode() const { return 0; }
 	virtual const OSystem::GraphicsMode *getSupportedShaders() const {
@@ -91,6 +91,7 @@ public:
 
 	virtual void showOverlay() = 0;
 	virtual void hideOverlay() = 0;
+	virtual bool isOverlayVisible() const = 0;
 	virtual Graphics::PixelFormat getOverlayFormat() const = 0;
 	virtual void clearOverlay() = 0;
 	virtual void grabOverlay(void *buf, int pitch) const = 0;
@@ -103,13 +104,16 @@ public:
 	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale = false, const Graphics::PixelFormat *format = NULL) = 0;
 	virtual void setCursorPalette(const byte *colors, uint start, uint num) = 0;
 
-	virtual void displayMessageOnOSD(const char *msg) {}
+	virtual void displayMessageOnOSD(const Common::U32String &msg) {}
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) {}
 
 
 	// Graphics::PaletteManager interface
 	//virtual void setPalette(const byte *colors, uint start, uint num) = 0;
 	//virtual void grabPalette(byte *colors, uint start, uint num) const = 0;
+
+	virtual void saveScreenshot() {}
+	virtual bool lockMouse(bool lock) { return false; }
 };
 
 #endif

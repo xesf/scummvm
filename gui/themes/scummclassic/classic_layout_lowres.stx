@@ -68,7 +68,7 @@
 
 		<widget name = 'OptionsLabel'
 				size = '110, Globals.Line.Height'
-				textalign = 'right'
+				textalign = 'end'
 		/>
 		<widget name = 'SmallLabel'
 				size = '18, Globals.Line.Height'
@@ -132,7 +132,7 @@
 				<widget name = 'SearchDesc'
 						width = '50'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'Search'
 						width = '150'
@@ -245,7 +245,7 @@
 			</layout>
 		</layout>
 	</dialog>
-	
+
 	<dialog name = 'GlobalOptions_Control' overlays = 'Dialog.GlobalOptions.TabWidget'>
 		<layout type = 'vertical' padding = '16, 16, 16, 16' spacing = '8'>
 			<widget name = 'grOnScreenCheckbox'
@@ -263,6 +263,7 @@
 				/>
 				<widget name = 'grKbdMouseSpeedSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'grKbdMouseSpeedLabel'
 						type = 'SmallLabel'
@@ -274,6 +275,7 @@
 				/>
 				<widget name = 'grJoystickDeadzoneSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'grJoystickDeadzoneLabel'
 						type = 'SmallLabel'
@@ -328,6 +330,25 @@
 			<widget name = 'grFilteringCheckbox'
 					type = 'Checkbox'
 			/>
+			<widget name = 'grVSyncCheckbox'
+					type = 'Checkbox'
+			/>
+			<layout type = 'horizontal' padding = '0, 0, 0, 0' spacing = '10' align = 'center'>
+				<widget name = 'grRendererTypePopupDesc'
+						type = 'OptionsLabel'
+				/>
+				<widget name = 'grRendererTypePopup'
+						type = 'PopUp'
+				/>
+			</layout>
+			<layout type = 'horizontal' padding = '0, 0, 0, 0' spacing = '10' align = 'center'>
+				<widget name = 'grAntiAliasPopupDesc'
+						type = 'OptionsLabel'
+				/>
+				<widget name = 'grAntiAliasPopup'
+						type = 'PopUp'
+				/>
+			</layout>
 		</layout>
 	</dialog>
 
@@ -382,6 +403,7 @@
 				/>
 				<widget name = 'subSubtitleSpeedSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'subSubtitleSpeedLabel'
 						type = 'SmallLabel'
@@ -398,6 +420,7 @@
 				/>
 				<widget name = 'vcMusicSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'vcMusicLabel'
 						type = 'SmallLabel'
@@ -409,6 +432,7 @@
 				/>
 				<widget name = 'vcSfxSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'vcSfxLabel'
 						type = 'SmallLabel'
@@ -420,6 +444,7 @@
 				/>
 				<widget name = 'vcSpeechSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'vcSpeechLabel'
 						type = 'SmallLabel'
@@ -465,6 +490,7 @@
 				/>
 				<widget name = 'mcMidiGainSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'mcMidiGainLabel'
 						width = '32'
@@ -570,7 +596,7 @@
 				<widget name = 'RendererPopupDesc'
 						width = '80'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'RendererPopup'
 					type = 'PopUp'
@@ -580,7 +606,7 @@
 				<widget name = 'AutosavePeriodPopupDesc'
 						width = '80'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'AutosavePeriodPopup'
 						type = 'PopUp'
@@ -590,7 +616,7 @@
 				<widget name = 'GuiLanguagePopupDesc'
 						width = '80'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'GuiLanguagePopup'
 						type = 'PopUp'
@@ -610,7 +636,7 @@
 				<widget name = 'UpdatesPopupDesc'
 						width = '80'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'UpdatesPopup'
 						type = 'PopUp'
@@ -638,7 +664,7 @@
 					<widget name = 'StoragePopupDesc'
 							width = '100'
 							height = 'Globals.Line.Height'
-							textalign = 'right'
+							textalign = 'end'
 					/>
 				</layout>
 				<layout type = 'vertical' padding = '0, 0, 0, 0' spacing = '1'>
@@ -791,7 +817,7 @@
 				<widget name = 'ServerPortDesc'
 						width = '80'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'ServerPortEditText'
 						width = '60'
@@ -992,6 +1018,12 @@
 		</layout>
 	</dialog>
 
+	<dialog name = 'GameOptions_Achievements' overlays = 'Dialog.GameOptions.TabWidget'>
+		<layout type = 'vertical' padding = '0, 0, 0, 0'>
+			<widget name = 'Container'/>
+		</layout>
+	</dialog>
+
 	<dialog name = 'GameOptions_Graphics' overlays = 'Dialog.GameOptions.TabWidget'>
 		<layout type = 'vertical' padding = '0, 0, 0, 0'>
 			<widget name = 'Container'/>
@@ -1057,7 +1089,7 @@
 				<widget name = 'Id'
 						width = '35'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'Domain'
 						type = 'PopUp'
@@ -1067,7 +1099,7 @@
 				<widget name = 'Name'
 						width = '35'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'Desc'
 						type = 'PopUp'
@@ -1078,7 +1110,7 @@
 				<widget name = 'LangPopupDesc'
 						width = '60'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'LangPopup'
 						type = 'PopUp'
@@ -1088,7 +1120,7 @@
 				<widget name = 'PlatformPopupDesc'
 						width = '60'
 						height = 'Globals.Line.Height'
-						textalign = 'right'
+						textalign = 'end'
 				/>
 				<widget name = 'PlatformPopup'
 						type = 'PopUp'
@@ -1134,7 +1166,13 @@
 		</layout>
 	</dialog>
 
-	<dialog name = 'GameOptions_Engine' overlays = 'Dialog.GameOptions.TabWidget' shading = 'dim'>
+	<dialog name = 'GameOptions_Engine' overlays = 'Dialog.GameOptions.TabWidget'>
+		<layout type = 'vertical' padding = '0, 0, 0, 0'>
+			<widget name = 'Container'/>
+		</layout>
+	</dialog>
+
+	<dialog name = 'GameOptions_Engine_Container' overlays = 'GameOptions_Engine.Container'>
 		<layout type = 'vertical' padding = '8, 8, 8, 8'>
 			<widget name = 'customOption1Checkbox'
 					type = 'Checkbox'
@@ -1197,7 +1235,7 @@
 						width = '120'
 						height = '12'
 				/>
-				<widget name = 'RTL'
+				<widget name = 'ReturnToLauncher'
 						width = '120'
 						height = '12'
 				/>
@@ -1229,6 +1267,18 @@
 		</layout>
 	</dialog>
 
+	<dialog name = 'GlobalConfig_Engine' overlays = 'Dialog.GlobalConfig.TabWidget'>
+		<layout type = 'vertical' padding = '0, 0, 0, 0'>
+			<widget name = 'Container'/>
+		</layout>
+	</dialog>
+
+	<dialog name = 'GlobalConfig_Engine_Container' overlays = 'Dialog.GlobalConfig_Engine.Container'>
+		<layout type = 'vertical' padding = '8, 8, 8, 8'>
+			<import layout = 'Dialog.GameOptions_Engine_Container' />
+		</layout>
+	</dialog>
+
 	<dialog name = 'GlobalConfig_Audio' overlays = 'Dialog.GlobalConfig.TabWidget'>
 		<layout type = 'vertical' padding = '8, 8, 8, 8'>
 			<layout type = 'horizontal' padding = '0, 0, 0, 0' spacing = '6' align = 'center'>
@@ -1237,6 +1287,7 @@
 				/>
 				<widget name = 'vcMusicSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'vcMusicLabel'
 						type = 'SmallLabel'
@@ -1248,6 +1299,7 @@
 				/>
 				<widget name = 'vcSfxSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'vcSfxLabel'
 						type = 'SmallLabel'
@@ -1259,6 +1311,7 @@
 				/>
 				<widget name = 'vcSpeechSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'vcSpeechLabel'
 						type = 'SmallLabel'
@@ -1296,6 +1349,7 @@
 				/>
 				<widget name = 'subSubtitleSpeedSlider'
 						type = 'Slider'
+						rtl = 'no'
 				/>
 				<widget name = 'subSubtitleSpeedLabel'
 						type = 'SmallLabel'
@@ -1305,6 +1359,12 @@
 	</dialog>
 
 	<dialog name = 'GlobalConfig_KeyMapper' overlays = 'Dialog.GlobalConfig.TabWidget'>
+		<layout type = 'vertical' padding = '0, 0, 0, 0'>
+			<widget name = 'Container'/>
+		</layout>
+	</dialog>
+
+	<dialog name = 'GlobalConfig_Achievements' overlays = 'Dialog.GlobalConfig.TabWidget'>
 		<layout type = 'vertical' padding = '0, 0, 0, 0'>
 			<widget name = 'Container'/>
 		</layout>
@@ -1339,6 +1399,7 @@
 				/>
 				<widget name = 'VoiceCountSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'VoiceCountLabel'
 					width = '32'
@@ -1351,6 +1412,7 @@
 				/>
 				<widget name = 'LevelSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'LevelLabel'
 					width = '32'
@@ -1363,6 +1425,7 @@
 				/>
 				<widget name = 'SpeedSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'SpeedLabel'
 					width = '32'
@@ -1375,6 +1438,7 @@
 				/>
 				<widget name = 'DepthSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'DepthLabel'
 					width = '32'
@@ -1403,6 +1467,7 @@
 				/>
 				<widget name = 'RoomSizeSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'RoomSizeLabel'
 					width = '32'
@@ -1415,6 +1480,7 @@
 				/>
 				<widget name = 'DampingSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'DampingLabel'
 					width = '32'
@@ -1427,6 +1493,7 @@
 				/>
 				<widget name = 'WidthSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'WidthLabel'
 					width = '32'
@@ -1439,6 +1506,7 @@
 				/>
 				<widget name = 'LevelSlider'
 					type = 'Slider'
+					rtl = 'no'
 				/>
 				<widget name = 'LevelLabel'
 					width = '32'
@@ -1801,7 +1869,7 @@
 
 	<dialog name = 'DropdownDialog' overlays = 'screen_center' shading = 'luminance'>
 	</dialog>
-		
+
 	<dialog name = 'UnknownGameDialog' overlays = 'screen' inset = '8' shading = 'dim'>
 		<layout type = 'vertical' padding = '8, 8, 8, 0'>
 			<widget name = 'TextContainer'

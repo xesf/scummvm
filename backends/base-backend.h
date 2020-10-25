@@ -26,21 +26,22 @@
 #include "common/system.h"
 #include "common/events.h"
 
+/**
+ * Subclass of OSystem that contains default implementations of functions that would
+ * cause circular dependencies if they were implemented in common/system.cpp
+ */
 class BaseBackend : public OSystem {
-protected:
-	virtual Common::EventSource *getDefaultEventSource() = 0;
 public:
-	virtual void initBackend();
+	virtual void initBackend() override;
 
-	virtual void displayMessageOnOSD(const char *msg);
-	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) {}
-	virtual void fillScreen(uint32 col);
+	virtual void displayMessageOnOSD(const Common::U32String &msg) override;
+	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) override {}
+	virtual void fillScreen(uint32 col) override;
 };
 
-class EventsBaseBackend : public BaseBackend, Common::EventSource {
-protected:
-	virtual Common::EventSource *getDefaultEventSource() { return this; }
+class EventsBaseBackend : virtual public BaseBackend, Common::EventSource {
 public:
+	virtual void initBackend();
 };
 
 

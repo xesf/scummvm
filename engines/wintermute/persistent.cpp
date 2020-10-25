@@ -81,6 +81,10 @@
 #include "engines/wintermute/base/scriptables/script_ext_mem_buffer.h"
 #include "engines/wintermute/base/scriptables/script_ext_object.h"
 #include "engines/wintermute/base/scriptables/script_ext_string.h"
+#include "engines/wintermute/ext/wme_3fstatistics.h"
+#include "engines/wintermute/ext/wme_commandlinehelper.h"
+#include "engines/wintermute/ext/wme_steam.h"
+#include "engines/wintermute/ext/wme_galaxy.h"
 #include "engines/wintermute/ui/ui_button.h"
 #include "engines/wintermute/ui/ui_edit.h"
 #include "engines/wintermute/ui/ui_entity.h"
@@ -89,6 +93,16 @@
 #include "engines/wintermute/ui/ui_window.h"
 #include "engines/wintermute/video/video_theora_player.h"
 #include "engines/wintermute/system/sys_class.h"
+
+#ifdef ENABLE_WME3D
+#include "engines/wintermute/ad/ad_actor_3dx.h"
+#include "engines/wintermute/ad/ad_attach_3dx.h"
+#include "engines/wintermute/ad/ad_object_3d.h"
+#include "engines/wintermute/ad/ad_path3d.h"
+#include "engines/wintermute/ad/ad_path_point3d.h"
+#include "engines/wintermute/ad/ad_scene_geometry.h"
+#include "engines/wintermute/base/gfx/x/modelx.h"
+#endif
 
 // SystemClass adds these objects to the registry, thus they aren't as leaked as they look
 #define REGISTER_CLASS(class_name, persistent_class)\
@@ -157,6 +171,11 @@ void SystemClassRegistry::registerClasses() {
 	REGISTER_CLASS(SXObject, false)
 	REGISTER_CLASS(SXString, false)
 
+	REGISTER_CLASS(SX3fStatistics, false)
+	REGISTER_CLASS(SXSteamAPI, false)
+	REGISTER_CLASS(SXWMEGalaxyAPI, false)
+	REGISTER_CLASS(SXCommandLineHelper, false)
+
 	REGISTER_CLASS(UIButton, false)
 	REGISTER_CLASS(UIEdit, false)
 	REGISTER_CLASS(UIEntity, false)
@@ -166,5 +185,17 @@ void SystemClassRegistry::registerClasses() {
 	REGISTER_CLASS(UIWindow, false)
 	REGISTER_CLASS(VideoTheoraPlayer, false)
 }
+
+#ifdef ENABLE_WME3D
+void SystemClassRegistry::register3DClasses() {
+	REGISTER_CLASS(AdActor3DX, false)
+	REGISTER_CLASS(AdAttach3DX, false)
+	REGISTER_CLASS(AdObject3D, false)
+	REGISTER_CLASS(AdPath3D, false)
+	REGISTER_CLASS(AdPathPoint3D, false)
+	REGISTER_CLASS(AdSceneGeometry, false)
+	REGISTER_CLASS(ModelX, false)
+}
+#endif
 
 }

@@ -41,12 +41,11 @@ enum {
 	kClearCmd        = 'CLER',
 	kResetActionCmd  = 'RTAC',
 	kResetKeymapCmd  = 'RTKM',
-	kCloseCmd        = 'CLOS',
-	kReflowCmd       = 'REFL'
+	kCloseCmd        = 'CLOS'
 };
 
 RemapWidget::RemapWidget(GuiObject *boss, const Common::String &name, const KeymapArray &keymaps) :
-		Widget(boss, name),
+		OptionsContainerWidget(boss, name, "", true, ""),
 		_keymapTable(keymaps),
 		_remapKeymap(nullptr),
 		_remapAction(nullptr),
@@ -57,10 +56,6 @@ RemapWidget::RemapWidget(GuiObject *boss, const Common::String &name, const Keym
 
 	EventDispatcher *eventDispatcher = g_system->getEventManager()->getEventDispatcher();
 	_remapInputWatcher = new InputWatcher(eventDispatcher, keymapper);
-
-	_scrollContainer = new GUI::ScrollContainerWidget(this, 0, 0, 0, 0, kReflowCmd);
-	_scrollContainer->setTarget(this);
-	_scrollContainer->setBackgroundType(GUI::ThemeEngine::kWidgetBackgroundNo);
 }
 
 RemapWidget::~RemapWidget() {
@@ -70,8 +65,8 @@ RemapWidget::~RemapWidget() {
 	delete _remapInputWatcher;
 }
 
-void RemapWidget::build() {
-	debug(3, "RemapWidget::build keymaps: %d", _keymapTable.size());
+void RemapWidget::load() {
+	debug(3, "RemapWidget::load keymaps: %d", _keymapTable.size());
 
 	_changes = false;
 
@@ -167,7 +162,7 @@ void RemapWidget::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 d
 	} else if (cmd == kReflowCmd) {
 		reflowActionWidgets();
 	} else {
-		Widget::handleCommand(sender, cmd, data);
+		OptionsContainerWidget::handleCommand(sender, cmd, data);
 	}
 }
 
@@ -221,15 +216,24 @@ void RemapWidget::startRemapping(uint actionIndex) {
 
 	_remapKeymap = _actions[actionIndex].keymap;
 	_remapAction = _actions[actionIndex].action;
-	_remapTimeout = g_system->getMillis() + kRemapTimeoutDelay;
+
+	uint32 remapTimeoutDelay = kRemapMinTimeoutDelay;
+	if (ConfMan.hasKey("remap_timeout_delay_ms") && ((uint32)ConfMan.getInt("remap_timeout_delay_ms") > kRemapMinTimeoutDelay)) {
+		remapTimeoutDelay = (uint32)ConfMan.getInt("remap_timeout_delay_ms");
+	}
+	_remapTimeout = g_system->getMillis() + remapTimeoutDelay;
 	_remapInputWatcher->startWatching();
 
 	_actions[actionIndex].keyButton->setLabel("...");
 	_actions[actionIndex].keyButton->setTooltip("");
 	_actions[actionIndex].keyButton->markAsDirty();
+
+	g_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, true);
 }
 
 void RemapWidget::stopRemapping() {
+	g_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, false);
+
 	_remapKeymap = nullptr;
 	_remapAction = nullptr;
 
@@ -242,7 +246,7 @@ void RemapWidget::handleMouseDown(int x, int y, int button, int clickCount) {
 	if (_remapInputWatcher->isWatching())
 		stopRemapping();
 	else
-		Widget::handleMouseDown(x, y, button, clickCount);
+		OptionsContainerWidget::handleMouseDown(x, y, button, clickCount);
 }
 
 void RemapWidget::handleTickle() {
@@ -257,7 +261,7 @@ void RemapWidget::handleTickle() {
 	if (_remapInputWatcher->isWatching() && g_system->getMillis() > _remapTimeout)
 		stopRemapping();
 
-	Widget::handleTickle();
+	OptionsContainerWidget::handleTickle();
 }
 
 void RemapWidget::loadKeymap() {
@@ -279,20 +283,20 @@ void RemapWidget::refreshKeymap() {
 		ActionRow &row = _actions[i];
 
 		if (!row.actionText) {
-			row.actionText = new GUI::StaticTextWidget(_scrollContainer, 0, 0, 0, 0, "", Graphics::kTextAlignLeft, nullptr, GUI::ThemeEngine::kFontStyleNormal);
+			row.actionText = new GUI::StaticTextWidget(widgetsBoss(), 0, 0, 0, 0, U32String(""), Graphics::kTextAlignStart, U32String(""), GUI::ThemeEngine::kFontStyleNormal);
 			row.actionText->setLabel(row.action->description);
 
-			row.keyButton = new GUI::DropdownButtonWidget(_scrollContainer, 0, 0, 0, 0, "", nullptr, kRemapCmd + i);
+			row.keyButton = new GUI::DropdownButtonWidget(widgetsBoss(), 0, 0, 0, 0, U32String(""), U32String(""), kRemapCmd + i);
 			row.keyButton->appendEntry(_("Reset to defaults"), kResetActionCmd + i);
 			row.keyButton->appendEntry(_("Clear mapping"), kClearCmd + i);
 		}
 
 		Array<HardwareInput> mappedInputs = row.keymap->getActionMapping(row.action);
 
-		String keysLabel;
+		U32String keysLabel;
 		for (uint j = 0; j < mappedInputs.size(); j++) {
 			if (!keysLabel.empty()) {
-				keysLabel += ", ";
+				keysLabel += Common::U32String(", ");
 			}
 
 			keysLabel += mappedInputs[j].description;
@@ -308,31 +312,14 @@ void RemapWidget::refreshKeymap() {
 
 		KeymapTitleRow &keymapTitle = _keymapSeparators[row.keymap];
 		if (!keymapTitle.descriptionText) {
-			keymapTitle.descriptionText = new GUI::StaticTextWidget(_scrollContainer, 0, 0, 0, 0, row.keymap->getDescription(), Graphics::kTextAlignLeft);
-			keymapTitle.resetButton = new GUI::ButtonWidget(_scrollContainer, 0, 0, 0, 0, "", nullptr, kResetKeymapCmd + i);
+			keymapTitle.descriptionText = new GUI::StaticTextWidget(widgetsBoss(), 0, 0, 0, 0, row.keymap->getDescription(), Graphics::kTextAlignStart);
+			keymapTitle.resetButton = new GUI::ButtonWidget(widgetsBoss(), 0, 0, 0, 0, U32String(""), U32String(""), kResetKeymapCmd + i);
 
 			// I18N: Button to reset keymap mappings to defaults
 			keymapTitle.resetButton->setLabel(_("Reset"));
 			keymapTitle.resetButton->setTooltip(_("Reset to defaults"));
 		}
 	}
-}
-
-void RemapWidget::reflowLayout() {
-	Widget::reflowLayout();
-
-	_scrollContainer->resize(_x, _y, _w, _h);
-
-	Widget *w = _firstWidget;
-	while (w) {
-		w->reflowLayout();
-		w = w->next();
-	}
-}
-
-GUI::Widget *RemapWidget::findWidget(int x, int y) {
-	// Iterate over all child widgets and find the one which was clicked
-	return Widget::findWidgetInChain(_firstWidget, x, y);
 }
 
 } // End of namespace Common

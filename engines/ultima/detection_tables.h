@@ -23,6 +23,7 @@
 namespace Ultima {
 
 static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
+#ifndef RELEASE_BUILD
 	{
 		// Ultima I - The First Age of Darkness
 		{
@@ -44,6 +45,25 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 	},
 
 	{
+		// Ultima I - The First Age of Darkness, PC98 version
+		{
+			"ultima1",
+			0,
+			{
+				{"egctown.bin", 0, "4f7de68f6689cf9617aa1ea03240137e", 4896},
+				{"map.bin", 0, "f99633a0110ccf90837ab161be56cf1c", 13104},
+				AD_LISTEND
+			},
+			Common::JA_JPN,
+			Common::kPlatformPC98,
+			ADGF_UNSTABLE,
+			GUIO0()
+		},
+		GAME_ULTIMA1,
+		0
+	},
+
+	{
 		// Ultima I - The First Age of Darkness
 		{
 			"ultima1",
@@ -57,6 +77,37 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		GAME_ULTIMA1,
 		0
 	},
+#endif
+
+	{
+		// Ultima IV - Quest of the Avatar
+		{
+			"ultima4",
+			0,
+			AD_ENTRY1s("britain.ult", "304fe52ce5f34b9181052363d74d7505", 1280),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOSPEECH)
+		},
+		GAME_ULTIMA4,
+		0
+	},
+
+	{
+		// Ultima IV - Quest of the Avatar
+		{
+			"ultima4_enh",
+			0,
+			AD_ENTRY1s("britain.ult", "304fe52ce5f34b9181052363d74d7505", 1280),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOSPEECH)
+		},
+		GAME_ULTIMA4,
+		GF_VGA_ENHANCED
+	},
 
 	// GOG Ultima VI
 	{
@@ -66,7 +117,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("converse.a", "5065716423ef1389e3f7b4946d815c26", 162615),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE,
+			ADGF_NO_FLAGS,
 			GUIO0()
 		},
 		GAME_ULTIMA6,
@@ -81,11 +132,58 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("converse.a", "5065716423ef1389e3f7b4946d815c26", 162615),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE,
+			ADGF_NO_FLAGS,
 			GUIO0()
 		},
 		GAME_ULTIMA6,
 		GF_VGA_ENHANCED
+	},
+
+	// Ultima VI - German Patch https://sirjohn.de/ultima-6/
+	// Note: Not all user interface elements are translated in ScummVM
+	{
+		{
+			"ultima6",
+			0,
+			AD_ENTRY1s("converse.a", "ae979230b97f8813bdf8f82698847435", 198627),
+			Common::DE_DEU,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		0
+	},
+
+	// Ultima VI - German Patch https://sirjohn.de/ultima-6/
+	// Note: Not all user interface elements are translated in ScummVM
+	{
+		{
+			"ultima6_enh",
+			0,
+			AD_ENTRY1s("converse.a", "ae979230b97f8813bdf8f82698847435", 198627),
+			Common::DE_DEU,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		GF_VGA_ENHANCED
+	},
+
+	// PC98 Ultima 6
+	{
+		{
+			"ultima6",
+			0,
+			AD_ENTRY1s("converse.a", "99975e79e7cae3ee24a8e33982f60fe4", 190920),
+			Common::JA_JPN,
+			Common::kPlatformPC98,
+			ADGF_UNSTABLE,
+			GUIO0()
+		},
+		GAME_ULTIMA6,
+		0
 	},
 
 	// Ultima VIII - Ultima Collection 1998
@@ -96,7 +194,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("eusecode.flx", "87c8b584e2947e5e4d99bd8bff6cea2e", 1251108),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE,
+			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOMIDI)
 		},
 		GAME_ULTIMA8,
@@ -111,7 +209,7 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 			AD_ENTRY1s("eusecode.flx", "c61f1dacde591cb39d452264e281f234", 1251108),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
-			ADGF_UNSTABLE,
+			ADGF_NO_FLAGS,
 			GUIO1(GUIO_NOMIDI)
 		},
 		GAME_ULTIMA8,
@@ -122,35 +220,208 @@ static const UltimaGameDescription GAME_DESCRIPTIONS[] = {
 		{
 			"ultima8",
 			"Gold Edition",
-			{
-				{ "eusecode.flx", 0, "c61f1dacde591cb39d452264e281f234", 1251108 },
-				{ "fusecode.flx", 0, "4017eb8678ee24af0ce8c7647a05509b", 1300957 },
-				AD_LISTEND
-			},			
+			AD_ENTRY1s("fusecode.flx", "4017eb8678ee24af0ce8c7647a05509b", 1300957),
 			Common::FR_FRA,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_ULTIMA8,
+		0
+	},
+
+	{
+		{
+			"ultima8",
+			"Gold Edition",
+			AD_ENTRY1s("gusecode.flx", "d69599a46870b66c1b7c02710ed185bd", 1378604),
+			Common::DE_DEU,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_ULTIMA8,
+		0
+	},
+
+	// German CD version
+	{
+		{
+			"ultima8",
+			"",
+			AD_ENTRY1s("gusecode.flx", "dc981f82c6303548ad1c967cdef1a0ea", 1335445),
+			Common::DE_DEU,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_ULTIMA8,
+		0
+	},
+
+	{
+		{
+			"ultima8",
+			"",
+			AD_ENTRY1s("eusecode.flx", "1abad7a58e052ff3d9664df1ab2ddb86", 1136206),
+			Common::ES_ESP,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_ULTIMA8,
+		0
+	},
+
+	{
+		{
+			"ultima8",
+			"",
+			AD_ENTRY1s("jusecode.flx", "1793bb252b805bf8d59300690987c605", 1208003),
+			Common::JA_JPN,
+			Common::kPlatformDOS,
+			ADGF_NO_FLAGS,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_ULTIMA8,
+		0
+	},
+
+	// Crusader games use basically the same engine as ultima8, but still
+	// need a lot of work.  All are unstable, some simply crash on startup.
+
+	// GOG Crusader - No Remorse (V1.21)
+	{
+		{
+			"remorse",
+			"",
+			AD_ENTRY1s("eusecode.flx", "0a0f64507adc4f280129c735ee9cad42", 556613),
+			Common::EN_ANY,
 			Common::kPlatformDOS,
 			ADGF_UNSTABLE,
 			GUIO1(GUIO_NOMIDI)
 		},
-		GAME_ULTIMA8,
+		GAME_CRUSADER_REM,
 		0
 	},
 
+	// Crusader - No Remorse provided by andy155
 	{
 		{
-			"ultima8",
-			"Gold Edition",
-			{
-				{"eusecode.flx", 0, "c61f1dacde591cb39d452264e281f234", 1251108},
-				{"gusecode.flx", 0, "d69599a46870b66c1b7c02710ed185bd", 1378604},
-				AD_LISTEND
-			},
+			"remorse",
+			"",
+			AD_ENTRY1s("eusecode.flx", "3fb211f4adfd80595078afc85bdfe7b4", 433143),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REM,
+		0
+	},
+
+	// Crusader - No Remorse (Spanish) provided by Wesker
+	{
+		{
+			"remorse",
+			"",
+			AD_ENTRY1s("eusecode.flx", "36a16d70c97d0379f1133cc743c31313", 558493),
+			Common::ES_ESP,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REM,
+		0
+	},
+
+	// Crusader - No Remorse (Japanese) provided by Dominus
+	{
+		{
+			"remorse",
+			"",
+			AD_ENTRY1s("jusecode.flx", "088105959be4f2de1cb9e796e71c5f2d", 554522),
+			Common::JA_JPN,
+			Common::kPlatformWindows,
+			ADGF_UNSTABLE,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REM,
+		0
+	},
+
+	// Crusader - No Remorse - Demo V1.12D
+	{
+		{
+			"remorse",
+			"Demo",
+			AD_ENTRY1s("eusecode.flx", "41cdca35b62f4b2a7bb4c3b1ec782423", 556613),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE | ADGF_DEMO,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REM,
+		0
+	},
+
+	// GOG Crusader - No Regret (V1.06)
+	{
+		{
+			"regret",
+			"",
+			AD_ENTRY1s("eusecode.flx", "1bb360156b7240a1f05eb9bda01c54db", 481652),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REG,
+		0
+	},
+
+	// Crusader - No Regret - German V1.07NV
+	{
+		{
+			"regret",
+			"",
+			AD_ENTRY1s("eusecode.flx", "1824d9725de45a8b49f058c12c6cf5c3", 484445),
 			Common::DE_DEU,
 			Common::kPlatformDOS,
 			ADGF_UNSTABLE,
 			GUIO1(GUIO_NOMIDI)
 		},
-		GAME_ULTIMA8,
+		GAME_CRUSADER_REG,
+		0
+	},
+
+	// Crusader - No Regret - Demo V1.08
+	{
+		{
+			"regret",
+			"Demo",
+			AD_ENTRY1s("eusecode.flx", "c6416e4716f3c008dba113a2a460367e", 483174),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE | ADGF_DEMO,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REG,
+		0
+	},
+
+	// Crusader - No Regret (Spanish) provided by Wesker
+	{
+		{
+			"regret",
+			"",
+			AD_ENTRY1s("eusecode.flx", "f5906654047ed1dab75760da6426ecfa", 478125),
+			Common::ES_ESP,
+			Common::kPlatformDOS,
+			ADGF_UNSTABLE,
+			GUIO1(GUIO_NOMIDI)
+		},
+		GAME_CRUSADER_REG,
 		0
 	},
 

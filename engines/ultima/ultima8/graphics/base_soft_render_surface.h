@@ -77,11 +77,11 @@ protected:
 	// Create Generic
 	BaseSoftRenderSurface(int w, int h, int bpp, int rsft, int gsft, int bsft, int asft);
 	BaseSoftRenderSurface(int w, int h, uint8 *buf);
-	virtual ECode GenericLock()  {
-		return P_NO_ERROR;
+	virtual bool GenericLock()  {
+		return true;
 	}
-	virtual ECode GenericUnlock()  {
-		return P_NO_ERROR;
+	virtual bool GenericUnlock()  {
+		return true;
 	}
 
 	// Update the Pixels Pointer
@@ -110,11 +110,11 @@ public:
 	// Begin painting to the buffer. MUST BE CALLED BEFORE DOING ANYTHING TO THE SURFACE!
 	// Can be called multiple times
 	// Returns Error Code on error. Check return code.....
-	ECode BeginPainting() override;
+	bool BeginPainting() override;
 
 	// Finish paining to the buffer. MUST BE CALLED FOR EACH CALL TO BeginPainting()
 	// Returns Error Code on error. Check return code.....
-	ECode EndPainting() override;
+	bool EndPainting() override;
 
 	// Get the surface as a Texture. Only valid for SecondaryRenderSurfaces
 	Texture *GetSurfaceAsTexture() override;
@@ -164,7 +164,7 @@ public:
 	// Get The Surface Palette
 	// TODO: virtual void GetPalette(uint8 palette[768]);
 
-	void CreateNativePalette(Palette *palette) override;
+	void CreateNativePalette(Palette *palette, int maxindex = 0) override;
 
 	Graphics::ManagedSurface *getRawSurface() const override {
 		return _surface;

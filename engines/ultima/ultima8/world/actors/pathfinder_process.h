@@ -47,16 +47,19 @@ public:
 
 //	virtual void terminate();
 
-	bool loadData(IDataSource *ids, uint32 version);
-protected:
-	void saveData(ODataSource *ods) override;
+	bool loadData(Common::ReadStream *rs, uint32 version);
+	void saveData(Common::WriteStream *ws) override;
 
+protected:
 	int32 _targetX, _targetY, _targetZ;
 	ObjId _targetItem;
 	bool _hitMode;
 
 	Std::vector<PathfindingAction> _path;
 	unsigned int _currentStep;
+
+public:
+	static const uint16 PATHFINDER_PROC_TYPE;
 };
 
 } // End of namespace Ultima8

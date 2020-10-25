@@ -93,12 +93,12 @@ string INIFile::Section::dump() {
 	return s;
 }
 
-bool INIFile::readConfigFile(string fname) {
+bool INIFile::readConfigFile(const string &fname) {
 	IDataSource *f = FileSystem::get_instance()->ReadFile(fname, true);
 	if (!f) return false;
 
 	string sbuf, line;
-	while (!f->eof()) {
+	while (!f->eos()) {
 		f->readline(line);
 		string::size_type pos = line.findFirstOf("\n\r");
 		if (pos != string::npos) {
@@ -183,7 +183,7 @@ bool INIFile::readConfigString(string config) {
 			// is, verify that it only consists of alphanumerics,
 			// dashes, underscores and colons).
 			while (p < line.size() && (Common::isAlnum(line[p]) || line[p] == '-' ||
-			                           line[p] == '_' || line[p] == ':'))
+			                           line[p] == '_' || line[p] == ':' || line[p] == ' '))
 				p++;
 
 			if (p >= line.size()) {
@@ -202,10 +202,8 @@ bool INIFile::readConfigString(string config) {
 				// save previous section
 				_sections.push_back(section);
 			}
-			section._name.clear();
-			section._comment.clear();
-			section._keys.clear();
 
+			section._keys.clear();
 			section._name = line.substr(1, p - 1);
 			section._comment = comment;
 			comment.clear();
@@ -293,7 +291,7 @@ void INIFile::write() {
 	if (!_isFile || _readOnly)
 		return;
 
-	ODataSource *f = FileSystem::get_instance()->WriteFile(_filename, true);
+	Common::WriteStream *f = FileSystem::get_instance()->WriteFile(_filename, true);
 	if (!f) return;
 
 	Std::string s = dump();

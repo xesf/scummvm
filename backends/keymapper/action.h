@@ -28,6 +28,7 @@
 #include "common/array.h"
 #include "common/events.h"
 #include "common/str.h"
+#include "common/ustr.h"
 
 namespace Common {
 
@@ -42,16 +43,17 @@ struct Action {
 	/** unique id used for saving/loading to config */
 	const char *id;
 	/** Human readable description */
-	String description;
+	U32String description;
 
 	/** Event to be sent when mapped key is pressed */
 	Event event;
 
 private:
 	Array<String> _defaultInputMapping;
+	bool _shouldTriggerOnKbdRepeats;
 
 public:
-	Action(const char *id, const String &description);
+	Action(const char *id, const U32String &description);
 
 	void setEvent(const Event &evt) {
 		event = evt;
@@ -113,6 +115,22 @@ public:
 	void setX2ClickEvent() {
 		setEvent(EVENT_X2BUTTONDOWN);
 	}
+
+	/**
+	 * Allows an action bound to a keyboard event to be repeatedly
+	 * triggered by key repeats
+	 *
+	 * Note that key repeat events should probably not be used for anything
+	 * else than text input as they do not trigger when the action is bound
+	 * to something else than a keyboard key. Furthermore, the frequency at
+	 * which they trigger and whether they trigger at all is operating system
+	 * controlled.
+	 */
+	void allowKbdRepeats() {
+		_shouldTriggerOnKbdRepeats = true;
+	}
+
+	bool shouldTriggerOnKbdRepeats() const { return _shouldTriggerOnKbdRepeats; }
 
 	/**
 	 * Add a default input mapping for the action

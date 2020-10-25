@@ -382,7 +382,7 @@ Common::Error PegasusEngine::showSaveDialog() {
 }
 
 void PegasusEngine::showSaveFailedDialog(const Common::Error &status) {
-	Common::String failMessage = Common::String::format(_("Failed to save game (%s)! "
+	Common::U32String failMessage = Common::U32String::format(_("Failed to save game (%s)! "
 			"Please consult the README for basic information, and for "
 			"instructions on how to obtain further assistance."), status.getDesc().c_str());
 	GUI::MessageDialog dialog(failMessage);
@@ -1018,14 +1018,12 @@ void PegasusEngine::handleInput(const Input &input, const Hotspot *cursorSpot) {
 
 		// Can only save during a game and not in the demo
 		if (g_neighborhood && !isDemo()) {
-			pauseEngine(true);
+			PauseToken pt = pauseEngine();
 
 			Common::Error result = showSaveDialog();
 
 			if (result.getCode() != Common::kNoError && result.getCode() != Common::kUserCanceled)
 				showSaveFailedDialog(result);
-
-			pauseEngine(false);
 		}
 	}
 
@@ -1040,7 +1038,7 @@ void PegasusEngine::handleInput(const Input &input, const Hotspot *cursorSpot) {
 		// Just use the pause menu's restore button since it's there for that
 		// for you to load anyway.
 		if (!isDemo() && !(_gameMenu && _gameMenu->getObjectID() == kPauseMenuID)) {
-			pauseEngine(true);
+			PauseToken pt = pauseEngine();
 
 			if (g_neighborhood) {
 				makeContinuePoint();
@@ -1062,8 +1060,6 @@ void PegasusEngine::handleInput(const Input &input, const Hotspot *cursorSpot) {
 					resetIntroTimer();
 				}
 			}
-
-			pauseEngine(false);
 		}
 	}
 }
@@ -2125,13 +2121,13 @@ void PegasusEngine::setAmbienceLevel(uint16 ambientLevel) {
 
 void PegasusEngine::pauseMenu(bool menuUp) {
 	if (menuUp) {
-		pauseEngine(true);
+		_menuPauseToken = pauseEngine();
 		_screenDimmer.startDisplaying();
 		_screenDimmer.show();
 		_gfx->updateDisplay();
 		useMenu(new PauseMenu());
 	} else {
-		pauseEngine(false);
+		_menuPauseToken.clear();
 		_screenDimmer.hide();
 		_screenDimmer.stopDisplaying();
 		useMenu(0);

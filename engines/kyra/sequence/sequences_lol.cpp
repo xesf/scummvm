@@ -90,7 +90,7 @@ int LoLEngine::processPrologue() {
 
 		switch (selection) {
 		case -1:
-			// This is sent on RTL for example, if we would not have any
+			// This is sent on return to launcher for example, if we would not have any
 			// special case for this the default path would call quitGame
 			// and thus make the next game launched from the launcher
 			// quit instantly.
@@ -230,7 +230,7 @@ void LoLEngine::showIntro() {
 
 	_screen->loadFont(Screen::FID_8_FNT, "NEW8P.FNT");
 	_screen->loadFont(Screen::FID_INTRO_FNT, "INTRO.FNT");
-	_screen->setFont((_flags.lang == Common::JA_JPN && _flags.use16ColorMode) ? Screen::FID_SJIS_FNT : Screen::FID_8_FNT);
+	_screen->setFont((_flags.lang == Common::JA_JPN && _flags.use16ColorMode) ? Screen::FID_SJIS_TEXTMODE_FNT : Screen::FID_8_FNT);
 
 	_tim->resetFinishedFlag();
 	_tim->setLangData("LOLINTRO.DIP");
@@ -1193,7 +1193,7 @@ void LoLEngine::showCredits() {
 	_screen->hideMouse();
 
 	static const uint8 colorMap[] = { 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x72, 0x6F, 0x6F, 0x6D };
-	_screen->_charWidth = 0;
+	_screen->_charSpacing = 0;
 
 	_screen->loadBitmap("ROOM.CPS", 2, 2, &_screen->getPalette(0));
 
@@ -1206,7 +1206,7 @@ void LoLEngine::showCredits() {
 
 	_screen->copyRegion(0, 0, 0, 0, 320, 200, 2, 0, Screen::CR_NO_P_CHECK);
 
-	_screen->_charOffset = 0;
+	_screen->_lineSpacing = 0;
 
 	char *credits = 0;
 

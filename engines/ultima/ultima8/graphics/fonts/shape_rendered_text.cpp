@@ -29,9 +29,6 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(ShapeRenderedText, RenderedText)
-
-
 ShapeRenderedText::ShapeRenderedText(const Std::list<PositionedText> &lines,
                                      int width, int height, int vLead,
                                      ShapeFont *font)
@@ -47,21 +44,21 @@ ShapeRenderedText::~ShapeRenderedText() {
 void ShapeRenderedText::draw(RenderSurface *surface, int x, int y, bool /*destmasked*/) {
 	// TODO support masking here???
 
-	Std::list<PositionedText>::iterator iter;
+	Std::list<PositionedText>::const_iterator iter;
 
 	for (iter = _lines.begin(); iter != _lines.end(); ++iter) {
-		int line_x = x + iter->_dims.x;
-		int line_y = y + iter->_dims.y;
+		int line_x = x + iter->_dims.left;
+		int line_y = y + iter->_dims.top;
 
 		size_t textsize = iter->_text.size();
 
 		for (size_t i = 0; i < textsize; ++i) {
-			surface->Paint(_font, static_cast<unsigned char>(iter->_text[i]),
+			surface->Paint(_font, _font->charToFrameNum(iter->_text[i]),
 			               line_x, line_y);
 
 			if (i == iter->_cursor) {
 				surface->Fill32(0xFF000000, line_x, line_y - _font->getBaseline(),
-				                1, iter->_dims.h);
+				                1, iter->_dims.height());
 			}
 
 			line_x += _font->getWidth(iter->_text[i]) - _font->getHlead();
@@ -69,7 +66,7 @@ void ShapeRenderedText::draw(RenderSurface *surface, int x, int y, bool /*destma
 
 		if (iter->_cursor == textsize) {
 			surface->Fill32(0xFF000000, line_x, line_y - _font->getBaseline(),
-			                1, iter->_dims.h);
+			                1, iter->_dims.height());
 		}
 	}
 }
@@ -78,11 +75,11 @@ void ShapeRenderedText::drawBlended(RenderSurface *surface, int x, int y,
                                     uint32 col, bool /*destmasked*/) {
 	// TODO Support masking here ????
 
-	Std::list<PositionedText>::iterator iter;
+	Std::list<PositionedText>::const_iterator iter;
 
 	for (iter = _lines.begin(); iter != _lines.end(); ++iter) {
-		int line_x = x + iter->_dims.x;
-		int line_y = y + iter->_dims.y;
+		int line_x = x + iter->_dims.left;
+		int line_y = y + iter->_dims.top;
 
 		size_t textsize = iter->_text.size();
 

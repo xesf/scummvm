@@ -40,6 +40,11 @@ SwitchEventSource::SwitchEventSource() {
 	for (int port = 0; port < SCE_TOUCH_PORT_MAX_NUM; port++) {
 		for (int i = 0; i < MAX_NUM_FINGERS; i++) {
 			_finger[port][i].id = -1;
+			_finger[port][i].timeLastDown = 0;
+			_finger[port][i].lastX = 0;
+			_finger[port][i].lastY = 0;
+			_finger[port][i].lastDownX = 0;
+			_finger[port][i].lastDownY = 0;
 		}
 		_multiFingerDragging[port] = DRAG_NONE;
 	}
@@ -215,8 +220,8 @@ void SwitchEventSource::preprocessFingerMotion(SDL_Event *event) {
 	if (numFingersDown >= 1) {
 		int x = _mouseX;
 		int y = _mouseY;
-		int xMax = _graphicsManager->getWindowWidth()  - 1;
-		int yMax = _graphicsManager->getWindowHeight() - 1;
+		int xMax = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowWidth() - 1;
+		int yMax = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowHeight() - 1;
 
 		if (port == 0 && !ConfMan.getBool("touchpad_mouse_mode")) {
 			convertTouchXYToGameXY(event->tfinger.x, event->tfinger.y, &x, &y);
@@ -348,8 +353,8 @@ void SwitchEventSource::preprocessFingerMotion(SDL_Event *event) {
 }
 
 void SwitchEventSource::convertTouchXYToGameXY(float touchX, float touchY, int *gameX, int *gameY) {
-	int screenH = _graphicsManager->getWindowHeight();
-	int screenW = _graphicsManager->getWindowWidth();
+	int screenH = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowHeight();
+	int screenW = dynamic_cast<WindowedGraphicsManager *>(_graphicsManager)->getWindowWidth();
 
 	const int dispW = TOUCHSCREEN_WIDTH;
 	const int dispH = TOUCHSCREEN_HEIGHT;

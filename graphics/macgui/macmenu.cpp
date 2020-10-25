@@ -25,6 +25,7 @@
 #include "common/keyboard.h"
 #include "common/macresman.h"
 #include "common/winexe_pe.h"
+#include "common/unicode-bidi.h"
 
 #include "graphics/primitives.h"
 #include "graphics/font.h"
@@ -107,14 +108,14 @@ MacMenu::MacMenu(int id, const Common::Rect &bounds, MacWindowManager *wm)
 		: BaseMacWindow(id, false, wm) {
 	_font = getMenuFont();
 
+	_align = kTextAlignLeft;
+
 	_screen.create(bounds.width(), bounds.height(), PixelFormat::createFormatCLUT8());
 
 	_bbox.left = 0;
 	_bbox.top = 0;
 	_bbox.right = _screen.w;
 	_bbox.bottom = kMenuHeight;
-
-	_menuActivated = false;
 
 	_dimensionsDirty = true;
 
@@ -190,6 +191,9 @@ static Common::U32String readUnicodeString(Common::SeekableReadStream *stream) {
 	return strData.empty() ? Common::U32String() : Common::U32String(strData.data(), strData.size());
 }
 
+void MacMenu::setAlignment(Graphics::TextAlign align) {
+	_align = align;
+}
 
 MacMenu *MacMenu::createMenuFromPEexe(Common::PEResources *exe, MacWindowManager *wm) {
 	Common::SeekableReadStream *menuData = exe->getResource(Common::kWinMenu, 128);
@@ -401,6 +405,13 @@ void MacMenu::calcDimensions() {
 		}
 
 		calcSubMenuBounds(_items[i]->submenu, _items[i]->bbox.left - 1, _items[i]->bbox.bottom + 1);
+
+		if (_align == kTextAlignRight) {
+			int right = _items[i]->bbox.right;
+			int width = right - _items[i]->bbox.left;
+			_items[i]->bbox.left = _bbox.right + _bbox.left - right;
+			_items[i]->bbox.right = _items[i]->bbox.left + width;
+		}
 
 		x += w + kMenuSpacing;
 	}
@@ -709,6 +720,11 @@ void MacMenu::calcSubMenuBounds(MacMenuSubMenu *submenu, int x, int y) {
 	submenu->bbox.right = x2;
 	submenu->bbox.bottom = y2;
 
+	if (_align == kTextAlignRight) {
+		submenu->bbox.left = _bbox.right + _bbox.left - x2;
+		submenu->bbox.right = submenu->bbox.left + x2 - x1;
+	}
+
 	for (uint i = 0; i < submenu->items.size(); i++) {
 		MacMenuSubMenu *menu = submenu->items[i]->submenu;
 
@@ -728,15 +744,16 @@ static void drawFilledRoundRect(ManagedSurface *surface, Common::Rect &rect, int
 	drawRoundRect(rect, arc, color, true, drawPixelPlain, surface);
 }
 
-static void underlineAccelerator(ManagedSurface *dst, const Font *font, const Common::U32String &str, int x, int y, int shortcutPos, uint32 color) {
+static void underlineAccelerator(ManagedSurface *dst, const Font *font, const Common::UnicodeBiDiText &txt, int x, int y, int shortcutPos, uint32 color) {
 	if (shortcutPos == -1)
 		return;
 
-	Common::U32String s(str);
+	int visualPos = txt.getVisualPosition(shortcutPos);
+	Common::U32String s(txt.visual);
 
 	// Erase characters only if it is not end of the string
-	if ((uint)(shortcutPos + 1) < s.size())
-		s.erase(shortcutPos + 1);
+	if ((uint)(visualPos + 1) < s.size())
+		s.erase(visualPos + 1);
 
 	int pos2 = font->getStringWidth(s);
 	s.deleteLastChar();
@@ -759,14 +776,14 @@ bool MacMenu::draw(ManagedSurface *g, bool forceRedraw) {
 
 	_contentIsDirty = false;
 
-	_screen.clear(kColorGreen);
+	_screen.clear(_wm->_colorGreen);
 
 	drawFilledRoundRect(&_screen, r, kDesktopArc, _wm->_colorWhite);
 	r.top = 7;
 	_screen.fillRect(r, _wm->_colorWhite);
 	r.top = kMenuHeight - 1;
 	r.bottom++;
-	_screen.fillRect(r, kColorGreen);
+	_screen.fillRect(r, _wm->_colorGreen);
 	r.bottom--;
 	_screen.fillRect(r, _wm->_colorBlack);
 
@@ -781,16 +798,25 @@ bool MacMenu::draw(ManagedSurface *g, bool forceRedraw) {
 			hbox.right += 3;
 			hbox.bottom += 1;
 
+			if (_align == kTextAlignRight) {
+				hbox.left -= 2;
+				hbox.right -= 2;
+			}
+
 			_screen.fillRect(hbox, _wm->_colorBlack);
 			color = _wm->_colorWhite;
 		}
 
-		int x = it->bbox.left + kMenuLeftMargin;
 		int y = it->bbox.top + (_wm->_fontMan->hasBuiltInFonts() ? 2 : 1);
+		int x = _align == kTextAlignRight ? -kMenuLeftMargin : kMenuLeftMargin;
+		x += it->bbox.left;
 
 		if (it->unicode) {
-			_font->drawString(&_screen, it->unicodeText, x, y, it->bbox.width(), color);
-			underlineAccelerator(&_screen, _font, it->unicodeText, x, y, it->shortcutPos, color);
+			int accOff = _align == kTextAlignRight ? it->bbox.width() - _font->getStringWidth(it->unicodeText) : 0;
+			Common::UnicodeBiDiText utxt(it->unicodeText);
+
+			_font->drawString(&_screen, utxt.visual, x, y, it->bbox.width(), color, _align);
+			underlineAccelerator(&_screen, _font, utxt, x + accOff, y, it->shortcutPos, color);
 		} else {
 			const Font *font = getMenuFont(it->style);
 
@@ -798,7 +824,7 @@ bool MacMenu::draw(ManagedSurface *g, bool forceRedraw) {
 		}
 	}
 
-	if (_wm->_mode & kWMModalMenuMode)
+	if ((_wm->_mode & kWMModalMenuMode) | !_wm->_screen)
 		g_system->copyRectToScreen(_screen.getBasePtr(_bbox.left, _bbox.top), _screen.pitch, _bbox.left, _bbox.top, _bbox.width(), _bbox.height());
 
 
@@ -806,9 +832,10 @@ bool MacMenu::draw(ManagedSurface *g, bool forceRedraw) {
 		renderSubmenu(_menustack[i], (i == _menustack.size() - 1));
 	}
 
-	g->transBlitFrom(_screen, kColorGreen);
+	if (g)
+		g->transBlitFrom(_screen, _wm->_colorGreen);
 
-	if (!(_wm->_mode & kWMModalMenuMode))
+	if (!(_wm->_mode & kWMModalMenuMode) && g)
 		g_system->copyRectToScreen(g->getPixels(), g->pitch, 0, 0, g->w, g->h);
 
 	return true;
@@ -827,17 +854,27 @@ void MacMenu::renderSubmenu(MacMenuSubMenu *menu, bool recursive) {
 	_screen.hLine(r->left + 3, r->bottom, r->right + 1, _wm->_colorBlack);
 	_screen.hLine(r->left + 3, r->bottom + 1, r->right + 1, _wm->_colorBlack);
 
-	int x = r->left + kMenuDropdownPadding;
 	int y = r->top + 1;
+	int x = _align == kTextAlignRight ? -kMenuDropdownPadding : kMenuDropdownPadding;
+	x += r->left;
+
 	for (uint i = 0; i < menu->items.size(); i++) {
 		Common::String text(menu->items[i]->text);
 		Common::String acceleratorText(getAcceleratorString(menu->items[i], ""));
 
 		Common::U32String unicodeText(menu->items[i]->unicodeText);
+
+		int accOff = _align == kTextAlignRight ? r->width() - _font->getStringWidth(unicodeText) : 0;
+
 		int shortcutPos = menu->items[i]->shortcutPos;
 
 		int accelX = r->right - 25;
 		int arrowX = r->right - 14;
+
+		if (_align == kTextAlignRight) {
+			accelX = r->left + 25;
+			arrowX = r->left + 14;
+		}
 
 		int color = _wm->_colorBlack;
 		if (i == (uint)menu->highlight && (!text.empty() || !unicodeText.empty()) && menu->items[i]->enabled) {
@@ -857,12 +894,13 @@ void MacMenu::renderSubmenu(MacMenuSubMenu *menu, bool recursive) {
 				ty = 0;
 				accelX -= x;
 
-				_tempSurface.clear(kColorGreen);
+				_tempSurface.clear(_wm->_colorGreen);
 			}
 
 			if (menu->items[i]->unicode) {
-				_font->drawString(s, unicodeText, tx, ty, r->width(), color);
-				underlineAccelerator(s, _font, unicodeText, tx, ty, shortcutPos, color);
+				Common::UnicodeBiDiText utxt(unicodeText);
+				_font->drawString(s, utxt.visual, tx, ty, r->width(), color, _align);
+				underlineAccelerator(s, _font, utxt, tx + accOff, ty, shortcutPos, color);
 			} else {
 				const Font *font = getMenuFont(menu->items[i]->style);
 
@@ -883,7 +921,7 @@ void MacMenu::renderSubmenu(MacMenuSubMenu *menu, bool recursive) {
 					byte *dst = (byte *)_screen.getBasePtr(x, y+ii);
 					byte pat = _wm->getPatterns()[kPatternCheckers2 - 1][ii % 8];
 					for (int j = 0; j < r->width(); j++) {
-						if (*src != kColorGreen && (pat & (1 << (7 - (x + j) % 8))))
+						if (*src != _wm->_colorGreen && (pat & (1 << (7 - (x + j) % 8))))
 							*dst = *src;
 						src++;
 						dst++;
@@ -914,7 +952,11 @@ void MacMenu::renderSubmenu(MacMenuSubMenu *menu, bool recursive) {
 void MacMenu::drawSubMenuArrow(ManagedSurface *dst, int x, int y, int color) {
 	int height = 11;
 	for (int col = 0; col < 6; col++) {
-		dst->vLine(x + col, y + col + 1, y + col + height + 1, color);
+		if (_align != kTextAlignRight) {
+			dst->vLine(x + col, y + col + 1, y + col + height + 1, color);
+		} else {
+			dst->vLine(x - col, y + col + 1, y + col + height + 1, color);
+		}
 		height -= 2;
 	}
 }
@@ -982,10 +1024,10 @@ bool MacMenu::mouseClick(int x, int y) {
 			}
 		}
 
-		if (!_menuActivated)
+		if (!_active)
 			_wm->activateMenu();
 
-		_menuActivated = true;
+		setActive(true);
 
 		_contentIsDirty = true;
 		_wm->setFullRefresh(true);
@@ -1002,7 +1044,7 @@ bool MacMenu::mouseClick(int x, int y) {
 		return true;
 	}
 
-	if (!_menuActivated)
+	if (!_active)
 		return false;
 
 	if (_menustack.size() > 0 && _menustack.back()->bbox.contains(x, y)) {
@@ -1083,15 +1125,13 @@ bool MacMenu::mouseClick(int x, int y) {
 }
 
 bool MacMenu::mouseMove(int x, int y) {
-	if (_menuActivated) {
+	if (_active) {
 		if (mouseClick(x, y))
 			return true;
 	} else if ((_wm->_mode & kWMModeAutohideMenu) && !_bbox.contains(x, y)) {
 		_isVisible = false;
 		if (_wm->_mode & kWMModalMenuMode) {
-			_wm->pauseEngine(false);
-			*_wm->_screen = *_wm->_screenCopy; // restore screen
-			g_system->copyRectToScreen(_wm->_screenCopy->getBasePtr(0, 0), _wm->_screenCopy->pitch, 0, 0, _wm->_screenCopy->w, _wm->_screenCopy->h);
+			_wm->disableScreenCopy();
 		}
 	}
 
@@ -1115,15 +1155,13 @@ bool MacMenu::checkCallback(bool unicode) {
 }
 
 bool MacMenu::mouseRelease(int x, int y) {
-	if (_menuActivated) {
-		_menuActivated = false;
+	if (_active) {
+		setActive(false);
 		if (_wm->_mode & kWMModeAutohideMenu)
 			_isVisible = false;
 
 		if (_wm->_mode & kWMModalMenuMode) {
-			_wm->pauseEngine(false);
-			*_wm->_screen = *_wm->_screenCopy; // restore screen
-			g_system->copyRectToScreen(_wm->_screenCopy->getBasePtr(0, 0), _wm->_screenCopy->pitch, 0, 0, _wm->_screenCopy->w, _wm->_screenCopy->h);
+			_wm->disableScreenCopy();
 		}
 
 		if (_activeItem != -1 && _activeSubItem != -1 && _menustack.back()->items[_activeSubItem]->enabled) {
@@ -1242,7 +1280,7 @@ void MacMenu::disableAllMenus() {
 void MacMenu::eventLoop() {
 	_contentIsDirty = true;
 
-	while (_menuActivated) {
+	while (_active) {
 		Common::Event event;
 
 		while (g_system->getEventManager()->pollEvent(event)) {
@@ -1251,7 +1289,7 @@ void MacMenu::eventLoop() {
 			draw(_wm->_screen);
 		}
 
-		if (_menuActivated) {
+		if (_active) {
 			g_system->updateScreen();
 			g_system->delayMillis(10);
 		}

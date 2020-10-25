@@ -38,6 +38,7 @@
 #include "engines/engine.h"
 
 #include "tucker/console.h"
+#include "tucker/detection.h"
 
 namespace Audio {
 class RewindableAudioStream;
@@ -359,13 +360,6 @@ enum InputKey {
 	kInputKeySkipSpeech,
 
 	kInputKeyCount
-};
-
-enum GameFlag {
-	kGameFlagDemo = 1 << 0,
-	kGameFlagEncodedData = 1 << 1,
-	kGameFlagNoSubtitles = 1 << 2,
-	kGameFlagIntroOnly = 1 << 3
 };
 
 enum CompressedSoundType {
@@ -747,7 +741,7 @@ protected:
 	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;
 	SavegameError writeSavegameHeader(Common::OutSaveFile *file, SavegameHeader &header);
 	virtual int getAutosaveSlot() const override { return kAutoSaveSlot; }
-	virtual Common::String getSaveStateName(int slot) const {
+	virtual Common::String getSaveStateName(int slot) const override {
 		return Common::String::format("%s.%d", _targetName.c_str(), slot);
 	}
 

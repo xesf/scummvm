@@ -22,12 +22,7 @@
 
 /**
  * @file
- * Macintosh resource fork manager used in engines:
- * - groovie
- * - mohawk
- * - pegasus
- * - sci
- * - scumm
+
  */
 
 #include "common/array.h"
@@ -40,6 +35,21 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_macresman Macintosh resource fork manager
+ * @ingroup common
+ *
+ * @brief API for Macintosh resource fork manager.
+ *
+ * @details Used in engines:
+ *          - groovie
+ *          - mohawk
+ *          - pegasus
+ *          - sci
+ *          - scumm
+ * @{
+ */
+
 typedef Array<uint16> MacResIDArray;
 typedef Array<uint32> MacResTagArray;
 
@@ -48,6 +58,8 @@ typedef Array<uint32> MacResTagArray;
  * It can read from raw, MacBinary, and AppleDouble formats.
  */
 class MacResManager {
+
+#define MBI_INFOHDR 128
 
 public:
 	MacResManager();
@@ -66,14 +78,14 @@ public:
 	bool open(const String &fileName);
 
 	/**
-	 * Open a Mac data/resource fork pair.
+	 * Open a Mac data/resource fork pair from within the given archive.
 	 *
 	 * @param path The path that holds the forks
 	 * @param fileName The base file name of the file
 	 * @note This will check for the raw resource fork, MacBinary, and AppleDouble formats.
 	 * @return True on success
 	 */
-	bool open(const FSNode &path, const String &fileName);
+	bool open(const String &fileName, Archive &archive);
 
 	/**
 	 * See if a Mac data/resource fork pair exists.
@@ -139,6 +151,8 @@ public:
 	 */
 	SeekableReadStream *getDataFork();
 
+	static int getDataForkOffset() { return MBI_INFOHDR; }
+
 	/**
 	 * Get the name of a given resource
 	 * @param typeID FourCC of the type
@@ -166,6 +180,8 @@ public:
 	 */
 	String getBaseFileName() const { return _baseFileName; }
 
+	void setBaseFileName(Common::String str) { _baseFileName = str; }
+
 	/**
 	 * Return list of resource IDs with specified type ID
 	 */
@@ -186,6 +202,24 @@ public:
 	 */
 	 void dumpRaw();
 
+	/**
+	 * Check if the given stream is in the MacBinary format.
+	 * @param stream The stream we're checking
+	 */
+	static bool isMacBinary(SeekableReadStream &stream);
+
+	struct MacVers {
+		byte majorVer;
+		byte minorVer;
+		byte devStage;
+		String devStr;
+		byte preReleaseVer;
+		uint16 region;
+		String str;
+		String msg;
+	};
+	static MacVers *parseVers(SeekableReadStream *vvers);
+
 private:
 	SeekableReadStream *_stream;
 	String _baseFileName;
@@ -197,12 +231,6 @@ private:
 
 	static String constructAppleDoubleName(String name);
 	static String disassembleAppleDoubleName(String name, bool *isAppleDouble);
-
-	/**
-	 * Check if the given stream is in the MacBinary format.
-	 * @param stream The stream we're checking
-	 */
-	static bool isMacBinary(SeekableReadStream &stream);
 
 	/**
 	 * Do a sanity check whether the given stream is a raw resource fork.
@@ -263,6 +291,8 @@ private:
 	ResType *_resTypes;
 	ResPtr  *_resLists;
 };
+
+/** @} */
 
 } // End of namespace Common
 

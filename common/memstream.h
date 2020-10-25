@@ -30,10 +30,18 @@
 namespace Common {
 
 /**
+ * @defgroup common_memory_pool Memory stream
+ * @ingroup common_memory
+ *
+ * @brief API for managing the memory stream.
+ * @{
+ */
+
+/**
  * Simple memory based 'stream', which implements the ReadStream interface for
  * a plain memory block.
  */
-class MemoryReadStream : public SeekableReadStream {
+class MemoryReadStream : virtual public SeekableReadStream {
 private:
 	const byte * const _ptrOrig;
 	const byte *_ptr;
@@ -78,10 +86,17 @@ public:
  * This is a MemoryReadStream subclass which adds non-endian
  * read methods whose endianness is set on the stream creation.
  */
-class MemoryReadStreamEndian : public MemoryReadStream, public ReadStreamEndian {
+class MemoryReadStreamEndian : public MemoryReadStream, public SeekableReadStreamEndian {
 public:
-	MemoryReadStreamEndian(const byte *buf, uint32 len, bool bigEndian)
-		: MemoryReadStream(buf, len), ReadStreamEndian(bigEndian) {}
+	MemoryReadStreamEndian(const byte *buf, uint32 len, bool bigEndian, DisposeAfterUse::Flag disposeMemory = DisposeAfterUse::NO)
+		: MemoryReadStream(buf, len, disposeMemory), SeekableReadStreamEndian(bigEndian), ReadStreamEndian(bigEndian) {}
+
+	int32 pos() const { return MemoryReadStream::pos(); }
+	int32 size() const { return MemoryReadStream::size(); }
+
+	bool seek(int32 offs, int whence = SEEK_SET) { return MemoryReadStream::seek(offs, whence); }
+
+	bool skip(uint32 offset) { return MemoryReadStream::seek(offset, SEEK_CUR); }
 };
 
 /**
@@ -326,6 +341,8 @@ public:
 
 	byte *getData() { return _data; }
 };
+
+/** @} */
 
 } // End of namespace Common
 

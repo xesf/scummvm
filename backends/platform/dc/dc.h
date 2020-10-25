@@ -22,7 +22,6 @@
 
 #include "backends/base-backend.h"
 #include <graphics/surface.h>
-#include <graphics/colormasks.h>
 #include <graphics/palette.h>
 #include <ronin/soundcommon.h>
 #include "backends/timer/default/default-timer.h"
@@ -60,13 +59,14 @@ class DCCDManager : public DefaultAudioCDManager {
 public:
 	// Poll cdrom status
 	// Returns true if cd audio is playing
-	bool isPlaying() const;
+	bool isPlaying() const override;
 
 	// Play cdrom audio track
-	bool play(int track, int numLoops, int startFrame, int duration, bool onlyEmulate = false);
+	bool play(int track, int numLoops, int startFrame, int duration, bool onlyEmulate = false,
+		Audio::Mixer::SoundType soundType = Audio::Mixer::kMusicSoundType) override;
 
 	// Stop cdrom audio track
-	void stop();
+	void stop() override;
 };
 
 class OSystem_Dreamcast : private DCHardware, public EventsBaseBackend, public PaletteManager, public FilesystemFactory
@@ -154,12 +154,13 @@ public:
   // Overlay
   int16 getOverlayHeight();
   int16 getOverlayWidth();
+  bool isOverlayVisible() const { return _overlay_visible; }
   void showOverlay();
   void hideOverlay();
   void clearOverlay();
   void grabOverlay(void *buf, int pitch);
   void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
-  virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::createPixelFormat<4444>(); }
+  virtual Graphics::PixelFormat getOverlayFormat() const { return Graphics::PixelFormat(2, 4, 4, 4, 4, 8, 4, 0, 12); }
 
   // Mutex handling
   MutexRef createMutex();

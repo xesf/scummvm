@@ -34,6 +34,8 @@
 #include "backends/platform/3ds/sprite.h"
 #include "common/rect.h"
 #include "common/queue.h"
+#include "common/ustr.h"
+#include "engines/engine.h"
 
 #define TICKS_PER_MSEC 268123
 
@@ -157,6 +159,7 @@ public:
 	void clearFocusRectangle();
 	void showOverlay();
 	void hideOverlay();
+	bool isOverlayVisible() const { return _overlayVisible; }
 	Graphics::PixelFormat getOverlayFormat() const;
 	void clearOverlay();
 	void grabOverlay(void *buf, int pitch);
@@ -164,7 +167,7 @@ public:
 	                       int h);
 	virtual int16 getOverlayHeight();
 	virtual int16 getOverlayWidth();
-	void displayMessageOnOSD(const char *msg) override;
+	void displayMessageOnOSD(const Common::U32String &msg) override;
 	void displayActivityIconOnOSD(const Graphics::Surface *icon) override;
 
 	bool showMouse(bool visible);
@@ -228,6 +231,7 @@ private:
 	Sprite _overlay;
 	Sprite _activityIcon;
 	Sprite _osdMessage;
+	bool _filteringEnabled;
 
 	enum {
 		kOSDMessageDuration = 800
@@ -282,6 +286,10 @@ private:
 	u16 _magX, _magY;
 	u16 _magWidth, _magHeight;
 	u16 _magCenterX, _magCenterY;
+
+public:
+	// Pause
+	PauseToken _sleepPauseToken;
 };
 
 } // namespace _3DS

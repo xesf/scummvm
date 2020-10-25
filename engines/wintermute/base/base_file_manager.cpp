@@ -34,6 +34,7 @@
 #include "engines/wintermute/base/file/base_package.h"
 #include "engines/wintermute/base/base_engine.h"
 #include "engines/wintermute/wintermute.h"
+#include "common/algorithm.h"
 #include "common/debug.h"
 #include "common/str.h"
 #include "common/tokenizer.h"
@@ -295,6 +296,11 @@ bool BaseFileManager::registerPackages() {
 					if (_language != Common::RU_RUS) {
 						continue;
 					}
+				// Serbian
+				} else if (fileName == "xlanguage_sr.dcp") {
+					if (_language != Common::SR_SER) {
+						continue;
+					}
 				// Spanish
 				} else if (fileName == "spanish.dcp" || fileName == "xlanguage_es.dcp" || fileName == "spanish_language_pack.dcp") {
 					if (_language != Common::ES_ESP) {
@@ -367,6 +373,10 @@ uint32 BaseFileManager::getPackageVersion(const Common::String &filename) {
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseFileManager::hasFile(const Common::String &filename) {
+	Common::String backwardSlashesPath = filename;
+	// correct slashes
+	Common::replace(backwardSlashesPath.begin(), backwardSlashesPath.end(), '/', '\\');
+
 	if (scumm_strnicmp(filename.c_str(), "savegame:", 9) == 0) {
 		BasePersistenceManager pm(BaseEngine::instance().getGameTargetName());
 		if (filename.size() <= 9) {
@@ -381,7 +391,7 @@ bool BaseFileManager::hasFile(const Common::String &filename) {
 	if (diskFileExists(filename)) {
 		return true;
 	}
-	if (_packages.hasFile(filename)) {
+	if (_packages.hasFile(backwardSlashesPath)) {
 		return true;    // We don't bother checking if the file can actually be opened, something bigger is wrong if that is the case.
 	}
 	if (!_detectionMode && _resources->hasFile(filename)) {
@@ -390,8 +400,22 @@ bool BaseFileManager::hasFile(const Common::String &filename) {
 	return false;
 }
 
-int BaseFileManager::listMatchingMembers(Common::ArchiveMemberList &list, const Common::String &pattern) {
+//////////////////////////////////////////////////////////////////////////
+int BaseFileManager::listMatchingPackageMembers(Common::ArchiveMemberList &list, const Common::String &pattern) {
 	return _packages.listMatchingMembers(list, pattern);
+}
+
+//////////////////////////////////////////////////////////////////////////
+int BaseFileManager::listMatchingFiles(Common::StringArray &list, const Common::String &pattern) {
+	list = sfmFileList(pattern);
+	
+	Common::ArchiveMemberList files;
+	listMatchingDiskFileMembers(files, pattern);
+	for (Common::ArchiveMemberList::const_iterator it = files.begin(); it != files.end(); ++it) {
+		list.push_back((*it)->getName());
+	}
+		
+	return list.size();
 }
 
 //////////////////////////////////////////////////////////////////////////

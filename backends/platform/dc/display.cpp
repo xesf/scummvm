@@ -22,8 +22,8 @@
 
 #define RONIN_TIMER_ACCESS
 
-#include <common/scummsys.h>
-#include <graphics/surface.h>
+#include "common/scummsys.h"
+#include "graphics/surface.h"
 #include "dc.h"
 
 #define SCREEN_W 640

@@ -52,15 +52,17 @@ public:
 	bool setAmiga();
 	void modifyAmigaPalette(const SciSpan<const byte> &data);
 	void setEGA();
-	void set(Palette *sciPal, bool force, bool forceRealMerge = false, bool includeFirstColor = false);
+	void set(Palette *sciPal, bool force, bool forceRealMerge = false, bool includeFirstColor = true);
 	bool insert(Palette *newPalette, Palette *destPalette, bool includeFirstColor = false);
 	bool merge(Palette *pFrom, bool force, bool forceRealMerge);
 	uint16 matchColor(byte r, byte g, byte b);
 	void getSys(Palette *pal);
 	uint16 getTotalColorCount() const { return _totalScreenColors; }
 
-	void setOnScreen();
-	void copySysPaletteToScreen();
+	// Set palette on screen. If update is false, try not to change the palette
+	// on already painted areas, but this may be impossible.
+	void setOnScreen(bool update=true);
+	void copySysPaletteToScreen(bool update);
 
 	void drewPicture(GuiResourceId pictureId);
 

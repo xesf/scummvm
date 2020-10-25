@@ -124,6 +124,13 @@ void OpenGLGraphicsManager::setFeatureState(OSystem::Feature f, bool enable) {
 			_cursor->enableLinearFiltering(enable);
 		}
 
+		// The overlay UI should also obey the filtering choice (managed via the Filter Graphics checkbox in Graphics Tab).
+		// Thus, when overlay filtering is disabled, scaling in OPENGL is done with GL_NEAREST (nearest neighbor scaling).
+		// It may look crude, but it should be crispier and it's left to user choice to enable filtering.
+		if (_overlay) {
+			_overlay->enableLinearFiltering(enable);
+		}
+
 		break;
 
 	case OSystem::kFeatureCursorPalette:
@@ -169,7 +176,7 @@ int OpenGLGraphicsManager::getDefaultGraphicsMode() const {
 	return GFX_OPENGL;
 }
 
-bool OpenGLGraphicsManager::setGraphicsMode(int mode) {
+bool OpenGLGraphicsManager::setGraphicsMode(int mode, uint flags) {
 	assert(_transactionMode != kTransactionNone);
 
 	switch (mode) {
@@ -785,7 +792,7 @@ void OpenGLGraphicsManager::setCursorPalette(const byte *colors, uint start, uin
 	updateCursorPalette();
 }
 
-void OpenGLGraphicsManager::displayMessageOnOSD(const char *msg) {
+void OpenGLGraphicsManager::displayMessageOnOSD(const Common::U32String &msg) {
 #ifdef USE_OSD
 	_osdMessageChangeRequest = true;
 
@@ -796,8 +803,8 @@ void OpenGLGraphicsManager::displayMessageOnOSD(const char *msg) {
 #ifdef USE_OSD
 void OpenGLGraphicsManager::osdMessageUpdateSurface() {
 	// Split up the lines.
-	Common::Array<Common::String> osdLines;
-	Common::StringTokenizer tokenizer(_osdMessageNextData, "\n");
+	Common::Array<Common::U32String> osdLines;
+	Common::U32StringTokenizer tokenizer(_osdMessageNextData, "\n");
 	while (!tokenizer.empty()) {
 		osdLines.push_back(tokenizer.nextToken());
 	}
@@ -958,10 +965,14 @@ void OpenGLGraphicsManager::handleResizeImpl(const int width, const int height, 
 
 		_overlay = createSurface(_defaultFormatAlpha);
 		assert(_overlay);
-		// We always filter the overlay with GL_LINEAR. This assures it's
-		// readable in case it needs to be scaled and does not affect it
-		// otherwise.
-		_overlay->enableLinearFiltering(true);
+		// We should NOT always filter the overlay with GL_LINEAR. 
+		// In previous versions we always did use GL_LINEAR to assure the UI
+		// would be readable in case it needed to be scaled -- it would not affect it otherwise.
+		// However in modern devices due to larger screen size the UI display looks blurry
+		// when using the linear filtering scaling, and we got bug report(s) for it.
+		//   eg. https://bugs.scummvm.org/ticket/11742
+		// So, we now respect the choice for "Filter Graphics" made via ScummVM GUI (under Graphics Tab)
+		_overlay->enableLinearFiltering(_currentState.filtering);
 	}
 	_overlay->allocate(overlayWidth, overlayHeight);
 	_overlay->fill(0);
@@ -1310,12 +1321,12 @@ bool OpenGLGraphicsManager::saveScreenshot(const Common::String &filename) const
 
 	// A line of a BMP image must have a size divisible by 4.
 	// We calculate the padding bytes needed here.
-	// Since we use a 3 byte per pixel mode, we can use width % 4 here, since
-	// it is equal to 4 - (width * 3) % 4. (4 - (width * Bpp) % 4, is the
-	// usual way of computing the padding bytes required).
+	// Since we use a 4 byte per pixel mode, we can use 0 here, since it is
+	// equal to (4 - (width * 4)) % 4. (4 - (width * Bpp)) % 4, is the usual
+	// way of computing the padding bytes required).
 	// GL_PACK_ALIGNMENT is 4, so this line padding is required for PNG too
-	const uint linePaddingSize = width % 4;
-	const uint lineSize        = width * 3 + linePaddingSize;
+	const uint linePaddingSize = 0;
+	const uint lineSize        = width * 4 + linePaddingSize;
 
 	Common::DumpFile out;
 	if (!out.open(filename)) {
@@ -1324,12 +1335,12 @@ bool OpenGLGraphicsManager::saveScreenshot(const Common::String &filename) const
 
 	Common::Array<uint8> pixels;
 	pixels.resize(lineSize * height);
-	GL_CALL(glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, &pixels.front()));
+	GL_CALL(glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels.front()));
 
 #ifdef SCUMM_LITTLE_ENDIAN
-	const Graphics::PixelFormat format(3, 8, 8, 8, 0, 0, 8, 16, 0);
+	const Graphics::PixelFormat format(4, 8, 8, 8, 8, 0, 8, 16, 24);
 #else
-	const Graphics::PixelFormat format(3, 8, 8, 8, 0, 16, 8, 0, 0);
+	const Graphics::PixelFormat format(4, 8, 8, 8, 8, 24, 16, 8, 0);
 #endif
 	Graphics::Surface data;
 	data.init(width, height, lineSize, &pixels.front(), format);

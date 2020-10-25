@@ -11,7 +11,7 @@ MODULE_OBJS := \
 	midiparser.o \
 	midiplayer.o \
 	miles_adlib.o \
-	miles_mt32.o \
+	miles_midi.o \
 	mixer.o \
 	mpu401.o \
 	musicplugin.o \
@@ -21,6 +21,7 @@ MODULE_OBJS := \
 	decoders/aac.o \
 	decoders/adpcm.o \
 	decoders/aiff.o \
+	decoders/asf.o \
 	decoders/flac.o \
 	decoders/iff_sound.o \
 	decoders/mac_snd.o \
@@ -31,6 +32,7 @@ MODULE_OBJS := \
 	decoders/voc.o \
 	decoders/vorbis.o \
 	decoders/wave.o \
+	decoders/wma.o \
 	decoders/xa.o \
 	mods/infogrames.o \
 	mods/maxtrax.o \
@@ -47,6 +49,8 @@ MODULE_OBJS := \
 	softsynth/opl/dosbox.o \
 	softsynth/opl/mame.o \
 	softsynth/fmtowns_pc98/pc98_audio.o \
+	softsynth/fmtowns_pc98/pcm_common.o \
+	softsynth/fmtowns_pc98/sega_audio.o \
 	softsynth/fmtowns_pc98/towns_audio.o \
 	softsynth/fmtowns_pc98/towns_euphony.o \
 	softsynth/fmtowns_pc98/towns_pc98_driver.o \
@@ -58,7 +62,17 @@ MODULE_OBJS := \
 	softsynth/eas.o \
 	softsynth/pcspk.o \
 	softsynth/sid.o \
-	softsynth/wave6581.o
+	softsynth/wave6581.o \
+	soundfont/rawfile.o \
+	soundfont/rifffile.o \
+	soundfont/sf2file.o \
+	soundfont/synthfile.o \
+	soundfont/vgmcoll.o \
+	soundfont/vgminstrset.o \
+	soundfont/vgmitem.o \
+	soundfont/vgmsamp.o \
+	soundfont/vab/psxspu.o \
+	soundfont/vab/vab.o
 
 ifndef DISABLE_NUKED_OPL
 MODULE_OBJS += \

@@ -161,7 +161,7 @@ void SupernovaEngine::init() {
 
 bool SupernovaEngine::hasFeature(EngineFeature f) const {
 	switch (f) {
-	case kSupportsRTL:
+	case kSupportsReturnToLauncher:
 		return true;
 	case kSupportsLoadingDuringRuntime:
 		return true;
@@ -824,8 +824,8 @@ bool SupernovaEngine::saveGame(int slot, const Common::String &description) {
 
 void SupernovaEngine::errorTempSave(bool saving) {
 	GUIErrorMessage(saving
-		? "Failed to save temporary game state. Make sure your save game directory is set in ScummVM and that you can write to it."
-		: "Failed to load temporary game state.");
+		? _("Failed to save temporary game state. Make sure your save game directory is set in ScummVM and that you can write to it.")
+		: _("Failed to load temporary game state."));
 	error("Unrecoverable error");
 }
 

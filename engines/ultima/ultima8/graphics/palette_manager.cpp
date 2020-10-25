@@ -54,10 +54,10 @@ void PaletteManager::reset() {
 	_palettes.clear();
 }
 
-void PaletteManager::updatedFont(PalIndex index) {
+void PaletteManager::updatedPalette(PalIndex index, int maxindex) {
 	Palette *pal = getPalette(index);
 	if (pal)
-		_renderSurface->CreateNativePalette(pal); // convert to native format
+		_renderSurface->CreateNativePalette(pal, maxindex);
 }
 
 // Reset all the transforms back to default
@@ -87,7 +87,7 @@ void PaletteManager::RenderSurfaceChanged(RenderSurface *rs) {
 			_renderSurface->CreateNativePalette(_palettes[i]);
 }
 
-void PaletteManager::load(PalIndex index, IDataSource &ds, IDataSource &xformds) {
+void PaletteManager::load(PalIndex index, Common::ReadStream &rs, Common::ReadStream &xformrs) {
 	if (_palettes.size() <= static_cast<unsigned int>(index))
 		_palettes.resize(index + 1);
 
@@ -95,13 +95,13 @@ void PaletteManager::load(PalIndex index, IDataSource &ds, IDataSource &xformds)
 		delete _palettes[index];
 
 	Palette *pal = new Palette;
-	pal->load(ds, xformds);
+	pal->load(rs, xformrs);
 	_renderSurface->CreateNativePalette(pal); // convert to native format
 
 	_palettes[index] = pal;
 }
 
-void PaletteManager::load(PalIndex index, IDataSource &ds) {
+void PaletteManager::load(PalIndex index, Common::ReadStream &rs) {
 	if (_palettes.size() <= static_cast<unsigned int>(index))
 		_palettes.resize(index + 1);
 
@@ -109,7 +109,7 @@ void PaletteManager::load(PalIndex index, IDataSource &ds) {
 		delete _palettes[index];
 
 	Palette *pal = new Palette;
-	pal->load(ds);
+	pal->load(rs);
 	_renderSurface->CreateNativePalette(pal); // convert to native format
 
 	_palettes[index] = pal;
@@ -136,7 +136,7 @@ Palette *PaletteManager::getPalette(PalIndex index) {
 	return _palettes[index];
 }
 
-void PaletteManager::transformPalette(PalIndex index, int16 matrix[12]) {
+void PaletteManager::transformPalette(PalIndex index, const int16 matrix[12]) {
 	Palette *pal = getPalette(index);
 
 	if (!pal) return;

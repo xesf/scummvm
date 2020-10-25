@@ -32,7 +32,7 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(ScalerGump, DesktopGump)
+DEFINE_RUNTIME_CLASSTYPE_CODE(ScalerGump)
 
 ScalerGump::ScalerGump(int32 x, int32 y, int32 width, int32 height) :
 		DesktopGump(x, y, width, height),
@@ -43,7 +43,8 @@ ScalerGump::ScalerGump(int32 x, int32 y, int32 width, int32 height) :
 		_width(width), _height(height) {
 
 	setupScaling();
-	_buffer1->Fill32(0, 0, 0, _dims.w, _dims.h);
+	if (_buffer1)
+		_buffer1->Fill32(0, 0, 0, _dims.width(), _dims.height());
 }
 
 ScalerGump::~ScalerGump() {
@@ -135,13 +136,13 @@ void ScalerGump::DoScalerBlit(Texture *src, int swidth, int sheight, RenderSurfa
 // Convert a parent relative point to a gump point
 void ScalerGump::ParentToGump(int32 &px, int32 &py, PointRoundDir r) {
 	px -= _x;
-	px *= _dims.w;
+	px *= _dims.width();
 	if (px < 0 && r == ROUND_TOPLEFT) px -= (_width - 1);
 	if (px > 0 && r == ROUND_BOTTOMRIGHT) px += (_width - 1);
 	px /= _width;
 
 	py -= _y;
-	py *= _dims.h;
+	py *= _dims.height();
 	if (py < 0 && r == ROUND_TOPLEFT) py -= (_height - 1);
 	if (py > 0 && r == ROUND_BOTTOMRIGHT) py += (_height - 1);
 	py /= _height;
@@ -150,15 +151,15 @@ void ScalerGump::ParentToGump(int32 &px, int32 &py, PointRoundDir r) {
 // Convert a gump point to parent relative point
 void ScalerGump::GumpToParent(int32 &gx, int32 &gy, PointRoundDir r) {
 	gx *= _width;
-	if (gx < 0 && r == ROUND_TOPLEFT) gx -= (_dims.w - 1);
-	if (gx > 0 && r == ROUND_BOTTOMRIGHT) gx += (_dims.w - 1);
-	gx /= _dims.w;
+	if (gx < 0 && r == ROUND_TOPLEFT) gx -= (_dims.width() - 1);
+	if (gx > 0 && r == ROUND_BOTTOMRIGHT) gx += (_dims.width() - 1);
+	gx /= _dims.width();
 	gx += _x;
 
 	gy *= _height;
-	if (gy < 0 && r == ROUND_TOPLEFT) gy -= (_dims.h - 1);
-	if (gy > 0 && r == ROUND_BOTTOMRIGHT) gy += (_dims.h - 1);
-	gy /= _dims.h;
+	if (gy < 0 && r == ROUND_TOPLEFT) gy -= (_dims.height() - 1);
+	if (gy > 0 && r == ROUND_BOTTOMRIGHT) gy += (_dims.height() - 1);
+	gy /= _dims.height();
 	gy += _y;
 }
 
@@ -167,8 +168,8 @@ void ScalerGump::RenderSurfaceChanged() {
 	Rect new_dims;
 	_parent->GetDims(new_dims);
 
-	_width = new_dims.w;
-	_height = new_dims.h;
+	_width = new_dims.width();
+	_height = new_dims.height();
 
 	setupScaling();
 
@@ -179,8 +180,13 @@ void ScalerGump::setupScaling() {
 	FORGET_OBJECT(_buffer1);
 	FORGET_OBJECT(_buffer2);
 
-	_swidth1 = 320;
-	_sheight1 = 200;
+	if (CoreApp::get_instance()->getGameInfo() && GAME_IS_U8) {
+		_swidth1 = Ultima8Engine::U8_DEFAULT_SCREEN_WIDTH;
+		_sheight1 = Ultima8Engine::U8_DEFAULT_SCREEN_HEIGHT;
+	} else {
+		_swidth1 = Ultima8Engine::CRUSADER_DEFAULT_SCREEN_WIDTH;
+		_sheight1 = Ultima8Engine::CRUSADER_DEFAULT_SCREEN_HEIGHT;
+	}
 	_swidth2 = 0;
 	_sheight2 = 0;
 	const Scaler *point = &Ultima8Engine::get_instance()->point_scaler;
@@ -200,8 +206,8 @@ void ScalerGump::setupScaling() {
 	if (_sheight2 < 0) _sheight2 = -_sheight2;
 	else if (_sheight2 != 0 && _sheight2 < 100) _sheight2 = _height / _sheight2;
 
-	_dims.w = _swidth1;
-	_dims.h = _sheight1;
+	_dims.setWidth(_swidth1);
+	_dims.setHeight(_sheight1);
 
 	// We don't care, we are not going to support filters, at least not at the moment
 	if (_swidth1 == _width && _sheight1 == _height) return;
@@ -231,7 +237,7 @@ void ScalerGump::setupScaling() {
 		// _scaler2 not required
 		if (_width == 640 && _height == 480 &&
 		        _swidth2 == 640 && _sheight2 == 400 &&
-		        _swidth1 == 320 && _sheight2 == 200) {
+		        _swidth1 == 320 && _sheight1 == 200) {
 			return;
 		}
 

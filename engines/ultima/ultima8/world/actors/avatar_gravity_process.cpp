@@ -21,7 +21,7 @@
  */
 
 #include "ultima/ultima8/misc/pent_include.h"
-
+#include "ultima/ultima8/misc/direction.h"
 #include "ultima/ultima8/world/actors/avatar_gravity_process.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/world/world.h"
@@ -29,14 +29,11 @@
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/world/get_object.h"
 
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
-
 namespace Ultima {
 namespace Ultima8 {
 
 // p_dynamic_cast stuff
-DEFINE_RUNTIME_CLASSTYPE_CODE(AvatarGravityProcess, GravityProcess)
+DEFINE_RUNTIME_CLASSTYPE_CODE(AvatarGravityProcess)
 
 AvatarGravityProcess::AvatarGravityProcess()
 	: GravityProcess() {
@@ -58,14 +55,14 @@ void AvatarGravityProcess::run() {
 
 	// right mouse button down, so see if we can cling to a ledge
 	MainActor *avatar = getMainActor();
-	int32 direction = avatar->getDir();
+	Direction direction = avatar->getDir();
 	if (avatar->tryAnim(Animation::climb40, direction) == Animation::SUCCESS) {
 
 		// we can, so perform a hang animation
 		// CHECKME: do we need to perform any other checks?
 
 		if (avatar->getLastAnim() != Animation::hang)
-			avatar->doAnim(Animation::hang, 8);
+			avatar->doAnim(Animation::hang, dir_current);
 
 		return;
 	} else {
@@ -77,12 +74,12 @@ void AvatarGravityProcess::run() {
 }
 
 
-void AvatarGravityProcess::saveData(ODataSource *ods) {
-	GravityProcess::saveData(ods);
+void AvatarGravityProcess::saveData(Common::WriteStream *ws) {
+	GravityProcess::saveData(ws);
 }
 
-bool AvatarGravityProcess::loadData(IDataSource *ids, uint32 version) {
-	if (!GravityProcess::loadData(ids, version)) return false;
+bool AvatarGravityProcess::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!GravityProcess::loadData(rs, version)) return false;
 
 	return true;
 }

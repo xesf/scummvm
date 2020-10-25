@@ -34,7 +34,22 @@
 
 namespace Dragons {
 
-Minigame2::Minigame2(DragonsEngine *vm) : _vm(vm), _dat_80093c70(false), _dat_80093c72(false), _dat_80093c74(0), _dat_80093ca8(false) {}
+Minigame2::Minigame2(DragonsEngine *vm) : _vm(vm), _dat_80093c70(false), _dat_80093c72(false), _dat_80093c74(0), _dat_80093ca8(false) {
+	_dat_80093cb4 = 0;
+	_dat_80093cbc = 0;
+	_dat_80093cb8 = 0;
+	_dat_80093cc0 = 0;
+	_dat_80093ca4 = 0;
+	_dat_80093c90 = 0;
+	_dat_80093c94 = 0;
+	_dat_80093cac = 0;
+	_dat_80093cb0 = false;
+	_dat_80093c9c = 0;
+	_dat_80093c98 = 0;
+	_dat_80093ca0 = 0;
+	_dat_80093cc4 = 0;
+	_dat_80093cc8 = 0;
+}
 
 static const uint16 unkArray[5] = {
 	0xC, 0xA, 0x8, 0x6, 0x4
@@ -43,7 +58,6 @@ static const uint16 unkArray[5] = {
 void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 	short sVar2;
 	short sVar3;
-	bool shouldExit;
 	bool bVar4;
 	DragonINI *flicker;
 	uint32 origEngineFlags;
@@ -111,12 +125,11 @@ void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 
 	fd->close();
 
-	textIdTbl[0] = 0x4500;
-	textIdTbl[1] = 0x454A;
-	textIdTbl[2] = 0x4576;
+	textIdTbl[0] = _vm->getDialogTextId(0x4500);
+	textIdTbl[1] = _vm->getDialogTextId(0x454A);
+	textIdTbl[2] = _vm->getDialogTextId(0x4576);
 
 	bVar4 = false;
-	shouldExit = false;
 	local_27a = 0;
 	local_278 = 0;
 	local_272 = 0;
@@ -584,7 +597,7 @@ void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 					if (local_258 == 1) {
 //						playSoundFromTxtIndex(DAT_80063ad0);
 						loungealotHeadActor->updateSequence(9);
-						fun_80093aec_dialog(0x46BC, 0x14, 1);
+						fun_80093aec_dialog(_vm->getDialogTextId(0x46BC), 0x14, 1);
 						do {
 							_vm->waitForFrames(1);
 						} while (_vm->isFlagSet(ENGINE_FLAG_8000));
@@ -593,7 +606,7 @@ void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 					} else {
 //						playSoundFromTxtIndex(DAT_80063ad4);
 						loungealotHeadActor->updateSequence(10);
-						fun_80093aec_dialog(0x4718, 0x14, 1);
+						fun_80093aec_dialog(_vm->getDialogTextId(0x4718), 0x14, 1);
 						loungealotRightArm->updateSequence(2);
 						do {
 							_vm->waitForFrames(1);
@@ -653,11 +666,11 @@ void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 				if (local_258 == 1) {
 //					playSoundFromTxtIndex(DAT_80063ad8);
 					loungealotHeadActor->updateSequence(0xb);
-					fun_80093aec_dialog(0x475E, 0x14, 1);
+					fun_80093aec_dialog(_vm->getDialogTextId(0x475E), 0x14, 1);
 				} else {
 //					playSoundFromTxtIndex(DAT_80063adc);
 					loungealotHeadActor->updateSequence(0xc);
-					fun_80093aec_dialog(0x4774, 0x14, 1);
+					fun_80093aec_dialog(_vm->getDialogTextId(0x4774), 0x14, 1);
 				}
 				local_258 = 0;
 				_dat_80093cb4 = 2;
@@ -680,7 +693,7 @@ void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 
 	_vm->fadeToBlack();
 	_vm->_fontManager->clearText();
-	_vm->_sound->PauseCDMusic();
+	_vm->_sound->resumeMusic();
 //	DisableVSyncEvent();
 	_vm->_dragonINIResource->getRecord(0)->x = 0x91;
 	_vm->_dragonINIResource->getRecord(0)->y = 0x9b;
@@ -721,6 +734,7 @@ void Minigame2::run(int16 param_1, uint16 param_2, int16 param_3) {
 		_vm->setAllFlags((origEngineFlags & 0xfefdffff) | (_vm->getAllFlags() & 0x1000000) | 0x40);
 		_vm->fadeFromBlack();
 	}
+	_vm->_fontManager->clearText();
 }
 
 void Minigame2::fun_80093aec_dialog(uint32 textId, int16 x, int16 y) {

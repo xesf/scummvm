@@ -30,6 +30,7 @@
 #include "ultima/ultima8/gumps/gump.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/misc/direction.h"
+#include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/misc/rect.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
@@ -37,23 +38,21 @@
 namespace Ultima {
 namespace Ultima8 {
 
-Mouse *Mouse::_instance;
+Mouse *Mouse::_instance = nullptr;
 
 Mouse::Mouse() : _flashingCursorTime(0), _mouseOverGump(0), _defaultMouse(nullptr),
 		_dragging(DRAG_NOT), _dragging_objId(0), _draggingItem_startGump(0),
 		_draggingItem_lastGump(0) {
 	_instance = this;
+}
 
-	for (int i = 0; i < Shared::MOUSE_LAST; ++i) {
-		_mouseButton[i]._downGump = 0;
-		_mouseButton[i]._lastDown = 0;
-		_mouseButton[i]._state = MBS_HANDLED;
-	}
+Mouse::~Mouse() {
+	_instance = nullptr;
 }
 
 void Mouse::setup() {
 	FileSystem *filesys = FileSystem::get_instance();
-	IDataSource *dm = filesys->ReadFile("@data/mouse.tga");
+	Common::SeekableReadStream *dm = filesys->ReadFile("@data/mouse.tga");
 	_defaultMouse = dm ? Texture::Create(dm, "@data/mouse.tga") : 0;
 
 	if (!_defaultMouse)
@@ -68,35 +67,36 @@ bool Mouse::buttonDown(Shared::MouseButton button) {
 	bool handled = false;
 	uint32 now = g_system->getMillis();
 
+	MButton &mbutton = _mouseButton[button];
+
 	Gump *desktopGump = Ultima8Engine::get_instance()->getDesktopGump();
-	Gump *mousedowngump = desktopGump->OnMouseDown(button, _mousePos.x, _mousePos.y);
+	Gump *mousedowngump = desktopGump->onMouseDown(button, _mousePos.x, _mousePos.y);
 	if (mousedowngump) {
-		_mouseButton[button]._downGump = mousedowngump->getObjId();
+		mbutton._downGump = mousedowngump->getObjId();
 		handled = true;
 	} else {
-		_mouseButton[button]._downGump = 0;
+		mbutton._downGump = 0;
 	}
 
-	_mouseButton[button]._curDown = now;
-	_mouseButton[button]._downX = _mousePos.x;
-	_mouseButton[button]._downY = _mousePos.y;
-	_mouseButton[button]._state |= MBS_DOWN;
-	_mouseButton[button]._state &= ~MBS_HANDLED;
+	mbutton._curDown = now;
+	mbutton._downPoint = _mousePos;
+	mbutton.setState(MBS_DOWN);
+	mbutton.clearState(MBS_HANDLED);
 
-	if (now - _mouseButton[button]._lastDown < DOUBLE_CLICK_TIMEOUT) {
+	if (mbutton.isUnhandledDoubleClick()) {
 		if (_dragging == Mouse::DRAG_NOT) {
-			Gump *gump = getGump(_mouseButton[button]._downGump);
+			Gump *gump = getGump(mbutton._downGump);
 			if (gump) {
 				int32 mx2 = _mousePos.x, my2 = _mousePos.y;
 				Gump *parent = gump->GetParent();
 				if (parent) parent->ScreenSpaceToGump(mx2, my2);
-				gump->OnMouseDouble(button, mx2, my2);
+				gump->onMouseDouble(button, mx2, my2);
 			}
-			_mouseButton[button]._state |= MBS_HANDLED;
-			_mouseButton[button]._lastDown = 0;
+			mbutton.setState(MBS_HANDLED);
+			mbutton._lastDown = 0;
 		}
 	}
-	_mouseButton[button]._lastDown = now;
+	mbutton._lastDown = now;
 
 	return handled;
 }
@@ -105,12 +105,11 @@ bool Mouse::buttonUp(Shared::MouseButton button) {
 	assert(button != Shared::MOUSE_LAST);
 	bool handled = false;
 
-	_mouseButton[button]._state &= ~MBS_DOWN;
+	_mouseButton[button].clearState(MBS_DOWN);
 
 	// Need to store the last down position of the mouse
 	// when the button is released.
-	_mouseButton[button]._downX = _mousePos.x;
-	_mouseButton[button]._downY = _mousePos.y;
+	_mouseButton[button]._downPoint = _mousePos;
 
 	// Always send mouse up to the gump
 	Gump *gump = getGump(_mouseButton[button]._downGump);
@@ -119,7 +118,7 @@ bool Mouse::buttonUp(Shared::MouseButton button) {
 		Gump *parent = gump->GetParent();
 		if (parent)
 			parent->ScreenSpaceToGump(mx2, my2);
-		gump->OnMouseUp(button, mx2, my2);
+		gump->onMouseUp(button, mx2, my2);
 		handled = true;
 	}
 
@@ -137,7 +136,7 @@ void Mouse::popAllCursors() {
 }
 
 bool Mouse::isMouseDownEvent(Shared::MouseButton button) const {
-	return (_mouseButton[button]._state & MBS_DOWN);
+	return _mouseButton[button].isState(MBS_DOWN);
 }
 
 int Mouse::getMouseLength(int mx, int my) {
@@ -146,8 +145,8 @@ int Mouse::getMouseLength(int mx, int my) {
 	screen->GetSurfaceDims(dims);
 
 	// For now, reference point is (near) the center of the screen
-	int dx = abs(mx - dims.w / 2);
-	int dy = abs((dims.h / 2 + (dims.h * 14 / 200)) - my); //! constant
+	int dx = abs(mx - dims.width() / 2);
+	int dy = abs((dims.height() / 2 + (dims.height() * 14 / 200)) - my); //! constant
 
 	//
 	// The original game switches cursors from small -> medium -> large on
@@ -157,10 +156,10 @@ int Mouse::getMouseLength(int mx, int my) {
 	// Modern players may be in a window so give them a little bit more
 	// space to make the large cursor without having to hit the edge.
 	//
-	int xshort = (dims.w * 30 / 320);
-	int xmed = (dims.w * 100 / 320);
-	int yshort = (dims.h * 30 / 320);
-	int ymed = (dims.h * 100 / 320);
+	int xshort = (dims.width() * 30 / 320);
+	int xmed = (dims.width() * 100 / 320);
+	int yshort = (dims.height() * 30 / 320);
+	int ymed = (dims.height() * 100 / 320);
 
 	// determine length of arrow
 	if (dx > xmed || dy > ymed) {
@@ -172,16 +171,20 @@ int Mouse::getMouseLength(int mx, int my) {
 	}
 }
 
-int Mouse::getMouseDirection(int mx, int my) {
+Direction Mouse::getMouseDirectionWorld(int mx, int my) {
 	Rect dims;
 	RenderSurface *screen = Ultima8Engine::get_instance()->getRenderScreen();
 	screen->GetSurfaceDims(dims);
 
 	// For now, reference point is (near) the center of the screen
-	int dx = mx - dims.w / 2;
-	int dy = (dims.h / 2 + (dims.h * 14 / 200)) - my; //! constant
+	int dx = mx - dims.width() / 2;
+	int dy = (dims.height() / 2 + (dims.height() * 14 / 200)) - my; //! constant
 
-	return ((Get_direction(dy * 2, dx)) + 1) % 8;
+	return Direction_Get(dy * 2, dx, dirmode_8dirs);
+}
+
+Direction Mouse::getMouseDirectionScreen(int mx, int my) {
+	return Direction_OneRight(getMouseDirectionWorld(mx, my), dirmode_8dirs);
 }
 
 int Mouse::getMouseFrame() {
@@ -219,7 +222,8 @@ int Mouse::getMouseFrame() {
 		}
 
 		// Calculate frame based on direction
-		int frame = getMouseDirection(_mousePos.x, _mousePos.y);
+		Direction mousedir = getMouseDirectionScreen(_mousePos.x, _mousePos.y);
+		int frame = mouseFrameForDir(mousedir);
 
 		/** length --- frame offset
 		 *    0              0
@@ -254,26 +258,40 @@ int Mouse::getMouseFrame() {
 	}
 }
 
+int Mouse::mouseFrameForDir(Direction mousedir) const {
+	switch (mousedir) {
+		case dir_north:		return 0;
+		case dir_northeast: return 1;
+		case dir_east:		return 2;
+		case dir_southeast: return 3;
+		case dir_south:		return 4;
+		case dir_southwest: return 5;
+		case dir_west:		return 6;
+		case dir_northwest: return 7;
+		default:			return 0;
+	}
+}
+
 void Mouse::setMouseCoords(int mx, int my) {
 	Rect dims;
 	RenderSurface *screen = Ultima8Engine::get_instance()->getRenderScreen();
 	screen->GetSurfaceDims(dims);
 
-	if (mx < dims.x)
-		mx = dims.x;
-	else if (mx > dims.w)
-		mx = dims.w;
+	if (mx < dims.left)
+		mx = dims.left;
+	else if (mx > dims.width())
+		mx = dims.width();
 
-	if (my < dims.y)
-		my = dims.y;
-	else if (my > dims.h)
-		my = dims.h;
+	if (my < dims.top)
+		my = dims.top;
+	else if (my > dims.height())
+		my = dims.height();
 
 	_mousePos.x = mx;
 	_mousePos.y = my;
 
 	Gump *desktopGump = Ultima8Engine::get_instance()->getDesktopGump();
-	Gump *gump = desktopGump->OnMouseMotion(mx, my);
+	Gump *gump = desktopGump->onMouseMotion(mx, my);
 	if (gump && _mouseOverGump != gump->getObjId()) {
 		Gump *oldGump = getGump(_mouseOverGump);
 		Std::list<Gump *> oldgumplist;
@@ -305,18 +323,18 @@ void Mouse::setMouseCoords(int mx, int my) {
 
 		// send events to remaining gumps
 		for (; olditer != oldgumplist.end(); ++olditer)
-			(*olditer)->OnMouseLeft();
+			(*olditer)->onMouseLeft();
 
 		_mouseOverGump = gump->getObjId();
 
 		for (; newiter != newgumplist.end(); ++newiter)
-			(*newiter)->OnMouseOver();
+			(*newiter)->onMouseOver();
 	}
 
 	if (_dragging == DRAG_NOT) {
-		if (_mouseButton[Shared::BUTTON_LEFT]._state & MBS_DOWN) {
-			int startx = _mouseButton[Shared::BUTTON_LEFT]._downX;
-			int starty = _mouseButton[Shared::BUTTON_LEFT]._downY;
+		if (_mouseButton[Shared::BUTTON_LEFT].isState(MBS_DOWN)) {
+			int startx = _mouseButton[Shared::BUTTON_LEFT]._downPoint.x;
+			int starty = _mouseButton[Shared::BUTTON_LEFT]._downPoint.y;
 			if (ABS(startx - mx) > 2 ||
 				ABS(starty - my) > 2) {
 				startDragging(startx, starty);
@@ -402,7 +420,7 @@ void Mouse::startDragging(int startx, int starty) {
 	// pause the kernel
 	Kernel::get_instance()->pause();
 
-	_mouseButton[Shared::BUTTON_LEFT]._state |= MBS_HANDLED;
+	_mouseButton[Shared::BUTTON_LEFT].setState(MBS_HANDLED);
 
 	if (_dragging == DRAG_INVALID) {
 		setMouseCursor(MOUSE_CROSS);
@@ -501,24 +519,22 @@ void Mouse::stopDragging(int mx, int my) {
 }
 
 void Mouse::handleDelayedEvents() {
-	uint32 now = g_system->getMillis();
-
 	for (int button = 0; button < Shared::MOUSE_LAST; ++button) {
 		if (!(_mouseButton[button]._state & (MBS_HANDLED | MBS_DOWN)) &&
-			now - _mouseButton[button]._lastDown > DOUBLE_CLICK_TIMEOUT) {
+			!_mouseButton[button].lastWithinDblClkTimeout()) {
 			Gump *gump = getGump(_mouseButton[button]._downGump);
 			if (gump) {
-				int32 mx = _mouseButton[button]._downX;
-				int32 my = _mouseButton[button]._downY;
+				int32 mx = _mouseButton[button]._downPoint.x;
+				int32 my = _mouseButton[button]._downPoint.y;
 				Gump *parent = gump->GetParent();
 				if (parent)
 					parent->ScreenSpaceToGump(mx, my);
 				
-				gump->OnMouseClick(button, mx, my);
+				gump->onMouseClick(button, mx, my);
 			}
 
 			_mouseButton[button]._downGump = 0;
-			_mouseButton[button]._state |= MBS_HANDLED;
+			_mouseButton[button].setState(MBS_HANDLED);
 		}
 	}
 }

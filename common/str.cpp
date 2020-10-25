@@ -30,7 +30,7 @@
 namespace Common {
 
 MemoryPool *g_refCountPool = nullptr; // FIXME: This is never freed right now
-MutexRef g_refCountPoolMutex = nullptr;
+Mutex *g_refCountPoolMutex = nullptr;
 
 void lockMemoryPoolMutex() {
 	// The Mutex class can only be used once g_system is set and initialized,
@@ -40,18 +40,18 @@ void lockMemoryPoolMutex() {
 	if (!g_system || !g_system->backendInitialized())
 		return;
 	if (!g_refCountPoolMutex)
-		g_refCountPoolMutex = g_system->createMutex();
-	g_system->lockMutex(g_refCountPoolMutex);
+		g_refCountPoolMutex = new Mutex();
+	g_refCountPoolMutex->lock();
 }
 
 void unlockMemoryPoolMutex() {
 	if (g_refCountPoolMutex)
-		g_system->unlockMutex(g_refCountPoolMutex);
+		g_refCountPoolMutex->unlock();
 }
 
 void String::releaseMemoryPoolMutex() {
 	if (g_refCountPoolMutex){
-		g_system->deleteMutex(g_refCountPoolMutex);
+		delete g_refCountPoolMutex;
 		g_refCountPoolMutex = nullptr;
 	}
 }
@@ -123,6 +123,12 @@ String::String(char c)
 	_storage[1] = 0;
 
 	_size = (c == 0) ? 0 : 1;
+}
+
+String::String(const U32String &str)
+	: _size(0), _str(_storage) {
+	_storage[0] = 0;
+	*this = String(str.encode());
 }
 
 String::~String() {
@@ -229,7 +235,12 @@ void String::decRefCount(int *oldRefCount) {
 			g_refCountPool->freeChunk(oldRefCount);
 			unlockMemoryPoolMutex();
 		}
+		// Coverity thinks that we always free memory, as it assumes
+		// (correctly) that there are cases when oldRefCount == 0
+		// Thus, DO NOT COMPILE, trick it and shut tons of false positives
+#ifndef __COVERITY__
 		delete[] _str;
+#endif
 
 		// Even though _str points to a freed memory block now,
 		// we do not change its value, because any code that calls
@@ -279,7 +290,7 @@ String &String::operator=(char c) {
 }
 
 String &String::operator+=(const char *str) {
-	if (_str <= str && str <= _str + _size)
+	if (pointerInOwnBuffer(str))
 		return operator+=(String(str));
 
 	int len = strlen(str);
@@ -290,6 +301,16 @@ String &String::operator+=(const char *str) {
 		_size += len;
 	}
 	return *this;
+}
+
+bool String::pointerInOwnBuffer(const char *str) const {
+	//compared pointers must be in the same array or UB
+	//cast to intptr however is IB
+	//which includes comparision of the values
+	uintptr ownBuffStart = (uintptr)_str;
+	uintptr ownBuffEnd = (uintptr)(_str + _size);
+	uintptr candidateAddr = (uintptr)str;
+	return ownBuffStart <= candidateAddr && candidateAddr <= ownBuffEnd;
 }
 
 String &String::operator+=(const String &str) {
@@ -402,11 +423,51 @@ bool String::contains(char x) const {
 	return strchr(c_str(), x) != nullptr;
 }
 
+bool String::contains(uint32 x) const {
+	for (String::const_iterator itr = begin(); itr != end(); itr++) {
+		if (uint32(*itr) == x) {
+			return true;
+		}
+	}
+	return false;
+}
+
 uint64 String::asUint64() const {
 	uint64 result = 0;
 	for (uint32 i = 0; i < _size; ++i) {
 		if (_str[i] < '0' || _str[i] > '9') break;
 		result = result * 10L + (_str[i] - '0');
+	}
+	return result;
+}
+
+uint64 String::asUint64Ext() const {
+	uint64 result = 0;
+	uint64 base = 10;
+	uint32 skip = 0;
+	
+	if (_size >= 3 && _str[0] == '0' && _str[1] == 'x') {
+		base = 16;
+		skip = 2;
+	} else if (_size >= 2 && _str[0] == '0') {
+		base = 8;
+		skip = 1;
+	} else {
+		base = 10;
+		skip = 0;
+	}
+	for (uint32 i = skip; i < _size; ++i) {
+		char digit = _str[i];
+		uint64 digitval = 17; // sentinel
+		if (digit >= '0' && digit <= '9')
+			digitval = digit - '0';
+		else if (digit >= 'a' && digit <= 'f')
+			digitval = digit - 'a' + 10;
+		else if (digit >= 'A' && digit <= 'F')
+			digitval = digit - 'A' + 10;
+		if (digitval > base)
+			break;
+		result = result * base + digitval;
 	}
 	return result;
 }
@@ -895,6 +956,15 @@ int String::compareToIgnoreCase(const char *x) const {
 	return scumm_stricmp(c_str(), x);
 }
 
+int String::compareDictionary(const String &x) const {
+	return compareDictionary(x.c_str());
+}
+
+int String::compareDictionary(const char *x) const {
+	assert(x != nullptr);
+	return scumm_compareDictionary(c_str(), x);
+}
+
 #pragma mark -
 
 String operator+(const String &x, const String &y) {
@@ -1284,12 +1354,47 @@ int scumm_strnicmp(const char *s1, const char *s2, uint n) {
 	return l1 - l2;
 }
 
+const char *scumm_skipArticle(const char *s1) {
+	int o1 = 0;
+	if (!scumm_strnicmp(s1, "the ", 4))
+		o1 = 4;
+	else if (!scumm_strnicmp(s1, "a ", 2))
+		o1 = 2;
+	else if (!scumm_strnicmp(s1, "an ", 3))
+		o1 = 3;
+
+	return &s1[o1];
+}
+
+int scumm_compareDictionary(const char *s1, const char *s2) {
+	return scumm_stricmp(scumm_skipArticle(s1), scumm_skipArticle(s2));
+}
+
 //  Portable implementation of strdup.
 char *scumm_strdup(const char *in) {
 	const size_t len = strlen(in) + 1;
-	char *out = new char[len];
+	char *out = (char *)malloc(len);
 	if (out) {
 		strcpy(out, in);
 	}
 	return out;
+}
+
+//  Portable implementation of strcasestr.
+const char *scumm_strcasestr(const char *s, const char *find) {
+	char c, sc;
+	size_t len;
+
+	if ((c = *find++) != 0) {
+		c = (char)tolower((unsigned char)c);
+		len = strlen(find);
+		do {
+			do {
+				if ((sc = *s++) == 0)
+					return (NULL);
+			} while ((char)tolower((unsigned char)sc) != c);
+		} while (scumm_strnicmp(s, find, len) != 0);
+		s--;
+	}
+	return s;
 }

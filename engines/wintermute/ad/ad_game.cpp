@@ -27,6 +27,9 @@
  */
 
 #include "engines/wintermute/ad/ad_actor.h"
+#ifdef ENABLE_WME3D
+#include "engines/wintermute/ad/ad_actor_3dx.h"
+#endif
 #include "engines/wintermute/ad/ad_game.h"
 #include "engines/wintermute/ad/ad_entity.h"
 #include "engines/wintermute/ad/ad_inventory.h"
@@ -43,6 +46,7 @@
 #include "engines/wintermute/base/font/base_font.h"
 #include "engines/wintermute/base/base_object.h"
 #include "engines/wintermute/base/base_parser.h"
+#include "engines/wintermute/base/base_region.h"
 #include "engines/wintermute/base/sound/base_sound.h"
 #include "engines/wintermute/base/base_surface_storage.h"
 #include "engines/wintermute/base/base_transition_manager.h"
@@ -61,6 +65,7 @@
 #include "engines/wintermute/video/video_player.h"
 #include "engines/wintermute/video/video_theora_player.h"
 #include "engines/wintermute/platform_osystem.h"
+#include "common/config-manager.h"
 #include "common/str.h"
 
 namespace Wintermute {
@@ -391,6 +396,47 @@ bool AdGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 		return STATUS_OK;
 	}
 
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// LoadActor3D
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "LoadActor3D") == 0) {
+		stack->correctParams(1);
+		// assume that we have an .X model here
+		// wme3d has also support for .ms3d files
+		// but they are deprecated
+		AdActor3DX *act = new AdActor3DX(_gameRef);
+		if (act && DID_SUCCEED(act->loadFile(stack->pop()->getString()))) {
+			addObject(act);
+			stack->pushNative(act, true);
+		} else {
+			delete act;
+			act = nullptr;
+			stack->pushNULL();
+		}
+		return STATUS_OK;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// UnloadActor3D
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "UnloadActor3D") == 0) {
+		// this does the same as UnloadActor etc. ..
+		// even WmeLite has this script call in AdScene
+		stack->correctParams(1);
+		ScValue *val = stack->pop();
+		AdObject *obj = static_cast<AdObject *>(val->getNative());
+
+		removeObject(obj);
+		if (val->getType() == VAL_VARIABLE_REF) {
+			val->setNULL();
+		}
+
+		stack->pushNULL();
+		return STATUS_OK;
+	}
+#endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// LoadEntity
 	//////////////////////////////////////////////////////////////////////////
@@ -415,6 +461,17 @@ bool AdGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack, 
 		stack->correctParams(1);
 		ScValue *val = stack->pop();
 		AdObject *obj = (AdObject *)val->getNative();
+
+		// HACK: We take corrosion screenshot before entering main menu
+		// Unused screenshots must be deleted, after main menu is closed
+		if (obj && BaseEngine::instance().getGameId() == "corrosion") {
+			const char *mm = "interface\\system\\mainmenu.window";
+			const char *fn = obj->getFilename();
+			if (fn && strcmp(fn, mm) == 0) {
+				deleteSaveThumbnail();
+			}
+		}
+
 		removeObject(obj);
 		if (val->getType() == VAL_VARIABLE_REF) {
 			val->setNULL();
@@ -1050,6 +1107,17 @@ ScValue *AdGame::scGetProperty(const Common::String &name) {
 		return _scValue;
 	}
 
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// VideoSkipButton
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "VideoSkipButton") {
+		warning("AdGame::scGetProperty VideoSkipButton not implemented");
+		_scValue->setInt(0);
+		return _scValue;
+	}
+#endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// ChangingScene
 	//////////////////////////////////////////////////////////////////////////
@@ -1171,6 +1239,16 @@ bool AdGame::scSetProperty(const char *name, ScValue *value) {
 		_talkSkipButton = (TTalkSkipButton)val;
 		return STATUS_OK;
 	}
+
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// VideoSkipButton
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "VideoSkipButton") == 0) {
+		warning("AdGame::scSetProperty VideoSkipButton not implemented");
+		return STATUS_OK;
+	}
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// StartupScene
@@ -1522,6 +1600,119 @@ bool AdGame::scheduleChangeScene(const char *filename, bool fadeIn) {
 
 
 //////////////////////////////////////////////////////////////////////////
+bool AdGame::handleCustomActionStart(BaseGameCustomAction action) {
+	bool isCorrosion = BaseEngine::instance().getGameId() == "corrosion";
+	
+	if (isCorrosion) {
+		// Corrosion Enhanced Edition contain city map screen, which is
+		// mouse controlled and conflicts with those custom actions
+		const char *m = "items\\street_map\\windows\\street_map_window.script";
+		if (_scEngine->isRunningScript(m)) {
+			return false;
+		}
+	}
+
+	int xLeft   = 30;
+	int xCenter = _renderer->getWidth() / 2;
+	int xRight  = _renderer->getWidth() - 30;
+
+	int yTop    = 35;
+	int yCenter = _renderer->getHeight() / 2;
+	int yBottom = _renderer->getHeight() - 35;
+	if (isCorrosion && !(ConfMan.get("extra").contains("Enhanced"))) {
+		// original version of Corrosion has a toolbar under the game screen
+		yBottom -= 60;
+	}
+
+	BaseArray<AdObject *> objects;
+
+	Point32 p;
+	int distance = xCenter * xCenter + yCenter * yCenter;
+
+	switch (action) {
+	case kClickAtCenter:
+		p.x = xCenter;
+		p.y = yCenter;
+		break;
+	case kClickAtLeft:
+		p.x = xLeft;
+		p.y = yCenter;
+		break;
+	case kClickAtRight:
+		p.x = xRight;
+		p.y = yCenter;
+		break;
+	case kClickAtTop:
+		p.x = xCenter;
+		p.y = yTop;
+		break;
+	case kClickAtBottom:
+		p.x = xCenter;
+		p.y = yBottom;
+		break;
+	case kClickAtEntityNearestToCenter:
+		p.x = xCenter;
+		p.y = yCenter;
+		// Looking through all objects for entities near to the center
+		if (_scene && _scene->getSceneObjects(objects, true)) {
+			for (uint32 i = 0; i < objects.size(); i++) {
+				BaseRegion *region;
+				if (objects[i]->getType() != OBJECT_ENTITY ||
+					!objects[i]->_active || 
+					!objects[i]->_registrable ||
+					(!(region = ((AdEntity *)objects[i])->_region))
+				) {
+					continue;
+				}
+
+				// Something exactly at center? Great!
+				if (region->pointInRegion(xCenter, yCenter)) {
+					distance = 0;
+					p.x = xCenter;
+					p.y = yCenter;
+					break;
+				}
+
+				// Something at the edge? Available with other actions. 
+				if (region->pointInRegion(xLeft, yCenter) ||
+					region->pointInRegion(xRight, yCenter) ||
+					region->pointInRegion(xCenter, yBottom) ||
+					region->pointInRegion(xCenter, yTop)
+				) {
+					continue;
+				}
+
+				// Keep entities that has less distance to center
+				int x = ((AdEntity *)objects[i])->_posX;
+				int y = ((AdEntity *)objects[i])->_posY - ((AdEntity *)objects[i])->getHeight() / 2;
+				int d = (x - xCenter) * (x - xCenter) + (y - yCenter) * (y - yCenter);
+				if (distance > d) {
+					distance = d;
+					p.x = x;
+					p.y = y;
+				}
+			}
+		}
+		break;
+	default:
+		return false;
+	}
+
+	BasePlatform::setCursorPos(p.x, p.y);
+	setActiveObject(_gameRef->_renderer->getObjectAt(p.x, p.y)); 
+	onMouseLeftDown();
+	onMouseLeftUp();
+	return true;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+bool AdGame::handleCustomActionEnd(BaseGameCustomAction action) {
+	return false;
+}
+
+
+//////////////////////////////////////////////////////////////////////////
 bool AdGame::getVersion(byte *verMajor, byte *verMinor, byte *extMajor, byte *extMinor) const {
 	BaseGame::getVersion(verMajor, verMinor, nullptr, nullptr);
 
@@ -1645,6 +1836,32 @@ AdSceneState *AdGame::getSceneState(const char *filename, bool saving) {
 		return nullptr;
 	}
 }
+
+#ifdef ENABLE_WME3D
+//////////////////////////////////////////////////////////////////////////
+uint32 Wintermute::AdGame::getAmbientLightColor() {
+	if (_scene) {
+		return _scene->_ambientLightColor;
+	} else {
+		return BaseGame::getAmbientLightColor();
+	}
+}
+
+Wintermute::TShadowType Wintermute::AdGame::getMaxShadowType(Wintermute::BaseObject *object) {
+	TShadowType ret = BaseGame::getMaxShadowType(object);
+
+	return MIN(ret, _scene->_maxShadowType);
+}
+
+bool Wintermute::AdGame::getFogParams(FogParameters &fogParameters) {
+	if (_scene) {
+		fogParameters = _scene->_fogParameters;
+		return true;
+	} else {
+		return BaseGame::getFogParams(fogParameters);
+	}
+}
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////

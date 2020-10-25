@@ -159,7 +159,7 @@ Interface::Interface(XeenEngine *vm) : ButtonContainer(vm), InterfaceScene(vm),
 	_levitateUIFrame = 0;
 	_spotDoorsUIFrame = 0;
 	_dangerSenseUIFrame = 0;
-	_face1State = _face2State = 0;
+	_face1State = _face2State = 2;
 	_upDoorText = false;
 	_tillMove = 0;
 	_iconsMode = ICONS_STANDARD;
@@ -187,12 +187,13 @@ void Interface::startup() {
 
 	animate3d();
 	if (_vm->_map->_isOutdoors) {
-		setIndoorsMonsters();
-		setIndoorsObjects();
-	} else {
 		setOutdoorsMonsters();
 		setOutdoorsObjects();
+	} else {
+		setIndoorsMonsters();
+		setIndoorsObjects();
 	}
+
 	draw3d(false);
 
 	if (g_vm->getGameID() == GType_Swords)

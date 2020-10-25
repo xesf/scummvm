@@ -51,10 +51,12 @@ public:
 	void PaintThis(RenderSurface *, int32 lerp_factor, bool scaled) override;
 	void PaintComposited(RenderSurface *surf, int32 lerp_factor, int32 sx, int32 sy) override;
 
-	Gump *OnMouseMotion(int32 mx, int32 my) override;
+	Gump *onMouseMotion(int32 mx, int32 my) override;
 	bool OnKeyDown(int key, int mod) override;
 	bool OnKeyUp(int key) override;
 	bool OnTextInput(int unicode) override;
+
+	void OnFocus(bool gain) override;
 
 	//! get the current text
 	Std::string getText() const {

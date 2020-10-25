@@ -20,119 +20,122 @@
  *
  */
 
+#include "graphics/macgui/macwidget.h"
+
 #include "director/director.h"
-#include "director/cast.h"
+#include "director/castmember.h"
+#include "director/frame.h"
+#include "director/movie.h"
+#include "director/score.h"
 #include "director/sprite.h"
+#include "director/lingo/lingo.h"
+#include "director/lingo/lingo-object.h"
 
 namespace Director {
 
-Sprite::Sprite() {
+Sprite::Sprite(Frame *frame) {
+	_frame = frame;
+	_score = _frame->getScore();
+	_movie = _score->getMovie();
+
+	_scriptId = 0;
+	_scriptCastIndex = 0;
+	_colorcode = 0;
+	_blendAmount = 0;
+	_unk3 = 0;
+
 	_enabled = false;
-	_trails = 0;
-	_width = 0;
+	_castId = 0;
+	_pattern = 0;
+
+	_castIndex = 0;
+	_spriteType = kInactiveSprite;
+	_inkData = 0;
 	_ink = kInkTypeCopy;
-	_flags = 0;
-	_height = 0;
-	_castId = 0;
-	_constraint = 0;
-	_moveable = 0;
-	_castId = 0;
-	_backColor = 255;
-	_foreColor = 0;
-	_left = 0;
-	_right = 0;
-	_top = 0;
-	_bottom = 0;
-	_visible = false;
-	_movieRate = 0;
-	_movieTime = 0;
-	_startTime = 0;
-	_stopTime = 0;
-	_volume = 0;
-	_stretch = 0;
-	_type = kInactiveSprite;
+	_trails = 0;
 
 	_cast = nullptr;
 
+	_thickness = 0;
+	_width = 0;
+	_height = 0;
+	_moveable = false;
+	_editable = false;
+	_puppet = false;
+	_immediate = false;
+	_backColor = g_director->_wm->_colorWhite;
+	_foreColor = g_director->_wm->_colorBlack;
+
 	_blend = 0;
-	_lineSize = 1;
 
-	_scriptId = 0;
-	_flags2 = 0;
-	_unk2 = 0;
-	_unk3 = 0;
-	_spriteType = 0;
-}
-
-Sprite::Sprite(const Sprite &sprite) {
-	_enabled = sprite._enabled;
-	_castId = sprite._castId;
-	_flags = sprite._flags;
-	_trails = sprite._trails;
-	_ink = sprite._ink;
-	_width = sprite._width;
-	_height = sprite._height;
-	_startPoint.x = sprite._startPoint.x;
-	_startPoint.y = sprite._startPoint.y;
-	_backColor = sprite._backColor;
-	_foreColor = sprite._foreColor;
-	_left = sprite._left;
-	_right = sprite._right;
-	_top = sprite._top;
-	_bottom = sprite._bottom;
-	_visible = sprite._visible;
-	_movieRate = sprite._movieRate;
-	_movieTime = sprite._movieTime;
-	_stopTime = sprite._stopTime;
-	_volume = sprite._volume;
-	_stretch = sprite._stretch;
-	_type = sprite._type;
-
-	_cast = sprite._cast;
-
-	_constraint = sprite._constraint;
-	_moveable = sprite._moveable;
-	_blend = sprite._blend;
-	_startTime = sprite._startTime;
-	_lineSize = sprite._lineSize;
-
-	_scriptId = sprite._scriptId;
-	_flags2 = sprite._flags2;
-	_unk2 = sprite._unk2;
-	_unk3 = sprite._unk3;
-	_spriteType = sprite._spriteType;
+	_volume = 0;
+	_stretch = 0;
 }
 
 Sprite::~Sprite() {
-	if (_cast)
-		delete _cast;
+}
+
+bool Sprite::isQDShape() {
+	return _spriteType == kRectangleSprite ||
+		_spriteType == kRoundedRectangleSprite ||
+		_spriteType == kOvalSprite ||
+		_spriteType == kLineTopBottomSprite ||
+		_spriteType == kLineBottomTopSprite ||
+		_spriteType == kOutlinedRectangleSprite ||
+		_spriteType == kOutlinedRoundedRectangleSprite ||
+		_spriteType == kOutlinedOvalSprite ||
+		_spriteType == kThickLineSprite;
+}
+
+void Sprite::updateCast() {
+	if (!_cast)
+		return;
+
+	if (_cast->isEditable() != _editable && !_puppet)
+		_cast->setEditable(_editable);
+}
+
+bool Sprite::respondsToMouse() {
+	if (_moveable)
+		return true;
+
+	ScriptContext *spriteScript = _movie->getScriptContext(kScoreScript, _scriptId);
+	if (spriteScript && (spriteScript->_eventHandlers.contains(kEventGeneric)
+					  || spriteScript->_eventHandlers.contains(kEventMouseDown)
+					  || spriteScript->_eventHandlers.contains(kEventMouseUp)))
+		return true;
+
+	ScriptContext *castScript = _movie->getScriptContext(kCastScript, _castId);
+	if (castScript && (castScript->_eventHandlers.contains(kEventMouseDown)
+					|| castScript->_eventHandlers.contains(kEventMouseUp)))
+		return true;
+
+	return false;
+}
+
+bool Sprite::isActive() {
+	return _movie->getScriptContext(kScoreScript, _scriptId) != nullptr;
+}
+
+bool Sprite::shouldHilite() {
+	if ((_cast && _cast->_autoHilite) || (isQDShape() && _ink == kInkTypeMatte))
+		if (g_director->getVersion() < 400 && !_moveable)
+			if (_movie->getScriptContext(kScoreScript, _scriptId) ||
+					_movie->getScriptContext(kCastScript, _castId))
+				return true;
+
+	return false;
 }
 
 uint16 Sprite::getPattern() {
-	switch (_spriteType) {
-	case kRectangleSprite:
-	case kRoundedRectangleSprite:
-	case kOvalSprite:
-	case kLineTopBottomSprite:
-	case kLineBottomTopSprite:
-	case kOutlinedRectangleSprite:
-	case kOutlinedRoundedRectangleSprite:
-	case kOutlinedOvalSprite:
-		return _castId;
-
-	case kCastMemberSprite:
-		switch (_cast->_type) {
-		case kCastShape:
-			return ((ShapeCast *)_cast)->_pattern;
-			break;
-		default:
-			warning("Sprite::getPattern(): Unhandled cast type: %d", _cast->_type);
-			break;
-		}
-		// fallthrough
-	default:
-		return 0;
+	if (!_cast) {
+		if (isQDShape())
+			return _pattern;
+	} else if (_cast->_type == kCastShape) {
+		return ((ShapeCastMember *)_cast)->_pattern;
 	}
+
+	return 0;
 }
 
 void Sprite::setPattern(uint16 pattern) {
@@ -145,7 +148,7 @@ void Sprite::setPattern(uint16 pattern) {
 	case kOutlinedRectangleSprite:
 	case kOutlinedRoundedRectangleSprite:
 	case kOutlinedOvalSprite:
-		_castId = pattern;
+		_pattern = pattern;
 		break;
 
 	case kCastMemberSprite:
@@ -158,5 +161,38 @@ void Sprite::setPattern(uint16 pattern) {
 	}
 }
 
+void Sprite::setCast(uint16 castId) {
+	CastMember *member = _movie->getCastMember(castId);
+	_castId = castId;
+
+	if (castId == 0)
+		return;
+
+	if (member) {
+		_cast = member;
+
+		if (_cast->_type == kCastText &&
+				(_spriteType == kButtonSprite ||
+				 _spriteType == kCheckboxSprite ||
+				 _spriteType == kRadioButtonSprite)) {
+			// WORKAROUND: In D2/D3 there can be text casts that have button
+			// information set in the sprite.
+			warning("Sprite::setCast(): Working around D2/3 button glitch");
+
+			_cast->_type = kCastButton;
+			((TextCastMember *)_cast)->_buttonType = (ButtonType)(_spriteType - 8);
+		}
+
+		// TODO: Respect sprite width/height settings. Need to determine how to read
+		// them properly.
+		if (_cast->_type != kCastShape) {
+			Common::Rect dims = _cast->getInitialRect();
+			_width = dims.width();
+			_height = dims.height();
+		}
+	} else {
+		warning("Sprite::setCast(): CastMember id %d(%s) has null member", castId, numToCastNum(castId));
+	}
+}
 
 } // End of namespace Director

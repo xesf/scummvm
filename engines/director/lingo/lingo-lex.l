@@ -21,7 +21,6 @@
  */
 
 %option noyywrap
-%option nounput
 %option noinput
 %option never-interactive
 %option case-insensitive
@@ -40,40 +39,75 @@
 #include "director/lingo/lingo-gr.h"
 #include "director/lingo/lingo-the.h"
 
-#define register
-
 using namespace Director;
 
 int yyparse();
+static const char *inputbuffer;
+static uint inputlen;
+
+// Push lines in stack
+static void pushLine(uint num) {
+	if (num > inputlen)
+		return;
+
+	g_lingo->_lines[2] = g_lingo->_lines[1];
+	g_lingo->_lines[1] = g_lingo->_lines[0];
+	g_lingo->_lines[0] = &inputbuffer[num];
+}
 
 static void count() {
-	if (debugChannelSet(-1, kDebugLingoParse))
+	if (debugChannelSet(-1, kDebugParse))
 		debug("LEXER: Read '%s' at %d:%d", yytext, g_lingo->_linenumber, g_lingo->_colnumber);
 
 	char *p = yytext;
 
-	while (*p && *p != '\n' && *p != '\r') {
-		p++;
-		g_lingo->_colnumber++;
-	}
-
-	while (*p == '\n' || *p == '\r') {
-		if (*p == '\n') {
+	while (*p) {
+		if (*p == '\n' || *p == '\xC2') {
 			g_lingo->_linenumber++;
 			g_lingo->_colnumber = 0;
+
+			if (*p == '\n')
+				pushLine(g_lingo->_bytenumber + 1);
+		} else {
+			g_lingo->_colnumber++;
 		}
-
 		p++;
+		g_lingo->_bytenumber++;
 	}
-
-	g_lingo->_colnumber = strlen(p);
 }
 
 static int checkImmediate(int token) {
-	if (g_lingo->_immediateMode) {
+	if (g_lingo->_immediateMode || g_lingo->_indef == kStateInArgs ||
+			g_lingo->_methodVars->contains(yytext)) {
 		yylval.s = new Common::String(yytext);
 
-		return ID;
+		return VARID;
+	}
+
+	return token;
+}
+
+static Common::String *cleanupString(const char *s) {
+	Common::String *res = new Common::String;
+
+	while (*s) {
+		if (*s == '\xC2') {
+			s++;
+			*res += ' ';
+			continue;
+		}
+		*res += *s;
+		s++;
+	}
+
+	return res;
+}
+
+static int varCheck(int token, const char *name) {
+	if (g_lingo->_indef == kStateInArgs || g_lingo->_methodVars->contains(name)) {
+		yylval.s = new Common::String(name);
+
+		return VARID;
 	}
 
 	return token;
@@ -86,33 +120,30 @@ constfloat [[:digit:]]+\.[[:digit:]]*
 constinteger [[:digit:]]+
 conststring \"[^\"\r\n]*\"
 operator [-+*/%^:,()><&\[\]]
-newline [ \t]*[\n\r]
-whitespace [ \t]
+newline [ \t\xC2]*[\n\r]
+spc [ \t\xC2]
 
 %%
 
-{whitespace}*\xC2[\r\n]	{ count(); }
---[^\r\n]*
-^{whitespace}+	{ count(); }
-[\t]+			{ count(); return ' '; }
+{spc}+		{ count(); }
 
-[#]{identifier}	{ count(); yylval.s = new Common::String(yytext); return SYMBOL; }	// D3
+[#]{identifier}	{ count(); yylval.s = new Common::String(yytext + 1); return SYMBOL; }	// D3, skip '#'
 
-after		{ count(); return tAFTER; }		// D3
-and			{ count(); return tAND; }
-before		{ count(); return tBEFORE; }	// D3
-char		{ count(); return tCHAR; }		// D3
-contains	{ count(); return tCONTAINS; }
-done		{ count(); return tDONE; }
-down		{ count(); return tDOWN; }
+after		{ count(); return varCheck(tAFTER, "after"); }		// D3
+and			{ count(); return varCheck(tAND, "and"); }
+before		{ count(); return varCheck(tBEFORE, "before"); }	// D3
+cast		{ count(); return tCAST; }
+char		{ count(); return varCheck(tCHAR, "char"); }		// D3
+contains	{ count(); return varCheck(tCONTAINS, "contains"); }
+down		{ count(); return varCheck(tDOWN, "down"); }
 if			{ count(); return tIF; }
-else[ \t]+if { count(); return tELSIF; }
+else{spc}+if { count(); return tELSIF; }
 else		{ count(); return tELSE; }
-end([ \t]+{identifier})?	{
+end({spc}+{identifier})?	{
 		count();
 
-		const char *ptr = &yytext[4]; // Skip 'end '
-		while (*ptr == ' ' || *ptr == '\t')
+		const char *ptr = &yytext[3]; // Skip 'end '
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		if (!scumm_stricmp(ptr, "if"))
@@ -122,99 +153,73 @@ end([ \t]+{identifier})?	{
 		else if (!scumm_stricmp(ptr, "tell"))
 			return tENDTELL;
 
+		if (!*ptr) {	// If it is stale "end", check it
+			if (varCheck(ENDCLAUSE, "end") == VARID)
+				return VARID;
+		}
+
 		yylval.s = new Common::String(ptr);
 
 		return ENDCLAUSE;
 	}
-^[ \t]*factory { count(); return tFACTORY; }
-exit		{ count(); return tEXIT; }
-global		{ count(); return tGLOBAL; }
-go[ \t]+to[ \t]+frame	{ count(); return tGO; }
-go[ \t]+to	{ count(); return tGO; }
-go			{ count(); return tGO; }
-instance	{ count(); return tINSTANCE; }
-intersects	{ count(); return tINTERSECTS; }
-into		{ count(); return tINTO; }
-in			{ count(); return tIN; }
-item		{ count(); return tITEM; }
-line		{ count(); return tLINE; }
-loop		{ count(); return checkImmediate(tLOOP); }
-macro		{ count(); return tMACRO; }
-method[ \t]*{identifier}		{
+^{spc}*factory { count(); return tFACTORY; }
+exit		{ count(); return varCheck(tEXIT, "exit"); }
+field		{ count(); return tFIELD; }
+global		{ count(); return varCheck(tGLOBAL, "global"); }
+go{spc}+(to{spc}+)?frame	{ count(); return tGO; }
+go{spc}+(to)?	{ count(); return tGO; }
+go{spc}+loop	{ count(); return tGOLOOP; }
+instance	{ count(); return varCheck(tINSTANCE, "instance"); }
+intersects	{ count(); return varCheck(tINTERSECTS, "intersects"); }
+into		{ count(); return varCheck(tINTO, "into"); }
+in			{ count(); return varCheck(tIN, "in"); }
+item		{ count(); return varCheck(tITEM, "item"); }
+line		{ count(); return varCheck(tLINE, "line"); }
+macro		{ count(); return varCheck(tMACRO, "macro"); }
+method{spc}+{identifier}		{
 		count();
 
 		const char *ptr = &yytext[6]; // Skip 'method '
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		yylval.s = new Common::String(ptr);
 
 		return tMETHOD;
 	}
-mod			{ count(); return tMOD; }
-movie		{ count(); return tMOVIE; }
-next		{ count(); return tNEXT; }
-not			{ count(); return tNOT; }
-of			{ count(); return tOF; }
-on			{ count(); return tON; }		// D3
-open		{ count(); return tOPEN; }
-or			{ count(); return tOR; }
-play[ \t]+frame	{ count(); return tPLAY; }
-play		{ count(); return tPLAY; }
+mod			{ count(); return varCheck(tMOD, "mod"); }
+movie		{ count(); return varCheck(tMOVIE, "movie"); }
+next		{ count(); return varCheck(tNEXT, "next"); }
+not			{ count(); return varCheck(tNOT, "not"); }
+of			{ count(); return varCheck(tOF, "of"); }
+on			{ count(); return varCheck(tON, "on"); }		// D3
+open		{ count(); return varCheck(tOPEN, "open"); }
+or			{ count(); return varCheck(tOR, "or"); }
+play{spc}+frame	{ count(); return tPLAY; }
+play		{ count(); return varCheck(tPLAY, "play"); }
 playAccel	{ count(); yylval.s = new Common::String(yytext); return tPLAYACCEL; }
-previous	{ count(); return tPREVIOUS; }
-property	{ count(); return tPROPERTY; }	// D4
-put			{ count(); return tPUT; }
+previous	{ count(); return varCheck(tPREVIOUS, "previous"); }
+property	{ count(); return varCheck(tPROPERTY, "property"); }	// D4
+put			{ count(); return varCheck(tPUT, "put"); }
 repeat		{ count(); return checkImmediate(tREPEAT); }
-set			{ count(); return tSET; }
-sound[ \t]+(close|fadeIn|fadeOut|playFile|stop)	{
-		count();
-
-		const char *ptr = &yytext[6]; // Skip 'sound '
-		while (*ptr == ' ' || *ptr == '\t')
-			ptr++;
-
-		Common::String bltin = Common::String::format("sound-%s", ptr);
-
-		if (g_lingo->_builtins.contains(bltin)) {
-			yylval.s = new Common::String(bltin);
-			return BLTIN;
-		} else {
-			warning("LEXER: Unhandled 'sound %s'", ptr);
-			return LEXERROR;
-		}
-	}
-starts		{ count(); return tSTARTS; }
-tell		{ count(); return tTELL; }
-the[ \t]+sqrt[ \t]+of[ \t]+	{
-		count();
-
-		yylval.e[0] = g_lingo->_theEntities["sqrt"]->entity;
-		yylval.e[1] = 0;	// No field
-
-		return THEENTITYWITHID;
-	}
-the[ \t]+value[ \t]+of[ \t]+	{
-		count();
-
-		yylval.s = new Common::String("value");
-
-		return FBLTIN;
-	}
-the[ \t]+number[ \t]+of[ \t]+[[:alpha:]]+[ \t](in|of)[ \t]	{
+script		{ count(); return tSCRIPT; }
+set			{ count(); return varCheck(tSET, "set"); }
+starts		{ count(); return varCheck(tSTARTS, "starts"); }
+tell		{ count(); return varCheck(tTELL, "tell"); }
+the{spc}+number{spc}+of{spc}+[[:alpha:]]+{spc}+(in|of){spc}+ {
 		count();
 
 		const char *ptr = &yytext[4]; // Skip 'the '
-		while (*ptr == ' ' || *ptr == '\t') ptr++;
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2') ptr++;
 
 		ptr += 6; // skip 'number '
-		while (*ptr == ' ' || *ptr == '\t') ptr++;
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2') ptr++;
 
 		ptr += 3; // Skip 'of '
-		while (*ptr == ' ' || *ptr == '\t') ptr++;
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2') ptr++;
 
 		Common::String field;
-		while (*ptr != ' ' && *ptr != '\t')
+		while (*ptr != ' ' && *ptr != '\t' && *ptr != '\xC2')
 			field += *ptr++;
 
 		// the number of menuItems of menu <xx>
@@ -229,14 +234,14 @@ the[ \t]+number[ \t]+of[ \t]+[[:alpha:]]+[ \t](in|of)[ \t]	{
 
 		yylval.s = new Common::String(Common::String::format("numberOf%s", field.c_str()));
 
-		if (g_lingo->_builtins.contains(*yylval.s)) {
-			return FBLTIN;
+		if (g_lingo->_builtinFuncs.contains(*yylval.s)) {
+			return THEFUNCINOF;
 		} else {
 			warning("LEXER: Unhandled chunk expression '%s'", yylval.s->c_str());
 			return LEXERROR;
 		}
 	}
-the[ \t]+last[ \t][[:alpha:]]+[ \t](in|of)[ \t]	{
+the{spc}+last{spc}+[[:alpha:]]+{spc}+(in|of){spc}+	{
 		count();
 
 		const char *ptr = &yytext[4]; // Skip 'the '
@@ -251,30 +256,30 @@ the[ \t]+last[ \t][[:alpha:]]+[ \t](in|of)[ \t]	{
 
 		yylval.s = new Common::String(Common::String::format("last%sOf", field.c_str()));
 
-		if (g_lingo->_builtins.contains(*yylval.s)) {
-			return FBLTIN;
+		if (g_lingo->_builtinFuncs.contains(*yylval.s)) {
+			return THEFUNCINOF;
 		} else {
 			warning("LEXER: Unhandled chunk expression '%s'", yylval.s->c_str());
 			return LEXERROR;
 		}
 	}
-the[ \t]+[[:alpha:]]+[ \t]+of[ \t]+{identifier}	{
+the{spc}+[[:alpha:]]+{spc}+of{spc}+{identifier}	{
 		count();
 
 		const char *ptr = &yytext[4]; // Skip 'the '
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		Common::String field;
-		while (*ptr != ' ' && *ptr != '\t')
+		while (*ptr != ' ' && *ptr != '\t' && *ptr != '\xC2')
 			field += *ptr++;
 
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		ptr += 3; // Skip 'of '
 
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		if (g_lingo->_theEntities.contains(ptr)) {
@@ -302,37 +307,47 @@ the[ \t]+[[:alpha:]]+[ \t]+of[ \t]+{identifier}	{
 			else
 				return THEENTITY;
 		} else {
-			if (g_director->getVersion() >= 4) {
+			if (g_director->getVersion() >= 400) {
 				Common::String key = Common::String::format("%d%s", g_lingo->_objectEntityId, field.c_str());
 
-				if (!g_lingo->_theEntityFields.contains(key)) { // Okay, this must be an object reference
-					yylval.objectref.obj = new Common::String(ptr);
-					yylval.objectref.field = new Common::String(field);
+				yylval.objectprop.obj = new Common::String(ptr);
+				yylval.objectprop.prop = new Common::String(field);
 
-					return THEOBJECTREF;
+				return THEOBJECTPROP;
+			} else if (g_lingo->_builtinFuncs.contains(field)) { // Let's hope they don't do it in D4+
+				if (g_lingo->_builtinFuncs[field].nargs == 1 && g_lingo->_builtinFuncs[field].maxArgs == 1) {
+					yylval.s = new Common::String(field);
+					Common::String rest(ptr);
+
+					// It is the dreaded 'the <builtin> of <expr>'
+					// with 'expr' starting with VARID, which leads to clash
+					//
+					// put 'of VARID' back.
+
+					for (int i = rest.size() - 1; i >= 0; i--)
+						unput(rest[i]);
+
+					unput(' '); unput('f'); unput('o');
+
+					return THEFUNC;
 				}
-
-				yylval.objectfield.os = new Common::String(ptr);
-				yylval.objectfield.oe = g_lingo->_theEntityFields[key]->field;
-
-				return THEOBJECTFIELD;
 			}
 		}
 
 		warning("LEXER: Unhandled the entity '%s', field '%s'", ptr, field.c_str());
 	}
-the[ \t]+[[:alpha:]]+[ \t+](date|time)		{
+the{spc}+[[:alpha:]]+{spc}+(date|time)		{
 		count();
 
 		const char *ptr = &yytext[4]; // Skip 'the '
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		Common::String field;
-		while (*ptr != ' ' && *ptr != '\t')
+		while (*ptr != ' ' && *ptr != '\t' && *ptr != '\xC2')
 			field += *ptr++;
 
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		field = Common::String::format("%d%s", g_lingo->_theEntities[ptr]->entity, field.c_str());
@@ -355,11 +370,11 @@ the[ \t]+[[:alpha:]]+[ \t+](date|time)		{
 		else
 			return THEENTITY;
 	}
-the[ \t]+[[:alpha:]]+		{
+the{spc}+[[:alpha:]]+		{
 		count();
 
 		const char *ptr = &yytext[4]; // Skip 'the '
-		while (*ptr == ' ' || *ptr == '\t')
+		while (*ptr == ' ' || *ptr == '\t' || *ptr == '\xC2')
 			ptr++;
 
 		if (g_lingo->_theEntities.contains(ptr)) {
@@ -372,62 +387,43 @@ the[ \t]+[[:alpha:]]+		{
 				return THEENTITY;
 		}
 
+		if (g_lingo->_builtinFuncs.contains(ptr)) {
+			if (g_lingo->_builtinFuncs[ptr].nargs == 1 && g_lingo->_builtinFuncs[ptr].maxArgs == 1) {
+				yylval.s = new Common::String(ptr);
+				return THEFUNC;
+			}
+		}
+
 		warning("LEXER: Unhandled the entity '%s'", ptr);
 	}
 then			{ count(); return tTHEN; }
-to				{ count(); return tTO; }
-sprite			{ count(); return tSPRITE; }
-with			{ count(); return tWITH; }
-within			{ count(); return tWITHIN; }
-when			{ count(); return tWHEN; }
-while			{ count(); return tWHILE; }
-word			{ count(); return tWORD; }
+to				{ count(); return varCheck(tTO, "to"); }
+scummvmAssertError	{ count(); return varCheck(tASSERTERROR, "scummvmAssertError"); }
+sprite			{ count(); return varCheck(tSPRITE, "sprite"); }
+with			{ count(); return varCheck(tWITH, "with"); }
+within			{ count(); return varCheck(tWITHIN, "within"); }
+when			{ count(); return varCheck(tWHEN, "when"); }
+while			{ count(); return varCheck(tWHILE, "while"); }
+window			{ count(); return tWINDOW; }
+word			{ count(); return varCheck(tWORD, "word"); }
 
-[<][>]				{ count(); return tNEQ; }
-[>][=]				{ count(); return tGE; }
-[<][=]				{ count(); return tLE; }
-[&][&]				{ count(); return tCONCAT; }
-[=]					{ count(); return tEQ; }
+[<][>]			{ count(); return tNEQ; }
+[>][=]			{ count(); return tGE; }
+[<][=]			{ count(); return tLE; }
+[&][&]			{ count(); return tCONCAT; }
+[=]				{ count(); return tEQ; }
 
 {identifier}		{
 		count();
 		yylval.s = new Common::String(yytext);
 
-		if (g_lingo->_ignoreMe && yylval.s->equalsIgnoreCase("me"))
-			return ID;
-
-		// When we are defining arguments, allow any string
-		if (g_lingo->_indef == kStateInArgs)
-			return ID;
-
-		// First of all, match against argument list
-		if (g_lingo->_indef == kStateInDef)
-			if (g_lingo->isInArgStack(yylval.s))
-				return ID;
-
-		if (g_lingo->_builtins.contains(yytext)) {
-			int type = g_lingo->_builtins[yytext]->type;
-			if ((type == BLTIN || type == FBLTIN || type == RBLTIN) && g_lingo->_builtins[yytext]->parens == false) {
-				if (type == RBLTIN) {
-					if (g_lingo->_builtins[yytext]->nargs != 1 || g_lingo->_builtins[yytext]->maxArgs != 1) {
-						warning("Incorrectly set RBLTIN %s", yytext);
-						return LEXERROR;
-					}
-
-					return RBLTIN;
-				}
-
-				return type;
-			}
-		}
-
-		return ID;
+		return VARID;
 	}
 {constfloat}	{ count(); yylval.f = atof(yytext); return FLOAT; }
 {constinteger}	{ count(); yylval.i = strtol(yytext, NULL, 10); return INT; }
 {operator}		{ count(); return *yytext; }
 {newline}		{ count(); return '\n'; }
-{conststring}	{ count(); yylval.s = new Common::String(&yytext[1]); yylval.s->deleteLastChar(); return STRING; }
+{conststring}	{ count(); yylval.s = cleanupString(&yytext[1]); yylval.s->deleteLastChar(); return STRING; }
 .				{ count(); }
 
 %%
@@ -437,9 +433,15 @@ extern int yydebug;
 namespace Director {
 
 int Lingo::parse(const char *code) {
+	inputbuffer = code;
+	g_lingo->_bytenumber = 0;
+	inputlen = strlen(code);
+
+	_lines[0] = _lines[1] = _lines[2] = code;
+
 	YY_BUFFER_STATE bp;
 
-	if (debugChannelSet(-1, kDebugLingoParse))
+	if (debugChannelSet(-1, kDebugParse))
 		yydebug = 1;
 	else
 		yydebug = 0;

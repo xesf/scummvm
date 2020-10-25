@@ -115,7 +115,7 @@ void ScummEngine::showMessageDialog(const byte *msg) {
 	if (_string[3].color == 0)
 		_string[3].color = 4;
 
-	InfoDialog dialog(this, (char *)buf);
+	InfoDialog dialog(this, Common::U32String((char *)buf));
 	VAR(VAR_KEYPRESS) = runDialog(dialog);
 }
 
@@ -128,6 +128,17 @@ void ScummEngine::showMessageDialog(const byte *msg) {
 void ScummEngine_v6::enqueueText(const byte *text, int x, int y, byte color, byte charset, bool center) {
 	BlastText &bt = _blastTextQueue[_blastTextQueuePos++];
 	assert(_blastTextQueuePos <= ARRAYSIZE(_blastTextQueue));
+
+	if (_useCJKMode) {
+		// The Dig expressly checks for x == 160 && y == 189 && charset == 3. Usually, if the game wants to print CJK text at the bottom
+		// of the screen it will use y = 183. So maybe this is a hack to fix some script texts that weren forgotten in the CJK converting
+		// process.
+		if (_game.id == GID_DIG && x == 160 && y == 189 && charset == 3)
+			y -= 6;
+		// COMI always adds a y-offset of 2 in CJK mode.
+		if (_game.id == GID_CMI)
+			y += 2;
+	}
 
 	convertMessageToString(text, bt.text, sizeof(bt.text));
 	bt.xpos = x;
@@ -180,7 +191,7 @@ void ScummEngine_v6::drawBlastTexts() {
 
 				// Some localizations may override colors
 				// See credits in Chinese COMI
-				if (_game.id == GID_CMI &&	_language == Common::ZH_TWN &&
+				if (_game.id == GID_CMI && _language == Common::ZH_TWN &&
 				      c == '^' && (buf == _blastTextQueue[i].text + 1)) {
 					if (*buf == 'c') {
 						int color = buf[3] - '0' + 10 *(buf[2] - '0');
@@ -191,7 +202,7 @@ void ScummEngine_v6::drawBlastTexts() {
 					}
 				}
 
-				if (c != 0 && c != 0xFF && c != '\n') {
+				if (c != 0 && c != 0xFF && c != '\n' && c != _newLineCharacter) {
 					if (c & 0x80 && _useCJKMode) {
 						if (_language == Common::JA_JPN && !checkSJISCode(c)) {
 							c = 0x20; //not in S-JIS
@@ -439,7 +450,7 @@ bool ScummEngine::newLine() {
 		_nextLeft -= _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos) / 2;
 		if (_nextLeft < 0)
 			_nextLeft = _game.version >= 6 ? _string[0].xpos : 0;
-	} else if (_game.version >= 4 && _game.version < 7 && _language == Common::HE_ISR) {
+	} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
 		if (_game.id == GID_MONKEY && _charset->getCurID() == 4) {
 			_nextLeft = _screenWidth - _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos) - _nextLeft;
 		}
@@ -700,7 +711,7 @@ void ScummEngine::CHARSET_1() {
 		_nextLeft -= _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos) / 2;
 		if (_nextLeft < 0)
 			_nextLeft = _game.version >= 6 ? _string[0].xpos : 0;
-	} else if (_game.version >= 4 && _game.version < 7 && _language == Common::HE_ISR) {
+	} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
 		if (_game.id == GID_MONKEY && _charset->getCurID() == 4) {
 			_nextLeft = _screenWidth - _charset->getStringWidth(0, _charsetBuffer + _charsetBufPos) - _nextLeft;
 		}
@@ -710,7 +721,7 @@ void ScummEngine::CHARSET_1() {
 
 	int c = 0;
 
-	if (_game.version >= 4 && _game.version < 7 && _language == Common::HE_ISR) {
+	if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
 		fakeBidiString(_charsetBuffer + _charsetBufPos, true);
 	}
 
@@ -983,7 +994,7 @@ void ScummEngine::drawString(int a, const byte *msg) {
 
 	convertMessageToString(msg, buf, sizeof(buf));
 
-	if (_game.version >= 4 && _game.version < 7 && _language == Common::HE_ISR) {
+	if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
 		fakeBidiString(buf, false);
 	}
 
@@ -1046,7 +1057,7 @@ void ScummEngine::drawString(int a, const byte *msg) {
 
 	if (_charset->_center) {
 		_charset->_left -= _charset->getStringWidth(a, buf) / 2;
-	} else if (_game.version >= 4 && _game.version < 7 && _game.id != GID_SAMNMAX && _language == Common::HE_ISR) {
+	} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _game.id != GID_SAMNMAX && _language == Common::HE_ISR) {
 		// Ignore INDY4 verbs (but allow dialogue)
 		if (_game.id != GID_INDY4 || buf[0] == 127) {
 			int ll = 0;
@@ -1114,7 +1125,7 @@ void ScummEngine::drawString(int a, const byte *msg) {
 			case 8:
 				if (_charset->_center) {
 					_charset->_left = _charset->_startLeft - _charset->getStringWidth(a, buf + i);
-				} else if (_game.version >= 4 && _game.version < 7 && _language == Common::HE_ISR) {
+				} else if (_game.version >= 4 && _game.version < 7 && _game.heversion == 0 && _language == Common::HE_ISR) {
 					// Skip control characters as they might contain '\0' which results in incorrect string width.
 					int ll = 0;
 					byte *ltext = buf + i;
@@ -1302,7 +1313,7 @@ int ScummEngine::convertMessageToString(const byte *msg, byte *dst, int dstSize)
 				num += (_game.version == 8) ? 4 : 2;
 			}
 		} else {
-			if ((chr != '@') || (_game.id == GID_CMI && _language == Common::ZH_TWN) ||
+			if ((chr != '@') || (_game.version >= 7 && is2ByteCharacter(_language, lastChr)) ||
 				(_game.id == GID_LOOM && _game.platform == Common::kPlatformPCEngine && _language == Common::JA_JPN) ||
 				(_game.platform == Common::kPlatformFMTowns && _language == Common::JA_JPN && checkSJISCode(lastChr))) {
 				*dst++ = chr;

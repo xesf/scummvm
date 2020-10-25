@@ -56,6 +56,7 @@ private:
     Common::Rect _titleRect;
     
     int _selectedMenuItem = -1;
+    bool canInteract = false;
     
     void mountMenu();
     void mountMenuTitle();

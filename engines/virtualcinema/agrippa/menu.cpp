@@ -105,6 +105,7 @@ bool Menu::updateEvent(const AgrippaEvent &evt) {
         }
         if (_menuItems.get()->endOfVideo()) {
             mountMenuItems(true);
+            canInteract = true;
         }
     }
     
@@ -151,6 +152,9 @@ bool Menu::keyEvent(const AgrippaEvent &evt) {
 }
 
 bool Menu::mouseEvent(const AgrippaEvent &evt) {
+    if (!canInteract) {
+        return true;
+    }
     switch (evt.type) {
     case Common::EVENT_MOUSEMOVE:
         if (!_titleRect.isEmpty()) {

@@ -35,9 +35,9 @@
 #include "engines/wintermute/ad/ad_game.h"
 #include "engines/wintermute/wintermute.h"
 #include "engines/wintermute/debugger.h"
-#include "engines/wintermute/game_description.h"
 #include "engines/wintermute/platform_osystem.h"
 #include "engines/wintermute/base/base_engine.h"
+#include "engines/wintermute/detection.h"
 
 #include "engines/wintermute/base/sound/base_sound_manager.h"
 #include "engines/wintermute/base/base_file_manager.h"
@@ -96,12 +96,16 @@ WintermuteEngine::~WintermuteEngine() {
 
 bool WintermuteEngine::hasFeature(EngineFeature f) const {
 	switch (f) {
-	case kSupportsRTL:
+	case kSupportsReturnToLauncher:
 		return true;
 	case kSupportsLoadingDuringRuntime:
 		return true;
 	case kSupportsSavingDuringRuntime:
 		return true;
+#ifdef ENABLE_WME3D
+	case kSupportsArbitraryResolutions:
+		return true;
+#endif
 	default:
 		return false;
 	}
@@ -110,6 +114,7 @@ bool WintermuteEngine::hasFeature(EngineFeature f) const {
 
 Common::Error WintermuteEngine::run() {
 	// Initialize graphics using following:
+#if !defined(ENABLE_WME3D) || (!defined(USE_OPENGL_GAME) && !defined(USE_OPENGL_SHADERS) && !defined(USE_GLES2))
 	Graphics::PixelFormat format(4, 8, 8, 8, 8, 24, 16, 8, 0);
 	if (_gameDescription->adDesc.flags & GF_LOWSPEC_ASSETS) {
 		initGraphics(320, 240, &format);
@@ -123,6 +128,9 @@ Common::Error WintermuteEngine::run() {
 	if (g_system->getScreenFormat() != format) {
 		return Common::kUnsupportedColorMode;
 	}
+#else
+	initGraphics3d(800, 600);
+#endif
 
 	// Create debugger console. It requires GFX to be initialized
 	_dbgController = new DebuggerController(this);
@@ -149,10 +157,26 @@ Common::Error WintermuteEngine::run() {
 
 int WintermuteEngine::init() {
 	BaseEngine::createInstance(_targetName, _gameDescription->adDesc.gameId, _gameDescription->adDesc.language, _gameDescription->targetExecutable, _gameDescription->adDesc.flags);
+	BaseEngine &instance = BaseEngine::instance();
+
+	// check if unknown target is a 2.5D game
+	if (instance.getFlags() & ADGF_AUTOGENTARGET) {
+		Common::ArchiveMemberList actors3d;
+		if (instance.getFileManager()->listMatchingPackageMembers(actors3d, "*.act3d")) {
+			warning("Unknown 2.5D game detected");
+			instance.addFlags(GF_3D);
+		}
+	}
+
+	#ifdef ENABLE_WME3D
+	if (instance.getFlags() & GF_3D) {
+		instance.getClassRegistry()->register3DClasses();
+	}
+	#endif
 
 	// check dependencies for games with high resolution assets
-	#if not defined(USE_PNG) || not defined(USE_JPEG) || not defined(USE_VORBIS)
-		if (!(_gameDescription->adDesc.flags & GF_LOWSPEC_ASSETS)) {
+	#if !defined(USE_PNG) || !defined(USE_JPEG) || !defined(USE_VORBIS)
+		if (!(instance.getFlags() & GF_LOWSPEC_ASSETS)) {
 			GUI::MessageDialog dialog(_("This game requires PNG, JPEG and Vorbis support."));
 			dialog.runModal();
 			delete _game;
@@ -162,8 +186,8 @@ int WintermuteEngine::init() {
 	#endif
 
 	// check dependencies for games with FoxTail subengine
-	#if not defined(ENABLE_FOXTAIL)
-		if (BaseEngine::isFoxTailCheck(_gameDescription->targetExecutable)) {
+	#if !defined(ENABLE_FOXTAIL)
+		if (BaseEngine::isFoxTailCheck(instance.getTargetExecutable())) {
 			GUI::MessageDialog dialog(_("This game requires the FoxTail subengine, which is not compiled in."));
 			dialog.runModal();
 			delete _game;
@@ -173,8 +197,8 @@ int WintermuteEngine::init() {
 	#endif
 
 	// check dependencies for games with HeroCraft subengine
-	#if not defined(ENABLE_HEROCRAFT)
-		if (_gameDescription->targetExecutable == WME_HEROCRAFT) {
+	#if !defined(ENABLE_HEROCRAFT)
+		if (instance.getTargetExecutable() == WME_HEROCRAFT) {
 			GUI::MessageDialog dialog(_("This game requires the HeroCraft subengine, which is not compiled in."));
 			dialog.runModal();
 			delete _game;
@@ -183,25 +207,29 @@ int WintermuteEngine::init() {
 		}
 	#endif
 
-	Common::ArchiveMemberList actors3d;
-	if (BaseEngine::instance().getFileManager()->listMatchingMembers(actors3d, "*.act3d")) {
-		GUI::MessageDialog dialog(
-				_("This game requires 3D characters support, which is out of ScummVM's scope."),
-				_("Start anyway"),
-				_("Cancel")
-			);
+	#ifndef ENABLE_WME3D
+	// check if game require 3D capabilities
+	if (instance.getFlags() & GF_3D) {
+		GUI::MessageDialog dialog(_("This game requires 3D capabilities that are out ScummVM scope. As such, it"
+			" is likely to be unplayable totally or partially."), _("Start anyway"), _("Cancel"));
 		if (dialog.runModal() != GUI::kMessageOK) {
 			delete _game;
 			_game = nullptr;
 			return false;
 		}
 	}
+	#endif
 
 	_game = new AdGame(_targetName);
 	if (!_game) {
 		return 1;
 	}
-	BaseEngine::instance().setGameRef(_game);
+
+	#ifdef ENABLE_WME3D
+	Common::ArchiveMemberList actors3d;
+	_game->_playing3DGame = BaseEngine::instance().getFileManager()->listMatchingPackageMembers(actors3d, "*.act3d");
+	#endif
+	instance.setGameRef(_game);
 	BasePlatform::initialize(this, _game, 0, nullptr);
 
 	_game->initConfManSettings();
@@ -221,7 +249,13 @@ int WintermuteEngine::init() {
 		return 2;
 	}
 
-	_game->initialize2();
+	if (!_game->initialize2()) {
+		_game->LOG(0, "Error initializing renderer. Exiting.");
+
+		delete _game;
+		_game = nullptr;
+		return 3;
+	}
 
 	bool ret = _game->initRenderer();
 

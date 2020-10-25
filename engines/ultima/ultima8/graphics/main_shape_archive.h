@@ -33,30 +33,29 @@ class TypeFlags;
 class ShapeInfo;
 class AnimDat;
 class ActorAnim;
-struct AnimAction;
+class AnimAction;
 
 class MainShapeArchive : public ShapeArchive {
 public:
-	ENABLE_RUNTIME_CLASSTYPE()
-
 	MainShapeArchive(uint16 id_, Palette *pal_ = 0,
 	                 const ConvertShapeFormat *format_ = 0)
 		: ShapeArchive(id_, pal_, format_), _typeFlags(0), _animDat(0) { }
 	MainShapeArchive(ArchiveFile *af, uint16 id_, Palette *pal_ = 0,
 	                 const ConvertShapeFormat *format_ = 0)
 		: ShapeArchive(af, id_, pal_, format_), _typeFlags(0), _animDat(0) { }
-	MainShapeArchive(IDataSource *ds, uint16 id_, Palette *pal_ = 0,
+	MainShapeArchive(Common::SeekableReadStream *rs, uint16 id_, Palette *pal_ = 0,
 	                 const ConvertShapeFormat *format_ = 0)
-		: ShapeArchive(ds, id_, pal_, format_), _typeFlags(0), _animDat(0) { }
+		: ShapeArchive(rs, id_, pal_, format_), _typeFlags(0), _animDat(0) { }
 
 	~MainShapeArchive() override;
 
-	void loadTypeFlags(IDataSource *ds);
-	ShapeInfo *getShapeInfo(uint32 shapenum);
+	void loadTypeFlags(Common::SeekableReadStream *rs);
+	void loadDamageDat(Common::SeekableReadStream *rs);
+	const ShapeInfo *getShapeInfo(uint32 shapenum);
 
-	void loadAnimDat(IDataSource *ds);
-	ActorAnim *getAnim(uint32 shape) const;
-	AnimAction *getAnim(uint32 shape, uint32 action) const;
+	void loadAnimDat(Common::SeekableReadStream *rs);
+	const ActorAnim *getAnim(uint32 shape) const;
+	const AnimAction *getAnim(uint32 shape, uint32 action) const;
 
 protected:
 	TypeFlags *_typeFlags;

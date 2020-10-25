@@ -189,74 +189,68 @@ Menu::Menu() {
 	_nebulaY = 0;		// Used as a flag
 	_fStars[0].y = 0;	// Used as a flag
 
-	_keyAssignUp = Common::KEYCODE_UP;
-	_keyAssignDown = Common::KEYCODE_DOWN;
-	_keyAssignLeft = Common::KEYCODE_LEFT;
-	_keyAssignRight = Common::KEYCODE_RIGHT;
-	_keyAssignUse = Common::KEYCODE_RETURN;
+	_gCheckEmpty = nullptr;
+	_gCheckOff = nullptr;
+	_gCheckOn = nullptr;
+	_gCheckLeft = nullptr;
+	_gCheckRight = nullptr;
 
-	_gCheckEmpty = NULL;
-	_gCheckOff = NULL;
-	_gCheckOn = NULL;
-	_gCheckLeft = NULL;
-	_gCheckRight = NULL;
+	_contArrowUp = nullptr;
+	_contArrowDown = nullptr;
+	_contArrowLeft = nullptr;
+	_contArrowRight = nullptr;
+	_contAssign = nullptr;
 
-	_contArrowUp = NULL;
-	_contArrowDown = NULL;
-	_contArrowLeft = NULL;
-	_contArrowRight = NULL;
-	_contAssign = NULL;
+	_warpPlaque = nullptr;
+	_hdbLogoScreen = nullptr;
 
-	_warpPlaque = NULL;
-	_hdbLogoScreen = NULL;
-
-	_titleScreen = NULL;
-	_oohOohGfx = NULL;
-	_newGfx = NULL;
-	_loadGfx = NULL;
-	_optionsGfx = NULL;
-	_quitGfx = NULL;
-	_resumeGfx = NULL;
-	_slotGfx = NULL;
-	_rocketMain = NULL;
-	_rocketSecond = NULL;
-	_rocketEx1 = NULL;
-	_rocketEx2 = NULL;
-	_titleLogo = NULL;
-	_hdbLogoScreen = NULL;
+	_titleScreen = nullptr;
+	_oohOohGfx = nullptr;
+	_newGfx = nullptr;
+	_loadGfx = nullptr;
+	_optionsGfx = nullptr;
+	_quitGfx = nullptr;
+	_resumeGfx = nullptr;
+	_slotGfx = nullptr;
+	_rocketMain = nullptr;
+	_rocketSecond = nullptr;
+	_rocketEx1 = nullptr;
+	_rocketEx2 = nullptr;
+	_titleLogo = nullptr;
+	_hdbLogoScreen = nullptr;
 	for (int i = 0; i < kNebulaCount; i++)
-		_nebulaGfx[i] = NULL;
+		_nebulaGfx[i] = nullptr;
 
-	_sliderLeft = NULL;
-	_sliderMid = NULL;
-	_sliderRight = NULL;
-	_sliderKnob = NULL;
-	_modePuzzleGfx = NULL;
-	_modeActionGfx = NULL;
-	_modeLoadGfx = NULL;
-	_modeSaveGfx = NULL;
-	_menuBackoutGfx = NULL;
-	_menuBackspaceGfx = NULL;
+	_sliderLeft = nullptr;
+	_sliderMid = nullptr;
+	_sliderRight = nullptr;
+	_sliderKnob = nullptr;
+	_modePuzzleGfx = nullptr;
+	_modeActionGfx = nullptr;
+	_modeLoadGfx = nullptr;
+	_modeSaveGfx = nullptr;
+	_menuBackoutGfx = nullptr;
+	_menuBackspaceGfx = nullptr;
 
-	_controlButtonGfx = NULL;
+	_controlButtonGfx = nullptr;
 
-	_controlsGfx = NULL;
-	_screenshots1gfx = NULL;
-	_screenshots1agfx = NULL;
-	_screenshots2gfx = NULL;
-	_demoPlaqueGfx = NULL;
+	_controlsGfx = nullptr;
+	_screenshots1gfx = nullptr;
+	_screenshots1agfx = nullptr;
+	_screenshots2gfx = nullptr;
+	_demoPlaqueGfx = nullptr;
 
-	_vortexian[0] = _vortexian[1] = _vortexian[2] = NULL;
+	_vortexian[0] = _vortexian[1] = _vortexian[2] = nullptr;
 
-	_star[0] = _star[1] = _star[2] = NULL;
+	_star[0] = _star[1] = _star[2] = nullptr;
 
 	// secret stars
-	_starRedGfx[0] = _starRedGfx[1] = NULL;
-	_starGreenGfx[0] = _starGreenGfx[1] = NULL;
-	_starBlueGfx[0] = _starBlueGfx[1] = NULL;
+	_starRedGfx[0] = _starRedGfx[1] = nullptr;
+	_starGreenGfx[0] = _starGreenGfx[1] = nullptr;
+	_starBlueGfx[0] = _starBlueGfx[1] = nullptr;
 
-	_versionGfx = NULL;
-	_warpGfx = NULL;
+	_versionGfx = nullptr;
+	_warpGfx = nullptr;
 
 	_warpBackoutX = 0;
 	_warpBackoutY = 0;
@@ -353,46 +347,6 @@ void Menu::readConfig() {
 		needFlush = true;
 	}
 
-	if (ConfMan.hasKey(CONFIG_KEY_UP)) {
-		_keyAssignUp = (Common::KeyCode)ConfMan.getInt(CONFIG_KEY_UP);
-		g_hdb->_input->assignKey(0, _keyAssignUp);
-	} else {
-		ConfMan.setInt(CONFIG_KEY_UP, _keyAssignUp);
-		needFlush = true;
-	}
-
-	if (ConfMan.hasKey(CONFIG_KEY_DOWN)) {
-		_keyAssignDown = (Common::KeyCode)ConfMan.getInt(CONFIG_KEY_DOWN);
-		g_hdb->_input->assignKey(1, _keyAssignDown);
-	} else {
-		ConfMan.setInt(CONFIG_KEY_DOWN, _keyAssignDown);
-		needFlush = true;
-	}
-
-	if (ConfMan.hasKey(CONFIG_KEY_LEFT)) {
-		_keyAssignLeft = (Common::KeyCode)ConfMan.getInt(CONFIG_KEY_LEFT);
-		g_hdb->_input->assignKey(2, _keyAssignLeft);
-	} else {
-		ConfMan.setInt(CONFIG_KEY_LEFT, _keyAssignLeft);
-		needFlush = true;
-	}
-
-	if (ConfMan.hasKey(CONFIG_KEY_RIGHT)) {
-		_keyAssignRight = (Common::KeyCode)ConfMan.getInt(CONFIG_KEY_RIGHT);
-		g_hdb->_input->assignKey(3, _keyAssignRight);
-	} else {
-		ConfMan.setInt(CONFIG_KEY_RIGHT, _keyAssignRight);
-		needFlush = true;
-	}
-
-	if (ConfMan.hasKey(CONFIG_KEY_USE)) {
-		_keyAssignUse = (Common::KeyCode)ConfMan.getInt(CONFIG_KEY_USE);
-		g_hdb->_input->assignKey(4, _keyAssignUse);
-	} else {
-		ConfMan.setInt(CONFIG_KEY_USE, _keyAssignUse);
-		needFlush = true;
-	}
-
 	if (ConfMan.hasKey(CONFIG_CHEAT)) {
 		g_hdb->setCheatingOn();
 		debug("Cheating enabled");
@@ -411,12 +365,6 @@ void Menu::writeConfig() {
 	ConfMan.setInt(CONFIG_MSTONE14, value);
 	value = g_hdb->getStarsMonkeystone21();
 	ConfMan.setInt(CONFIG_MSTONE21, value);
-
-	ConfMan.setInt(CONFIG_KEY_UP, _keyAssignUp);
-	ConfMan.setInt(CONFIG_KEY_DOWN, _keyAssignDown);
-	ConfMan.setInt(CONFIG_KEY_LEFT, _keyAssignLeft);
-	ConfMan.setInt(CONFIG_KEY_RIGHT, _keyAssignRight);
-	ConfMan.setInt(CONFIG_KEY_USE, _keyAssignUse);
 
 	if (g_hdb->getCheatingOn())
 		ConfMan.set(CONFIG_CHEAT, "1");
@@ -475,8 +423,8 @@ void Menu::startMenu() {
 		} else {
 			_screenshots1agfx = g_hdb->_gfx->loadPic("pic_demoscreenshots");
 			_screenshots1gfx = g_hdb->_gfx->loadPic("pic_demoscreenshots2");
-			_screenshots2gfx = NULL;
-			_demoPlaqueGfx =  NULL;
+			_screenshots2gfx = nullptr;
+			_demoPlaqueGfx =  nullptr;
 		}
 	}
 
@@ -522,7 +470,7 @@ void Menu::startMenu() {
 		}
 	}
 
-	_quitScreen = NULL;
+	_quitScreen = nullptr;
 
 	// did we skip the intro?
 	if (!_nebulaY) {
@@ -907,126 +855,126 @@ void Menu::freeMenu() {
 	// title sequence stuff
 	if (_titleScreen)
 		delete _titleScreen;
-	_titleScreen = NULL;
+	_titleScreen = nullptr;
 	if (_oohOohGfx)
 		delete _oohOohGfx;
-	_oohOohGfx = NULL;
+	_oohOohGfx = nullptr;
 
 	if (_newGfx)
 		delete _newGfx;
-	_newGfx = NULL;
+	_newGfx = nullptr;
 	if (_loadGfx)
 		delete _loadGfx;
-	_loadGfx = NULL;
+	_loadGfx = nullptr;
 	if (_optionsGfx)
 		delete _optionsGfx;
-	_optionsGfx = NULL;
+	_optionsGfx = nullptr;
 	if (_quitGfx)
 		delete _quitGfx;
-	_quitGfx = NULL;
+	_quitGfx = nullptr;
 	if (_resumeGfx)
 		delete _resumeGfx;
-	_resumeGfx = NULL;
+	_resumeGfx = nullptr;
 	if (_slotGfx)
 		delete _slotGfx;
-	_slotGfx = NULL;
+	_slotGfx = nullptr;
 	if (_rocketMain)
 		delete _rocketMain;
-	_rocketMain = NULL;
+	_rocketMain = nullptr;
 	if (_rocketSecond)
 		delete _rocketSecond;
-	_rocketSecond = NULL;
+	_rocketSecond = nullptr;
 	if (_rocketEx1)
 		delete _rocketEx1;
-	_rocketEx1 = NULL;
+	_rocketEx1 = nullptr;
 	if (_rocketEx2)
 		delete _rocketEx2;
-	_rocketEx2 = NULL;
+	_rocketEx2 = nullptr;
 	if (_titleLogo)
 		delete _titleLogo;
-	_titleLogo = NULL;
+	_titleLogo = nullptr;
 
 	if (_hdbLogoScreen)
 		delete _hdbLogoScreen;
-	_hdbLogoScreen = NULL;
+	_hdbLogoScreen = nullptr;
 
 	if (_screenshots1gfx)
 		delete _screenshots1gfx;
-	_screenshots1gfx = NULL;
+	_screenshots1gfx = nullptr;
 	if (_screenshots1agfx)
 		delete _screenshots1agfx;
-	_screenshots1agfx = NULL;
+	_screenshots1agfx = nullptr;
 	if (_screenshots2gfx)
 		delete _screenshots2gfx;
-	_screenshots2gfx = NULL;
+	_screenshots2gfx = nullptr;
 	if (_demoPlaqueGfx)
 		delete _demoPlaqueGfx;
-	_demoPlaqueGfx = NULL;
+	_demoPlaqueGfx = nullptr;
 
 	if (g_hdb->isPPC() && g_hdb->isHandango()) {
 		if (_handangoGfx)
 			delete _handangoGfx;
-		_handangoGfx = NULL;
+		_handangoGfx = nullptr;
 	}
 
 	if (_nebulaGfx[0]) {
 		for (int i = 0; i < kNebulaCount; i++) {
 			delete _nebulaGfx[i];
-			_nebulaGfx[i] = NULL;
+			_nebulaGfx[i] = nullptr;
 		}
 	}
 
 	if (_sliderLeft)
 		delete _sliderLeft;
-	_sliderLeft = NULL;
+	_sliderLeft = nullptr;
 	if (_sliderMid)
 		delete _sliderMid;
-	_sliderMid = NULL;
+	_sliderMid = nullptr;
 	if (_sliderRight)
 		delete _sliderRight;
-	_sliderRight = NULL;
+	_sliderRight = nullptr;
 	if (_sliderKnob)
 		delete _sliderKnob;
-	_sliderKnob = NULL;
+	_sliderKnob = nullptr;
 	if (_modePuzzleGfx)
 		delete _modePuzzleGfx;
-	_modePuzzleGfx = NULL;
+	_modePuzzleGfx = nullptr;
 	if (_modeActionGfx)
 		delete _modeActionGfx;
-	_modeActionGfx = NULL;
+	_modeActionGfx = nullptr;
 	if (_modeLoadGfx)
 		delete _modeLoadGfx;
-	_modeLoadGfx = NULL;
+	_modeLoadGfx = nullptr;
 	if (_modeSaveGfx)
 		delete _modeSaveGfx;
-	_modeSaveGfx = NULL;
+	_modeSaveGfx = nullptr;
 	if (_menuBackoutGfx)
 		delete _menuBackoutGfx;
-	_menuBackoutGfx = NULL;
+	_menuBackoutGfx = nullptr;
 	if (_menuBackspaceGfx)
 		delete _menuBackspaceGfx;
-	_menuBackspaceGfx = NULL;
+	_menuBackspaceGfx = nullptr;
 
 	if (_controlButtonGfx)
 		delete _controlButtonGfx;
-	_controlButtonGfx = NULL;
+	_controlButtonGfx = nullptr;
 
 	if (_controlsGfx)
 		delete _controlsGfx;
-	_controlsGfx = NULL;
+	_controlsGfx = nullptr;
 
 	if (_vortexian[0]) {
 		delete _vortexian[0];
 		delete _vortexian[1];
 		delete _vortexian[2];
-		_vortexian[0] = _vortexian[1] = _vortexian[2] = NULL;
+		_vortexian[0] = _vortexian[1] = _vortexian[2] = nullptr;
 	}
 
 	if (_star[0]) {
 		delete _star[0];
 		delete _star[1];
 		delete _star[2];
-		_star[0] = _star[1] = _star[2] = NULL;
+		_star[0] = _star[1] = _star[2] = nullptr;
 	}
 
 	// secret stars
@@ -1037,18 +985,18 @@ void Menu::freeMenu() {
 		delete _starGreenGfx[1];
 		delete _starBlueGfx[0];
 		delete _starBlueGfx[1];
-		_starRedGfx[0] = _starRedGfx[1] = NULL;
-		_starGreenGfx[0] = _starGreenGfx[1] = NULL;
-		_starBlueGfx[0] = _starBlueGfx[1] = NULL;
+		_starRedGfx[0] = _starRedGfx[1] = nullptr;
+		_starGreenGfx[0] = _starGreenGfx[1] = nullptr;
+		_starBlueGfx[0] = _starBlueGfx[1] = nullptr;
 	}
 
 	if (_versionGfx)
 		delete _versionGfx;
-	_versionGfx = NULL;
+	_versionGfx = nullptr;
 
 	if (_warpGfx)
 		delete _warpGfx;
-	_warpGfx = NULL;
+	_warpGfx = nullptr;
 }
 
 bool Menu::startTitle() {
@@ -1636,7 +1584,7 @@ void Menu::processInput(int x, int y) {
 			if ((x >= _quitNoX1 && x <= _quitNoX2 && y > _quitNoY1 && y < _quitNoY2 && _quitTimer < g_hdb->getTimeSlice()) || xit) {
 				g_hdb->_sound->playSound(SND_MENU_BACKOUT);
 				delete _quitScreen;
-				_quitScreen = NULL;
+				_quitScreen = nullptr;
 
 				_menuActive = true;
 				_quitActive = 0;
@@ -1654,7 +1602,7 @@ void Menu::processInput(int x, int y) {
 				if (_quitActive == 3 && (x >= _quitNoX1 && x <= _quitNoX2 && y > _quitNoY1 && y < _quitNoY2 && _quitTimer < g_hdb->getTimeSlice())) {
 					g_hdb->_sound->playSound(SND_MENU_BACKOUT);
 					delete _quitScreen;
-					_quitScreen = NULL;
+					_quitScreen = nullptr;
 
 					_menuActive = true;
 					_quitActive = 0;

@@ -25,9 +25,13 @@
 #include "graphics/macgui/macwindowmanager.h"
 
 #include "director/director.h"
-#include "director/frame.h"
+#include "director/movie.h"
 #include "director/score.h"
+#include "director/cursor.h"
+#include "director/channel.h"
 #include "director/sprite.h"
+#include "director/window.h"
+#include "director/castmember.h"
 #include "director/lingo/lingo.h"
 
 namespace Director {
@@ -37,7 +41,7 @@ bool processQuitEvent(bool click) {
 
 	while (g_system->getEventManager()->pollEvent(event)) {
 		if (event.type == Common::EVENT_QUIT) {
-			g_director->getCurrentScore()->_stopPlay = true;
+			g_director->getCurrentMovie()->getScore()->_playState = kPlayStopped;
 			return true;
 		}
 
@@ -50,129 +54,152 @@ bool processQuitEvent(bool click) {
 	return false;
 }
 
+uint32 DirectorEngine::getMacTicks() { return g_system->getMillis() * 60 / 1000.; }
+
 void DirectorEngine::processEvents() {
+	debugC(3, kDebugEvents, "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+	debugC(3, kDebugEvents, "@@@@   Processing events");
+	debugC(3, kDebugEvents, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+
 	Common::Event event;
 
 	uint endTime = g_system->getMillis() + 10;
 
-	Score *sc = getCurrentScore();
-	if (sc->getCurrentFrame() >= sc->_frames.size()) {
-		warning("processEvents: request to access frame %d of %d", sc->getCurrentFrame(), sc->_frames.size() - 1);
-		return;
-	}
-	Frame *currentFrame = sc->_frames[sc->getCurrentFrame()];
-	uint16 spriteId = 0;
-
-	Common::Point pos;
-
 	while (g_system->getMillis() < endTime) {
 		while (g_system->getEventManager()->pollEvent(event)) {
-			if (_wm->processEvent(event))
+			if (_wm->processEvent(event)) {
+				// window manager has done something! update the channels
 				continue;
+			}
 
 			switch (event.type) {
 			case Common::EVENT_QUIT:
-				sc->_stopPlay = true;
+				_stage->getCurrentMovie()->getScore()->_playState = kPlayStopped;
 				break;
-
-			case Common::EVENT_LBUTTONDOWN:
-				pos = g_system->getEventManager()->getMousePos();
-
-				// D3 doesn't have both mouse up and down.
-				// But we still want to know if the mouse is down for press effects.
-				spriteId = currentFrame->getSpriteIDFromPos(pos);
-				sc->_currentMouseDownSpriteId = spriteId;
-
-				sc->_mouseIsDown = true;
-
-				debugC(3, kDebugEvents, "event: Button Down @(%d, %d), sprite id: %d", pos.x, pos.y, spriteId);
-				_lingo->processEvent(kEventMouseDown);
-
-				if (currentFrame->_sprites[spriteId]->_moveable) {
-					warning("Moveable");
-				}
-				break;
-
-			case Common::EVENT_LBUTTONUP:
-				pos = g_system->getEventManager()->getMousePos();
-
-				spriteId = currentFrame->getSpriteIDFromPos(pos);
-
-				debugC(3, kDebugEvents, "event: Button Up @(%d, %d), sprite id: %d", pos.x, pos.y, spriteId);
-
-				sc->_mouseIsDown = false;
-
-				_lingo->processEvent(kEventMouseUp);
-				sc->_currentMouseDownSpriteId = 0;
-				break;
-
-			case Common::EVENT_KEYDOWN:
-				_keyCode = event.kbd.keycode;
-				_key = (unsigned char)(event.kbd.ascii & 0xff);
-
-				switch (_keyCode) {
-				case Common::KEYCODE_LEFT:
-					_keyCode = 123;
-					break;
-				case Common::KEYCODE_RIGHT:
-					_keyCode = 124;
-					break;
-				case Common::KEYCODE_DOWN:
-					_keyCode = 125;
-					break;
-				case Common::KEYCODE_UP:
-					_keyCode = 126;
-					break;
-				default:
-					debugC(1, kDebugEvents, "processEvents(): keycode: %d", _keyCode);
-				}
-
-				_lingo->processEvent(kEventKeyDown);
-				break;
-
 			default:
 				break;
 			}
 		}
 
-		g_system->updateScreen();
 		g_system->delayMillis(10);
-
-		if (sc->getCurrentFrame() > 0)
-			_lingo->processEvent(kEventIdle);
 	}
 }
 
-void DirectorEngine::setDraggedSprite(uint16 id) {
-	_draggingSprite = true;
-	_draggingSpriteId = id;
-	_draggingSpritePos = g_system->getEventManager()->getMousePos();
+bool Window::processEvent(Common::Event &event) {
+	if (MacWindow::processEvent(event))
+		return true;
 
-	warning("STUB: DirectorEngine::setDraggedSprite(%d)", id);
+	if (_currentMovie && _currentMovie->processEvent(event))
+		return true;
+
+	return false;
 }
 
-void DirectorEngine::waitForClick() {
-	setCursor(kCursorMouseUp);
+bool Movie::processEvent(Common::Event &event) {
+	Score *sc = getScore();
+	if (sc->getCurrentFrame() >= sc->_frames.size()) {
+		warning("processEvents: request to access frame %d of %d", sc->getCurrentFrame(), sc->_frames.size() - 1);
+		return false;
+	}
+	uint16 spriteId = 0;
 
-	bool cursor = false;
-	uint32 nextTime = g_system->getMillis() + 1000;
+	Common::Point pos;
 
-	while (!processQuitEvent(true)) {
-		g_system->updateScreen();
-		g_system->delayMillis(10);
+	switch (event.type) {
+	case Common::EVENT_MOUSEMOVE:
+		pos = _window->getMousePos();
 
-		if (g_system->getMillis() >= nextTime) {
-			nextTime = g_system->getMillis() + 1000;
+		_lastEventTime = g_director->getMacTicks();
+		_lastRollTime =	 _lastEventTime;
 
-			setCursor(kCursorDefault);
+		sc->renderCursor(pos);
 
-			setCursor(cursor ? kCursorMouseDown : kCursorMouseUp);
+		if (_currentDraggedChannel) {
+			if (_currentDraggedChannel->_sprite->_moveable) {
+				pos = _window->getMousePos();
 
-			cursor = !cursor;
+				_currentDraggedChannel->addDelta(pos - _draggingSpritePos);
+				_draggingSpritePos = pos;
+			} else {
+				_currentDraggedChannel = nullptr;
+			}
 		}
+		return true;
+
+	case Common::EVENT_LBUTTONDOWN:
+		if (sc->_waitForClick) {
+			sc->_waitForClick = false;
+			_vm->setCursor(kCursorDefault);
+		} else {
+			pos = _window->getMousePos();
+
+			// D3 doesn't have both mouse up and down.
+			// But we still want to know if the mouse is down for press effects.
+			spriteId = sc->getMouseSpriteIDFromPos(pos);
+			_currentClickOnSpriteId = sc->getActiveSpriteIDFromPos(pos);
+
+			if (spriteId > 0 && sc->_channels[spriteId]->_sprite->shouldHilite())
+				g_director->getCurrentWindow()->invertChannel(sc->_channels[spriteId]);
+
+			_lastEventTime = g_director->getMacTicks();
+			_lastClickTime = _lastEventTime;
+			_lastClickPos = pos;
+
+			debugC(3, kDebugEvents, "event: Button Down @(%d, %d), movie '%s', sprite id: %d", pos.x, pos.y, _macName.c_str(), spriteId);
+			registerEvent(kEventMouseDown, spriteId);
+
+			if (sc->_channels[spriteId]->_sprite->_moveable) {
+				_draggingSpritePos = _window->getMousePos();
+				_currentDraggedChannel = sc->_channels[spriteId];
+			}
+		}
+
+		return true;
+
+	case Common::EVENT_LBUTTONUP:
+		pos = _window->getMousePos();
+
+		spriteId = sc->getMouseSpriteIDFromPos(pos);
+		_currentClickOnSpriteId = sc->getActiveSpriteIDFromPos(pos);
+
+		if (spriteId > 0 && sc->_channels[spriteId]->_sprite->shouldHilite())
+			g_director->getCurrentWindow()->invertChannel(sc->_channels[spriteId]);
+
+		debugC(3, kDebugEvents, "event: Button Up @(%d, %d), movie '%s', sprite id: %d", pos.x, pos.y, _macName.c_str(), spriteId);
+
+		_currentDraggedChannel = nullptr;
+
+		{
+			CastMember *cast = getCastMember(sc->getSpriteById(spriteId)->_castId);
+			if (cast && cast->_type == kCastButton)
+				cast->_hilite = !cast->_hilite;
+		}
+
+		registerEvent(kEventMouseUp, spriteId);
+		sc->renderCursor(pos);
+		return true;
+
+	case Common::EVENT_KEYDOWN:
+		_keyCode = _vm->_macKeyCodes.contains(event.kbd.keycode) ? _vm->_macKeyCodes[event.kbd.keycode] : 0;
+		_key = (unsigned char)(event.kbd.ascii & 0xff);
+		_keyFlags = event.kbd.flags;
+
+		debugC(1, kDebugEvents, "processEvents(): movie '%s', keycode: %d", _macName.c_str(), _keyCode);
+
+		_lastEventTime = g_director->getMacTicks();
+		_lastKeyTime = _lastEventTime;
+		registerEvent(kEventKeyDown);
+		return true;
+
+	case Common::EVENT_KEYUP:
+		_keyFlags = event.kbd.flags;
+		return true;
+
+	default:
+		break;
 	}
 
-	setCursor(kCursorDefault);
+	return false;
 }
 
 } // End of namespace Director

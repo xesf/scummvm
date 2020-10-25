@@ -34,9 +34,7 @@ class Debugger;
 class Process;
 class UCProcess;
 class ConvertUsecode;
-class IDataSource;
-class ODataSource;
-class BitSet;
+class GlobalStorage;
 class UCList;
 class idMan;
 
@@ -76,13 +74,13 @@ public:
 	bool assignPointer(uint32 ptr, const uint8 *data, uint32 size);
 	bool dereferencePointer(uint32 ptr, uint8 *data, uint32 size);
 
-	void saveGlobals(ODataSource *ods);
-	void saveStrings(ODataSource *ods);
-	void saveLists(ODataSource *ods);
+	void saveGlobals(Common::WriteStream *ws) const;
+	void saveStrings(Common::WriteStream *ws) const;
+	void saveLists(Common::WriteStream *ws) const;
 
-	bool loadGlobals(IDataSource *ids, uint32 version);
-	bool loadStrings(IDataSource *ids, uint32 version);
-	bool loadLists(IDataSource *ids, uint32 version);
+	bool loadGlobals(Common::ReadStream *rs, uint32 version);
+	bool loadStrings(Common::ReadStream *rs, uint32 version);
+	bool loadLists(Common::ReadStream *rs, uint32 version);
 
 	INTRINSIC(I_true);
 	INTRINSIC(I_dummyProcess);
@@ -90,7 +88,6 @@ public:
 	INTRINSIC(I_urandom);
 	INTRINSIC(I_rndRange);
 	INTRINSIC(I_numToStr);
-	INTRINSIC(I_getCurrentTimerTick);
 
 protected:
 	void loadIntrinsics(Intrinsic *i, unsigned int icount);
@@ -100,7 +97,7 @@ private:
 	Intrinsic *_intrinsics;
 	unsigned int _intrinsicCount;
 
-	BitSet *_globals;
+	GlobalStorage *_globals;
 
 	Std::map<uint16, UCList *> _listHeap;
 	Std::map<uint16, Std::string> _stringHeap;

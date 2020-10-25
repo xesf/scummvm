@@ -27,15 +27,6 @@
 
 namespace Made {
 
-struct MadeGameDescription {
-	ADGameDescription desc;
-
-	int gameID;
-	int gameType;
-	uint32 features;
-	uint16 version;
-};
-
 static const MadeGameDescription gameDescriptions[] = {
 	{
 		// NOTE: Return to Zork entries with *.dat are used to detect the game via rtzcd.dat,
@@ -95,11 +86,28 @@ static const MadeGameDescription gameDescriptions[] = {
 	},
 
 	{
-		// Return to Zork - English CD version 1.1 12/7/93
+		// Return to Zork - English OEM CD version 1.1 12/7/93
 		{
 			"rtz",
 			"V1.1, 12/7/93, CD",
 			AD_ENTRY1s("rtzcd.red", "c4e2430e6b6c6ff1562a80fb4a9df24c", 276177),
+			Common::EN_ANY,
+			Common::kPlatformDOS,
+			ADGF_CD,
+			GUIO0()
+		},
+		GID_RTZ,
+		0,
+		GF_CD_COMPRESSED,
+		3,
+	},
+
+	{
+		// Return to Zork - English Retail CD version 1.1 12/7/93
+		{
+			"rtz",
+			"V1.1, 12/7/93, CD",
+			AD_ENTRY1s("rtzcd.red", "c4e2430e6b6c6ff1562a80fb4a9df24c", 276466),
 			Common::EN_ANY,
 			Common::kPlatformDOS,
 			ADGF_CD,

@@ -27,7 +27,9 @@
 #include "common/noncopyable.h"
 #include "common/array.h" // For OSystem::getGlobalKeymaps()
 #include "common/list.h" // For OSystem::getSupportedFormats()
+#include "common/ustr.h"
 #include "graphics/pixelformat.h"
+#include "graphics/pixelbuffer.h"
 #include "graphics/mode.h"
 
 namespace Audio {
@@ -66,6 +68,15 @@ class Encoding;
 
 typedef Array<Keymap *> KeymapArray;
 }
+
+/**
+ * @defgroup common_system System
+ * @ingroup common
+ *
+ * @brief Operating system related API.
+ *
+ * @{
+ */
 
 class AudioCDManager;
 class FilesystemFactory;
@@ -149,7 +160,7 @@ protected:
 
 	/**
 	 * No default value is provided for _eventManager by OSystem.
-	 * However, BaseBackend::initBackend() does set a default value
+	 * However, EventsBaseBackend::initBackend() does set a default value
 	 * if none has been set before.
 	 *
 	 * @note _eventManager is deleted by the OSystem destructor.
@@ -221,7 +232,7 @@ protected:
 	 * Used by the default clipboard implementation, for backends that don't
 	 * implement clipboard support.
 	 */
-	Common::String _clipboard;
+	Common::U32String _clipboard;
 
 	// WORKAROUND. The 014bef9eab9fb409cfb3ec66830e033e4aaa29a9 triggered a bug
 	// in the osx_intel toolchain. Adding this variable fixes it.
@@ -242,6 +253,11 @@ public:
 	 * Destoy this OSystem instance.
 	 */
 	void destroy();
+
+	/**
+	 * The following method should be called once, after g_system is created.
+	 */
+	virtual void init() {}
 
 	/**
 	 * The following method is called once, from main.cpp, after all
@@ -358,6 +374,30 @@ public:
 		kFeatureIconifyWindow,
 
 		/**
+		 * This feature flag can be used to check if hardware accelerated
+		 * OpenGL is supported and can be used for 3D game rendering.
+		 */
+		kFeatureOpenGLForGame,
+
+		/**
+		 * If supported, this feature flag can be used to check if
+		 * waiting for vertical sync before refreshing the screen to reduce
+		 * tearing is enabled.
+		 */
+		kFeatureVSync,
+
+		/**
+		 * When a backend supports this feature, it guarantees the graphics
+		 * context is not destroyed when switching to and from fullscreen.
+		 *
+		 * For OpenGL that means the context is kept with all of its content:
+		 * texture, programs...
+		 *
+		 * For TinyGL that means the backbuffer surface is kept.
+		 */
+		kFeatureFullscreenToggleKeepsContext,
+
+		/**
 		 * The presence of this feature indicates whether the displayLogFile()
 		 * call is supported.
 		 *
@@ -418,7 +458,12 @@ public:
 		* Supports for using the native system file browser dialog
 		* through the DialogManager.
 		*/
-		kFeatureSystemBrowserDialog
+		kFeatureSystemBrowserDialog,
+
+		/**
+		* For platforms that should not have a Quit button
+		*/
+		kFeatureNoQuit
 
 	};
 
@@ -556,14 +601,23 @@ public:
 	 */
 	virtual int getDefaultGraphicsMode() const { return 0; }
 
+	enum GfxModeFlags {
+		kGfxModeNoFlags = 0,				/**< No Flags */
+		kGfxModeRender3d = (1 << 0)            	/**< Indicate 3d h/w accelerated in game gfx */
+	};
+
 	/**
 	 * Switch to the specified graphics mode. If switching to the new mode
 	 * failed, this method returns false.
 	 *
+	 * The flag 'kGfxModeRender3d' is optional. It allow to switch to 3D only rendering mode.
+	 * Game engine is allowed to use OpenGL(ES) direclty.
+	 *
 	 * @param mode	the ID of the new graphics mode
+	 * @param flags	the flags for new graphics mode
 	 * @return true if the switch was successful, false otherwise
 	 */
-	virtual bool setGraphicsMode(int mode) { return (mode == 0); }
+	virtual bool setGraphicsMode(int mode, uint flags = kGfxModeNoFlags) { return (mode == 0); }
 
 	/**
 	 * Switch to the graphics mode with the given name. If 'name' is unknown,
@@ -631,6 +685,16 @@ public:
 		return list;
 	};
 #endif
+
+	/**
+	 * Retrieve a list of supported levels of anti-aliasting.
+	 * Anti-aliasing only works when using one of the hardware
+	 * accelerated renderers. An empty list means anti-aliasing
+	 * is not supported.
+	 */
+	virtual Common::Array<uint> getSupportedAntiAliasingLevels() const {
+		return Common::Array<uint>();
+	}
 
 	/**
 	 * Retrieve a list of all hardware shaders supported by this backend.
@@ -833,7 +897,6 @@ public:
 	 */
 	virtual TransactionError endGFXTransaction() { return kTransactionSuccess; }
 
-
 	/**
 	 * Returns the currently set virtual screen height.
 	 * @see initSize
@@ -933,7 +996,7 @@ public:
 	 * @param shakeYOffset	the shake y offset
 	 *
 	 * @note This is currently used in the SCUMM, QUEEN, KYRA, SCI, DREAMWEB,
-	 * SUPERNOVA, TEENAGENT, and TOLTECS engines.
+	 * SUPERNOVA, TEENAGENT, TOLTECS, ULTIMA, and PETKA engines.
 	 */
 	virtual void setShakePos(int shakeXOffset, int shakeYOffset) = 0;
 
@@ -959,6 +1022,12 @@ public:
 	 */
 	virtual void clearFocusRectangle() {}
 
+	/**
+	 * Instruct the backend to capture a screenshot of the current screen.
+	 *
+	 * The backend can persist it the way it considers appropriate.
+	 */
+	virtual void saveScreenshot() {}
 	//@}
 
 
@@ -987,6 +1056,9 @@ public:
 
 	/** Deactivate the overlay mode. */
 	virtual void hideOverlay() = 0;
+
+	/** Returns true if the overlay mode is activated, false otherwise. */
+	virtual bool isOverlayVisible() const = 0;
 
 	/**
 	 * Returns the pixel format description of the overlay.
@@ -1065,6 +1137,12 @@ public:
 	 * @see Graphics::CursorManager::showMouse
 	 */
 	virtual bool showMouse(bool visible) = 0;
+
+	/**
+	 * Lock or unlock the mouse cursor within the window.
+	 *
+	 */
+	virtual bool lockMouse(bool lock) { return false; }
 
 	/**
 	 * Move ("warp") the mouse cursor to the specified position in virtual
@@ -1295,7 +1373,7 @@ public:
 	 *
 	 * @param msg	the message to display on screen
 	 */
-	virtual void displayMessageOnOSD(const char *msg) = 0;
+	virtual void displayMessageOnOSD(const Common::U32String &msg) = 0;
 
 	/**
 	 * Display an icon indicating background activity
@@ -1472,7 +1550,7 @@ public:
 	 *
 	 * @return clipboard contents ("" if hasTextInClipboard() == false)
 	 */
-	virtual Common::String getTextFromClipboard() { return _clipboard; }
+	virtual Common::U32String getTextFromClipboard() { return _clipboard; }
 
 	/**
 	 * Set the content of the clipboard to the given string.
@@ -1483,7 +1561,7 @@ public:
 	 *
 	 * @return true if the text was properly set in the clipboard, false otherwise
 	 */
-	virtual bool setTextInClipboard(const Common::String &text) { _clipboard = text; return true; }
+	virtual bool setTextInClipboard(const Common::U32String &text) { _clipboard = text; return true; }
 
 	/**
 	 * Open the given Url in the default browser (if available on the target
@@ -1547,5 +1625,7 @@ protected:
 
 /** The global OSystem instance. Initialized in main(). */
 extern OSystem *g_system;
+
+/** @} */
 
 #endif

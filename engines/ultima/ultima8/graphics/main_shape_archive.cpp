@@ -29,9 +29,6 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(MainShapeArchive, ShapeArchive)
-
-
 MainShapeArchive::~MainShapeArchive() {
 	if (_typeFlags) {
 		delete _typeFlags;
@@ -42,39 +39,44 @@ MainShapeArchive::~MainShapeArchive() {
 	}
 }
 
-void MainShapeArchive::loadTypeFlags(IDataSource *ds) {
+void MainShapeArchive::loadTypeFlags(Common::SeekableReadStream *rs) {
 	if (_typeFlags) {
 		delete _typeFlags;
 		_typeFlags = nullptr;
 	}
 
 	_typeFlags = new TypeFlags;
-	_typeFlags->load(ds);
+	_typeFlags->load(rs);
 }
 
-ShapeInfo *MainShapeArchive::getShapeInfo(uint32 shapenum) {
+void MainShapeArchive::loadDamageDat(Common::SeekableReadStream *rs) {
+	assert(_typeFlags);
+	_typeFlags->loadDamageDat(rs);
+}
+
+const ShapeInfo *MainShapeArchive::getShapeInfo(uint32 shapenum) {
 	assert(_typeFlags);
 
 	return _typeFlags->getShapeInfo(shapenum);
 }
 
-void MainShapeArchive::loadAnimDat(IDataSource *ds) {
+void MainShapeArchive::loadAnimDat(Common::SeekableReadStream *rs) {
 	if (_animDat) {
 		delete _animDat;
 		_animDat = nullptr;
 	}
 
 	_animDat = new AnimDat;
-	_animDat->load(ds);
+	_animDat->load(rs);
 }
 
-ActorAnim *MainShapeArchive::getAnim(uint32 shape) const {
+const ActorAnim *MainShapeArchive::getAnim(uint32 shape) const {
 	assert(_animDat);
 
 	return _animDat->getAnim(shape);
 }
 
-AnimAction *MainShapeArchive::getAnim(uint32 shape, uint32 action) const {
+const AnimAction *MainShapeArchive::getAnim(uint32 shape, uint32 action) const {
 	assert(_animDat);
 
 	return _animDat->getAnim(shape, action);

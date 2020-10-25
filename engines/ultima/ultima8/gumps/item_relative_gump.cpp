@@ -27,13 +27,11 @@
 #include "ultima/ultima8/world/container.h"
 #include "ultima/ultima8/graphics/shape_info.h"
 #include "ultima/ultima8/world/get_object.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(ItemRelativeGump, Gump)
+DEFINE_RUNTIME_CLASSTYPE_CODE(ItemRelativeGump)
 
 ItemRelativeGump::ItemRelativeGump() : Gump(), _ix(0), _iy(0) {
 }
@@ -66,24 +64,24 @@ void ItemRelativeGump::MoveOnScreen() {
 
 	// get rectangle that gump occupies in scalerGump's coordinate space
 	int32 left, right, top, bottom;
-	left = -_dims.x;
-	right = left + _dims.w;
-	top = -_dims.y;
-	bottom = top + _dims.h;
+	left = -_dims.left;
+	right = left + _dims.width();
+	top = -_dims.top;
+	bottom = top + _dims.height();
 	GumpToParent(left, top);
 	GumpToParent(right, bottom);
 
 	int32 movex = 0, movey = 0;
 
-	if (left < -sd.x)
-		movex = -sd.x - left;
-	else if (right > -sd.x + sd.w)
-		movex = -sd.x + sd.w - right;
+	if (left < -sd.left)
+		movex = -sd.left - left;
+	else if (right > -sd.left + sd.width())
+		movex = -sd.left + sd.width() - right;
 
-	if (top < -sd.y)
-		movey = -sd.y - top;
-	else if (bottom > -sd.y + sd.h)
-		movey = -sd.y + sd.h - bottom;
+	if (top < -sd.top)
+		movey = -sd.top - top;
+	else if (bottom > -sd.top + sd.height())
+		movey = -sd.top + sd.height() - bottom;
 
 	Move(left + movex, top + movey);
 }
@@ -123,7 +121,7 @@ void ItemRelativeGump::GetItemLocation(int32 lerp_factor) {
 	}
 
 	Item *next;
-	Item *prev;
+	Item *prev = nullptr;
 	while ((next = it->getParentAsContainer()) != nullptr) {
 		prev = it;
 		it = next;
@@ -134,7 +132,7 @@ void ItemRelativeGump::GetItemLocation(int32 lerp_factor) {
 	int32 gx, gy;
 
 	if (!gump) {
-		gump = GetRootGump()->FindGump(GameMapGump::ClassType);
+		gump = GetRootGump()->FindGump<GameMapGump>();
 
 		if (!gump) {
 			perr << "ItemRelativeGump::GetItemLocation(): "
@@ -144,6 +142,7 @@ void ItemRelativeGump::GetItemLocation(int32 lerp_factor) {
 
 		gump->GetLocationOfItem(_owner, gx, gy, lerp_factor);
 	} else {
+		assert(prev);
 		gump->GetLocationOfItem(prev->getObjId(), gx, gy, lerp_factor);
 	}
 
@@ -156,9 +155,9 @@ void ItemRelativeGump::GetItemLocation(int32 lerp_factor) {
 	if (_parent) _parent->ScreenSpaceToGump(gx, gy);
 
 	// Set x and y, and center us over it
-	_ix = gx - _dims.w / 2;
+	_ix = gx - _dims.width() / 2;
 //	_iy = gy-_dims.h-it->getShapeInfo()->z*8-16;
-	_iy = gy - _dims.h;
+	_iy = gy - _dims.height();
 
 
 	if (_flags & FLAG_KEEP_VISIBLE)
@@ -171,12 +170,12 @@ void ItemRelativeGump::Move(int32 x, int32 y) {
 	_y += y;
 }
 
-void ItemRelativeGump::saveData(ODataSource *ods) {
-	Gump::saveData(ods);
+void ItemRelativeGump::saveData(Common::WriteStream *ws) {
+	Gump::saveData(ws);
 }
 
-bool ItemRelativeGump::loadData(IDataSource *ids, uint32 version) {
-	if (!Gump::loadData(ids, version)) return false;
+bool ItemRelativeGump::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!Gump::loadData(rs, version)) return false;
 
 	return true;
 }

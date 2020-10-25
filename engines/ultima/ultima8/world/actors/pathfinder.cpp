@@ -21,6 +21,8 @@
  */
 
 #include "ultima/ultima8/misc/pent_include.h"
+#include "ultima/ultima8/misc/direction.h"
+#include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/world/actors/pathfinder.h"
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/actors/animation_tracker.h"
@@ -52,8 +54,8 @@ void PathfindingState::load(const Actor *_actor) {
 	_actor->getLocation(_x, _y, _z);
 	_lastAnim = _actor->getLastAnim();
 	_direction = _actor->getDir();
-	_firstStep = (_actor->getActorFlags() & Actor::ACT_FIRSTSTEP) != 0;
-	_flipped = (_actor->getFlags() & Item::FLG_FLIPPED) != 0;
+	_firstStep = _actor->hasActorFlags(Actor::ACT_FIRSTSTEP);
+	_flipped = _actor->hasFlags(Item::FLG_FLIPPED);
 	_combat = _actor->isInCombat();
 }
 
@@ -89,7 +91,8 @@ bool PathfindingState::checkItem(const Item *item, int xyRange, int zRange) cons
 	return (range <= xyRange);
 }
 
-bool PathfindingState::checkHit(Actor *_actor, const Actor *target) {
+bool PathfindingState::checkHit(const Actor *_actor, const Actor *target) const {
+	assert(target);
 #if 0
 	pout << "Trying hit in _direction " << _actor->getDirToItemCentre(*target) << Std::endl;
 #endif
@@ -113,21 +116,23 @@ bool PathNodeCmp::operator()(const PathNode *n1, const PathNode *n2) const {
 	return (n1->heuristicTotalCost < n2->heuristicTotalCost);
 }
 
-Pathfinder::Pathfinder() {
+Pathfinder::Pathfinder() : _actor(nullptr), _targetItem(nullptr),
+		_hitMode(false), _expandTime(0), _targetX(0), _targetY(0),
+		_targetZ(0), _actorXd(0), _actorYd(0), _actorZd(0) {
 	expandednodes = 0;
 }
 
 Pathfinder::~Pathfinder() {
 #if 1
-	pout << "~Pathfinder: " << _nodeList.size() << " _nodes, "
-	     << expandednodes << " expanded _nodes in " << _expandTime << "ms." << Std::endl;
+	pout << "~Pathfinder: " << _cleanupNodes.size() << " nodes to clean up, "
+	     << expandednodes << " expanded nodes in " << _expandTime << "ms." << Std::endl;
 #endif
 
 	// clean up _nodes
-	Std::list<PathNode *>::iterator iter;
-	for (iter = _nodeList.begin(); iter != _nodeList.end(); ++iter)
+	Std::vector<PathNode *>::iterator iter;
+	for (iter = _cleanupNodes.begin(); iter != _cleanupNodes.end(); ++iter)
 		delete *iter;
-	_nodeList.clear();
+	_cleanupNodes.clear();
 }
 
 void Pathfinder::init(Actor *actor_, PathfindingState *state) {
@@ -160,7 +165,7 @@ void Pathfinder::setTarget(Item *item, bool hit) {
 
 	if (hit) {
 		assert(_start._combat);
-		assert(p_dynamic_cast<Actor *>(_targetItem));
+		assert(dynamic_cast<Actor *>(_targetItem));
 		_hitMode = true;
 	} else {
 		_hitMode = false;
@@ -184,13 +189,13 @@ bool Pathfinder::alreadyVisited(int32 x, int32 y, int32 z) const {
 	return false;
 }
 
-bool Pathfinder::checkTarget(PathNode *node) {
+bool Pathfinder::checkTarget(const PathNode *node) const {
 	// TODO: these ranges are probably a bit too high,
 	// but otherwise it won't work properly yet -wjp
 	if (_targetItem) {
 		if (_hitMode) {
 			return node->state.checkHit(_actor,
-			                            p_dynamic_cast<Actor *>(_targetItem));
+			                            dynamic_cast<Actor *>(_targetItem));
 		} else {
 			return node->state.checkItem(_targetItem, 32, 8);
 		}
@@ -264,17 +269,17 @@ static void drawbox(const Item *item) {
 
 	int32 x0, y0, x1, y1, x2, y2, x3, y3;
 
-	x0 = (d.w / 2) + (ix - iy) / 2;
-	y0 = (d.h / 2) + (ix + iy) / 4 - iz * 2;
+	x0 = (d.width() / 2) + (ix - iy) / 2;
+	y0 = (d.height() / 2) + (ix + iy) / 4 - iz * 2;
 
-	x1 = (d.w / 2) + (ix - iy) / 2;
-	y1 = (d.h / 2) + (ix + iy) / 4 - (iz + zd) * 2;
+	x1 = (d.width() / 2) + (ix - iy) / 2;
+	y1 = (d.height() / 2) + (ix + iy) / 4 - (iz + zd) * 2;
 
-	x2 = (d.w / 2) + (ix - xd - iy) / 2;
-	y2 = (d.h / 2) + (ix - xd + iy) / 4 - iz * 2;
+	x2 = (d.width() / 2) + (ix - xd - iy) / 2;
+	y2 = (d.height() / 2) + (ix - xd + iy) / 4 - iz * 2;
 
-	x3 = (d.w / 2) + (ix - iy + yd) / 2;
-	y3 = (d.h / 2) + (ix + iy - yd) / 4 - iz * 2;
+	x3 = (d.width() / 2) + (ix - iy + yd) / 2;
+	y3 = (d.height() / 2) + (ix + iy - yd) / 4 - iz * 2;
 
 	screen->Fill32(0xFF0000FF, x0 - 1, y0 - 1, 3, 3);
 
@@ -295,12 +300,12 @@ static void drawdot(int32 x, int32 y, int32 Z, int size, uint32 rgb) {
 	y -= cy;
 	Z -= cz;
 	int32 x0, y0;
-	x0 = (d.w / 2) + (x - y) / 2;
-	y0 = (d.h / 2) + (x + y) / 4 - Z * 2;
+	x0 = (d.width() / 2) + (x - y) / 2;
+	y0 = (d.height() / 2) + (x + y) / 4 - Z * 2;
 	screen->Fill32(rgb, x0 - size, y0 - size, 2 * size + 1, 2 * size + 1);
 }
 
-static void drawedge(PathNode *from, PathNode *to, uint32 rgb) {
+static void drawedge(const PathNode *from, const PathNode *to, uint32 rgb) {
 	RenderSurface *screen = Ultima8Engine::get_instance()->getRenderScreen();
 	int32 cx, cy, cz;
 
@@ -315,8 +320,8 @@ static void drawedge(PathNode *from, PathNode *to, uint32 rgb) {
 	cy = from->state._y - cy;
 	cz = from->state._z - cz;
 
-	x0 = (d.w / 2) + (cx - cy) / 2;
-	y0 = (d.h / 2) + (cx + cy) / 4 - cz * 2;
+	x0 = (d.width() / 2) + (cx - cy) / 2;
+	y0 = (d.height() / 2) + (cx + cy) / 4 - cz * 2;
 
 	Ultima8Engine::get_instance()->getGameMapGump()->GetCameraLocation(cx, cy, cz);
 
@@ -324,8 +329,8 @@ static void drawedge(PathNode *from, PathNode *to, uint32 rgb) {
 	cy = to->state._y - cy;
 	cz = to->state._z - cz;
 
-	x1 = (d.w / 2) + (cx - cy) / 2;
-	y1 = (d.h / 2) + (cx + cy) / 4 - cz * 2;
+	x1 = (d.width() / 2) + (cx - cy) / 2;
+	y1 = (d.height() / 2) + (cx + cy) / 4 - cz * 2;
 
 	screen->DrawLine32(rgb, x0, y0, x1, y1);
 }
@@ -355,7 +360,6 @@ static void drawpath(PathNode *to, uint32 rgb, bool done) {
 void Pathfinder::newNode(PathNode *oldnode, PathfindingState &state,
                          unsigned int steps) {
 	PathNode *newnode = new PathNode();
-	_nodeList.push_back(newnode); // for garbage collection
 	newnode->state = state;
 	newnode->parent = oldnode;
 	newnode->depth = oldnode->depth + 1;
@@ -378,7 +382,7 @@ void Pathfinder::newNode(PathNode *oldnode, PathfindingState &state,
 	if (oldnode->depth > 0) {
 		turn = state._direction - oldnode->state._direction;
 		if (turn < 0) turn = -turn;
-		if (turn > 4) turn = 8 - turn;
+		if (turn > 8) turn = 16 - turn;
 	}
 
 	newnode->cost = oldnode->cost + dist + 32 * turn; //!! constant
@@ -429,8 +433,10 @@ void Pathfinder::expandNode(PathNode *node) {
 	if (_actor->isInCombat())
 		walkanim = Animation::advance;
 
-	// try walking in all 8 directions
-	for (uint32 dir = 0; dir < 8; ++dir) {
+	// try walking in all 8 directions - TODO: should this support 16 dirs?
+	Direction dir = dir_north;
+	for (int i = 0; i < 8; i++) {
+		dir = Direction_OneRight(dir, dirmode_8dirs);
 		state = node->state;
 		state._lastAnim = walkanim;
 		state._direction = dir;
@@ -533,7 +539,6 @@ bool Pathfinder::pathfind(Std::vector<PathfindingAction> &path) {
 	startnode->parent = nullptr;
 	startnode->depth = 0;
 	startnode->stepsfromparent = 0;
-	_nodeList.push_back(startnode);
 	_nodes.push(startnode);
 
 	unsigned int expandedNodes = 0;
@@ -543,7 +548,9 @@ bool Pathfinder::pathfind(Std::vector<PathfindingAction> &path) {
 	uint32 starttime = g_system->getMillis();
 
 	while (expandedNodes < NODELIMIT_MAX && !_nodes.empty() && !found) {
-		PathNode *node = _nodes.top();
+		// Take a copy here as the pop() below deletes the old node
+		PathNode *node = new PathNode(*_nodes.top());
+		_cleanupNodes.push_back(node);
 		_nodes.pop();
 
 #if 0
@@ -556,7 +563,7 @@ bool Pathfinder::pathfind(Std::vector<PathfindingAction> &path) {
 			// done!
 
 			// find path length
-			PathNode *n = node;
+			const PathNode *n = node;
 			unsigned int length = 0;
 			while (n->parent) {
 				n = n->parent;

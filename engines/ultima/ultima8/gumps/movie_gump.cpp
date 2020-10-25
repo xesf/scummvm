@@ -24,31 +24,41 @@
 #include "ultima/ultima8/gumps/movie_gump.h"
 
 #include "ultima/ultima8/filesys/raw_archive.h"
+#include "ultima/ultima8/graphics/avi_player.h"
 #include "ultima/ultima8/graphics/skf_player.h"
+#include "ultima/ultima8/graphics/palette_manager.h"
 #include "ultima/ultima8/graphics/fade_to_modal_process.h"
 #include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/kernel/kernel.h"
+#include "ultima/ultima8/usecode/intrinsics.h"
+#include "ultima/ultima8/usecode/uc_machine.h"
+#include "ultima/ultima8/world/get_object.h"
+#include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/gumps/desktop_gump.h"
 #include "ultima/ultima8/gumps/gump_notify_process.h"
 
 #include "ultima/ultima8/filesys/file_system.h"
 
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
-
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(MovieGump, ModalGump)
+DEFINE_RUNTIME_CLASSTYPE_CODE(MovieGump)
 
-MovieGump::MovieGump() : ModalGump(), _player(0) {
+MovieGump::MovieGump() : ModalGump(), _player(nullptr) {
 
 }
 
-MovieGump::MovieGump(int width, int height, RawArchive *movie,
-                     bool introMusicHack, uint32 flags, int32 layer)
-	: ModalGump(50, 50, width, height, 0, flags, layer) {
-	_player = new SKFPlayer(movie, width, height, introMusicHack);
+MovieGump::MovieGump(int width, int height, Common::SeekableReadStream *rs,
+                     bool introMusicHack, const byte *overridePal,
+					 uint32 flags, int32 layer)
+		: ModalGump(50, 50, width, height, 0, flags, layer) {
+	uint32 stream_id = rs->readUint32BE();
+	rs->seek(-4, SEEK_CUR);
+	if (stream_id == 0x52494646) {// 'RIFF' - crusader AVIs
+		_player = new AVIPlayer(rs, width, height, overridePal);
+	} else {
+		_player = new SKFPlayer(rs, width, height, introMusicHack);
+	}
 }
 
 MovieGump::~MovieGump() {
@@ -57,6 +67,7 @@ MovieGump::~MovieGump() {
 
 void MovieGump::InitGump(Gump *newparent, bool take_focus) {
 	ModalGump::InitGump(newparent, take_focus);
+
 	_player->start();
 
 	Mouse::get_instance()->pushMouseCursor();
@@ -96,8 +107,13 @@ bool MovieGump::OnKeyDown(int key, int mod) {
 }
 
 //static
-ProcId MovieGump::U8MovieViewer(RawArchive *movie, bool fade, bool introMusicHack) {
-	ModalGump *gump = new MovieGump(320, 200, movie, introMusicHack);
+ProcId MovieGump::U8MovieViewer(Common::SeekableReadStream *rs, bool fade, bool introMusicHack) {
+	ModalGump *gump;
+	if (GAME_IS_U8)
+		gump = new MovieGump(320, 200, rs, introMusicHack);
+	else
+		gump = new MovieGump(640, 480, rs, introMusicHack);
+
 	if (fade) {
 		FadeToModalProcess *p = new FadeToModalProcess(gump);
 		Kernel::get_instance()->addProcess(p);
@@ -105,19 +121,74 @@ ProcId MovieGump::U8MovieViewer(RawArchive *movie, bool fade, bool introMusicHac
 	}
 	else
 	{
-		gump->InitGump(0);
+		gump->InitGump(nullptr);
 		gump->setRelativePosition(CENTER);
 		gump->CreateNotifier();
 		return gump->GetNotifyProcess()->getPid();
 	}
 }
 
-bool MovieGump::loadData(IDataSource *ids) {
+bool MovieGump::loadData(Common::ReadStream *rs) {
 	return false;
 }
 
-void MovieGump::saveData(ODataSource *ods) {
+void MovieGump::saveData(Common::WriteStream *ws) {
 
+}
+
+static Std::string _fixCrusaderMovieName(const Std::string &s) {
+	/*
+	 HACK! The game comes with movies MVA01.AVI etc, but the usecode mentions both
+	 MVA01 and MVA1.  We do a translation here.	 These are the strings we need to fix:
+	 008E: 0D	push string	"mva1"
+	 036D: 0D	push string	"mva3a"
+	 04E3: 0D	push string	"mva4"
+	 0656: 0D	push string	"mva5a"
+	 07BD: 0D	push string	"mva6"
+	 0944: 0D	push string	"mva7"
+	 0A68: 0D	push string	"mva8"
+	 0B52: 0D	push string	"mva9"
+	*/
+	if (s.size() == 4)
+		return Std::string::format("mva0%c", s[3]);
+	else if (s.equals("mva3a"))
+		return "mva03a";
+	else if (s.equals("mva5a"))
+		return "mva05a";
+
+	return s;
+}
+
+uint32 MovieGump::I_playMovieOverlay(const uint8 *args,
+        unsigned int /*argsize*/) {
+	ARG_ITEM_FROM_PTR(item);
+	ARG_STRING(name);
+	ARG_UINT16(x);
+	ARG_UINT16(y);
+
+	PaletteManager *palman = PaletteManager::get_instance();
+
+	if (item && palman) {
+		if (name.hasPrefix("mva")) {
+			name = _fixCrusaderMovieName(name);
+		}
+
+		const Palette *pal = palman->getPalette(PaletteManager::Pal_Game);
+		assert(pal);
+
+		const Std::string filename = Std::string::format("@game/flics/%s.avi", name.c_str());
+		FileSystem *filesys = FileSystem::get_instance();
+		Common::SeekableReadStream *rs = filesys->ReadFile(filename);
+		if (!rs) {
+			warning("couldn't create gump for unknown movie %s", name.c_str());
+			return 0;
+		}
+		Gump *gump = new MovieGump(x, y, rs, false, pal->_palette);
+		gump->InitGump(nullptr, true);
+		gump->setRelativePosition(CENTER);
+	}
+
+	return 0;
 }
 
 } // End of namespace Ultima8

@@ -39,10 +39,26 @@ class ManagedSurface;
 /** Text alignment modes */
 enum TextAlign {
 	kTextAlignInvalid,
+	kTextAlignStart,     ///< Text should be aligned to start of line (virtual)
 	kTextAlignLeft,     ///< Text should be aligned to the left
 	kTextAlignCenter,   ///< Text should be centered
+	kTextAlignEnd,     ///< Text should be aligned to end of line (virtual)
 	kTextAlignRight     ///< Text should be aligned to the right
 };
+
+/** Word wrapping modes */
+enum WordWrapMode {
+	kWordWrapDefault			= 0,
+	kWordWrapEvenWidthLines 	= 1 << 0,	///< Make the resulting line segments close to the same width
+	kWordWrapOnExplicitNewLines	= 1 << 1	///< Text is wrapped on new lines, otherwise treats them as single white space. Disables kWordWrapEvenWidthLines
+};
+
+/**
+ * Converts virtual text alignments (start + end)
+ * to actual text alignment (left + right + center) for drawing,
+ * if given actual text alignments it is returned as-is
+ */
+TextAlign convertTextAlignH(TextAlign alignH, bool rtl);
 
 /**
  * Instances of this class represent a distinct font, with a built-in renderer.
@@ -119,7 +135,7 @@ public:
 	 * @return The actual area where the string is drawn.
 	 */
 	Common::Rect getBoundingBox(const Common::String &str, int x = 0, int y = 0, const int w = 0, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = false) const;
-	Common::Rect getBoundingBox(const Common::U32String &str, int x = 0, int y = 0, const int w = 0, TextAlign align = kTextAlignLeft) const;
+	Common::Rect getBoundingBox(const Common::U32String &str, int x = 0, int _y = 0, const int w = 0, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = false) const;
 
 	/**
 	 * Draw a character at a specific point on a surface.
@@ -146,9 +162,9 @@ public:
 
 	// TODO: Add doxygen comments to this
 	void drawString(Surface *dst, const Common::String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = true) const;
-	void drawString(Surface *dst, const Common::U32String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0) const;
-	void drawString(ManagedSurface *dst, const Common::String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = true) const;
-	void drawString(ManagedSurface *dst, const Common::U32String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0) const;
+	void drawString(Surface *dst, const Common::U32String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = true) const;
+	void drawString(ManagedSurface *dst, const Common::String &str, int x, int _y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = true) const;
+	void drawString(ManagedSurface *dst, const Common::U32String &str, int x, int y, int w, uint32 color, TextAlign align = kTextAlignLeft, int deltax = 0, bool useEllipsis = true) const;
 
 	/**
 	 * Compute and return the width the string str has when rendered using this font.
@@ -173,15 +189,12 @@ public:
 	 * @param maxWidth  the maximum width a line may have
 	 * @param lines     the string list to which the text lines from str are appended
 	 * @param initWidth the starting width of the first line, for partially filled lines (optional)
-	 * @param evenWidthLinesModeEnabled if enabled, the resulting line segments will be close to the same width (optional)
-	 * @param wrapOnExplicitNewLines if enabled, forces wrapping on new line characters, otherwise treats them as single white space (optional)
+	 * @param mode		the wrapping mode. A bitfield of @ref WordWrapMode values
 	 * @return the maximal width of any of the lines added to lines
 	 */
-	int wordWrapText(const Common::String &str, int maxWidth, Common::Array<Common::String> &lines, int initWidth = 0, bool evenWidthLinesModeEnabled = false, bool wrapOnExplicitNewLines = true) const;
-	int wordWrapText(const Common::U32String &str, int maxWidth, Common::Array<Common::U32String> &lines, int initWidth = 0, bool evenWidthLinesModeEnabled = false, bool wrapOnExplicitNewLines = true) const;
+	int wordWrapText(const Common::String &str, int maxWidth, Common::Array<Common::String> &lines, int initWidth = 0, uint32 mode = kWordWrapOnExplicitNewLines) const;
+	int wordWrapText(const Common::U32String &str, int maxWidth, Common::Array<Common::U32String> &lines, int initWidth = 0, uint32 mode = kWordWrapOnExplicitNewLines) const;
 
-private:
-	Common::String handleEllipsis(const Common::String &str, int w) const;
 };
 
 } // End of namespace Graphics

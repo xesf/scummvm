@@ -34,8 +34,6 @@ void GfxMacCursor32::setMacCursorRemapList(int cursorCount, reg_t *cursors) {
 }
 
 void GfxMacCursor32::setView(const GuiResourceId viewId, const int16 loopNo, const int16 celNo) {
-	hide();
-
 	_cursorInfo.resourceId = viewId;
 	_cursorInfo.loopNo = loopNo;
 	_cursorInfo.celNo = celNo;
@@ -68,6 +66,8 @@ void GfxMacCursor32::setView(const GuiResourceId viewId, const int16 loopNo, con
 		return;
 	}
 
+	hide();
+
 	CursorMan.disableCursorPalette(false);
 	CursorMan.replaceCursor(macCursor);
 
@@ -81,7 +81,7 @@ void GfxMacCursor32::hide() {
 		return;
 	}
 
-	g_system->showMouse(false);
+	CursorMan.showMouse(false);
 }
 
 void GfxMacCursor32::unhide() {
@@ -89,12 +89,12 @@ void GfxMacCursor32::unhide() {
 		return;
 	}
 
-	g_system->showMouse(true);
+	CursorMan.showMouse(true);
 }
 
 void GfxMacCursor32::show() {
 	if (_hideCount) {
-		g_system->showMouse(true);
+		CursorMan.showMouse(true);
 		_hideCount = 0;
 	}
 }

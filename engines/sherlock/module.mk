@@ -2,7 +2,6 @@ MODULE := engines/sherlock
 
 MODULE_OBJS = \
 	scalpel/scalpel.o \
-	scalpel/3do/movie_decoder.o \
 	scalpel/3do/scalpel_3do_screen.o \
 	scalpel/drivers/adlib.o \
 	scalpel/drivers/mt32.o \
@@ -49,7 +48,6 @@ MODULE_OBJS = \
 	tattoo/widget_verbs.o \
 	animation.o \
 	debugger.o \
-	detection.o \
 	events.o \
 	fixed_text.o \
 	fonts.o \
@@ -57,6 +55,7 @@ MODULE_OBJS = \
 	inventory.o \
 	journal.o \
 	map.o \
+	metaengine.o \
 	music.o \
 	objects.o \
 	people.o \
@@ -77,3 +76,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

@@ -220,7 +220,6 @@ const OSystem::GraphicsMode* OSystem_N64::getSupportedGraphicsModes() const {
 	return s_supportedGraphicsModes;
 }
 
-
 int OSystem_N64::getDefaultGraphicsMode() const {
 	return OVERS_NTSC_340X240;
 }

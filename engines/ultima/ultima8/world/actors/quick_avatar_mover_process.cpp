@@ -26,18 +26,18 @@
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/kernel/kernel.h"
+#include "ultima/ultima8/kernel/core_app.h"
 #include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/graphics/shape_info.h"
+#include "ultima/ultima8/world/camera_process.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/world/actors/avatar_mover_process.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
 // p_dynamic_cast stuff
-DEFINE_RUNTIME_CLASSTYPE_CODE(QuickAvatarMoverProcess, Process)
+DEFINE_RUNTIME_CLASSTYPE_CODE(QuickAvatarMoverProcess)
 
 ProcId QuickAvatarMoverProcess::_amp[6] = { 0, 0, 0, 0, 0, 0 };
 bool QuickAvatarMoverProcess::_clipping = false;
@@ -126,6 +126,10 @@ void QuickAvatarMoverProcess::run() {
 	// Yes, i know, not entirely correct
 	avatar->collideMove(x + dxv, y + dyv, z + dzv, false, true);
 
+	if (GAME_IS_CRUSADER) {
+		// Keep the camera on the avatar while we're quick-moving.
+		CameraProcess::SetCameraProcess(new CameraProcess(x + dxv, y + dyv, z + dzv));
+	}
 
 	// Prevent avatar from running an idle animation while moving around
 	Ultima8Engine::get_instance()->getAvatarMoverProcess()->resetIdleTime();
@@ -142,7 +146,7 @@ void QuickAvatarMoverProcess::terminateMover(int dir) {
 	Kernel *kernel = Kernel::get_instance();
 
 	QuickAvatarMoverProcess *p =
-	    p_dynamic_cast<QuickAvatarMoverProcess *>(kernel->getProcess(_amp[dir]));
+	    dynamic_cast<QuickAvatarMoverProcess *>(kernel->getProcess(_amp[dir]));
 
 	if (p && !p->is_terminated())
 		p->terminate();
@@ -154,22 +158,22 @@ void QuickAvatarMoverProcess::startMover(int x, int y, int z, int dir) {
 		Process *p = new QuickAvatarMoverProcess(x, y, z, dir);
 		Kernel::get_instance()->addProcess(p);
 	} else {
-		pout << "Can't: avatarInStasis" << Std::endl;
+		pout << "Can't quickmove: avatarInStasis" << Std::endl;
 	}
 }
 
-void QuickAvatarMoverProcess::saveData(ODataSource *ods) {
-	Process::saveData(ods);
+void QuickAvatarMoverProcess::saveData(Common::WriteStream *ws) {
+	Process::saveData(ws);
 
-	ods->write4(_dir);
+	ws->writeUint32LE(_dir);
 	// don't save more information. We plan to terminate upon load
 }
 
-bool QuickAvatarMoverProcess::loadData(IDataSource *ids, uint32 version) {
-	if (!Process::loadData(ids, version)) return false;
+bool QuickAvatarMoverProcess::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!Process::loadData(rs, version)) return false;
 
 	// small safety precaution
-	_dir = ids->read4();
+	_dir = rs->readUint32LE();
 	if (_dir < 6)
 		_amp[_dir] = 0;
 	else

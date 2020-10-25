@@ -73,12 +73,33 @@ extern void InventoryProcess(CORO_PARAM, const void *);
 // In SCENE.CPP
 extern SCNHANDLE GetSceneHandle();
 
+extern void ResetVarsDrives();
+extern void ResetVarsEvents();
+extern void RebootScalingReels();
+extern void ResetVarsMove();
+extern void ResetVarsPalette();
+extern void ResetVarsPCode();
+extern void ResetVarsPDisplay();
+extern void ResetVarsPlay();
+extern void ResetVarsPolygons();
+extern void RebootMovers();
+extern void ResetVarsSaveLoad();
+extern void ResetVarsSaveScn();
+extern void ResetVarsScene();
+extern void ResetVarsSched();
+extern void ResetVarsStrRes();
+extern void FreeTextBuffer();
+extern void ResetVarsSysVar();
+extern void FreeAllTokens();
+extern void RebootTimers();
+extern void ResetVarsTinlib();
+
 //----------------- FORWARD DECLARATIONS  ---------------------
 void SetNewScene(SCNHANDLE scene, int entrance, int transition);
 
 //----------------- GLOBAL GLOBAL DATA --------------------
 
-// FIXME: Avoid non-const global vars
+// These vars are reset upon engine destruction
 
 bool g_bRestart = false;
 bool g_bHasRestarted = false;
@@ -87,6 +108,9 @@ bool g_loadingFromGMM = false;
 static bool g_bCuttingScene = false;
 
 static bool g_bChangingForRestore = false;
+
+// FIXME: CountOut is used by ChangeScene
+static int CountOut = 1; // == 1 for immediate start of first scene
 
 #ifdef DEBUG
 bool g_bFast;		// set to make it go ludicrously fast
@@ -104,8 +128,8 @@ static Scene g_NextScene = { 0, 0, 0 };
 static Scene g_HookScene = { 0, 0, 0 };
 static Scene g_DelayedScene = { 0, 0, 0 };
 
-static Common::PROCESS *g_pMouseProcess = 0;
-static Common::PROCESS *g_pKeyboardProcess = 0;
+static Common::PROCESS *g_pMouseProcess = nullptr;
+static Common::PROCESS *g_pKeyboardProcess = nullptr;
 
 static SCNHANDLE g_hCdChangeScene;
 
@@ -308,7 +332,7 @@ static void MouseProcess(CORO_PARAM, const void *) {
 		_vm->_mouseButtons.pop_front();
 
 		int xp, yp;
-		GetCursorXYNoWait(&xp, &yp, true);
+		_vm->_cursor->GetCursorXYNoWait(&xp, &yp, true);
 		const Common::Point mousePos(xp, yp);
 
 		switch (type) {
@@ -473,14 +497,14 @@ void SetNewScene(SCNHANDLE scene, int entrance, int transition) {
 	}
 
 	// If CD change will be required, stick in the scene change scene
-	if (CdNumber(scene) != GetCurrentCD()) {
+	if (_vm->_handle->CdNumber(scene) != GetCurrentCD()) {
 		// This scene gets delayed
 		g_DelayedScene.scene = scene;
 		g_DelayedScene.entry = entrance;
 		g_DelayedScene.trans = transition;
 
 		g_NextScene.scene = g_hCdChangeScene;
-		g_NextScene.entry = CdNumber(scene) - '0';
+		g_NextScene.entry = _vm->_handle->CdNumber(scene) - '0';
 		g_NextScene.trans = TRANS_FADE;
 
 		return;
@@ -513,8 +537,8 @@ void SetNewScene(SCNHANDLE scene, int entrance, int transition) {
 	// right items: player must have Mambo the swamp dragon, and mustn't have fireworks (used on
 	// the swamp dragon previously to "load it up").
 	if (TinselV1PSX && g_NextScene.scene == 0x1800000 && g_NextScene.entry == 2) {
-		if ((IsInInventory(261, INV_1) || IsInInventory(261, INV_2)) &&
-			(!IsInInventory(232, INV_1) && !IsInInventory(232, INV_2)))
+		if ((_vm->_dialogs->IsInInventory(261, INV_1) || _vm->_dialogs->IsInInventory(261, INV_2)) &&
+		    (!_vm->_dialogs->IsInInventory(232, INV_1) && !_vm->_dialogs->IsInInventory(232, INV_2)))
 			g_NextScene.entry = 1;
 	}
 }
@@ -624,10 +648,6 @@ void RestoreMasterProcess(INT_CONTEXT *pic) {
 	CoroScheduler.createProcess(PID_MASTER_SCR, RestoredProcess, &pic, sizeof(pic));
 }
 
-// FIXME: CountOut is used by ChangeScene
-// FIXME: Avoid non-const global vars
-static int CountOut = 1;	// == 1 for immediate start of first scene
-
 /**
  * If a scene restore is going on, just return (we don't update the
  * screen during this time).
@@ -711,7 +731,7 @@ void LoadBasicChunks() {
 	// CHUNK_TOTAL_ACTORS seems to be missing in the released version, hard coding a value
 	// TODO: Would be nice to just change 511 to MAX_SAVED_ALIVES
 	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_ACTORS);
-	RegisterActors((cptr != NULL) ? READ_32(cptr) : 511);
+	_vm->_actor->RegisterActors((cptr != NULL) ? READ_32(cptr) : 511);
 
 	// CHUNK_TOTAL_GLOBALS seems to be missing in some versions.
 	// So if it is missing, set a reasonably high value for the number of globals.
@@ -732,7 +752,7 @@ void LoadBasicChunks() {
 		io->attribute = FROM_32(io->attribute);
 	}
 
-	RegisterIcons(cptr, numObjects);
+	_vm->_dialogs->RegisterIcons(cptr, numObjects);
 
 	cptr = FindChunk(MASTER_SCNHANDLE, CHUNK_TOTAL_POLY);
 	// Max polygons are 0 in DW1 Mac (both in the demo and the full version)
@@ -753,8 +773,29 @@ void LoadBasicChunks() {
 		assert(cptr);
 		uint32 playHandle = READ_32(cptr);
 		assert(playHandle < 512);
-		SetCdPlayHandle(playHandle);
+		_vm->_handle->SetCdPlayHandle(playHandle);
 	}
+}
+
+void ResetVarsTinsel() {
+	g_bRestart = false;
+	g_bHasRestarted = false;
+	g_loadingFromGMM = false;
+
+	g_bCuttingScene = false;
+
+	g_bChangingForRestore = false;
+
+	CountOut = 1;
+
+	g_NextScene = {0, 0, 0};
+	g_HookScene = {0, 0, 0};
+	g_DelayedScene = {0, 0, 0};
+
+	g_pMouseProcess = nullptr;
+	g_pKeyboardProcess = nullptr;
+
+	g_hCdChangeScene = 0;
 }
 
 //----------------- TinselEngine --------------------
@@ -786,7 +827,7 @@ const char *const TinselEngine::_sampleIndices[][3] = {
 	{ "english.idx", "english1.idx", "english2.idx" },	// Spanish
 	{ "english.idx", "english1.idx", "english2.idx" },	// Hebrew (FIXME: not sure if this is correct)
 	{ "english.idx", "english1.idx", "english2.idx" },	// Hungarian (FIXME: not sure if this is correct)
-	{ "english.idx", "english1.idx", "english2.idx" },	// Japanese (FIXME: not sure if this is correct)
+	{ "japanese.idx", "japanese1.idx", "japanese2.idx" },	// Japanese
 	{ "us.idx", "us1.idx", "us2.idx" }					// US English
 };
 const char *const TinselEngine::_sampleFiles[][3] = {
@@ -797,7 +838,7 @@ const char *const TinselEngine::_sampleFiles[][3] = {
 	{ "english.smp", "english1.smp", "english2.smp" },	// Spanish
 	{ "english.smp", "english1.smp", "english2.smp" },	// Hebrew (FIXME: not sure if this is correct)
 	{ "english.smp", "english1.smp", "english2.smp" },	// Hungarian (FIXME: not sure if this is correct)
-	{ "english.smp", "english1.smp", "english2.smp" },	// Japanese (FIXME: not sure if this is correct)
+	{ "japanese.smp", "japanese1.smp", "japanese2.smp" },	// Japanese
 	{ "us.smp", "us1.smp", "us2.smp" },					// US English
 };
 const char *const TinselEngine::_textFiles[][3] = {
@@ -808,7 +849,7 @@ const char *const TinselEngine::_textFiles[][3] = {
 	{ "spanish.txt", "spanish1.txt", "spanish2.txt" },	// Spanish
 	{ "english.txt", "english1.txt", "english2.txt" },	// Hebrew (FIXME: not sure if this is correct)
 	{ "english.txt", "english1.txt", "english2.txt" },	// Hungarian (FIXME: not sure if this is correct)
-	{ "english.txt", "english1.txt", "english2.txt" },	// Japanese (FIXME: not sure if this is correct)
+	{ "japanese.txt", "japanese1.txt", "japanese2.txt" },	// Japanese
 	{ "us.txt", "us1.txt", "us2.txt" }					// US English
 };
 
@@ -849,6 +890,7 @@ TinselEngine::TinselEngine(OSystem *syst, const TinselGameDescription *gameDesc)
 
 TinselEngine::~TinselEngine() {
 	_system->getAudioCDManager()->stop();
+	delete _cursor;
 	delete _bg;
 	delete _font;
 	delete _bmv;
@@ -859,15 +901,40 @@ TinselEngine::~TinselEngine() {
 	_screenSurface.free();
 	FreeSaveScenes();
 	FreeTextBuffer();
-	FreeHandleTable();
-	FreeActors();
 	FreeObjectList();
 	FreeGlobalProcesses();
 	FreeGlobals();
 
+	delete _dialogs; 
+	delete _scroll;
+	delete _handle;
+	delete _actor;
 	delete _config;
 
 	MemoryDeinit();
+
+	// Reset global vars
+	ResetVarsDrives();	// drives.cpp
+	ResetVarsEvents();	// events.cpp
+	RebootScalingReels(); // mareels.cpp
+	ResetVarsMove();	// move.cpp
+	ResetVarsPalette();	// palette.cpp
+	ResetVarsPCode();	// pcode.cpp
+	ResetVarsPDisplay();	// pdisplay.cpp
+	ResetVarsPlay();	// play.cpp
+	ResetVarsPolygons();	// polygons.cpp
+	RebootMovers();       // rince.cpp
+	ResetVarsSaveLoad();	// saveload.cpp
+	ResetVarsSaveScn();	// savescn.cpp
+	ResetVarsScene();	// scene.cpp
+	ResetVarsSched();	// sched.cpp
+	ResetVarsStrRes();	// strres.cpp
+	FreeTextBuffer();     // strres.cpp
+	ResetVarsSysVar();	// sysvar.cpp
+	FreeAllTokens();	// token.cpp
+	RebootTimers();       // timers.cpp
+	ResetVarsTinlib();	// tinlib.cpp
+	ResetVarsTinsel();	// tinsel.cpp
 }
 
 Common::String TinselEngine::getSavegameFilename(int16 saveNum) const {
@@ -876,7 +943,7 @@ Common::String TinselEngine::getSavegameFilename(int16 saveNum) const {
 
 void TinselEngine::initializePath(const Common::FSNode &gamePath) {
 	if (TinselV1PSX) {
-		// Add subfolders needed for psx versions of Discworld 1
+		// Add subfolders needed for PSX versions of Discworld 1
 		SearchMan.addDirectory(gamePath.getPath(), gamePath, 0, 3, true);
 	} else {
 		// Add DW2 subfolder to search path in case user is running directly from the CDs
@@ -896,6 +963,11 @@ Common::Error TinselEngine::run() {
 	_bmv = new BMVPlayer();
 	_font = new Font();
 	_bg = new Background(_font);
+	_cursor = new Cursor();
+	_actor = new Actor();
+	_handle = new Handle();
+	_scroll = new Scroll();
+	_dialogs = new Dialogs();
 
 	// Initialize backend
 	if (getGameID() == GID_DW2) {
@@ -927,7 +999,7 @@ Common::Error TinselEngine::run() {
 	// It may have to be adjusted a bit
 	CountOut = 1;
 
-	RebootCursor();
+	_vm->_cursor->RebootCursor();
 	RebootDeadTags();
 	RebootMovers();
 	resetUserEventTime();
@@ -944,7 +1016,7 @@ Common::Error TinselEngine::run() {
 	RestartDrivers();
 
 	// load in graphics info
-	SetupHandleTable();
+	_vm->_handle->SetupHandleTable();
 
 	// Actors, globals and inventory icons
 	LoadBasicChunks();
@@ -1098,7 +1170,7 @@ void TinselEngine::CreateConstProcesses() {
  * Restart the game
  */
 void TinselEngine::RestartGame() {
-	HoldItem(INV_NOICON);	// Holding nothing
+	_vm->_dialogs->HoldItem(INV_NOICON); // Holding nothing
 
 	_bg->DropBackground();	// No background
 
@@ -1109,7 +1181,7 @@ void TinselEngine::RestartGame() {
 	// -> reset the count used by ChangeScene
 	CountOut = 1;
 
-	RebootCursor();
+	_vm->_cursor->RebootCursor();
 	RebootDeadTags();
 	RebootMovers();
 	RebootTimers();
@@ -1229,7 +1301,8 @@ const char *TinselEngine::getSampleIndex(LANGUAGE lang) {
 
 	} else {
 		cd = 0;
-		lang = TXT_ENGLISH;
+		if (lang != TXT_JAPANESE)
+			lang = TXT_ENGLISH;
 	}
 
 	return _sampleIndices[lang][cd];
@@ -1249,7 +1322,8 @@ const char *TinselEngine::getSampleFile(LANGUAGE lang) {
 
 	} else {
 		cd = 0;
-		lang = TXT_ENGLISH;
+		if (lang != TXT_JAPANESE)
+			lang = TXT_ENGLISH;
 	}
 
 	return _sampleFiles[lang][cd];

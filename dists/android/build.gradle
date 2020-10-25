@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.0'
+        classpath 'com.android.tools.build:gradle:4.1.0'
     }
 }
 
@@ -25,7 +25,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.3"
-    ndkVersion "21.0.6113669"
+    ndkVersion "21.3.6528147"
 
     defaultConfig {
         applicationId "org.scummvm.scummvm"
@@ -33,12 +33,19 @@ android {
         setProperty("archivesBaseName", "ScummVM")
 
         minSdkVersion 16
-        targetSdkVersion 29
+        targetSdkVersion 28
 
-        versionName "2.2.0git"
-        versionCode 45
+        versionName "2.3.0git"
+        versionCode 65
         // versioncode must be incremented for each market upload
+        // ScummVM 2.3.0: 65-68 (arm-v7a, arm64-v8a, x86, x86_64 respectively)
         // Historical version codes:
+        // ScummVM 2.2.1: 61-64 Play Store release version for 2.2.1 (arm-v7a, arm64-v8a, x86, x86_64 respectively)
+        // ScummVM 2.2.1: 57-60 Beta 3 (arm-v7a, arm64-v8a, x86, x86_64 respectively)
+        // ScummVM 2.2.1: 57-60 *Reserved for 2.2.1 stable/release* (arm-v7a, arm64-v8a, x86, x86_64 respectively)
+        // ScummVM 2.2.1: 53-56 Beta 2 (arm-v7a, arm64-v8a, x86, x86_64 respectively)
+        // ScummVM 2.2.1: 49-52 Beta 1 (29 Sep 2020) (arm-v7a, arm64-v8a, x86, x86_64 respectively)
+        // ScummVM 2.2.0: 45-48 (arm-v7a, arm64-v8a, x86, x86_64 respectively -- armeabi was dropped)
         // ScummVM 2.1.1: 40-44 (armeabi, arm-v7a, arm64-v8a, x86, x86_64 respectively)
         // ScummVM 2.1.0: 35-39 (armeabi, arm-v7a, arm64-v8a, x86, x86_64 respectively)
         // ScummVM 2.0.0: 30-34
@@ -48,8 +55,14 @@ android {
 
     }
     buildTypes {
+        debug{
+            debuggable true
+        }
         release {
+            debuggable false
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            zipAlignEnabled true
         }
     }
     sourceSets {
@@ -64,4 +77,8 @@ android {
     lintOptions {
         abortOnError false
     }
+}
+
+dependencies {
+    implementation "androidx.annotation:annotation:1.1.0"
 }

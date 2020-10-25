@@ -51,6 +51,7 @@ OSystem_MacOSX::~OSystem_MacOSX() {
 
 void OSystem_MacOSX::init() {
 	// Use an iconless window on OS X, as we use a nicer external icon there.
+	initSDL();
 	_window = new SdlIconlessWindow();
 
 #if defined(USE_TASKBAR)
@@ -103,7 +104,8 @@ void OSystem_MacOSX::addSysArchivesToSearchSet(Common::SearchSet &s, int priorit
 		if (CFURLGetFileSystemRepresentation(fileUrl, true, buf, sizeof(buf))) {
 			// Success: Add it to the search path
 			Common::String bundlePath((const char *)buf);
-			s.add("__OSX_BUNDLE__", new Common::FSDirectory(bundlePath), priority);
+			// Search with a depth of 2 so the shaders are found
+			s.add("__OSX_BUNDLE__", new Common::FSDirectory(bundlePath, 2), priority);
 		}
 		CFRelease(fileUrl);
 	}
@@ -138,16 +140,16 @@ bool OSystem_MacOSX::hasTextInClipboard() {
 	return hasTextInClipboardMacOSX();
 }
 
-Common::String OSystem_MacOSX::getTextFromClipboard() {
+Common::U32String OSystem_MacOSX::getTextFromClipboard() {
 	return getTextFromClipboardMacOSX();
 }
 
-bool OSystem_MacOSX::setTextInClipboard(const Common::String &text) {
+bool OSystem_MacOSX::setTextInClipboard(const Common::U32String &text) {
 	return setTextInClipboardMacOSX(text);
 }
 
 bool OSystem_MacOSX::openUrl(const Common::String &url) {
-	CFURLRef urlRef = CFURLCreateWithBytes (NULL, (UInt8*)url.c_str(), url.size(), kCFStringEncodingASCII, NULL);
+	CFURLRef urlRef = CFURLCreateWithBytes (NULL, (const UInt8*)url.c_str(), url.size(), kCFStringEncodingASCII, NULL);
 	OSStatus err = LSOpenCFURLRef(urlRef, NULL);
 	CFRelease(urlRef);
 	return err == noErr;

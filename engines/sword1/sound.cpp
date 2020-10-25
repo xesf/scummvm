@@ -68,7 +68,7 @@ Sound::~Sound() {
 uint32 Sound::getSampleId(int32 fxNo) {
 	byte cluster = _fxList[fxNo].sampleId.cluster;
 	byte id;
-	if (SwordEngine::_systemVars.isDemo && SwordEngine::_systemVars.platform == Common::kPlatformWindows) {
+	if (SwordEngine::_systemVars.isDemo && SwordEngine::_systemVars.platform == Common::kPlatformWindows && !SwordEngine::_systemVars.isSpanishDemo) {
 		id = _fxList[fxNo].sampleId.idWinDemo;
 	} else {
 		id = _fxList[fxNo].sampleId.idStd;
@@ -130,11 +130,11 @@ void Sound::checkSpeechFileEndianness() {
 		int16 *data = uncompressSpeech(index + _cowHeaderSize, sampleSize, &size, &leOk);
 		uint32 maxSamples = size > 2000 ? 2000 : size;
 		double le_diff = endiannessHeuristicValue(data, size, maxSamples);
-		delete[] data;
+		free(data);
 		_bigEndianSpeech = true;
 		data = uncompressSpeech(index + _cowHeaderSize, sampleSize, &size, &beOk);
 		double be_diff = endiannessHeuristicValue(data, size, maxSamples);
-		delete [] data;
+		free(data);
 		// Set the big endian flag
 		if (leOk && !beOk)
 			_bigEndianSpeech = false;

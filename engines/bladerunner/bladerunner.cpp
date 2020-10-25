@@ -92,6 +92,7 @@
 #include "engines/advancedDetector.h"
 
 #include "graphics/pixelformat.h"
+#include "audio/mididrv.h"
 
 namespace BladeRunner {
 
@@ -101,8 +102,9 @@ BladeRunnerEngine::BladeRunnerEngine(OSystem *syst, const ADGameDescription *des
 
 	DebugMan.addDebugChannel(kDebugScript, "Script", "Debug the scripts");
 
-	_windowIsActive = true;
-	_gameIsRunning  = true;
+	_windowIsActive     = true;
+	_gameIsRunning      = true;
+	_gameJustLaunched   = true;
 
 	_vqaIsPlaying       = false;
 	_vqaStopIsRequested = false;
@@ -121,6 +123,7 @@ BladeRunnerEngine::BladeRunnerEngine(OSystem *syst, const ADGameDescription *des
 	_framesPerSecondMax           = false;
 	_disableStaminaDrain          = false;
 	_cutContent                   = Common::String(desc->gameId).contains("bladerunner-final");
+	_validBootParam               = false;
 
 	_playerLosesControlCounter = 0;
 
@@ -229,6 +232,10 @@ BladeRunnerEngine::BladeRunnerEngine(OSystem *syst, const ADGameDescription *des
 
 	_actorUpdateCounter  = 0;
 	_actorUpdateTimeLast = 0;
+
+	_currentKeyDown.keycode = Common::KEYCODE_INVALID;
+	_keyRepeatTimeLast = 0;
+	_keyRepeatTimeDelay = 0;
 }
 
 BladeRunnerEngine::~BladeRunnerEngine() {
@@ -237,7 +244,7 @@ BladeRunnerEngine::~BladeRunnerEngine() {
 
 bool BladeRunnerEngine::hasFeature(EngineFeature f) const {
 	return
-		f == kSupportsRTL ||
+		f == kSupportsReturnToLauncher ||
 		f == kSupportsLoadingDuringRuntime ||
 		f == kSupportsSavingDuringRuntime;
 }
@@ -360,8 +367,9 @@ Common::Error BladeRunnerEngine::run() {
 	// so that the game won't exit abruptly after end credits
 	do {
 		// additional code for gracefully handling end-game after _endCredits->show()
-		_gameOver = false;
-		_gameIsRunning = true;
+		_gameOver         = false;
+		_gameIsRunning    = true;
+		_gameJustLaunched = true;
 		// reset ammo amounts
 		_settings->reset();
 		// need to clear kFlagKIAPrivacyAddon to remove Bob's Privacy Addon for KIA
@@ -378,23 +386,29 @@ Common::Error BladeRunnerEngine::run() {
 		}
 		// end of additional code for gracefully handling end-game
 
-		if (ConfMan.hasKey("save_slot") && ConfMan.getInt("save_slot") != -1) {
-			// when loading from ScummVM main menu, we should emulate
-			// the Kia pause/resume in order to get a valid "current" time when the game
-			// is actually loaded (assuming delays can be introduced by a popup warning dialogue)
-			if (!_time->isLocked()) {
-				_time->pause();
+		if (_validBootParam) {
+			// clear the flag, so that after a possible game gameOver / end-game
+			// it won't be true again; just to be safe and avoid potential side-effects
+			_validBootParam = false;
+		} else {
+			if (ConfMan.hasKey("save_slot") && ConfMan.getInt("save_slot") != -1) {
+				// when loading from ScummVM main menu, we should emulate
+				// the Kia pause/resume in order to get a valid "current" time when the game
+				// is actually loaded (assuming delays can be introduced by a popup warning dialogue)
+				if (!_time->isLocked()) {
+					_time->pause();
+				}
+				loadGameState(ConfMan.getInt("save_slot"));
+				ConfMan.set("save_slot", "-1");
+				if (_time->isLocked()) {
+					_time->resume();
+				}
+			} else if (hasSavegames) {
+				_kia->_forceOpen = true;
+				_kia->open(kKIASectionLoad);
 			}
-			loadGameState(ConfMan.getInt("save_slot"));
-			ConfMan.set("save_slot", "-1");
-			if (_time->isLocked()) {
-				_time->resume();
-			}
-		} else if (hasSavegames) {
-			_kia->_forceOpen = true;
-			_kia->open(kKIASectionLoad);
 		}
-		// TODO: why is game starting new game here when everything is done in startup?
+		// TODO: why is the game starting a new game here when everything is done in startup?
 		//  else {
 		// 	newGame(kGameDifficultyMedium);
 		// }
@@ -587,6 +601,19 @@ bool BladeRunnerEngine::startup(bool hasSavegames) {
 
 	_ambientSounds = new AmbientSounds(this);
 
+	// Query the selected music device (defaults to MT_AUTO device).
+	Common::String selDevStr = ConfMan.hasKey("music_driver") ? ConfMan.get("music_driver") : Common::String("auto");
+	MidiDriver::DeviceHandle dev = MidiDriver::getDeviceHandle(selDevStr.empty() ? Common::String("auto") : selDevStr);
+	//
+	// We just respect the "No Music" choice (or an invalid choice)
+	//
+	// We're lenient with all the invalid/ irrelevant choices in the Audio Driver dropdown
+	// TODO Ideally these controls (OptionsDialog::addAudioControls()) ie. "Music Device" and "Adlib Emulator"
+	//      should not appear in games like Blade Runner, since they are largely irrelevant
+	//      and may cause confusion when combined/ conflicting with the global settings
+	//      which are by default applied, if the user does not explicitly override them.
+	_noMusicDriver = (MidiDriver::getMusicType(dev) == MT_NULL || MidiDriver::getMusicType(dev) == MT_INVALID);
+
 	// BLADE.INI was read here, but it was replaced by ScummVM configuration
 	//
 	syncSoundSettings();
@@ -730,15 +757,27 @@ void BladeRunnerEngine::initChapterAndScene() {
 
 	if (ConfMan.hasKey("boot_param")) {
 		int param = ConfMan.getInt("boot_param"); // CTTTSSS
-		int chapter = param / 1000000;
-		param -= chapter * 1000000;
-		int set = param / 1000;
-		param -= set * 1000;
-		int scene = param;
+		if (param < 1000000 || param >= 6000000) {
+			debug("Invalid boot parameter. Valid format is: CTTTSSS");
+		} else {
+			int chapter = param / 1000000;
+			param -= chapter * 1000000;
+			int set = param / 1000;
+			param -= set * 1000;
+			int scene = param;
 
-		_settings->setChapter(chapter);
-		_settings->setNewSetAndScene(set, scene);
-	} else {
+			// init chapter to default first chapter (required by dbgAttemptToLoadChapterSetScene())
+			_settings->setChapter(1);
+			_validBootParam = _debugger->dbgAttemptToLoadChapterSetScene(chapter, set, scene);
+			if (_validBootParam) {
+				debug("Explicitly loading Chapter: %d Set: %d Scene: %d", chapter, set, scene);
+			} else {
+				debug("Invalid combination of Chapter Set and Scene ids");
+			}
+		}
+	}
+
+	if (!_validBootParam) {
 		_settings->setChapter(1);
 		_settings->setNewSetAndScene(_gameInfo->getInitialSetId(), _gameInfo->getInitialSceneId());
 	}
@@ -1181,7 +1220,7 @@ void BladeRunnerEngine::actorsUpdate() {
 #else
 	uint32 timeNow = _time->current();
 	// Don't update actors more than 60 or 120 times per second
-	if (timeNow - _actorUpdateTimeLast < 1000 / ( _framesPerSecondMax? 120 : 60)) {
+	if (timeNow - _actorUpdateTimeLast < 1000u / ( _framesPerSecondMax? 120u : 60u)) {
 		return;
 	}
 	_actorUpdateTimeLast = timeNow;
@@ -1237,6 +1276,19 @@ void BladeRunnerEngine::handleEvents() {
 		return;
 	}
 
+	// This flag check is to skip the first call of handleEvents() in gameTick().
+	// This prevents a "hack" whereby the player could press Esc quickly and enter the KIA screen,
+	// even in the case when no save games for the game exist. In such case the game is supposed
+	// to immediately play the intro video and subsequently start a new game of medium difficulty. 
+	// It does not expect the player to enter KIA beforehand, which causes side-effects and unforeseen behavior. 
+	// Note: eventually we will support the option to launch into KIA in any case, 
+	// but not via the "hack" way that is fixed here.
+	if (_gameJustLaunched) {
+		_gameJustLaunched = false;
+		return;
+	}
+
+	uint32 timeNow = _time->currentSystem();
 	Common::Event event;
 	Common::EventManager *eventMan = _system->getEventManager();
 	while (eventMan->pollEvent(event)) {
@@ -1248,6 +1300,13 @@ void BladeRunnerEngine::handleEvents() {
 		case Common::EVENT_KEYDOWN:
 			// Process the actual key press only and filter out repeats
 			if (!event.kbdRepeat) {
+				// Only for Esc and Return keys, allow repeated firing emulation
+				// First hit (fire) has a bigger delay (kKeyRepeatInitialDelay) before repeated events are fired from the same key
+				if (event.kbd.keycode == Common::KEYCODE_ESCAPE || event.kbd.keycode == Common::KEYCODE_RETURN) {
+					_currentKeyDown = event.kbd.keycode;
+					_keyRepeatTimeLast = timeNow;
+					_keyRepeatTimeDelay = kKeyRepeatInitialDelay;
+				}
 				handleKeyDown(event);
 			}
 			break;
@@ -1284,9 +1343,25 @@ void BladeRunnerEngine::handleEvents() {
 			; // nothing to do
 		}
 	}
+
+	if ((_currentKeyDown == Common::KEYCODE_ESCAPE || _currentKeyDown == Common::KEYCODE_RETURN) && (timeNow - _keyRepeatTimeLast >= _keyRepeatTimeDelay)) {
+		// create a "new" keydown event
+		event.type = Common::EVENT_KEYDOWN;
+		// kbdRepeat field will be unused here since we emulate the kbd repeat behavior anyway, but it's good to set it for consistency
+		event.kbdRepeat = true;
+		event.kbd = _currentKeyDown;
+		_keyRepeatTimeLast = timeNow;
+		_keyRepeatTimeDelay = kKeyRepeatSustainDelay;
+		handleKeyDown(event);
+	}
 }
 
 void BladeRunnerEngine::handleKeyUp(Common::Event &event) {
+	if (event.kbd.keycode == _currentKeyDown.keycode) {
+		// Only stop firing events if it's the current key
+		_currentKeyDown.keycode = Common::KEYCODE_INVALID;
+	}
+
 	if (!playerHasControl() || _isWalkingInterruptible) {
 		return;
 	}
@@ -1946,10 +2021,17 @@ void BladeRunnerEngine::syncSoundSettings() {
 	_mixer->setVolumeForSoundType(_mixer->kSpeechSoundType, ConfMan.getInt("speech_volume"));
 	// debug("syncSoundSettings: Volumes synced as Music: %d, Sfx: %d, Speech: %d", ConfMan.getInt("music_volume"), ConfMan.getInt("sfx_volume"), ConfMan.getInt("speech_volume"));
 
+	if (_noMusicDriver) {
+		// This affects *only* the music muting.
+		_mixer->muteSoundType(_mixer->kMusicSoundType, true);
+	}
+
 	bool allSoundIsMuted = false;
 	if (ConfMan.hasKey("mute")) {
 		allSoundIsMuted = ConfMan.getBool("mute");
-		_mixer->muteSoundType(_mixer->kMusicSoundType, allSoundIsMuted);
+		if (!_noMusicDriver) {
+			_mixer->muteSoundType(_mixer->kMusicSoundType, allSoundIsMuted);
+		}
 		_mixer->muteSoundType(_mixer->kSFXSoundType, allSoundIsMuted);
 		_mixer->muteSoundType(_mixer->kSpeechSoundType, allSoundIsMuted);
 	}
@@ -1960,6 +2042,7 @@ void BladeRunnerEngine::syncSoundSettings() {
 		// but we need to mute the speech
 		_mixer->muteSoundType(_mixer->kSpeechSoundType, ConfMan.getBool("speech_mute"));
 	}
+
 	// write-back to ini file for persistence
 	ConfMan.flushToDisk(); // TODO Or maybe call this only when game is shut down?
 }
@@ -2183,13 +2266,13 @@ bool BladeRunnerEngine::loadGame(Common::SeekableReadStream &stream) {
 	if ((_gameFlags->query(kFlagGamePlayedInRestoredContentMode) && !_cutContent)
 	    || (!_gameFlags->query(kFlagGamePlayedInRestoredContentMode) && _cutContent)
 	) {
-		Common::String warningMsg;
+		Common::U32String warningMsg;
 		if (!_cutContent) {
 			warningMsg = _("WARNING: This game was saved in Restored Cut Content mode, but you are playing in Original Content mode. The mode will be adjusted to Restored Cut Content for this session until you completely Quit the game.");
 		} else {
 			warningMsg = _("WARNING: This game was saved in Original Content mode, but you are playing in Restored Cut Content mode. The mode will be adjusted to Original Content mode for this session until you completely Quit the game.");
 		}
-		GUI::MessageDialog dialog(warningMsg, _("Continue"), 0);
+		GUI::MessageDialog dialog(warningMsg, _("Continue"));
 		dialog.runModal();
 		_cutContent = !_cutContent;
 		// force a Key Down event, since we need it to remove the KIA

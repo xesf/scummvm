@@ -170,12 +170,40 @@ List<Event> Keymapper::mapEvent(const Event &ev) {
 
 	hardcodedEventMapping(ev);
 
-	List<Event> mappedEvents;
-	if (!mapEvent(ev, _enabledKeymapType, mappedEvents)) {
-		// If we found actions matching this input in the game / gui keymaps,
+	Keymap::ActionArray actions;
+	Keymap::KeymapMatch match = getMappedActions(ev, actions, _enabledKeymapType);
+	if (match != Keymap::kKeymapMatchExact) {
+		// If we found exact matching actions this input in the game / gui keymaps,
 		// no need to look at the global keymaps. An input resulting in actions
 		// from system and game keymaps would lead to unexpected user experience.
-		mapEvent(ev, Keymap::kKeymapTypeGlobal, mappedEvents);
+		Keymap::ActionArray globalActions;
+		match = getMappedActions(ev, globalActions, Keymap::kKeymapTypeGlobal);
+		if (match == Keymap::kKeymapMatchExact || actions.empty()) {
+			actions = globalActions;
+		}
+	}
+
+	bool matchedAction = !actions.empty();
+	List<Event> mappedEvents;
+	for (Keymap::ActionArray::const_iterator it = actions.begin(); it != actions.end(); it++) {
+		Event mappedEvent = executeAction(*it, ev);
+		if (mappedEvent.type == EVENT_INVALID) {
+			continue;
+		}
+
+		// In case we mapped a mouse event to something else, we need to generate an artificial
+		// mouse move event so event observers can keep track of the mouse position.
+		// Makes it possible to reliably use the mouse position from EventManager when consuming
+		// custom action events.
+		if (isMouseEvent(ev) && !isMouseEvent(mappedEvent)) {
+			Event fakeMouseEvent;
+			fakeMouseEvent.type  = EVENT_MOUSEMOVE;
+			fakeMouseEvent.mouse = ev.mouse;
+
+			mappedEvents.push_back(fakeMouseEvent);
+		}
+
+		mappedEvents.push_back(mappedEvent);
 	}
 
 	if (ev.type == EVENT_JOYAXIS_MOTION && ev.joystick.axis < ARRAYSIZE(_joystickAxisPreviouslyPressed)) {
@@ -186,14 +214,7 @@ List<Event> Keymapper::mapEvent(const Event &ev) {
 		}
 	}
 
-	// Ignore keyboard repeat events. Repeat event are meant for text input,
-	// the keymapper / keymaps are supposed to be disabled during text input.
-	// TODO: Add a way to keep repeat events if needed.
-	if (!mappedEvents.empty() && ev.type == EVENT_KEYDOWN && ev.kbdRepeat) {
-		return List<Event>();
-	}
-
-	if (mappedEvents.empty()) {
+	if (!matchedAction) {
 		// if it didn't get mapped, just pass it through
 		mappedEvents.push_back(ev);
 	}
@@ -201,42 +222,25 @@ List<Event> Keymapper::mapEvent(const Event &ev) {
 	return mappedEvents;
 }
 
-bool Keymapper::mapEvent(const Event &ev, Keymap::KeymapType keymapType, List<Event> &mappedEvents) {
-	bool matchedAction = false;
+Keymap::KeymapMatch Keymapper::getMappedActions(const Event &event, Keymap::ActionArray &actions, Keymap::KeymapType keymapType) const {
+	Keymap::KeymapMatch match = Keymap::kKeymapMatchNone;
 
 	for (uint i = 0; i < _keymaps.size(); i++) {
 		if (!_keymaps[i]->isEnabled() || _keymaps[i]->getType() != keymapType) {
 			continue;
 		}
 
-		Keymap::ActionArray actions = _keymaps[i]->getMappedActions(ev);
-		if (!actions.empty()) {
-			matchedAction = true;
-		}
-
-		for (Keymap::ActionArray::const_iterator it = actions.begin(); it != actions.end(); it++) {
-			Event mappedEvent = executeAction(*it, ev);
-			if (mappedEvent.type == EVENT_INVALID) {
-				continue;
-			}
-
-			// In case we mapped a mouse event to something else, we need to generate an artificial
-			// mouse move event so event observers can keep track of the mouse position.
-			// Makes it possible to reliably use the mouse position from EventManager when consuming
-			// custom action events.
-			if (isMouseEvent(ev) && !isMouseEvent(mappedEvent)) {
-				Event fakeMouseEvent;
-				fakeMouseEvent.type  = EVENT_MOUSEMOVE;
-				fakeMouseEvent.mouse = ev.mouse;
-
-				mappedEvents.push_back(fakeMouseEvent);
-			}
-
-			mappedEvents.push_back(mappedEvent);
+		Keymap::ActionArray array;
+		Keymap::KeymapMatch match2 = _keymaps[i]->getMappedActions(event, array);
+		if (match2 == match) {
+			actions.push_back(array);
+		} else if (match2 > match) {
+			match = match2;
+			actions.clear();
+			actions.push_back(array);
 		}
 	}
-
-	return matchedAction;
+	return match;
 }
 
 Keymapper::IncomingEventType Keymapper::convertToIncomingEventType(const Event &ev) const {
@@ -295,11 +299,20 @@ Event Keymapper::executeAction(const Action *action, const Event &incomingEvent)
 		return outgoingEvent;
 	}
 
+	if (incomingEvent.type == EVENT_KEYDOWN && incomingEvent.kbdRepeat && !action->shouldTriggerOnKbdRepeats()) {
+		outgoingEvent.type = EVENT_INVALID;
+		return outgoingEvent;
+	}
+
 	EventType convertedType = convertStartToEnd(outgoingEvent.type);
 
 	// hardware keys need to send up instead when they are up
 	if (incomingType == kIncomingEventEnd) {
 		outgoingEvent.type = convertedType;
+	}
+
+	if (outgoingEvent.type == EVENT_KEYDOWN && incomingEvent.type == EVENT_KEYDOWN) {
+		outgoingEvent.kbdRepeat = incomingEvent.kbdRepeat;
 	}
 
 	if (isMouseEvent(outgoingEvent)) {

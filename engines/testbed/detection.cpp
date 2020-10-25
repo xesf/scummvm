@@ -21,11 +21,8 @@
  */
 
 #include "engines/advancedDetector.h"
-#include "common/system.h"
 
 #include "base/plugins.h"
-
-#include "testbed/testbed.h"
 
 static const PlainGameDescriptor testbed_setting[] = {
 	{ "testbed", "Testbed: The Backend Testing Framework" },
@@ -45,9 +42,9 @@ static const ADGameDescription testbedDescriptions[] = {
 	AD_TABLE_END_MARKER
 };
 
-class TestbedMetaEngine : public AdvancedMetaEngine {
+class TestbedMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
-	TestbedMetaEngine() : AdvancedMetaEngine(testbedDescriptions, sizeof(ADGameDescription), testbed_setting) {
+	TestbedMetaEngineDetection() : AdvancedMetaEngineDetection(testbedDescriptions, sizeof(ADGameDescription), testbed_setting) {
 		_md5Bytes = 512;
 	}
 
@@ -62,20 +59,6 @@ public:
 	const char *getOriginalCopyright() const override {
 		return "Copyright (C) ScummVM";
 	}
-
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription * /* desc */) const override {
-		// Instantiate Engine even if the game data is not found.
-		*engine = new Testbed::TestbedEngine(syst);
-		return true;
-	}
-
-	bool hasFeature(MetaEngineFeature f) const override {
-		return false;
-	}
 };
 
-#if PLUGIN_ENABLED_DYNAMIC(TESTBED)
-	REGISTER_PLUGIN_DYNAMIC(TESTBED, PLUGIN_TYPE_ENGINE, TestbedMetaEngine);
-#else
-	REGISTER_PLUGIN_STATIC(TESTBED, PLUGIN_TYPE_ENGINE, TestbedMetaEngine);
-#endif
+REGISTER_PLUGIN_STATIC(TESTBED_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, TestbedMetaEngineDetection);

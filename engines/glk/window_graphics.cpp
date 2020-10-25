@@ -96,7 +96,7 @@ void GraphicsWindow::redraw() {
 	}
 }
 
-bool GraphicsWindow::drawPicture(uint image, int xpos, int ypos, bool scale,
+bool GraphicsWindow::drawPicture(const Common::String &image, int xpos, int ypos, bool scale,
                                    uint imagewidth, uint imageheight) {
 	Picture *pic = g_vm->_pictures->load(image);
 	uint hyperlink = _attr.hyper;
@@ -177,6 +177,20 @@ void GraphicsWindow::fillRect(uint color, const Rect &box) {
 	touch();
 }
 
+void GraphicsWindow::clear() {
+	fillRect(_bgnd, Rect(0, 0, _bbox.width(), _bbox.width()));
+}
+
+void GraphicsWindow::frameRect(uint color, const Rect &box) {
+	_surface->frameRect(box, color);
+	touch();
+}
+
+void GraphicsWindow::drawLine(uint color, const Point &from, const Point &to) {
+	_surface->drawLine(from.x, from.y, to.x, to.y, color);
+	touch();
+}
+
 void GraphicsWindow::drawPicture(Picture *src, int x0, int y0, int width, int height, uint linkval) {
 	if (width != src->w || height != src->h) {
 		src = g_vm->_pictures->scale(src, width, height);
@@ -237,8 +251,10 @@ void GraphicsWindow::drawPicture(const Graphics::Surface &image, uint transColor
 }
 
 void GraphicsWindow::getSize(uint *width, uint *height) const {
-	*width = _bbox.width();
-	*height = _bbox.height();
+	if (width)
+		*width = _bbox.width();
+	if (height)
+		*height = _bbox.height();
 }
 
 void GraphicsWindow::setBackgroundColor(uint color) {

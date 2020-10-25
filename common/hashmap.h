@@ -57,6 +57,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_hashmap Hash table (HashMap)
+ * @ingroup common
+ *
+ * @brief API for operations on a hash table.
+ *
+ * @{
+ */
+
 // The sgi IRIX MIPSpro Compiler has difficulties with nested templates.
 // This and the other __sgi conditionals below work around these problems.
 // The Intel C++ Compiler suffers from the same problems.
@@ -243,6 +252,7 @@ public:
 	Val &getVal(const Key &key);
 	const Val &getVal(const Key &key) const;
 	const Val &getVal(const Key &key, const Val &defaultVal) const;
+	bool tryGetVal(const Key &key, Val &out) const;
 	void setVal(const Key &key, const Val &val);
 
 	void clear(bool shrinkArray = 0);
@@ -304,15 +314,7 @@ public:
  * Base constructor, creates an empty hashmap.
  */
 template<class Key, class Val, class HashFunc, class EqualFunc>
-HashMap<Key, Val, HashFunc, EqualFunc>::HashMap()
-//
-// We have to skip _defaultVal() on PS2 to avoid gcc 3.2.2 ICE
-//
-#ifdef __PLAYSTATION2__
-	{
-#else
-	: _defaultVal() {
-#endif
+HashMap<Key, Val, HashFunc, EqualFunc>::HashMap() : _defaultVal() {
 	_mask = HASHMAP_MIN_CAPACITY - 1;
 	_storage = new Node *[HASHMAP_MIN_CAPACITY];
 	assert(_storage != nullptr);
@@ -592,6 +594,17 @@ const Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key, const 
 }
 
 template<class Key, class Val, class HashFunc, class EqualFunc>
+bool HashMap<Key, Val, HashFunc, EqualFunc>::tryGetVal(const Key &key, Val &out) const {
+	size_type ctr = lookup(key);
+	if (_storage[ctr] != nullptr) {
+		out = _storage[ctr]->_value;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+template<class Key, class Val, class HashFunc, class EqualFunc>
 void HashMap<Key, Val, HashFunc, EqualFunc>::setVal(const Key &key, const Val &val) {
 	size_type ctr = lookupAndCreateIfMissing(key);
 	assert(_storage[ctr] != nullptr);
@@ -631,6 +644,8 @@ void HashMap<Key, Val, HashFunc, EqualFunc>::erase(const Key &key) {
 }
 
 #undef HASHMAP_DUMMY_NODE
+
+/** @} */
 
 } // End of namespace Common
 

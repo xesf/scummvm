@@ -30,6 +30,7 @@
 #define WINTERMUTE_BASE_GAME_H
 
 #include "engines/wintermute/base/base_object.h"
+#include "engines/wintermute/base/base_game_custom_actions.h"
 #include "engines/wintermute/base/timer.h"
 #include "engines/wintermute/persistent.h"
 #include "engines/wintermute/coll_templ.h"
@@ -66,6 +67,11 @@ class UIWindow;
 class VideoPlayer;
 class VideoTheoraPlayer;
 class SaveThumbHelper;
+
+#ifdef ENABLE_WME3D
+class BaseRenderer3D;
+struct FogParameters;
+#endif
 
 class BaseGame: public BaseObject {
 public:
@@ -153,6 +159,20 @@ public:
 	void LOG(bool res, const char *fmt, ...);
 
 	BaseRenderer *_renderer;
+#ifdef ENABLE_WME3D
+	BaseRenderer3D *_renderer3D;
+	bool _playing3DGame;
+
+	bool _supportsRealTimeShadows;
+	TShadowType _maxShadowType;
+
+	bool setMaxShadowType(TShadowType maxShadowType);
+	virtual TShadowType getMaxShadowType(BaseObject *object);
+
+	virtual uint32 getAmbientLightColor();
+
+	virtual bool getFogParams(FogParameters &fogParameters);
+#endif
 	BaseSoundMgr *_soundMgr;
 #if EXTENDED_DEBUGGER_ENABLED
 	DebuggableScEngine *_scEngine;
@@ -202,6 +222,8 @@ public:
 
 	bool handleKeypress(Common::Event *event, bool printable = false) override;
 	virtual void handleKeyRelease(Common::Event *event);
+	virtual bool handleCustomActionStart(BaseGameCustomAction action);
+	virtual bool handleCustomActionEnd(BaseGameCustomAction action);
 
 	bool unfreeze();
 	bool freeze(bool includingMusic = true);
@@ -259,6 +281,8 @@ public:
 	bool setActiveObject(BaseObject *Obj);
 	BaseSprite *_lastCursor;
 	bool drawCursor(BaseSprite *Cursor);
+	bool storeSaveThumbnail();
+	void deleteSaveThumbnail();
 
 	SaveThumbHelper *_cachedThumbnail;
 	void addMem(int32 bytes);

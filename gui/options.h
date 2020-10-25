@@ -94,6 +94,7 @@ protected:
 
 	void addControlControls(GuiObject *boss, const Common::String &prefix);
 	void addKeyMapperControls(GuiObject *boss, const Common::String &prefix, const Common::Array<Common::Keymap *> &keymaps, const Common::String &domain);
+	void addAchievementsControls(GuiObject *boss, const Common::String &prefix, const Common::AchievementsInfo &info);
 	void addGraphicControls(GuiObject *boss, const Common::String &prefix);
 	void addShaderControls(GuiObject *boss, const Common::String &prefix);
 	void addAudioControls(GuiObject *boss, const Common::String &prefix);
@@ -156,6 +157,11 @@ private:
 	CheckboxWidget *_fullscreenCheckbox;
 	CheckboxWidget *_filteringCheckbox;
 	CheckboxWidget *_aspectCheckbox;
+	CheckboxWidget *_vsyncCheckbox;
+	StaticTextWidget *_rendererTypePopUpDesc;
+	PopUpWidget *_rendererTypePopUp;
+	StaticTextWidget *_antiAliasPopUpDesc;
+	PopUpWidget *_antiAliasPopUp;
 	StaticTextWidget *_renderModePopUpDesc;
 	PopUpWidget *_renderModePopUp;
 

@@ -39,7 +39,7 @@
 
 namespace Kyra {
 
-#define RESFILE_VERSION 96
+#define RESFILE_VERSION 104
 
 namespace {
 bool checkKyraDat(Common::SeekableReadStream *file) {
@@ -106,6 +106,7 @@ const IndexTable iPlatformTable[] = {
 	{ Common::kPlatformAmiga, 1 },
 	{ Common::kPlatformFMTowns, 2 },
 	{ Common::kPlatformPC98, 3 },
+	{ Common::kPlatformSegaCD, 4 },
 	{ Common::kPlatformMacintosh, 0 }, // HACK: Should be type "4", but as long as we can't extract Macintosh data, we need to use DOS data.
 	{ -1, -1 }
 };
@@ -209,6 +210,7 @@ bool StaticResource::tryKyraDatLoad() {
 
 	if (!found)
 		return false;
+
 
 	// load the ID map for our game
 	const Common::String filenamePattern = Common::String::format("0%01X%01X%01X000%01X", game, platform, special, lang);
@@ -952,7 +954,7 @@ void KyraEngine_LoK::loadMainScreen(int page) {
 		_screen->loadBitmap("MAIN15.CPS", page, page, &_screen->getPalette(0));
 	else if (_flags.lang == Common::EN_ANY || _flags.lang == Common::JA_JPN || (_flags.isTalkie && _flags.lang == Common::IT_ITA))
 		_screen->loadBitmap("MAIN_ENG.CPS", page, page, 0);
-	else if (_flags.lang == Common::FR_FRA)
+	else if (_flags.lang == Common::FR_FRA || (_flags.lang == Common::ES_ESP && _flags.isTalkie)  /* Spanish fan made over French CD version */ )
 		_screen->loadBitmap("MAIN_FRE.CPS", page, page, 0);
 	else if (_flags.lang == Common::DE_DEU)
 		_screen->loadBitmap("MAIN_GER.CPS", page, page, 0);
@@ -960,6 +962,8 @@ void KyraEngine_LoK::loadMainScreen(int page) {
 		_screen->loadBitmap("MAIN_SPA.CPS", page, page, 0);
 	else if (_flags.lang == Common::IT_ITA)
 		_screen->loadBitmap("MAIN_ITA.CPS", page, page, 0);
+	else if (_flags.lang == Common::RU_RUS)
+		_screen->loadBitmap("MAIN_ENG.CPS", page, page, 0);
 	else
 		warning("no main graphics file found");
 

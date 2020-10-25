@@ -79,7 +79,7 @@ struct MenuItemText {
 	{ Common::DE_DEU, { "SETUP",      "SPIELEN",         "SPIELSTAND LADEN",     "SPIEL SPEICHERN", "FORTSETZEN", "OPTIONEN", "BEENDEN" } },
 	{ Common::ES_ESP, { "IMAGEN",     "IR A RIVEN",      "CARGAR JUEGO",         "GUARDAR JUEGO",   "CONTINUAR",  "OPCIONES", "SALIR" } },
 	{ Common::FR_FRA, { "CONFIG",     "NOUVELLE PARTIE", "CHARGER",              "ENREGISTRER",     "REPRENDRE",  "OPTIONS",  "QUITTER" } },
-	{ Common::IT_ITA, { "CONF.",      "GIOCA",           "CARICA GIOCO",         "SALVA IL GIOCO",  "SEGUITARE",  "OPZIONI",  "ECSI" } },
+	{ Common::IT_ITA, { "CONF.",      "GIOCA",           "CARICA GIOCO",         "SALVA IL GIOCO",  "SEGUITARE",  "OPZIONI",  "ESCI" } },
 	{ Common::RU_RUS, { "УСТАНОВКИ",  "СТАРТ",           "ПРОДОЛЖИТЬ ИГРУ",      "СОХРАНИТЬ ИГРУ",  "ПРОДОЛЖИТЬ", "ОПЦИИ",    "ВЫЙТИ" } },
 	{ Common::JA_JPN, { "セットアップ", "RIVENを演奏する",   "保存したゲームを開始する", "ゲームを保存する",  "持続する",     "オプション","やめる" } },
 	{ Common::PL_POL, { "USTAWIENIA", "GRAJ W RIVEN",    "ZAŁADUJ GRĘ",          "ZAPISZ GRĘ",      "POWRÓT",     "OPCJE",    "WYJŚCIE" } },
@@ -352,11 +352,11 @@ void ASpit::xarestoregame(const ArgumentArray &args) {
 	}
 
 	// Launch the load game dialog
-	_vm->runLoadDialog();
+	_vm->loadGameDialog();
 }
 
 void ASpit::xaSaveGame(const ArgumentArray &args) {
-	_vm->runSaveDialog();
+	_vm->saveGameDialog();
 }
 
 void ASpit::xaResumeGame(const ArgumentArray &args) {
@@ -387,14 +387,14 @@ void ASpit::xaNewGame(const ArgumentArray &args) {
 	_vm->_scriptMan->runScript(script, false);
 }
 
-bool ASpit::showConfirmationDialog(const char *message, const char *confirmButton, const char *cancelButton) {
+bool ASpit::showConfirmationDialog(const Common::U32String &message, const Common::U32String &confirmButton, const Common::U32String &cancelButton) {
 	if (!_vm->isGameStarted()) {
 		return true;
 	}
 
 	GUI::MessageDialog dialog(message, confirmButton, cancelButton);
 
-	return dialog.runModal() !=0;
+	return dialog.runModal() != 0;
 }
 
 void ASpit::xadisablemenureturn(const ArgumentArray &args) {

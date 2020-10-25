@@ -57,6 +57,9 @@
 #include "mohawk/dialogs.h"
 #include "mohawk/console.h"
 
+// Shared code between detection/engine.
+#include "mohawk/riven_metaengine.h"
+
 namespace Mohawk {
 
 MohawkEngine_Riven::MohawkEngine_Riven(OSystem *syst, const MohawkGameDescription *gamedesc) :
@@ -153,10 +156,11 @@ Common::Error MohawkEngine_Riven::run() {
 
 	// We need to have a cursor source, or the game won't work
 	if (!_cursor->hasSource()) {
-		Common::String message = _("You're missing a Riven executable. The Windows executable is 'riven.exe' or 'rivendmo.exe'. ");
+		Common::U32String message = _("You're missing a Riven executable. The Windows executable is 'riven.exe' or 'rivendmo.exe'. ");
 		message += _("Using the 'arcriven.z' installer file also works. In addition, you can use the Mac 'Riven' executable.");
 		GUIErrorMessage(message);
-		warning("%s", message.c_str());
+		warning("You're missing a Riven executable. The Windows executable is 'riven.exe' or 'rivendmo.exe'. \
+			Using the 'arcriven.z' installer file also works. In addition, you can use the Mac 'Riven' executable.");
 		return Common::kNoGameDataFoundError;
 	}
 
@@ -165,9 +169,10 @@ Common::Error MohawkEngine_Riven::run() {
 
 	// We need extras.mhk for inventory images, marble images, and credits images
 	if (!_extrasFile->openFile("extras.mhk")) {
-		Common::String message = _("You're missing 'extras.mhk'. Using the 'arcriven.z' installer file also works.");
+		const char *msg = _s("You're missing 'extras.mhk'. Using the 'arcriven.z' installer file also works.");
+		Common::U32String message = _(msg);
 		GUIErrorMessage(message);
-		warning("%s", message.c_str());
+		warning("%s", msg);
 		return Common::kNoGameDataFoundError;
 	}
 
@@ -198,6 +203,9 @@ Common::Error MohawkEngine_Riven::run() {
 
 	while (!hasGameEnded())
 		doFrame();
+
+	// Attempt to autosave before exiting from the GMM / when closing the window
+	saveAutosaveIfEnabled();
 
 	return Common::kNoError;
 }
@@ -275,7 +283,7 @@ void MohawkEngine_Riven::processInput() {
 					} else {
 						resumeFromMainMenu();
 					}
-				} else if (!_scriptMan->hasQueuedScripts()) {
+				} else if (!isGameVariant(GF_25TH)) {
 					openMainMenuDialog();
 				}
 				break;
@@ -289,23 +297,18 @@ void MohawkEngine_Riven::processInput() {
 				break;
 			case kRivenActionLoadGameState:
 				if (canLoadGameStateCurrently()) {
-					runLoadDialog();
+					loadGameDialog();
 				}
 				break;
 			case kRivenActionSaveGameState:
 				if (canSaveGameStateCurrently()) {
-					runSaveDialog();
+					saveGameDialog();
 				}
 				break;
 			default:
 				_stack->onAction((RivenAction)event.customType);
 				break;
 			}
-			break;
-		case Common::EVENT_QUIT:
-		case Common::EVENT_RTL:
-			// Attempt to autosave before exiting
-			saveAutosaveIfEnabled();
 			break;
 		default:
 			break;
@@ -500,30 +503,17 @@ bool MohawkEngine_Riven::checkDatafiles() {
 		return true;
 	}
 
-	Common::String message = _("You are missing the following required Riven data files:\n") + missingFiles;
-	warning("%s", message.c_str());
+	const char *msg = _s("You are missing the following required Riven data files:\n");
+	Common::U32String message = _(msg) + Common::U32String(missingFiles);
+
+	warning("%s%s", msg, missingFiles.c_str());
 	GUIErrorMessage(message);
 
 	return false;
 }
 
-const RivenLanguage *MohawkEngine_Riven::listLanguages() {
-	static const RivenLanguage languages[] = {
-	    { Common::EN_ANY,   "english"  },
-	    { Common::FR_FRA,   "french"   },
-	    { Common::DE_DEU,   "german"   },
-	    { Common::IT_ITA,   "italian"  },
-	    { Common::JA_JPN,   "japanese" },
-	    { Common::PL_POL,   "polish"   },
-	    { Common::RU_RUS,   "russian"  },
-	    { Common::ES_ESP,   "spanish"  },
-	    { Common::UNK_LANG, nullptr    }
-	};
-	return languages;
-}
-
 const RivenLanguage *MohawkEngine_Riven::getLanguageDesc(Common::Language language) {
-	const RivenLanguage *languages = listLanguages();
+	const RivenLanguage *languages = MohawkMetaEngine_Riven::listLanguages();
 
 	while (languages->language != Common::UNK_LANG) {
 		if (languages->language == language) {
@@ -688,36 +678,6 @@ void MohawkEngine_Riven::startNewGame() {
 	setTotalPlayTime(0);
 }
 
-void MohawkEngine_Riven::runLoadDialog() {
-	GUI::SaveLoadChooser slc(_("Load game:"), _("Load"), false);
-
-	pauseEngine(true);
-	int slot = slc.runModalWithCurrentTarget();
-	pauseEngine(false);
-
-	if (slot >= 0) {
-		loadGameStateAndDisplayError(slot);
-	}
-}
-
-void MohawkEngine_Riven::runSaveDialog() {
-	GUI::SaveLoadChooser slc(_("Save game:"), _("Save"), true);
-
-	pauseEngine(true);
-	int slot = slc.runModalWithCurrentTarget();
-	pauseEngine(false);
-
-	if (slot >= 0) {
-		Common::String result(slc.getResultString());
-		if (result.empty()) {
-			// If the user was lazy and entered no save name, come up with a default name.
-			result = slc.createDefaultSaveDescription(slot);
-		}
-
-		saveGameStateAndDisplayError(slot, result);
-	}
-}
-
 Common::Error MohawkEngine_Riven::loadGameState(int slot) {
 	Common::Error loadError = _saveLoad->loadGame(slot);
 
@@ -728,17 +688,6 @@ Common::Error MohawkEngine_Riven::loadGameState(int slot) {
 	}
 
 	return loadError;
-}
-
-void MohawkEngine_Riven::loadGameStateAndDisplayError(int slot) {
-	assert(slot >= 0);
-
-	Common::Error loadError = loadGameState(slot);
-
-	if (loadError.getCode() != Common::kNoError) {
-		GUI::MessageDialog dialog(loadError.getDesc());
-		dialog.runModal();
-	}
 }
 
 Common::Error MohawkEngine_Riven::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
@@ -771,17 +720,6 @@ Common::Language MohawkEngine_Riven::getLanguage() const {
 	}
 
 	return language;
-}
-
-void MohawkEngine_Riven::saveGameStateAndDisplayError(int slot, const Common::String &desc) {
-	assert(slot >= 0 && !desc.empty());
-
-	Common::Error saveError = saveGameState(slot, desc);
-
-	if (saveError.getCode() != Common::kNoError) {
-		GUI::MessageDialog dialog(saveError.getDesc());
-		dialog.runModal();
-	}
 }
 
 bool MohawkEngine_Riven::canSaveAutosaveCurrently() {
@@ -817,7 +755,7 @@ bool MohawkEngine_Riven::canLoadGameStateCurrently() {
 		return false;
 	}
 
-	if (_scriptMan->hasQueuedScripts()) {
+	if (_scriptMan->hasQueuedScripts() && !isInMainMenu()) {
 		return false;
 	}
 
@@ -868,12 +806,6 @@ void MohawkEngine_Riven::applyGameSettings() {
 
 bool MohawkEngine_Riven::isInteractive() const {
 	return !_scriptMan->hasQueuedScripts() && !hasGameEnded();
-}
-
-void MohawkEngine_Riven::registerDefaultSettings() {
-	ConfMan.registerDefault("zip_mode", false);
-	ConfMan.registerDefault("water_effects", true);
-	ConfMan.registerDefault("transition_mode", kRivenTransitionModeFastest);
 }
 
 Common::KeymapArray MohawkEngine_Riven::initKeymaps(const char *target) {

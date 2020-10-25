@@ -65,7 +65,7 @@ bool VirtualMouse::pollEvent(Event &event) {
 
 	// Adjust the speed of the cursor according to the virtual screen resolution
 	Common::Rect screenSize;
-	if (g_gui.isActive()) {
+	if (g_system->isOverlayVisible()) {
 		screenSize = Common::Rect(g_system->getOverlayWidth(), g_system->getOverlayHeight());
 	} else {
 		screenSize = Common::Rect(g_system->getWidth(), g_system->getHeight());
@@ -98,6 +98,9 @@ bool VirtualMouse::pollEvent(Event &event) {
 
 	event.mouse.x = CLIP<int16>(event.mouse.x, 0, screenSize.width());
 	event.mouse.y = CLIP<int16>(event.mouse.y, 0, screenSize.height());
+
+	event.relMouse.x = delta.x;
+	event.relMouse.y = delta.y;
 
 	g_system->warpMouse(event.mouse.x, event.mouse.y);
 
@@ -185,7 +188,7 @@ void VirtualMouse::handleAxisMotion(int16 axisPositionX, int16 axisPositionY) {
 	float analogY  = (float)_inputAxisPositionY;
 	float deadZone = (float)ConfMan.getInt("joystick_deadzone") * 1000.0f;
 
-	float magnitude = sqrtf(analogX * analogX + analogY * analogY);
+	float magnitude = sqrt(analogX * analogX + analogY * analogY);
 
 	if (magnitude >= deadZone) {
 		float scalingFactor = 1.0f / magnitude * (magnitude - deadZone) / (JOYAXIS_MAX - deadZone);

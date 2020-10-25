@@ -34,14 +34,18 @@
 namespace Common {
 
 /**
- * The types of events backends may generate.
- * @see Event
+ * @defgroup common_events Events
+ * @ingroup common
+ *
+ * @brief  The types of events backends may generate.
  *
  * @todo Merge EVENT_LBUTTONDOWN, EVENT_RBUTTONDOWN and EVENT_WHEELDOWN;
  *       likewise EVENT_LBUTTONUP, EVENT_RBUTTONUP, EVENT_WHEELUP.
  *       To do that, we just have to add a field to the Event which
  *       indicates which button was pressed.
+ * @{
  */
+
 enum EventType {
 	EVENT_INVALID = 0,
 	/** A key was pressed, details in Event::kbd. */
@@ -60,7 +64,7 @@ enum EventType {
 	EVENT_MBUTTONUP = 14,
 
 	EVENT_MAINMENU = 15,
-	EVENT_RTL = 16,
+	EVENT_RETURN_TO_LAUNCHER = 16,
 	EVENT_MUTE = 17,
 
 	EVENT_QUIT = 10,
@@ -108,7 +112,11 @@ enum EventType {
 	EVENT_X1BUTTONDOWN = 30,
 	EVENT_X1BUTTONUP = 31,
 	EVENT_X2BUTTONDOWN = 32,
-	EVENT_X2BUTTONUP = 33
+	EVENT_X2BUTTONUP = 33,
+
+	/** ScummVM has gained or lost focus */
+	EVENT_FOCUS_GAINED = 36,
+	EVENT_FOCUS_LOST = 37
 };
 
 const int16 JOYAXIS_MIN = -32768;
@@ -215,6 +223,11 @@ struct Event {
 
 	/* The path of the file or directory dragged to the ScummVM window */
 	Common::String path;
+
+	/**
+	 * Mouse movement since the last mouse movement event.
+	 */
+	Common::Point relMouse;
 
 	/**
 	 * Joystick data; only valid for joystick events (EVENT_JOYAXIS_MOTION,
@@ -488,14 +501,14 @@ public:
 	/**
 	 * Should we return to the launcher?
 	 */
-	virtual int shouldRTL() const = 0;
+	virtual int shouldReturnToLauncher() const = 0;
 
 	/**
-	 * Reset the "return to launcher" flag (as returned shouldRTL()) to false.
+	 * Reset the "return to launcher" flag (as returned shouldReturnToLauncher()) to false.
 	 * Used when we have returned to the launcher.
 	 */
-	virtual void resetRTL() = 0;
-#ifdef FORCE_RTL
+	virtual void resetReturnToLauncher() = 0;
+#ifdef FORCE_RETURN_TO_LAUNCHER
 	virtual void resetQuit() = 0;
 #endif
 	// Optional: check whether a given key is currently pressed ????
@@ -535,6 +548,16 @@ public:
 protected:
 	EventDispatcher _dispatcher;
 };
+
+/**
+ * Wrap an event source so the key down events are repeated while
+ * keys are held down.
+ *
+ * Does not take ownership of the wrapped EventSource.
+ */
+EventSource *makeKeyboardRepeatingEventSource(EventSource *eventSource);
+
+/** @} */
 
 } // End of namespace Common
 

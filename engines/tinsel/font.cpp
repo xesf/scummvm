@@ -36,6 +36,12 @@ void Font::SetTagFontHandle(SCNHANDLE hFont) {
 		SetTalkFontHandle(hFont);	// Also re-use for talk text
 }
 
+SCNHANDLE Font::GetTalkFontHandle() {
+	// FIXME: Mac Discworld 1 was rendering the talk font as black.
+	// Currently hacking around it by simply using the tooltip font
+	return TinselV1Mac ? _hTagFont : _hTalkFont;
+}
+
 void Font::FettleFontPal(SCNHANDLE fontPal) {
 	const FONT *pFont;
 	IMAGE *pImg;
@@ -44,22 +50,22 @@ void Font::FettleFontPal(SCNHANDLE fontPal) {
 	assert(_hTagFont); // Tag font not declared
 	assert(_hTalkFont); // Talk font not declared
 
-	pFont = (const FONT *)LockMem(_hTagFont);
-	pImg = (IMAGE *)LockMem(FROM_32(pFont->fontInit.hObjImg));	// get image for char 0
+	pFont = (const FONT *)_vm->_handle->LockMem(_hTagFont);
+	pImg = (IMAGE *)_vm->_handle->LockMem(FROM_32(pFont->fontInit.hObjImg)); // get image for char 0
 	if (!TinselV2)
 		pImg->hImgPal = TO_32(fontPal);
 	else
 		pImg->hImgPal = 0;
 
-	pFont = (const FONT *)LockMem(_hTalkFont);
-	pImg = (IMAGE *)LockMem(FROM_32(pFont->fontInit.hObjImg));	// get image for char 0
+	pFont = (const FONT *)_vm->_handle->LockMem(_hTalkFont);
+	pImg = (IMAGE *)_vm->_handle->LockMem(FROM_32(pFont->fontInit.hObjImg)); // get image for char 0
 	if (!TinselV2)
 		pImg->hImgPal = TO_32(fontPal);
 	else
 		pImg->hImgPal = 0;
 
 	if (TinselV2 && SysVar(SV_TAGCOLOR)) {
-		const COLORREF c = GetActorRGB(-1);
+		const COLORREF c = _vm->_actor->GetActorRGB(-1);
 		SetTagColorRef(c);
 		UpdateDACqueue(SysVar(SV_TAGCOLOR), c);
 	}

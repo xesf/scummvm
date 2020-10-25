@@ -26,6 +26,7 @@
 #include "ultima/ultima8/kernel/object_manager.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/gumps/gump.h"
+#include "ultima/ultima8/world/world.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -37,23 +38,28 @@ Object *getObject(ObjId id) {
 }
 
 Item *getItem(ObjId id) {
-	return p_dynamic_cast<Item *>(ObjectManager::get_instance()->getObject(id));
+	return dynamic_cast<Item *>(ObjectManager::get_instance()->getObject(id));
 }
 
 Container *getContainer(ObjId id) {
-	return p_dynamic_cast<Container *>(ObjectManager::get_instance()->getObject(id));
+	return dynamic_cast<Container *>(ObjectManager::get_instance()->getObject(id));
 }
 
 Actor *getActor(ObjId id) {
-	return p_dynamic_cast<Actor *>(ObjectManager::get_instance()->getObject(id));
+	return dynamic_cast<Actor *>(ObjectManager::get_instance()->getObject(id));
 }
 
 MainActor *getMainActor() {
-	return p_dynamic_cast<MainActor *>(ObjectManager::get_instance()->getObject(1));
+	return dynamic_cast<MainActor *>(ObjectManager::get_instance()->getObject(1));
+}
+
+Actor *getControlledActor() {
+	uint16 num = World::get_instance()->getControlledNPCNum();
+	return dynamic_cast<Actor *>(ObjectManager::get_instance()->getObject(num));
 }
 
 Gump *getGump(ObjId id) {
-	return p_dynamic_cast<Gump *>(ObjectManager::get_instance()->getObject(id));
+	return dynamic_cast<Gump *>(ObjectManager::get_instance()->getObject(id));
 }
 
 } // End of namespace Ultima8

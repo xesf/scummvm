@@ -57,6 +57,7 @@
 //  game data need this, actually.)
 
 #include "ultima/ultima8/misc/common_types.h"
+#include "ultima/ultima8/usecode/intrinsics.h"
 #include "ultima/shared/std/containers.h"
 
 namespace Ultima {
@@ -64,8 +65,6 @@ namespace Ultima8 {
 
 class Map;
 class CurrentMap;
-class IDataSource;
-class ODataSource;
 class Actor;
 class MainActor;
 class Flex;
@@ -90,10 +89,10 @@ public:
 	void initMaps();
 
 	//! load U8's nonfixed.dat into the Maps
-	void loadNonFixed(IDataSource *ds); // delete ds afterwards
+	void loadNonFixed(Common::SeekableReadStream *rs); // delete ds afterwards
 
 	//! load U8's itemcach.dat, npcdata.dat into the world
-	void loadItemCachNPCData(IDataSource *itemcach, IDataSource *npcdata);
+	void loadItemCachNPCData(Common::SeekableReadStream *itemcach, Common::SeekableReadStream *npcdata);
 
 	//! get the CurrentMap
 	CurrentMap *getCurrentMap() const {
@@ -129,16 +128,41 @@ public:
 	void worldStats() const;
 
 	//! save the Maps in World.
-	void saveMaps(ODataSource *ods);
+	void saveMaps(Common::WriteStream *ws);
 
 	//! load Maps
-	bool loadMaps(IDataSource *ids, uint32 version);
+	bool loadMaps(Common::ReadStream *rs, uint32 version);
 
 	//! save the rest of the World data (ethereal items, current map number).
-	void save(ODataSource *ods);
+	void save(Common::WriteStream *ws);
 
 	//! load World data
-	bool load(IDataSource *ids, uint32 version);
+	bool load(Common::ReadStream *rs, uint32 version);
+
+	bool isAlertActive() const {
+		return _alertActive;
+	}
+
+	void setAlertActive(bool active);
+
+	uint8 getGameDifficulty() const {
+		return _difficulty;
+	}
+	void setGameDifficulty(uint8 difficulty) {
+		_difficulty = difficulty;
+	}
+
+	uint16 getControlledNPCNum() const {
+		return _controlledNPCNum;
+	}
+	void setControlledNPCNum(uint16 num);
+
+	INTRINSIC(I_getAlertActive); // for Crusader
+	INTRINSIC(I_setAlertActive); // for Crusader
+	INTRINSIC(I_clrAlertActive); // for Crusader
+	INTRINSIC(I_gameDifficulty); // for Crusader
+	INTRINSIC(I_getControlledNPCNum); // for Crusader
+	INTRINSIC(I_setControlledNPCNum); // for Crusader
 
 private:
 	static World *_world;
@@ -147,6 +171,11 @@ private:
 	CurrentMap *_currentMap;
 
 	Std::list<ObjId> _ethereal;
+
+	bool _alertActive; //!< is intruder alert active (Crusader)
+	uint8 _difficulty; //!< game difficulty level (Crusader)
+	uint16 _controlledNPCNum; //!< Current controlled NPC (normally 1, the avatar)
+
 };
 
 } // End of namespace Ultima8

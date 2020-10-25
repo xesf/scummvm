@@ -26,9 +26,10 @@
 
 namespace Common {
 
-Action::Action(const char *i, const String &des) :
+Action::Action(const char *i, const U32String &des) :
 		id(i),
-		description(des) {
+		description(des),
+		_shouldTriggerOnKbdRepeats(false) {
 	assert(i);
 }
 

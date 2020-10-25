@@ -32,12 +32,28 @@
 static const uint32 fullscreenMask = SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_FULLSCREEN;
 #endif
 
-SdlWindow::SdlWindow()
+SdlWindow::SdlWindow() :
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	: _window(nullptr), _inputGrabState(false), _windowCaption("ScummVM"),
-	_lastFlags(0), _lastX(SDL_WINDOWPOS_UNDEFINED), _lastY(SDL_WINDOWPOS_UNDEFINED)
+	_window(nullptr), _windowCaption("ScummVM"),
+	_lastFlags(0), _lastX(SDL_WINDOWPOS_UNDEFINED), _lastY(SDL_WINDOWPOS_UNDEFINED),
 #endif
+	_inputGrabState(false), _inputLockState(false)
 	{
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#elif SDL_VERSION_ATLEAST(1, 2, 10)
+	// Query the desktop resolution. We simply hope nothing tried to change
+	// the resolution so far.
+	const SDL_VideoInfo *videoInfo = SDL_GetVideoInfo();
+	if (videoInfo && videoInfo->current_w > 0 && videoInfo->current_h > 0) {
+		_desktopRes = Common::Rect(videoInfo->current_w, videoInfo->current_h);
+	}
+#elif defined(MAEMO)
+	// All supported Maemo devices have a display resolution of 800x480
+	_desktopRes = Common::Rect(800, 480);
+#else
+#error Unable to detect screen resolution
+#endif
 }
 
 SdlWindow::~SdlWindow() {
@@ -47,6 +63,7 @@ SdlWindow::~SdlWindow() {
 }
 
 void SdlWindow::setupIcon() {
+#ifndef __MORPHOS__
 	int x, y, w, h, ncols, nbytes, i;
 	unsigned int rgba[256];
 	unsigned int *icon;
@@ -115,6 +132,7 @@ void SdlWindow::setupIcon() {
 
 	SDL_FreeSurface(sdl_surf);
 	free(icon);
+#endif
 }
 
 void SdlWindow::setWindowCaption(const Common::String &caption) {
@@ -128,21 +146,39 @@ void SdlWindow::setWindowCaption(const Common::String &caption) {
 #endif
 }
 
-void SdlWindow::toggleMouseGrab() {
+void SdlWindow::grabMouse(bool grab) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	if (_window) {
-		_inputGrabState = SDL_GetWindowGrab(_window) == SDL_FALSE;
-		SDL_SetWindowGrab(_window, _inputGrabState ? SDL_TRUE : SDL_FALSE);
+		SDL_SetWindowGrab(_window, grab ? SDL_TRUE : SDL_FALSE);
 	}
+	_inputGrabState = grab;
 #else
-	if (SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_OFF) {
-		SDL_WM_GrabInput(SDL_GRAB_ON);
+	if (grab) {
 		_inputGrabState = true;
+		SDL_WM_GrabInput(SDL_GRAB_ON);
 	} else {
-		SDL_WM_GrabInput(SDL_GRAB_OFF);
 		_inputGrabState = false;
+		if (!_inputLockState)
+			SDL_WM_GrabInput(SDL_GRAB_OFF);
 	}
 #endif
+}
+
+bool SdlWindow::lockMouse(bool lock) {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_SetRelativeMouseMode(lock ? SDL_TRUE : SDL_FALSE);
+	_inputLockState = lock;
+#else
+	if (lock) {
+		_inputLockState = true;
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+	} else {
+		_inputLockState = false;
+		if (!_inputGrabState)
+			SDL_WM_GrabInput(SDL_GRAB_OFF);
+	}
+#endif
+	return true;
 }
 
 bool SdlWindow::hasMouseFocus() const {
@@ -186,11 +222,26 @@ void SdlWindow::iconifyWindow() {
 bool SdlWindow::getSDLWMInformation(SDL_SysWMinfo *info) const {
 	SDL_VERSION(&info->version);
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	return _window ? SDL_GetWindowWMInfo(_window, info) : false;
-#else
+	return _window ? (SDL_GetWindowWMInfo(_window, info) == SDL_TRUE) : false;
+#elif !defined(__MORPHOS__)
 	return SDL_GetWMInfo(info);
+#else
+	return false;
 #endif
 }
+
+Common::Rect SdlWindow::getDesktopResolution() {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	int displayIndex = _window ? SDL_GetWindowDisplayIndex(_window) : 0;
+	SDL_DisplayMode displayMode;
+	if (!SDL_GetDesktopDisplayMode(displayIndex, &displayMode)) {
+		_desktopRes = Common::Rect(displayMode.w, displayMode.h);
+	}
+#endif
+
+	return _desktopRes;
+}
+
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 SDL_Surface *copySDLSurface(SDL_Surface *src) {

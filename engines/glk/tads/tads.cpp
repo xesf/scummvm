@@ -23,7 +23,6 @@
 #include "glk/tads/tads.h"
 #include "glk/tads/os_glk.h"
 #include "common/config-manager.h"
-#include "common/translation.h"
 
 namespace Glk {
 namespace TADS {
@@ -35,8 +34,9 @@ TADS::TADS(OSystem *syst, const GlkGameDescription &gameDesc) : GlkAPI(syst, gam
 }
 
 bool TADS::hasFeature(EngineFeature f) const {
-	// The TADS codebases rely on a lot of static globals, so RTL can't be supported
-	if (f == kSupportsRTL)
+	// The TADS codebases rely on a lot of static globals,
+	// so return to launcher can't be supported.
+	if (f == kSupportsReturnToLauncher)
 		return false;
 
 	return GlkAPI::hasFeature(f);

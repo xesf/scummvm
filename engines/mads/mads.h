@@ -40,6 +40,7 @@
 #include "mads/msurface.h"
 #include "mads/resources.h"
 #include "mads/sound.h"
+#include "mads/detection.h"
 
 /**
  * This is the namespace of the MADS engine.
@@ -61,19 +62,11 @@ enum MADSDebugChannels {
 	kDebugGraphics	= 1 << 2
 };
 
-enum {
-	GType_RexNebular = 0,
-	GType_Dragonsphere = 1,
-	GType_Phantom = 2
-};
-
 enum ScreenFade {
 	SCREEN_FADE_SMOOTH = 0,
 	SCREEN_FADE_MEDIUM = 1,
 	SCREEN_FADE_FAST = 2
 };
-
-struct MADSGameDescription;
 
 
 class MADSEngine : public Engine {
@@ -124,7 +117,6 @@ public:
 
 	int getRandomNumber(int maxNumber);
 	int getRandomNumber(int minNumber, int maxNumber);
-	int hypotenuse(int xv, int yv);
 
 	/**
 	* Returns true if it is currently okay to restore a game

@@ -30,6 +30,7 @@
 #include "common/textconsole.h"
 #include "common/translation.h"
 #include "common/util.h"
+#include "common/file.h"
 #include "common/frac.h"
 #ifdef USE_RGB_COLOR
 #include "common/list.h"
@@ -42,8 +43,9 @@
 #include "gui/debugger.h"
 #include "gui/EventRecorder.h"
 #ifdef USE_PNG
-#include "common/file.h"
 #include "image/png.h"
+#else
+#include "image/bmp.h"
 #endif
 #ifdef USE_TTS
 #include "common/text-to-speech.h"
@@ -160,7 +162,6 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_currentShakeXOffset(0), _currentShakeYOffset(0),
 	_paletteDirtyStart(0), _paletteDirtyEnd(0),
 	_screenIsLocked(false),
-	_graphicsMutex(0),
 	_displayDisabled(false),
 #ifdef USE_SDL_DEBUG_FOCUSRECT
 	_enableFocusRectDebugCode(false), _enableFocusRect(false), _focusRect(),
@@ -172,8 +173,6 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_cursorPalette = (SDL_Color *)calloc(sizeof(SDL_Color), 256);
 
 	_mouseBackup.x = _mouseBackup.y = _mouseBackup.w = _mouseBackup.h = 0;
-
-	_graphicsMutex = g_system->createMutex();
 
 #ifdef USE_SDL_DEBUG_FOCUSRECT
 	if (ConfMan.hasKey("use_sdl_debug_focusrect"))
@@ -212,26 +211,9 @@ SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
 	if (_mouseSurface) {
 		SDL_FreeSurface(_mouseSurface);
 	}
-	g_system->deleteMutex(_graphicsMutex);
 	free(_currentPalette);
 	free(_cursorPalette);
 	delete[] _mouseData;
-}
-
-void SurfaceSdlGraphicsManager::activateManager() {
-	SdlGraphicsManager::activateManager();
-
-	// Register the graphics manager as a event observer
-	g_system->getEventManager()->getEventDispatcher()->registerObserver(this, 10, false);
-}
-
-void SurfaceSdlGraphicsManager::deactivateManager() {
-	// Unregister the event observer
-	if (g_system->getEventManager()->getEventDispatcher()) {
-		g_system->getEventManager()->getEventDispatcher()->unregisterObserver(this);
-	}
-
-	SdlGraphicsManager::deactivateManager();
 }
 
 bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) const {
@@ -240,6 +222,7 @@ bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) const {
 		(f == OSystem::kFeatureAspectRatioCorrection) ||
 		(f == OSystem::kFeatureFilteringMode) ||
 #if SDL_VERSION_ATLEAST(2, 0, 0)
+		(f == OSystem::kFeatureFullscreenToggleKeepsContext) ||
 		(f == OSystem::kFeatureStretchMode) ||
 #endif
 		(f == OSystem::kFeatureCursorPalette) ||
@@ -406,7 +389,7 @@ OSystem::TransactionError SurfaceSdlGraphicsManager::endGFXTransaction() {
 			// OSystem_SDL::pollEvent used to update the screen change count,
 			// but actually it gives problems when a video mode was changed
 			// but OSystem_SDL::pollEvent was not called. This for example
-			// caused a crash under certain circumstances when doing an RTL.
+			// caused a crash under certain circumstances when returning to launcher.
 			// To fix this issue we update the screen change count right here.
 			_screenChangeCount++;
 		}
@@ -422,7 +405,7 @@ OSystem::TransactionError SurfaceSdlGraphicsManager::endGFXTransaction() {
 			// OSystem_SDL::pollEvent used to update the screen change count,
 			// but actually it gives problems when a video mode was changed
 			// but OSystem_SDL::pollEvent was not called. This for example
-			// caused a crash under certain circumstances when doing an RTL.
+			// caused a crash under certain circumstances when returning to launcher.
 			// To fix this issue we update the screen change count right here.
 			_screenChangeCount++;
 
@@ -455,11 +438,17 @@ OSystem::TransactionError SurfaceSdlGraphicsManager::endGFXTransaction() {
 }
 
 Graphics::PixelFormat SurfaceSdlGraphicsManager::convertSDLPixelFormat(SDL_PixelFormat *in) const {
-	return Graphics::PixelFormat(in->BytesPerPixel,
+	Graphics::PixelFormat out(in->BytesPerPixel,
 		8 - in->Rloss, 8 - in->Gloss,
 		8 - in->Bloss, 8 - in->Aloss,
 		in->Rshift, in->Gshift,
 		in->Bshift, in->Ashift);
+
+	// Workaround to SDL not providing an accurate Aloss value on some platforms.
+	if (in->Amask == 0)
+		out.aLoss = 8;
+
+	return out;
 }
 
 #ifdef USE_RGB_COLOR
@@ -564,10 +553,6 @@ void SurfaceSdlGraphicsManager::detectSupportedFormats() {
 		// Get our currently set hardware format
 		Graphics::PixelFormat hwFormat = convertSDLPixelFormat(_hwScreen->format);
 
-		// Workaround to SDL not providing an accurate Aloss value on Mac OS X.
-		if (_hwScreen->format->Amask == 0)
-			hwFormat.aLoss = 8;
-
 		_supportedFormats.push_back(hwFormat);
 
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
@@ -633,7 +618,7 @@ int SurfaceSdlGraphicsManager::getGraphicsModeScale(int mode) const {
 	return scale;
 }
 
-bool SurfaceSdlGraphicsManager::setGraphicsMode(int mode) {
+bool SurfaceSdlGraphicsManager::setGraphicsMode(int mode, uint flags) {
 	Common::StackLock lock(_graphicsMutex);
 
 	assert(_transactionMode == kTransactionActive);
@@ -1421,69 +1406,30 @@ bool SurfaceSdlGraphicsManager::saveScreenshot(const Common::String &filename) c
 	assert(_hwScreen != NULL);
 
 	Common::StackLock lock(_graphicsMutex);
-#ifdef USE_PNG
+
 	Common::DumpFile out;
 	if (!out.open(filename)) {
 		return false;
 	}
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_Surface *rgbScreen = SDL_ConvertSurfaceFormat(_hwScreen, SDL_PIXELFORMAT_RGB24, 0);
-#else
-	// This block of code was taken mostly as-is from SDL 1.2's SDL_SaveBMP_RW
-	SDL_Surface *rgbScreen = SDL_CreateRGBSurface(SDL_SWSURFACE,
-												  _hwScreen->w,
-												  _hwScreen->h,
-												  24,
-#ifdef SCUMM_LITTLE_ENDIAN
-												  0x0000FF, 0x00FF00, 0xFF0000,
-#else
-												  0xFF0000, 0x00FF00, 0x0000FF,
-#endif
-												  0);
-	if (rgbScreen == nullptr) {
-		warning("Could not create RGB24 surface");
-		return false;
-	}
-
-	SDL_Rect bounds;
-	bounds.x = bounds.y = 0;
-	bounds.w = _hwScreen->w;
-	bounds.h = _hwScreen->h;
-	if (SDL_LowerBlit(_hwScreen, &bounds, rgbScreen, &bounds) < 0) {
-		SDL_FreeSurface(rgbScreen);
-		rgbScreen = nullptr;
-	}
-#endif
-
-	if (rgbScreen == nullptr) {
-		warning("Could not convert hardware surface to RGB24");
-		return false;
-	}
-
-	int result = SDL_LockSurface(rgbScreen);
+	int result = SDL_LockSurface(_hwScreen);
 	if (result < 0) {
 		warning("Could not lock RGB surface");
-		SDL_FreeSurface(rgbScreen);
 		return false;
 	}
 
-#ifdef SCUMM_LITTLE_ENDIAN
-	const Graphics::PixelFormat format(3, 8, 8, 8, 0, 0, 8, 16, 0);
-#else
-	const Graphics::PixelFormat format(3, 8, 8, 8, 0, 16, 8, 0, 0);
-#endif
+	Graphics::PixelFormat format = convertSDLPixelFormat(_hwScreen->format);
 	Graphics::Surface data;
-	data.init(rgbScreen->w, rgbScreen->h, rgbScreen->pitch, rgbScreen->pixels, format);
+	data.init(_hwScreen->w, _hwScreen->h, _hwScreen->pitch, _hwScreen->pixels, format);
+#ifdef USE_PNG
 	const bool success = Image::writePNG(out, data);
+#else
+	const bool success = Image::writeBMP(out, data);
+#endif
 
-	SDL_UnlockSurface(rgbScreen);
-	SDL_FreeSurface(rgbScreen);
+	SDL_UnlockSurface(_hwScreen);
 
 	return success;
-#else
-	return SDL_SaveBMP(_hwScreen, filename.c_str()) == 0;
-#endif
 }
 
 void SurfaceSdlGraphicsManager::setFullscreenMode(bool enable) {
@@ -1569,7 +1515,7 @@ Graphics::Surface *SurfaceSdlGraphicsManager::lockScreen() {
 	assert(_transactionMode == kTransactionNone);
 
 	// Lock the graphics mutex
-	g_system->lockMutex(_graphicsMutex);
+	_graphicsMutex.lock();
 
 	// paranoia check
 	assert(!_screenIsLocked);
@@ -1598,7 +1544,7 @@ void SurfaceSdlGraphicsManager::unlockScreen() {
 	_forceRedraw = true;
 
 	// Finally unlock the graphics mutex
-	g_system->unlockMutex(_graphicsMutex);
+	_graphicsMutex.unlock();
 }
 
 void SurfaceSdlGraphicsManager::fillScreen(uint32 col) {
@@ -2276,11 +2222,11 @@ void SurfaceSdlGraphicsManager::drawMouse() {
 #pragma mark -
 
 #ifdef USE_OSD
-void SurfaceSdlGraphicsManager::displayMessageOnOSD(const char *msg) {
+void SurfaceSdlGraphicsManager::displayMessageOnOSD(const Common::U32String &msg) {
 	assert(_transactionMode == kTransactionNone);
-	assert(msg);
+	assert(!msg.empty());
 #ifdef USE_TTS
-	Common::String textToSay = msg;
+	Common::U32String textToSay = msg;
 #endif // USE_TTS
 
 	Common::StackLock lock(_graphicsMutex);	// Lock the mutex until this function ends
@@ -2291,15 +2237,17 @@ void SurfaceSdlGraphicsManager::displayMessageOnOSD(const char *msg) {
 	const Graphics::Font *font = FontMan.getFontByUsage(Graphics::FontManager::kLocalizedFont);
 
 	// Split the message into separate lines.
-	Common::Array<Common::String> lines;
-	const char *ptr;
-	for (ptr = msg; *ptr; ++ptr) {
-		if (*ptr == '\n') {
-			lines.push_back(Common::String(msg, ptr - msg));
-			msg = ptr + 1;
+	Common::Array<Common::U32String> lines;
+	Common::U32String::const_iterator strLineItrBegin = msg.begin();
+
+	for (Common::U32String::const_iterator itr = msg.begin(); itr != msg.end(); itr++) {
+		if (*itr == '\n') {
+			lines.push_back(Common::U32String(strLineItrBegin, itr));
+			strLineItrBegin = itr + 1;
 		}
 	}
-	lines.push_back(Common::String(msg, ptr - msg));
+	if (strLineItrBegin != msg.end())
+		lines.push_back(Common::U32String(strLineItrBegin, msg.end()));
 
 	// Determine a rect which would contain the message string (clipped to the
 	// screen dimensions).
@@ -2517,13 +2465,13 @@ void SurfaceSdlGraphicsManager::handleScalerHotkeys(int scalefactor, int scalerT
 			g++;
 		}
 		if (newScalerName) {
-			const Common::String message = Common::String::format(
-				"%s %s\n%d x %d -> %d x %d",
-				_("Active graphics filter:"),
+			const Common::U32String message = Common::U32String::format(
+				"%S %s\n%d x %d -> %d x %d",
+				_("Active graphics filter:").c_str(),
 				newScalerName,
 				_videoMode.screenWidth, _videoMode.screenHeight,
 				_hwScreen->w, _hwScreen->h);
-			displayMessageOnOSD(message.c_str());
+			displayMessageOnOSD(message);
 		}
 #endif
 
@@ -2550,20 +2498,20 @@ bool SurfaceSdlGraphicsManager::notifyEvent(const Common::Event &event) {
 			setFeatureState(OSystem::kFeatureAspectRatioCorrection, !_videoMode.aspectRatioCorrection);
 		endGFXTransaction();
 #ifdef USE_OSD
-		Common::String message;
+		Common::U32String message;
 		if (_videoMode.aspectRatioCorrection)
-			message = Common::String::format("%s\n%d x %d -> %d x %d",
-			                                 _("Enabled aspect ratio correction"),
-			                                 _videoMode.screenWidth, _videoMode.screenHeight,
-			                                 _hwScreen->w, _hwScreen->h
-			);
+			message = Common::U32String::format("%S\n%d x %d -> %d x %d",
+			                                    _("Enabled aspect ratio correction").c_str(),
+			                                    _videoMode.screenWidth, _videoMode.screenHeight,
+			                                    _hwScreen->w, _hwScreen->h
+			          );
 		else
-			message = Common::String::format("%s\n%d x %d -> %d x %d",
-			                                 _("Disabled aspect ratio correction"),
-			                                 _videoMode.screenWidth, _videoMode.screenHeight,
-			                                 _hwScreen->w, _hwScreen->h
-			);
-		displayMessageOnOSD(message.c_str());
+			message = Common::U32String::format("%S\n%d x %d -> %d x %d",
+			                                    _("Disabled aspect ratio correction").c_str(),
+			                                    _videoMode.screenWidth, _videoMode.screenHeight,
+			                                    _hwScreen->w, _hwScreen->h
+			          );
+		displayMessageOnOSD(message);
 #endif
 		internUpdateScreen();
 		return true;
@@ -2605,11 +2553,11 @@ bool SurfaceSdlGraphicsManager::notifyEvent(const Common::Event &event) {
 		endGFXTransaction();
 
 #ifdef USE_OSD
-		Common::String message = Common::String::format("%s: %s",
-		                                                _("Stretch mode"),
-		                                                _(s_supportedStretchModes[index].description)
-		);
-		displayMessageOnOSD(message.c_str());
+		Common::U32String message = Common::U32String::format("%S: %S",
+		                                                      _("Stretch mode").c_str(),
+		                                                      _(s_supportedStretchModes[index].description).c_str()
+		                            );
+		displayMessageOnOSD(message);
 #endif
 		_forceRedraw = true;
 		internUpdateScreen();
@@ -2687,6 +2635,14 @@ SDL_Surface *SurfaceSdlGraphicsManager::SDL_SetVideoMode(int width, int height, 
 	if (!createOrUpdateWindow(width, height, createWindowFlags)) {
 		return nullptr;
 	}
+
+#if defined(MACOSX) && SDL_VERSION_ATLEAST(2, 0, 10)
+	// WORKAROUND: Bug #11430: "macOS: blurry content on Retina displays"
+	// Since SDL 2.0.10, Metal takes priority over OpenGL rendering on macOS,
+	// but this causes blurriness issues on Retina displays. Just switch
+	// back to OpenGL for now.
+	SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+#endif
 
 	_renderer = SDL_CreateRenderer(_window->getSDLWindow(), -1, 0);
 	if (!_renderer) {

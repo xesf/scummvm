@@ -35,10 +35,6 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE_BASE_CLASS(Shape)
-
-DEFINE_CUSTOM_MEMORY_ALLOCATION(Shape)
-
 Shape::Shape(const uint8 *data, uint32 size, const ConvertShapeFormat *format,
              const uint16 id, const uint32 shape)
 		: _flexId(id), _shapeNum(shape), _palette(nullptr) {
@@ -51,7 +47,7 @@ Shape::Shape(const uint8 *data, uint32 size, const ConvertShapeFormat *format,
 Shape::Shape(IDataSource *src, const ConvertShapeFormat *format)
 	: _flexId(0), _shapeNum(0), _palette(nullptr) {
 	// NB: U8 style!
-	uint32 size = src->getSize();
+	uint32 size = src->size();
 	uint8 *data = new uint8[size];
 	src->read(data, size);
 
@@ -105,8 +101,7 @@ Common::Array<RawShapeFrame *> Shape::loadU8Format(const uint8 *data, uint32 siz
 	Common::Array<RawShapeFrame *> frames;
 
 	if (framecount == 0) {
-		loadGenericFormat(data, size, format);
-		return frames;
+		return loadGenericFormat(data, size, format);
 	}
 
 	frames.reserve(framecount);
@@ -129,8 +124,7 @@ Common::Array<RawShapeFrame *> Shape::loadPentagramFormat(const uint8 *data, uin
 	Common::Array<RawShapeFrame *> frames;
 
 	if (framecount == 0) {
-		loadGenericFormat(data, size, format);
-		return frames;
+		return loadGenericFormat(data, size, format);
 	}
 
 	frames.reserve(framecount);
@@ -170,11 +164,21 @@ Common::Array<RawShapeFrame *> Shape::loadGenericFormat(const uint8 *data, uint3
 	uint8 special[256];
 	if (format->_bytes_special) {
 		memset(special, 0, 256);
-		for (uint32 i = 0; i < format->_bytes_special; i++) special[ds.read1() & 0xFF] = i + 2;
+		for (uint32 i = 0; i < format->_bytes_special; i++) special[ds.readByte() & 0xFF] = i + 2;
 	}
 
 	// Skip unknown
-	ds.skip(format->_bytes_header_unk);
+	if (format->_bytes_header_unk && format != &Crusader2DShapeFormat) {
+		//uint32 val =
+		ds.readX(format->_bytes_header_unk);
+		//uint16 lowval = val & 0xff;
+		//uint16 highval = (val >> 16) & 0xff;
+		//uint32 dummy = 0 + lowval + highval + val;
+	} else {
+		// Appears to be shape Width x Height for Crusader 2D shapes,
+		// not needed - we get them by frame.
+		ds.skip(format->_bytes_header_unk);
+	}
 
 	// Read framecount, default 1 if no
 	if (format->_bytes_num_frames) framecount = ds.readX(format->_bytes_num_frames);
@@ -189,11 +193,18 @@ Common::Array<RawShapeFrame *> Shape::loadGenericFormat(const uint8 *data, uint3
 		else frameoffset = format->_len_header + (format->_len_frameheader * i);
 
 		// Skip the unknown
-		ds.skip(format->_bytes_frameheader_unk);
+		if (format->_bytes_frameheader_unk) {
+			ds.readX(format->_bytes_frameheader_unk);
+		}
 
 		// Read frame_length
 		if (format->_bytes_frame_length) framesize = ds.readX(format->_bytes_frame_length) + format->_bytes_frame_length_kludge;
 		else framesize = size - frameoffset;
+
+		if (framesize > size) {
+			warning("shape frame %d goes off the end of the buffer, stopping early", i);
+			break;
+		}
 
 		ConvertShapeFrame *prev = nullptr, p;
 

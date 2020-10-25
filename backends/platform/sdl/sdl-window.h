@@ -25,6 +25,7 @@
 
 #include "backends/platform/sdl/sdl-sys.h"
 
+#include "common/rect.h"
 #include "common/str.h"
 
 class SdlWindow {
@@ -45,10 +46,15 @@ public:
 	void setWindowCaption(const Common::String &caption);
 
 	/**
-	 * Toggle mouse grab state. This decides whether the cursor can leave the
-	 * window or not.
+	 * Grab or ungrab the mouse cursor. This decides whether the cursor can leave
+	 * the window or not.
 	 */
-	void toggleMouseGrab();
+	void grabMouse(bool grab);
+
+	/**
+	 * Lock or unlock the mouse cursor within the window.
+	 */
+	bool lockMouse(bool lock);
 
 	/**
 	 * Check whether the application has mouse focus.
@@ -76,6 +82,11 @@ public:
 	 */
 	bool getSDLWMInformation(SDL_SysWMinfo *info) const;
 
+	/*
+	 * Retrieve the current desktop resolution.
+	 */
+	Common::Rect getDesktopResolution();
+
 	bool mouseIsGrabbed() const {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 		if (_window) {
@@ -85,8 +96,17 @@ public:
 		return _inputGrabState;
 	}
 
+	bool mouseIsLocked() const {
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		return SDL_GetRelativeMouseMode() == SDL_TRUE;
+#else
+		return _inputLockState;
+#endif
+	}
+
 private:
-	bool _inputGrabState;
+	Common::Rect _desktopRes;
+	bool _inputGrabState, _inputLockState;
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 public:

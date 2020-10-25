@@ -40,7 +40,6 @@
 #include "ultima/ultima8/games/game_info.h"
 #include "ultima/ultima8/games/start_u8_process.h"
 #include "ultima/ultima8/graphics/fonts/font_manager.h"
-#include "ultima/ultima8/kernel/memory_manager.h"
 #include "ultima/ultima8/graphics/render_surface.h"
 #include "ultima/ultima8/graphics/texture.h"
 #include "ultima/ultima8/graphics/fonts/fixed_width_font.h"
@@ -62,21 +61,29 @@
 #include "ultima/ultima8/gumps/minimap_gump.h"
 #include "ultima/ultima8/gumps/quit_gump.h"
 #include "ultima/ultima8/gumps/menu_gump.h"
+#include "ultima/ultima8/gumps/cru_status_gump.h"
+#include "ultima/ultima8/gumps/movie_gump.h"
 
 // For gump positioning... perhaps shouldn't do it this way....
 #include "ultima/ultima8/gumps/bark_gump.h"
 #include "ultima/ultima8/gumps/ask_gump.h"
 #include "ultima/ultima8/gumps/modal_gump.h"
 #include "ultima/ultima8/gumps/message_box_gump.h"
+#include "ultima/ultima8/gumps/keypad_gump.h"
+#include "ultima/ultima8/gumps/computer_gump.h"
 #include "ultima/ultima8/world/actors/quick_avatar_mover_process.h"
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/actors/actor_anim_process.h"
+#include "ultima/ultima8/world/actors/battery_charger_process.h"
+#include "ultima/ultima8/world/actors/cru_healer_process.h"
 #include "ultima/ultima8/world/actors/targeted_anim_process.h"
 #include "ultima/ultima8/usecode/u8_intrinsics.h"
 #include "ultima/ultima8/usecode/remorse_intrinsics.h"
+#include "ultima/ultima8/usecode/regret_intrinsics.h"
 #include "ultima/ultima8/world/egg.h"
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/graphics/inverter_process.h"
+#include "ultima/ultima8/graphics/cycle_process.h"
 #include "ultima/ultima8/world/actors/heal_process.h"
 #include "ultima/ultima8/world/actors/scheduler_process.h"
 #include "ultima/ultima8/world/egg_hatcher_process.h" // for a hack
@@ -87,27 +94,34 @@
 #include "ultima/ultima8/world/actors/avatar_gravity_process.h"
 #include "ultima/ultima8/world/actors/teleport_to_egg_process.h"
 #include "ultima/ultima8/world/item_factory.h"
+#include "ultima/ultima8/world/item_selection_process.h"
+#include "ultima/ultima8/world/split_item_process.h"
+#include "ultima/ultima8/world/target_reticle_process.h"
+#include "ultima/ultima8/world/snap_process.h"
+#include "ultima/ultima8/world/crosshair_process.h"
 #include "ultima/ultima8/world/actors/pathfinder_process.h"
 #include "ultima/ultima8/world/actors/avatar_mover_process.h"
 #include "ultima/ultima8/world/actors/resurrection_process.h"
-#include "ultima/ultima8/world/split_item_process.h"
 #include "ultima/ultima8/world/actors/clear_feign_death_process.h"
 #include "ultima/ultima8/world/actors/loiter_process.h"
 #include "ultima/ultima8/world/actors/avatar_death_process.h"
 #include "ultima/ultima8/world/actors/grant_peace_process.h"
+#include "ultima/ultima8/world/actors/cru_healer_process.h"
+#include "ultima/ultima8/world/actors/surrender_process.h"
 #include "ultima/ultima8/world/actors/combat_process.h"
+#include "ultima/ultima8/world/actors/guard_process.h"
 #include "ultima/ultima8/world/fireball_process.h"
 #include "ultima/ultima8/world/destroy_item_process.h"
 #include "ultima/ultima8/world/actors/ambush_process.h"
 #include "ultima/ultima8/world/actors/pathfinder.h"
-#include "ultima/ultima8/gumps/movie_gump.h"
-#include "ultima/ultima8/gumps/shape_viewer_gump.h"
 #include "ultima/ultima8/audio/audio_mixer.h"
-#include "ultima/ultima8/graphics/xform_blend.h"
-#include "ultima/ultima8/audio/music_process.h"
+#include "ultima/ultima8/audio/u8_music_process.h"
+#include "ultima/ultima8/audio/remorse_music_process.h"
 #include "ultima/ultima8/audio/audio_process.h"
-#include "ultima/ultima8/misc/util.h"
 #include "ultima/ultima8/audio/midi_player.h"
+#include "ultima/ultima8/gumps/shape_viewer_gump.h"
+#include "ultima/ultima8/graphics/xform_blend.h"
+#include "ultima/ultima8/misc/util.h"
 #include "ultima/ultima8/meta_engine.h"
 
 namespace Ultima {
@@ -119,9 +133,9 @@ using Std::string;
 // every process
 template<class T>
 struct ProcessLoader {
-	static Process *load(IDataSource *ids, uint32 version) {
+	static Process *load(Common::ReadStream *rs, uint32 version) {
 		T *p = new T();
-		bool ok = p->loadData(ids, version);
+		bool ok = p->loadData(rs, version);
 		if (!ok) {
 			delete p;
 			p = nullptr;
@@ -129,8 +143,6 @@ struct ProcessLoader {
 		return p;
 	}
 };
-
-DEFINE_RUNTIME_CLASSTYPE_CODE(Ultima8Engine, CoreApp)
 
 Ultima8Engine::Ultima8Engine(OSystem *syst, const Ultima::UltimaGameDescription *gameDesc) :
 		Shared::UltimaEngine(syst, gameDesc), CoreApp(gameDesc), _saveCount(0), _game(nullptr),
@@ -140,13 +152,10 @@ Ultima8Engine::Ultima8Engine(OSystem *syst, const Ultima::UltimaGameDescription 
 		_frameSkip(false), _frameLimit(true), _interpolate(true), _animationRate(100),
 		_avatarInStasis(false), _paintEditorItems(false), _inversion(0), _painting(false),
 		_showTouching(false), _timeOffset(0), _hasCheated(false), _cheatsEnabled(false),
-		_ttfOverrides(false), _audioMixer(0) {
+		_ttfOverrides(false), _audioMixer(0), _scalerGump(nullptr),
+		_inverterGump(nullptr), _lerpFactor(256), _inBetweenFrame(false),
+		_unkCrusaderFlag(false), _moveKeyFrame(0) {
 	_application = this;
-
-	for (uint16 key = 0; key < HID_LAST; ++key) {
-		_lastDown[key] = false;
-		_down[key] = false;
-	}
 }
 
 Ultima8Engine::~Ultima8Engine() {
@@ -162,19 +171,23 @@ Ultima8Engine::~Ultima8Engine() {
 	FORGET_OBJECT(_ucMachine);
 	FORGET_OBJECT(_fontManager);
 	FORGET_OBJECT(_screen);
-	FORGET_OBJECT(_memoryManager);
 }
 
 Common::Error Ultima8Engine::run() {
+	bool result = true;
 	if (initialize()) {
-		startup();
-		runGame();
+		result = startup();
+		if (result)
+			result = runGame();
 
 		deinitialize();
 		shutdown();
 	}
 
-	return Common::kNoError;
+	if (result)
+		return Common::kNoError;
+	else
+		return Common::kNoGameDataFoundError;
 }
 
 
@@ -191,7 +204,7 @@ bool Ultima8Engine::initialize() {
 void Ultima8Engine::deinitialize() {
 }
 
-void Ultima8Engine::startup() {
+bool Ultima8Engine::startup() {
 	setDebugger(new Debugger());
 	pout << "-- Initializing Pentagram -- " << Std::endl;
 
@@ -205,7 +218,6 @@ void Ultima8Engine::startup() {
 	_fileSystem->initBuiltinData(dataoverride);
 
 	_kernel = new Kernel();
-	_memoryManager = new MemoryManager();
 
 	//!! move this elsewhere
 	_kernel->addProcessLoader("DelayProcess",
@@ -232,8 +244,12 @@ void Ultima8Engine::startup() {
 		ProcessLoader<SpriteProcess>::load);
 	_kernel->addProcessLoader("CameraProcess",
 		ProcessLoader<CameraProcess>::load);
-	_kernel->addProcessLoader("MusicProcess",
-		ProcessLoader<MusicProcess>::load);
+	_kernel->addProcessLoader("MusicProcess", // parent class name for save game backwards-compatibility.
+		ProcessLoader<U8MusicProcess>::load);
+	_kernel->addProcessLoader("U8MusicProcess",
+		ProcessLoader<U8MusicProcess>::load);
+	_kernel->addProcessLoader("RemorseMusicProcess",
+		ProcessLoader<RemorseMusicProcess>::load);
 	_kernel->addProcessLoader("AudioProcess",
 		ProcessLoader<AudioProcess>::load);
 	_kernel->addProcessLoader("EggHatcherProcess",
@@ -272,11 +288,27 @@ void Ultima8Engine::startup() {
 		ProcessLoader<ActorBarkNotifyProcess>::load);
 	_kernel->addProcessLoader("AmbushProcess",
 		ProcessLoader<AmbushProcess>::load);
+	_kernel->addProcessLoader("TargetReticleProcess",
+		ProcessLoader<TargetReticleProcess>::load);
+	_kernel->addProcessLoader("SurrenderProcess",
+		ProcessLoader<SurrenderProcess>::load);
+	_kernel->addProcessLoader("CruHealerProcess",
+		ProcessLoader<CruHealerProcess>::load);
+	_kernel->addProcessLoader("BatteryChargerProcess",
+		ProcessLoader<BatteryChargerProcess>::load);
+	_kernel->addProcessLoader("CycleProcess",
+		ProcessLoader<CycleProcess>::load);
+	_kernel->addProcessLoader("GuardProcess",
+		ProcessLoader<GuardProcess>::load);
+	_kernel->addProcessLoader("SnapProcess",
+		ProcessLoader<SnapProcess>::load);
+	_kernel->addProcessLoader("CrosshairProcess",
+		ProcessLoader<CrosshairProcess>::load);
+	_kernel->addProcessLoader("ItemSelectionProcess",
+		ProcessLoader<ItemSelectionProcess>::load);
 
 	_objectManager = new ObjectManager();
 	_mouse = new Mouse();
-
-	GraphicSysInit();
 
 	// Audio Mixer
 	_audioMixer = new AudioMixer(_mixer);
@@ -286,31 +318,37 @@ void Ultima8Engine::startup() {
 	// We Attempt to startup _game
 	setupGameList();
 	GameInfo *info = getDefaultGame();
-	if (setupGame(info))
-		startupGame();
-	else
+
+	if (setupGame(info)) {
+		GraphicSysInit();
+		if (!startupGame())
+			return false;
+	} else {
 		// Couldn't setup the game, should never happen?
 		CANT_HAPPEN_MSG("default game failed to initialize");
-
+	}
 	paint();
+	return true;
 }
 
-void Ultima8Engine::startupGame() {
+bool Ultima8Engine::startupGame() {
 	pout  << Std::endl << "-- Initializing Game: " << _gameInfo->_name << " --" << Std::endl;
 
 	GraphicSysInit();
 
 	_gameData = new GameData(_gameInfo);
 
-	if (GAME_IS_U8) {
+	if (_gameInfo->_type == GameInfo::GAME_U8) {
 		_ucMachine = new UCMachine(U8Intrinsics, 256);
-	} else if (GAME_IS_REMORSE) {
+	} else if (_gameInfo->_type == GameInfo::GAME_REMORSE) {
 		_ucMachine = new UCMachine(RemorseIntrinsics, 308);
+	} else if (_gameInfo->_type == GameInfo::GAME_REGRET) {
+		_ucMachine = new UCMachine(RegretIntrinsics, 350);
 	} else {
-		CANT_HAPPEN_MSG("Invalid _game type.");
+		CANT_HAPPEN_MSG("Invalid game type.");
 	}
 
-	_inBetweenFrame = 0;
+	_inBetweenFrame = false;
 	_lerpFactor = 256;
 
 	// Initialize _world
@@ -334,7 +372,9 @@ void Ultima8Engine::startupGame() {
 	_settingMan->setDefault("cheat", false);
 	_settingMan->get("cheat", _cheatsEnabled);
 
-	_game->loadFiles();
+	bool loaded = _game->loadFiles();
+	if (!loaded)
+		return false;
 	_gameData->setupFontOverrides();
 
 	// Create Midi Driver for Ultima 8
@@ -348,6 +388,7 @@ void Ultima8Engine::startupGame() {
 	newGame(saveSlot);
 
 	pout << "-- Game Initialized --" << Std::endl << Std::endl;
+	return true;
 }
 
 void Ultima8Engine::shutdown() {
@@ -378,6 +419,7 @@ void Ultima8Engine::shutdownGame(bool reloading) {
 	if (_audioMixer) {
 		_audioMixer->closeMidiOutput();
 		_audioMixer->reset();
+		FORGET_OBJECT(_audioMixer);
 	}
 
 	_desktopGump = nullptr;
@@ -399,20 +441,22 @@ void Ultima8Engine::shutdownGame(bool reloading) {
 		_screen->GetSurfaceDims(dims);
 
 		debugN(MM_INFO, "Creating Desktop...\n");
-		_desktopGump = new DesktopGump(0, 0, dims.w, dims.h);
+		_desktopGump = new DesktopGump(0, 0, dims.width(), dims.height());
 		_desktopGump->InitGump(0);
 		_desktopGump->MakeFocus();
 
-		debugN(MM_INFO, "Creating _scalerGump...\n");
-		_scalerGump = new ScalerGump(0, 0, dims.w, dims.h);
-		_scalerGump->InitGump(0);
+		if (GAME_IS_U8) {
+			debugN(MM_INFO, "Creating _scalerGump...\n");
+			_scalerGump = new ScalerGump(0, 0, dims.width(), dims.height());
+			_scalerGump->InitGump(0);
 
-		Rect scaled_dims;
-		_scalerGump->GetDims(scaled_dims);
+			Rect scaled_dims;
+			_scalerGump->GetDims(scaled_dims);
 
-		debugN(MM_INFO, "Creating Inverter...\n");
-		_inverterGump = new InverterGump(0, 0, scaled_dims.w, scaled_dims.h);
-		_inverterGump->InitGump(0);
+			debugN(MM_INFO, "Creating Inverter...\n");
+			_inverterGump = new InverterGump(0, 0, scaled_dims.width(), scaled_dims.height());
+			_inverterGump->InitGump(0);
+		}
 	}
 }
 
@@ -446,7 +490,7 @@ void Ultima8Engine::menuInitMinimal(istring gamename) {
 	pout << "-- Finished loading minimal--" << Std::endl << Std::endl;
 }
 
-void Ultima8Engine::runGame() {
+bool Ultima8Engine::runGame() {
 	_isRunning = true;
 
 	int32 next_ticks = g_system->getMillis() * 3;  // Next time is right now!
@@ -457,6 +501,8 @@ void Ultima8Engine::runGame() {
 
 		if (!_frameLimit) {
 			_kernel->runProcesses();
+			if (GAME_IS_CRUSADER)
+				_kernel->runProcesses();
 			_desktopGump->run();
 			_inBetweenFrame = false;
 			next_ticks = _animationRate + g_system->getMillis() * 3;
@@ -468,6 +514,8 @@ void Ultima8Engine::runGame() {
 			while (diff < 0) {
 				next_ticks += _animationRate;
 				_kernel->runProcesses();
+				if (GAME_IS_CRUSADER)
+					_kernel->runProcesses();
 				_desktopGump->run();
 #if 0
 				perr << "--------------------------------------" << Std::endl;
@@ -512,10 +560,12 @@ void Ultima8Engine::runGame() {
 
 				_changeGameName.clear();
 
-				if (setupGame(info))
-					startupGame();
-				else
+				if (setupGame(info)) {
+					if (!startupGame())
+						return false;
+				} else {
 					CANT_HAPPEN_MSG("Failed to start up game with valid info.");
+				}
 			} else {
 				perr << "Game '" << _changeGameName << "' not found" << Std::endl;
 				_changeGameName.clear();
@@ -531,6 +581,7 @@ void Ultima8Engine::runGame() {
 		// Do a delay
 		g_system->delayMillis(5);
 	}
+	return true;
 }
 
 // Paint the _screen
@@ -566,8 +617,13 @@ void Ultima8Engine::paint() {
 }
 
 void Ultima8Engine::GraphicSysInit() {
-	_settingMan->setDefault("width", DEFAULT_SCREEN_WIDTH);
-	_settingMan->setDefault("height", DEFAULT_SCREEN_HEIGHT);
+	if (GAME_IS_U8) {
+		_settingMan->setDefault("width", U8_DEFAULT_SCREEN_WIDTH);
+		_settingMan->setDefault("height", U8_DEFAULT_SCREEN_HEIGHT);
+	} else {
+		_settingMan->setDefault("width", CRUSADER_DEFAULT_SCREEN_WIDTH);
+		_settingMan->setDefault("height", CRUSADER_DEFAULT_SCREEN_HEIGHT);
+	}
 	_settingMan->setDefault("bpp", 16);
 
 	int width, height, bpp;
@@ -578,7 +634,7 @@ void Ultima8Engine::GraphicSysInit() {
 	if (_screen) {
 		Rect old_dims;
 		_screen->GetSurfaceDims(old_dims);
-		if (width == old_dims.w && height == old_dims.h)
+		if (width == old_dims.width() && height == old_dims.height())
 			return;
 		bpp = RenderSurface::_format.bpp();
 
@@ -592,8 +648,8 @@ void Ultima8Engine::GraphicSysInit() {
 	RenderSurface *new_screen = RenderSurface::SetVideoMode(width, height, bpp);
 
 	if (!new_screen) {
-		perr << Common::String::format("Unable to set new video mode. Trying %dx%dx32", width, height) << Std::endl;
-		new_screen = RenderSurface::SetVideoMode(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, 32);
+		perr << Common::String::format("Unable to set new video mode. Trying %dx%dx32", U8_DEFAULT_SCREEN_WIDTH, U8_DEFAULT_SCREEN_HEIGHT) << Std::endl;
+		new_screen = RenderSurface::SetVideoMode(U8_DEFAULT_SCREEN_WIDTH, U8_DEFAULT_SCREEN_HEIGHT, 32);
 	}
 
 	if (!new_screen) {
@@ -631,21 +687,25 @@ void Ultima8Engine::GraphicSysInit() {
 	_desktopGump->InitGump(0);
 	_desktopGump->MakeFocus();
 
-	_scalerGump = new ScalerGump(0, 0, width, height);
-	_scalerGump->InitGump(0);
+	if (GAME_IS_U8) {
+		_scalerGump = new ScalerGump(0, 0, width, height);
+		_scalerGump->InitGump(0);
 
-	Rect scaled_dims;
-	_scalerGump->GetDims(scaled_dims);
+		Rect scaled_dims;
+		_scalerGump->GetDims(scaled_dims);
 
-	_inverterGump = new InverterGump(0, 0, scaled_dims.w, scaled_dims.h);
-	_inverterGump->InitGump(0);
+		_inverterGump = new InverterGump(0, 0, scaled_dims.width(), scaled_dims.height());
+		_inverterGump->InitGump(0);
+	}
 
 	_screen = new_screen;
 
-	// Show the splash _screen immediately now that the _screen has been set up
+	// Show the splash screen immediately now that the screen has been set up
 	int saveSlot = ConfMan.hasKey("save_slot") ? ConfMan.getInt("save_slot") : -1;
-	if (saveSlot == -1)
+	if (saveSlot == -1) {
+		_mouse->setMouseCursor(Mouse::MOUSE_NONE);
 		showSplashScreen();
+	}
 
 	bool ttf_antialiasing = true;
 	_settingMan->setDefault("ttf_antialiasing", true);
@@ -689,14 +749,6 @@ bool Ultima8Engine::LoadConsoleFont(Std::string confontini) {
 }
 
 void Ultima8Engine::enterTextMode(Gump *gump) {
-	uint16 key;
-	for (key = 0; key < HID_LAST; ++key) {
-		if (_down[key]) {
-			_down[key] = false;
-			_lastDown[key] = false;
-		}
-	}
-
 	if (!_textModes.empty()) {
 		_textModes.remove(gump->getObjId());
 	}
@@ -709,57 +761,44 @@ void Ultima8Engine::leaveTextMode(Gump *gump) {
 }
 
 void Ultima8Engine::handleEvent(const Common::Event &event) {
-	uint32 now = g_system->getMillis();
-	HID_Key key = HID_LAST;
-	uint16 evn = HID_EVENT_LAST;
-	bool handled = false;
-
 	switch (event.type) {
 	case Common::EVENT_KEYDOWN:
-		key = HID_translateKey(event.kbd.keycode);
-		evn = HID_translateKeyFlags(event.kbd.flags);
 		break;
 	case Common::EVENT_KEYUP:
 		// Any system keys not in the bindings can be handled here
 		break;
 
-	case Common::EVENT_LBUTTONDOWN:
-		key = HID_translateMouseButton(1);
-		evn = HID_EVENT_DEPRESS;
-		break;
-	case Common::EVENT_LBUTTONUP:
-		key = HID_translateMouseButton(1);
-		evn = HID_EVENT_RELEASE;
-		break;
-	case Common::EVENT_RBUTTONDOWN:
-		key = HID_translateMouseButton(2);
-		evn = HID_EVENT_DEPRESS;
-		break;
-	case Common::EVENT_RBUTTONUP:
-		key = HID_translateMouseButton(2);
-		evn = HID_EVENT_RELEASE;
-		break;
-	case Common::EVENT_MBUTTONDOWN:
-		key = HID_translateMouseButton(3);
-		evn = HID_EVENT_DEPRESS;
-		break;
-	case Common::EVENT_MBUTTONUP:
-		key = HID_translateMouseButton(3);
-		evn = HID_EVENT_RELEASE;
-		break;
-
-	case Common::EVENT_JOYBUTTON_DOWN:
-		key = HID_translateJoystickButton(event.joystick.button + 1);
-		evn = HID_EVENT_DEPRESS;
-		break;
-	case Common::EVENT_JOYBUTTON_UP:
-		key = HID_translateJoystickButton(event.joystick.button + 1);
-		evn = HID_EVENT_DEPRESS;
-		break;
-
 	case Common::EVENT_MOUSEMOVE:
 		_mouse->setMouseCoords(event.mouse.x, event.mouse.y);
 		break;
+
+	case Common::EVENT_LBUTTONDOWN:
+	case Common::EVENT_MBUTTONDOWN:
+	case Common::EVENT_RBUTTONDOWN: {
+		Shared::MouseButton button = Shared::BUTTON_LEFT;
+		if (event.type == Common::EVENT_RBUTTONDOWN)
+			button = Shared::BUTTON_RIGHT;
+		else if (event.type == Common::EVENT_MBUTTONDOWN)
+			button = Shared::BUTTON_MIDDLE;
+
+		_mouse->setMouseCoords(event.mouse.x, event.mouse.y);
+		_mouse->buttonDown(button);
+		break;
+	}
+
+	case Common::EVENT_LBUTTONUP:
+	case Common::EVENT_MBUTTONUP:
+	case Common::EVENT_RBUTTONUP: {
+		Shared::MouseButton button = Shared::BUTTON_LEFT;
+		if (event.type == Common::EVENT_RBUTTONUP)
+			button = Shared::BUTTON_RIGHT;
+		else if (event.type == Common::EVENT_MBUTTONUP)
+			button = Shared::BUTTON_MIDDLE;
+
+		_mouse->setMouseCoords(event.mouse.x, event.mouse.y);
+		_mouse->buttonUp(button);
+		break;
+	}
 
 	case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
 		MetaEngine::pressAction((KeybindingAction)event.customType);
@@ -770,6 +809,7 @@ void Ultima8Engine::handleEvent(const Common::Event &event) {
 		return;
 
 	case Common::EVENT_QUIT:
+	case Common::EVENT_RETURN_TO_LAUNCHER:
 		_isRunning = false;
 		break;
 
@@ -782,7 +822,7 @@ void Ultima8Engine::handleEvent(const Common::Event &event) {
 
 	if (!_textModes.empty()) {
 		while (!_textModes.empty()) {
-			gump = p_dynamic_cast<Gump *>(_objectManager->getObject(_textModes.front()));
+			gump = dynamic_cast<Gump *>(_objectManager->getObject(_textModes.front()));
 			if (gump)
 				break;
 
@@ -825,109 +865,32 @@ void Ultima8Engine::handleEvent(const Common::Event &event) {
 			}
 		}
 	}
-
-	// Old style input begins here
-	switch (event.type) {
-
-		//!! TODO: handle mouse handedness. (swap left/right mouse buttons here)
-
-		// most of these events will probably be passed to a gump manager,
-		// since almost all (all?) user input will be handled by a gump
-
-	case Common::EVENT_LBUTTONDOWN:
-	case Common::EVENT_MBUTTONDOWN:
-	case Common::EVENT_RBUTTONDOWN: {
-		Shared::MouseButton button = Shared::BUTTON_LEFT;
-		if (event.type == Common::EVENT_RBUTTONDOWN)
-			button = Shared::BUTTON_RIGHT;
-		else if (event.type == Common::EVENT_MBUTTONDOWN)
-			button = Shared::BUTTON_MIDDLE;
-
-		_mouse->setMouseCoords(event.mouse.x, event.mouse.y);
-		if (_mouse->buttonDown(button))
-			handled = true;
-		break;
-	}
-
-	case Common::EVENT_LBUTTONUP:
-	case Common::EVENT_MBUTTONUP:
-	case Common::EVENT_RBUTTONUP: {
-		Shared::MouseButton button = Shared::BUTTON_LEFT;
-		if (event.type == Common::EVENT_RBUTTONUP)
-			button = Shared::BUTTON_RIGHT;
-		else if (event.type == Common::EVENT_MBUTTONUP)
-			button = Shared::BUTTON_MIDDLE;
-
-		_mouse->setMouseCoords(event.mouse.x, event.mouse.y);
-		if (_mouse->buttonUp(button))
-			handled = true;
-		break;
-	}
-
-	case Common::EVENT_KEYDOWN:
-		if (_mouse->dragging() != Mouse::DRAG_NOT)
-			break;
-
-		// Any special key handling goes here
-		if ((event.kbd.keycode == Common::KEYCODE_q || event.kbd.keycode == Common::KEYCODE_x) &&
-			(event.kbd.flags & (Common::KBD_CTRL | Common::KBD_ALT | Common::KBD_META)) != 0)
-			ForceQuit();
-		break;
-
-	default:
-		break;
-	}
-
-	if (_mouse->dragging() == Mouse::DRAG_NOT && !handled) {
-		if (evn == HID_EVENT_DEPRESS) {
-			_down[key] = true;
-			if (now - _lastDown[key] < DOUBLE_CLICK_TIMEOUT && _lastDown[key] != 0) {
-				_lastDown[key] = 0;
-			} else {
-				_lastDown[key] = now;
-			}
-		} else if (evn == HID_EVENT_RELEASE) {
-			_down[key] = false;
-			if (now - _lastDown[key] > DOUBLE_CLICK_TIMEOUT &&
-				_lastDown[key] != 0) {
-				_lastDown[key] = 0;
-			}
-		}
-	}
 }
 
 void Ultima8Engine::handleDelayedEvents() {
-	uint32 now = g_system->getMillis();
+	//uint32 now = g_system->getMillis();
 
 	_mouse->handleDelayedEvents();
-
-	for (uint16 key = 0; key < HID_LAST; ++key) {
-		if (now - _lastDown[key] > DOUBLE_CLICK_TIMEOUT &&
-			_lastDown[key] != 0 && !_down[key]) {
-			_lastDown[key] = 0;
-		}
-	}
-
 }
 
-void Ultima8Engine::writeSaveInfo(ODataSource *ods) {
+void Ultima8Engine::writeSaveInfo(Common::WriteStream *ws) {
 	TimeDate timeInfo;
 	g_system->getTimeAndDate(timeInfo);
 
-	ods->write2(static_cast<uint16>(timeInfo.tm_year + 1900));
-	ods->write1(static_cast<uint8>(timeInfo.tm_mon + 1));
-	ods->write1(static_cast<uint8>(timeInfo.tm_mday));
-	ods->write1(static_cast<uint8>(timeInfo.tm_hour));
-	ods->write1(static_cast<uint8>(timeInfo.tm_min));
-	ods->write1(static_cast<uint8>(timeInfo.tm_sec));
-	ods->write4(_saveCount);
-	ods->write4(getGameTimeInSeconds());
+	ws->writeUint16LE(static_cast<uint16>(timeInfo.tm_year + 1900));
+	ws->writeByte(static_cast<uint8>(timeInfo.tm_mon + 1));
+	ws->writeByte(static_cast<uint8>(timeInfo.tm_mday));
+	ws->writeByte(static_cast<uint8>(timeInfo.tm_hour));
+	ws->writeByte(static_cast<uint8>(timeInfo.tm_min));
+	ws->writeByte(static_cast<uint8>(timeInfo.tm_sec));
+	ws->writeUint32LE(_saveCount);
+	ws->writeUint32LE(getGameTimeInSeconds());
 
 	uint8 c = (_hasCheated ? 1 : 0);
-	ods->write1(c);
+	ws->writeByte(c);
 
 	// write _game-specific info
-	_game->writeSaveInfo(ods);
+	_game->writeSaveInfo(ws);
 }
 
 bool Ultima8Engine::canSaveGameStateCurrently(bool isAutosave) {
@@ -935,13 +898,13 @@ bool Ultima8Engine::canSaveGameStateCurrently(bool isAutosave) {
 		// Can't save when a modal gump is open, or avatar in statsis  during cutscenes
 		return false;
 
-	if (_kernel->getRunningProcess() && _kernel->getRunningProcess()->IsOfType(StartU8Process::ClassType))
+	if (dynamic_cast<StartU8Process *>(_kernel->getRunningProcess()))
 		// Don't save while starting up.
 		return false;
 
 	// Don't allow saving when avatar is dead.
 	MainActor *av = getMainActor();
-	if (!av || (av->getActorFlags() & Actor::ACT_DEAD))
+	if (!av || av->hasActorFlags(Actor::ACT_DEAD))
 		return false;
 
 	return true;
@@ -957,7 +920,7 @@ bool Ultima8Engine::saveGame(int slot, const Std::string &desc, bool ignore_moda
 	// Don't allow saving when avatar is dead.
 	// (Avatar is flagged dead by usecode when you finish the _game as well.)
 	MainActor *av = getMainActor();
-	if (!av || (av->getActorFlags() & Actor::ACT_DEAD)) {
+	if (!av || av->hasActorFlags(Actor::ACT_DEAD)) {
 		pout << "Can't save: _game over." << Std::endl;
 		return false;
 	}
@@ -992,7 +955,20 @@ Common::Error Ultima8Engine::saveGameStream(Common::WriteStream *stream, bool is
 	// Hack - don't save mouse over status for gumps
 	Gump *gump = _mouse->getMouseOverGump();
 	if (gump)
-		gump->OnMouseLeft();
+		gump->onMouseLeft();
+
+	Gump *modalGump = _desktopGump->FindGump<ModalGump>();
+	if (modalGump)
+		modalGump->HideGump();
+
+	_mouse->pushMouseCursor();
+	_mouse->setMouseCursor(Mouse::MOUSE_PENTAGRAM);
+
+	// Redraw to indicate busy and for save thumbnail
+	paint();
+
+	if (modalGump)
+		modalGump->UnhideGump();
 
 	_saveCount++;
 
@@ -1050,9 +1026,11 @@ Common::Error Ultima8Engine::saveGameStream(Common::WriteStream *stream, bool is
 	delete sgw;
 
 	// Restore mouse over
-	if (gump) gump->OnMouseOver();
+	if (gump) gump->onMouseOver();
 
 	pout << "Done" << Std::endl;
+
+	_mouse->popMouseCursor();
 
 	return Common::kNoError;
 }
@@ -1084,10 +1062,6 @@ void Ultima8Engine::resetEngine() {
 	_mouse->popAllCursors();
 	_mouse->pushMouseCursor();
 
-	// FIXME: This breaks loading processes if this process gets an ID
-	//        also present in a savegame.
-	// _kernel->addProcess(new JoystickCursorProcess(JOY1, 0, 1));
-
 	_timeOffset = -(int32)Kernel::get_instance()->getFrameNum();
 	_inversion = 0;
 	_saveCount = 0;
@@ -1097,38 +1071,43 @@ void Ultima8Engine::resetEngine() {
 }
 
 void Ultima8Engine::setupCoreGumps() {
-	debugN(MM_INFO, "Setting up core _game gumps...\n");
+	debugN(MM_INFO, "Setting up core game gumps...\n");
 
 	Rect dims;
 	_screen->GetSurfaceDims(dims);
 
 	debugN(MM_INFO, "Creating Desktop...\n");
-	_desktopGump = new DesktopGump(0, 0, dims.w, dims.h);
+	_desktopGump = new DesktopGump(0, 0, dims.width(), dims.height());
 	_desktopGump->InitGump(0);
 	_desktopGump->MakeFocus();
 
-	debugN(MM_INFO, "Creating _scalerGump...\n");
-	_scalerGump = new ScalerGump(0, 0, dims.w, dims.h);
-	_scalerGump->InitGump(0);
+	if (GAME_IS_U8) {
+		debugN(MM_INFO, "Creating ScalerGump...\n");
+		_scalerGump = new ScalerGump(0, 0, dims.width(), dims.height());
+		_scalerGump->InitGump(0);
 
-	Rect scaled_dims;
-	_scalerGump->GetDims(scaled_dims);
+		Rect scaled_dims;
+		_scalerGump->GetDims(scaled_dims);
 
-	debugN(MM_INFO, "Creating Inverter...\n");
-	_inverterGump = new InverterGump(0, 0, scaled_dims.w, scaled_dims.h);
-	_inverterGump->InitGump(0);
+		debugN(MM_INFO, "Creating Inverter...\n");
+		_inverterGump = new InverterGump(0, 0, scaled_dims.width(), scaled_dims.height());
+		_inverterGump->InitGump(0);
 
-	debugN(MM_INFO, "Creating GameMapGump...\n");
-	_gameMapGump = new GameMapGump(0, 0, scaled_dims.w, scaled_dims.h);
-	_gameMapGump->InitGump(0);
-
+		debugN(MM_INFO, "Creating GameMapGump...\n");
+		_gameMapGump = new GameMapGump(0, 0, scaled_dims.width(), scaled_dims.height());
+		_gameMapGump->InitGump(0);
+	} else {
+		_gameMapGump = new GameMapGump(0, 0, dims.width(), dims.height());
+		_gameMapGump->InitGump(0);
+	}
 
 	// TODO: clean this up
-	assert(_desktopGump->getObjId() == 256);
-	assert(_scalerGump->getObjId() == 257);
-	assert(_inverterGump->getObjId() == 258);
-	assert(_gameMapGump->getObjId() == 259);
-
+	if (GAME_IS_U8) {
+		assert(_desktopGump->getObjId() == 256);
+		assert(_scalerGump->getObjId() == 257);
+		assert(_inverterGump->getObjId() == 258);
+		assert(_gameMapGump->getObjId() == 259);
+	}
 
 	for (uint16 i = 261; i < 384; ++i)
 		_objectManager->reserveObjId(i);
@@ -1174,6 +1153,14 @@ bool Ultima8Engine::newGame(int saveSlot) {
 
 	_game->startInitialUsecode(saveSlot);
 
+	if (GAME_IS_CRUSADER) {
+		_kernel->addProcess(new TargetReticleProcess());
+		_kernel->addProcess(new ItemSelectionProcess());
+		_kernel->addProcess(new CrosshairProcess());
+		_kernel->addProcess(new CycleProcess());
+		_kernel->addProcess(new SnapProcess());
+	}
+
 	if (saveSlot == -1)
 		_settingMan->set("lastSave", "");
 
@@ -1204,6 +1191,12 @@ Common::Error Ultima8Engine::loadGameStream(Common::SeekableReadStream *stream) 
 		delete sg;
 		return Common::kReadingFailed;
 	}
+
+	_mouse->pushMouseCursor();
+	_mouse->setMouseCursor(Mouse::MOUSE_PENTAGRAM);
+	_screen->BeginPainting();
+	_mouse->paint();
+	_screen->EndPainting();
 
 	IDataSource *ds;
 	GameInfo saveinfo;
@@ -1314,6 +1307,10 @@ Common::Error Ultima8Engine::loadGameStream(Common::SeekableReadStream *stream) 
 	if (!ok) message += "MAPS: failed\n";
 	delete ds;
 
+	// Reset mouse cursor
+	_mouse->popAllCursors();
+	_mouse->pushMouseCursor();
+
 	if (!totalok) {
 		Error(message, "Error Loading savegame", true);
 		delete sg;
@@ -1341,7 +1338,7 @@ void Ultima8Engine::Error(Std::string message, Std::string title, bool exit_to_m
 }
 
 Gump *Ultima8Engine::getGump(uint16 gumpid) {
-	return p_dynamic_cast<Gump *>(ObjectManager::get_instance()->
+	return dynamic_cast<Gump *>(ObjectManager::get_instance()->
 		getObject(gumpid));
 }
 
@@ -1351,23 +1348,25 @@ void Ultima8Engine::addGump(Gump *gump) {
 
 	assert(_desktopGump);
 
-	if (gump->IsOfType<ShapeViewerGump>() || gump->IsOfType<MiniMapGump>() ||
-		gump->IsOfType<ScalerGump>() || gump->IsOfType<MessageBoxGump>()// ||
-		//(_ttfOverrides && (gump->IsOfType<BarkGump>() ||
-		//                gump->IsOfType<AskGump>()))
+	if (dynamic_cast<ShapeViewerGump *>(gump) || dynamic_cast<MiniMapGump *>(gump) ||
+		dynamic_cast<ScalerGump *>(gump) || dynamic_cast<MessageBoxGump *>(gump)// ||
+		//(_ttfOverrides && (dynamic_cast<BarkGump *>(gump) ||
+		//                dynamic_cast<AskGump *>(gump)))
 		) {
-		//		pout << "adding to desktopgump: "; gump->dumpInfo();
 		_desktopGump->AddChild(gump);
-	} else if (gump->IsOfType<GameMapGump>()) {
-		//		pout << "adding to invertergump: "; gump->dumpInfo();
-		_inverterGump->AddChild(gump);
-	} else if (gump->IsOfType<InverterGump>()) {
-		//		pout << "adding to _scalerGump: "; gump->dumpInfo();
+	} else if (dynamic_cast<GameMapGump *>(gump)) {
+		if (GAME_IS_U8)
+			_inverterGump->AddChild(gump);
+		else
+			_desktopGump->AddChild(gump);
+	} else if (dynamic_cast<InverterGump *>(gump)) {
 		_scalerGump->AddChild(gump);
-	} else if (gump->IsOfType<DesktopGump>()) {
+	} else if (dynamic_cast<DesktopGump *>(gump)) {
 	} else {
-		//		pout << "adding to _scalerGump: "; gump->dumpInfo();
-		_scalerGump->AddChild(gump);
+		if (GAME_IS_U8)
+			_scalerGump->AddChild(gump);
+		else
+			_desktopGump->AddChild(gump);
 	}
 }
 
@@ -1376,56 +1375,63 @@ uint32 Ultima8Engine::getGameTimeInSeconds() {
 	return (Kernel::get_instance()->getFrameNum() + _timeOffset) / 30; // constant!
 }
 
-
-void Ultima8Engine::save(ODataSource *ods) {
-	uint8 s = (_avatarInStasis ? 1 : 0);
-	ods->write1(s);
-
-	int32 absoluteTime = Kernel::get_instance()->getFrameNum() + _timeOffset;
-	ods->write4(static_cast<uint32>(absoluteTime));
-	ods->write2(_avatarMoverProcess->getPid());
-
-	Palette *pal = PaletteManager::get_instance()->getPalette(PaletteManager::Pal_Game);
-	for (int i = 0; i < 12; i++) ods->write2(pal->_matrix[i]);
-	ods->write2(pal->_transform);
-
-	ods->write2(static_cast<uint16>(_inversion));
-
-	ods->write4(_saveCount);
-
-	uint8 c = (_hasCheated ? 1 : 0);
-	ods->write1(c);
+void Ultima8Engine::moveKeyEvent() {
+	_moveKeyFrame = Kernel::get_instance()->getFrameNum();
 }
 
-bool Ultima8Engine::load(IDataSource *ids, uint32 version) {
-	_avatarInStasis = (ids->read1() != 0);
+bool Ultima8Engine::moveKeyDownRecently() {
+	uint32 nowframe = Kernel::get_instance()->getFrameNum();
+	return (nowframe - _moveKeyFrame) < 60;
+}
+
+void Ultima8Engine::save(Common::WriteStream *ws) {
+	uint8 s = (_avatarInStasis ? 1 : 0);
+	ws->writeByte(s);
+
+	int32 absoluteTime = Kernel::get_instance()->getFrameNum() + _timeOffset;
+	ws->writeUint32LE(static_cast<uint32>(absoluteTime));
+	ws->writeUint16LE(_avatarMoverProcess->getPid());
+
+	Palette *pal = PaletteManager::get_instance()->getPalette(PaletteManager::Pal_Game);
+	for (int i = 0; i < 12; i++) ws->writeUint16LE(pal->_matrix[i]);
+	ws->writeUint16LE(pal->_transform);
+
+	ws->writeUint16LE(static_cast<uint16>(_inversion));
+
+	ws->writeUint32LE(_saveCount);
+
+	uint8 c = (_hasCheated ? 1 : 0);
+	ws->writeByte(c);
+}
+
+bool Ultima8Engine::load(Common::ReadStream *rs, uint32 version) {
+	_avatarInStasis = (rs->readByte() != 0);
 
 	// no gump should be moused over after load
 	_mouse->resetMouseOverGump();
 
-	int32 absoluteTime = static_cast<int32>(ids->read4());
+	int32 absoluteTime = static_cast<int32>(rs->readUint32LE());
 	_timeOffset = absoluteTime - Kernel::get_instance()->getFrameNum();
 
-	uint16 amppid = ids->read2();
-	_avatarMoverProcess = p_dynamic_cast<AvatarMoverProcess *>(Kernel::get_instance()->getProcess(amppid));
+	uint16 amppid = rs->readUint16LE();
+	_avatarMoverProcess = dynamic_cast<AvatarMoverProcess *>(Kernel::get_instance()->getProcess(amppid));
 
 	int16 matrix[12];
 	for (int i = 0; i < 12; i++)
-		matrix[i] = ids->read2();
+		matrix[i] = rs->readUint16LE();
 
 	PaletteManager::get_instance()->transformPalette(PaletteManager::Pal_Game, matrix);
 	Palette *pal = PaletteManager::get_instance()->getPalette(PaletteManager::Pal_Game);
-	pal->_transform = static_cast<PalTransforms>(ids->read2());
+	pal->_transform = static_cast<PalTransforms>(rs->readUint16LE());
 
-	_inversion = ids->read2();
+	_inversion = rs->readUint16LE();
 
-	_saveCount = ids->read4();
+	_saveCount = rs->readUint32LE();
 
-	_hasCheated = (ids->read1() != 0);
+	_hasCheated = (rs->readByte() != 0);
 
 	return true;
 }
-
 
 //
 // Intrinsics
@@ -1449,7 +1455,7 @@ uint32 Ultima8Engine::I_getCurrentTimerTick(const uint8 * /*args*/,
 	return Kernel::get_instance()->getFrameNum() * 2;
 }
 
-uint32 Ultima8Engine::I_setAvatarInStasis(const uint8 *args, unsigned int /*argsize*/) {
+uint32 Ultima8Engine::I_setAvatarInStasis(const uint8 *args, unsigned int argsize) {
 	ARG_SINT16(stasis);
 	get_instance()->setAvatarInStasis(stasis != 0);
 	return 0;
@@ -1462,10 +1468,38 @@ uint32 Ultima8Engine::I_getAvatarInStasis(const uint8 * /*args*/, unsigned int /
 		return 0;
 }
 
+uint32 Ultima8Engine::I_setCruStasis(const uint8 *args, unsigned int argsize) {
+	// This is like avatar stasis, but stops a lot of other keyboard inputs too.
+	warning("I_setCruStasis: TODO: implement me");
+	return 0;
+}
+
+uint32 Ultima8Engine::I_clrCruStasis(const uint8 *args, unsigned int argsize) {
+	warning("I_clrCruStasis: TODO: implement me");
+	return 0;
+}
+
 uint32 Ultima8Engine::I_getTimeInGameHours(const uint8 * /*args*/,
 	unsigned int /*argsize*/) {
 	// 900 seconds per _game hour
 	return get_instance()->getGameTimeInSeconds() / 900;
+}
+
+uint32 Ultima8Engine::I_getUnkCrusaderFlag(const uint8 * /*args*/,
+	unsigned int /*argsize*/) {
+	return get_instance()->isUnkCrusaderFlag() ? 1 : 0;
+}
+
+uint32 Ultima8Engine::I_setUnkCrusaderFlag(const uint8 * /*args*/,
+	unsigned int /*argsize*/) {
+	get_instance()->setUnkCrusaderFlag(true);
+	return 0;
+}
+
+uint32 Ultima8Engine::I_clrUnkCrusaderFlag(const uint8 * /*args*/,
+	unsigned int /*argsize*/) {
+	get_instance()->setUnkCrusaderFlag(false);
+	return 0;
 }
 
 uint32 Ultima8Engine::I_getTimeInMinutes(const uint8 * /*args*/,
@@ -1497,6 +1531,11 @@ uint32 Ultima8Engine::I_closeItemGumps(const uint8 *args, unsigned int /*argsize
 	return 0;
 }
 
+uint32 Ultima8Engine::I_moveKeyDownRecently(const uint8 *args, unsigned int /*argsize*/) {
+	Ultima8Engine *g = Ultima8Engine::get_instance();
+	return g->moveKeyDownRecently() ? 1 : 0;
+}
+
 bool Ultima8Engine::isDataRequired(Common::String &folder, int &majorVersion, int &minorVersion) {
 	folder = "ultima8";
 	majorVersion = 1;
@@ -1525,16 +1564,16 @@ void Ultima8Engine::showSplashScreen() {
 	scr->transBlitFrom(*srcSurface, Common::Rect(0, 0, srcSurface->w, srcSurface->h),
 		Common::Rect(0, 0, scr->w, scr->h));
 	scr->update();
-
-	// Pause to allow the image to be seen
-	g_system->delayMillis(2000);
+	// Handle a single event to get the splash screen shown
+	Common::Event event;
+	_events->pollEvent(event);
 }
 
 Gump *Ultima8Engine::getMenuGump() const {
 	if (_textModes.empty())
 		return nullptr;
 
-	return p_dynamic_cast<Gump *>(_objectManager->getObject(_textModes.front()));
+	return dynamic_cast<Gump *>(_objectManager->getObject(_textModes.front()));
 }
 
 } // End of namespace Ultima8

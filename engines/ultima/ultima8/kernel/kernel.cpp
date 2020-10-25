@@ -24,8 +24,6 @@
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/misc/id_man.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 #include "ultima/shared/std/containers.h"
 #include "ultima/ultima8/ultima8.h"
 
@@ -95,7 +93,7 @@ ProcId Kernel::addProcess(Process *proc) {
 
 #if 0
 	perr << "[Kernel] Adding process " << proc
-	     << ", pid = " << proc->_pid << Std::endl;
+	<< ", pid = " << proc->_pid << " type " << proc->GetClassType()._className << Std::endl;
 #endif
 
 //	processes.push_back(proc);
@@ -321,24 +319,35 @@ void Kernel::killProcessesNotOfType(ObjId objid, uint16 processtype, bool fail) 
 	}
 }
 
-void Kernel::save(ODataSource *ods) {
-	ods->write4(_frameNum);
-	_pIDs->save(ods);
-	ods->write4(_processes.size());
+void Kernel::save(Common::WriteStream *ws) {
+	ws->writeUint32LE(_frameNum);
+	_pIDs->save(ws);
+	ws->writeUint32LE(_processes.size());
 	for (ProcessIterator it = _processes.begin(); it != _processes.end(); ++it) {
-		(*it)->save(ods);
+		const Std::string & classname = (*it)->GetClassType()._className; // virtual
+
+		Std::map<Common::String, ProcessLoadFunc>::iterator iter;
+		iter = _processLoaders.find(classname);
+
+		if (iter == _processLoaders.end()) {
+			error("Process class cannot save without registered loader: %s", classname.c_str());
+		}
+
+		ws->writeUint16LE(classname.size());
+		ws->write(classname.c_str(), classname.size());
+		(*it)->saveData(ws);
 	}
 }
 
-bool Kernel::load(IDataSource *ids, uint32 version) {
-	_frameNum = ids->read4();
+bool Kernel::load(Common::ReadStream *rs, uint32 version) {
+	_frameNum = rs->readUint32LE();
 
-	if (!_pIDs->load(ids, version)) return false;
+	if (!_pIDs->load(rs, version)) return false;
 
-	const uint32 pcount = ids->read4();
+	const uint32 pcount = rs->readUint32LE();
 
 	for (unsigned int i = 0; i < pcount; ++i) {
-		Process *p = loadProcess(ids, version);
+		Process *p = loadProcess(rs, version);
 		if (!p) return false;
 		_processes.push_back(p);
 	}
@@ -346,10 +355,10 @@ bool Kernel::load(IDataSource *ids, uint32 version) {
 	return true;
 }
 
-Process *Kernel::loadProcess(IDataSource *ids, uint32 version) {
-	const uint16 classlen = ids->read2();
+Process *Kernel::loadProcess(Common::ReadStream *rs, uint32 version) {
+	const uint16 classlen = rs->readUint16LE();
 	char *buf = new char[classlen + 1];
-	ids->read(buf, classlen);
+	rs->read(buf, classlen);
 	buf[classlen] = 0;
 
 	Std::string classname = buf;
@@ -366,7 +375,7 @@ Process *Kernel::loadProcess(IDataSource *ids, uint32 version) {
 
 	_loading = true;
 
-	Process *p = (*(iter->_value))(ids, version);
+	Process *p = (*(iter->_value))(rs, version);
 
 	_loading = false;
 

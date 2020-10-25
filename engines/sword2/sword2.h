@@ -39,6 +39,7 @@
 #include "common/events.h"
 #include "common/util.h"
 #include "common/random.h"
+#include "sword2/detection.h"
 
 #define	MAX_starts	100
 #define	MAX_description	100
@@ -54,10 +55,6 @@ class OSystem;
  * - Broken Sword II: The Smoking Mirror
  */
 namespace Sword2 {
-
-enum {
-	GF_DEMO	= 1 << 0
-};
 
 class MemoryManager;
 class ResourceManager;
@@ -139,6 +136,8 @@ private:
 
 	// Original game platform (PC/PSX)
 	static Common::Platform _platform;
+
+	PauseToken _gamePauseToken;
 
 protected:
 	// Engine APIs

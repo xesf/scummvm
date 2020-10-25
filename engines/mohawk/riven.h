@@ -115,12 +115,11 @@ public:
 		return Common::String::format("riven-%03d.rvn", slot);
 	}
 
-	static const RivenLanguage *listLanguages();
 	static const RivenLanguage *getLanguageDesc(Common::Language language);
 	Common::Language getLanguage() const override;
 
 	bool hasFeature(EngineFeature f) const override;
-	static void registerDefaultSettings();
+
 	void applyGameSettings() override;
 	static Common::Array<Common::Keymap *> initKeymaps(const char *target);
 
@@ -182,11 +181,7 @@ public:
 	void runOptionsDialog();
 
 	// Save / Load
-	void runLoadDialog();
-	void runSaveDialog();
 	virtual bool canSaveAutosaveCurrently() override;
-	void loadGameStateAndDisplayError(int slot);
-	void saveGameStateAndDisplayError(int slot, const Common::String &desc);
 
 	/**
 	 * Has the game ended, or has the user requested to quit?
@@ -204,11 +199,6 @@ public:
 	bool isInMainMenu() const;
 	bool isGameStarted() const;
 	void startNewGame();
-};
-
-struct RivenLanguage {
-	Common::Language language;
-	const char *archiveSuffix;
 };
 
 } // End of namespace Mohawk

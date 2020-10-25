@@ -24,22 +24,24 @@
 #define _WII_OPTIONS_H_
 
 #include "common/str.h"
+#include "common/ustr.h"
 #include "gui/dialog.h"
 #include "gui/widgets/tab.h"
 #include "gui/widgets/edittext.h"
 
 using namespace GUI;
 
-class WiiOptionsDialog: public GUI::Dialog {
+class WiiOptionsDialog final : public GUI::Dialog {
 	typedef Common::String String;
+	typedef Common::U32String U32String;
 
 public:
 	WiiOptionsDialog(bool doubleStrike);
 	virtual ~WiiOptionsDialog();
 
 protected:
-	virtual void handleTickle();
-	virtual void handleCommand(CommandSender *sender, uint32 cmd, uint32 data);
+	virtual void handleTickle() override;
+	virtual void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
 
 private:
 	bool _doubleStrike;

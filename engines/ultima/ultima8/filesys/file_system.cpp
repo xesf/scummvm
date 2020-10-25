@@ -58,6 +58,9 @@ IDataSource *FileSystem::ReadFile(const string &vfn, bool is_text) {
 	if (!_allowDataOverride && data)
 		return data;
 
+	if (data)
+		delete data;
+
 	Common::SeekableReadStream *readStream;
 	if (!rawOpen(readStream, vfn))
 		return nullptr;
@@ -66,14 +69,14 @@ IDataSource *FileSystem::ReadFile(const string &vfn, bool is_text) {
 }
 
 // Open a streaming file as writeable. Streamed (0 on failure)
-ODataSource *FileSystem::WriteFile(const string &vfn, bool is_text) {
+Common::WriteStream *FileSystem::WriteFile(const string &vfn, bool is_text) {
 	string filename = vfn;
 	Common::WriteStream *writeStream;
 
 	if (!rawOpen(writeStream, filename))
 		return nullptr;
 
-	return new OFileDataSource(writeStream);
+	return writeStream;
 }
 
 bool FileSystem::rawOpen(Common::SeekableReadStream *&in, const string &fname) {
@@ -217,7 +220,7 @@ bool FileSystem::AddVirtualPath(const string &vpath, const string &realpath, con
 #ifdef DEBUG
 	debugN(MM_INFO, "virtual path \"%s\": %s\n", vp.c_str(), fullpath.c_str());
 #endif
-	if (!(fullpath.substr(0, 8) == "@memory/")) {
+	if (!(fullpath.substr(0, 8) == "@memory/") && rp.length()) {
 		if (!IsDir(fullpath)) {
 			if (!create) {
 #ifdef DEBUG
@@ -268,7 +271,7 @@ bool FileSystem::rewrite_virtual_path(string &vfn) const {
 	string::size_type pos = vfn.size();
 
 	while ((pos = vfn.rfind('/', pos)) != Std::string::npos) {
-//		perr << vfn << ", " << vfn.substr(0, pos) << ", " << pos << Std::endl;
+//		perr << vfn << ", '" << vfn.substr(0, pos) << "', " << pos << Std::endl;
 		Std::map<Common::String, string>::const_iterator p = _virtualPaths.find(
 		            vfn.substr(0, pos));
 

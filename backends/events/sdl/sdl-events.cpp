@@ -27,6 +27,7 @@
 #include "backends/events/sdl/sdl-events.h"
 #include "backends/platform/sdl/sdl.h"
 #include "backends/graphics/graphics.h"
+#include "backends/graphics3d/sdl/sdl-graphics3d.h"
 #include "common/config-manager.h"
 #include "common/textconsole.h"
 #include "common/fs.h"
@@ -61,7 +62,7 @@ void SdlEventSource::loadGameControllerMappingFile() {
 		Common::FSNode file = Common::FSNode(ConfMan.get("controller_map_db"));
 		if (file.exists()) {
 			if (SDL_GameControllerAddMappingsFromFile(file.getPath().c_str()) < 0)
-				error("File %s not valid: %s", file.getPath().c_str(), SDL_GetError());	
+				error("File %s not valid: %s", file.getPath().c_str(), SDL_GetError());
 			else {
 				loaded = true;
 				debug("Game controller DB file loaded: %s", file.getPath().c_str());
@@ -74,7 +75,7 @@ void SdlEventSource::loadGameControllerMappingFile() {
 		Common::FSNode file = dir.getChild(GAMECONTROLLERDB_FILE);
 		if (file.exists()) {
 			if (SDL_GameControllerAddMappingsFromFile(file.getPath().c_str()) < 0)
-				error("File %s not valid: %s", file.getPath().c_str(), SDL_GetError());	
+				error("File %s not valid: %s", file.getPath().c_str(), SDL_GetError());
 			else
 				debug("Game controller DB file loaded: %s", file.getPath().c_str());
 		}
@@ -84,7 +85,7 @@ void SdlEventSource::loadGameControllerMappingFile() {
 
 SdlEventSource::SdlEventSource()
     : EventSource(), _scrollLock(false), _joystick(0), _lastScreenID(0), _graphicsManager(0), _queuedFakeMouseMove(false),
-      _lastHatPosition(SDL_HAT_CENTERED), _mouseX(0), _mouseY(0)
+      _lastHatPosition(SDL_HAT_CENTERED), _mouseX(0), _mouseY(0), _engineRunning(false)
 #if SDL_VERSION_ATLEAST(2, 0, 0)
       , _queuedFakeKeyUp(false), _fakeKeyUp(), _controller(nullptr)
 #endif
@@ -114,7 +115,7 @@ SdlEventSource::~SdlEventSource() {
 int SdlEventSource::mapKey(SDL_Keycode sdlKey, SDL_Keymod mod, Uint16 unicode) {
 	Common::KeyCode key = SDLToOSystemKeycode(sdlKey);
 
-	// Keep unicode in case it's regular ASCII text or in case we didn't get a valid keycode
+	// Keep unicode in case it's regular ASCII text, Hebrew or in case we didn't get a valid keycode
 	//
 	// We need to use unicode in those cases, simply because SDL1.x passes us non-layout-adjusted keycodes.
 	// So unicode is the only way to get layout-adjusted keys.
@@ -136,6 +137,10 @@ int SdlEventSource::mapKey(SDL_Keycode sdlKey, SDL_Keymod mod, Uint16 unicode) {
 				if (unicode > 0x7E)
 					unicode = 0; // do not allow any characters above 0x7E
 			} else {
+				// We allow Hebrew characters
+				if (unicode >= 0x05D0 && unicode <= 0x05EA)
+					return unicode;
+
 				// We must not restrict as much as when Ctrl/Alt-modifiers are active, otherwise
 				// we wouldn't let umlauts through for SDL1. For SDL1 umlauts may set for example KEYCODE_QUOTE, KEYCODE_MINUS, etc.
 				if (unicode > 0xFF)
@@ -175,15 +180,21 @@ int SdlEventSource::mapKey(SDL_Keycode sdlKey, SDL_Keymod mod, Uint16 unicode) {
 	}
 }
 
-bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y) {
+bool SdlEventSource::processMouseEvent(Common::Event &event, int x, int y, int relx, int rely) {
 	_mouseX = x;
 	_mouseY = y;
 
 	event.mouse.x = x;
 	event.mouse.y = y;
+	event.relMouse.x = relx;
+	event.relMouse.y = rely;
 
 	if (_graphicsManager) {
-		return _graphicsManager->notifyMousePosition(event.mouse);
+		if (dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)) {
+			dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)->notifyMousePosition(event.mouse);
+		} else if (dynamic_cast<SdlGraphicsManager *>(_graphicsManager)) {
+			dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->notifyMousePosition(event.mouse);
+		}
 	}
 
 	return true;
@@ -422,7 +433,7 @@ bool SdlEventSource::pollEvent(Common::Event &event) {
 #endif
 
 	// If the screen changed, send an Common::EVENT_SCREEN_CHANGED
-	int screenID = ((OSystem_SDL *)g_system)->getGraphicsManager()->getScreenChangeID();
+	int screenID = g_system->getScreenChangeID();
 	if (screenID != _lastScreenID) {
 		_lastScreenID = screenID;
 		event.type = Common::EVENT_SCREEN_CHANGED;
@@ -502,10 +513,28 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		}
 
 	case SDL_WINDOWEVENT:
+		// We're only interested in events from the current display window
+		if (_graphicsManager) {
+			uint32 windowID = 0;
+			if (dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)) {
+				windowID = SDL_GetWindowID(dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)->getWindow()->getSDLWindow());
+			} else if (dynamic_cast<SdlGraphicsManager *>(_graphicsManager)) {
+				windowID = SDL_GetWindowID(dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->getWindow()->getSDLWindow());
+			}
+			if (windowID != ev.window.windowID) {
+				return false;
+			}
+		}
+
 		switch (ev.window.event) {
 		case SDL_WINDOWEVENT_EXPOSED:
-			if (_graphicsManager)
-				_graphicsManager->notifyVideoExpose();
+			if (_graphicsManager) {
+				if (dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)) {
+					dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)->notifyVideoExpose();
+				} else if (dynamic_cast<SdlGraphicsManager *>(_graphicsManager)) {
+					dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->notifyVideoExpose();
+				}
+			}
 			return false;
 
 		// SDL2 documentation indicate that SDL_WINDOWEVENT_SIZE_CHANGED is sent either as a result
@@ -521,6 +550,25 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
 		//case SDL_WINDOWEVENT_RESIZED:
 			return handleResizeEvent(event, ev.window.data1, ev.window.data2);
+
+		case SDL_WINDOWEVENT_FOCUS_GAINED: {
+			// When we gain focus, we to update whether the display can turn off
+			// dependingif a game isn't running or not
+			event.type = Common::EVENT_FOCUS_GAINED;
+			if (_engineRunning) {
+				SDL_DisableScreenSaver();
+			} else {
+				SDL_EnableScreenSaver();
+			}
+			return true;
+		}
+
+		case SDL_WINDOWEVENT_FOCUS_LOST: {
+			// Always allow the display to turn off if ScummVM is out of focus
+			event.type = Common::EVENT_FOCUS_LOST;
+			SDL_EnableScreenSaver();
+			return true;
+		}
 
 		default:
 			return false;
@@ -543,8 +591,13 @@ bool SdlEventSource::dispatchSDLEvent(SDL_Event &ev, Common::Event &event) {
 		return true;
 #else
 	case SDL_VIDEOEXPOSE:
-		if (_graphicsManager)
-			_graphicsManager->notifyVideoExpose();
+		if (_graphicsManager) {
+			if (dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)) {
+				dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)->notifyVideoExpose();
+			} else if (dynamic_cast<SdlGraphicsManager *>(_graphicsManager)) {
+				dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->notifyVideoExpose();
+			}
+		}
 		return false;
 
 	case SDL_VIDEORESIZE:
@@ -644,7 +697,7 @@ bool SdlEventSource::handleKeyUp(SDL_Event &ev, Common::Event &event) {
 bool SdlEventSource::handleMouseMotion(SDL_Event &ev, Common::Event &event) {
 	event.type = Common::EVENT_MOUSEMOVE;
 
-	return processMouseEvent(event, ev.motion.x, ev.motion.y);
+	return processMouseEvent(event, ev.motion.x, ev.motion.y, ev.motion.xrel, ev.motion.yrel);
 }
 
 bool SdlEventSource::handleMouseButtonDown(SDL_Event &ev, Common::Event &event) {
@@ -931,12 +984,19 @@ bool SdlEventSource::isJoystickConnected() const {
 	        ;
 }
 
+void SdlEventSource::setEngineRunning(const bool value) {
+	_engineRunning = value;
+}
+
 bool SdlEventSource::handleResizeEvent(Common::Event &event, int w, int h) {
 	if (_graphicsManager) {
-		_graphicsManager->notifyResize(w, h);
-
+		if (dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)) {
+			dynamic_cast<SdlGraphics3dManager *>(_graphicsManager)->notifyResize(w, h);
+		} else if (dynamic_cast<SdlGraphicsManager *>(_graphicsManager)) {
+			dynamic_cast<SdlGraphicsManager *>(_graphicsManager)->notifyResize(w, h);
+		}
 		// If the screen changed, send an Common::EVENT_SCREEN_CHANGED
-		int screenID = ((OSystem_SDL *)g_system)->getGraphicsManager()->getScreenChangeID();
+		int screenID = g_system->getScreenChangeID();
 		if (screenID != _lastScreenID) {
 			_lastScreenID = screenID;
 			event.type = Common::EVENT_SCREEN_CHANGED;

@@ -24,6 +24,7 @@
 #define WORLD_ACTORS_COMBATPROCESS_H
 
 #include "ultima/ultima8/kernel/process.h"
+#include "ultima/ultima8/misc/direction.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -48,16 +49,16 @@ public:
 
 	void dumpInfo() const override;
 
-	bool loadData(IDataSource *ids, uint32 version);
+	bool loadData(Common::ReadStream *rs, uint32 version);
+	void saveData(Common::WriteStream *ws) override;
+
 protected:
-	void saveData(ODataSource *ods) override;
+	bool isValidTarget(const Actor *target_) const;
+	bool isEnemy(const Actor *target_) const;
+	bool inAttackRange() const;
+	Direction getTargetDirection() const;
 
-	bool isValidTarget(Actor *target_);
-	bool isEnemy(Actor *target_);
-	bool inAttackRange();
-	int getTargetDirection();
-
-	void turnToDirection(int direction);
+	void turnToDirection(Direction direction);
 	void waitForTarget();
 
 	ObjId _target;

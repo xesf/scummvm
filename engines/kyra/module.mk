@@ -1,7 +1,6 @@
 MODULE := engines/kyra
 
 MODULE_OBJS := \
-	detection.o \
 	engine/items_lok.o \
 	engine/items_v2.o \
 	engine/items_hof.o \
@@ -45,6 +44,7 @@ MODULE_OBJS := \
 	gui/saveload_lok.o \
 	gui/saveload_hof.o \
 	gui/saveload_mr.o \
+	metaengine.o \
 	resource/resource.o \
 	resource/resource_intern.o \
 	resource/staticres.o \
@@ -55,7 +55,7 @@ MODULE_OBJS := \
 	script/script_mr.o \
 	script/script.o \
 	script/script_tim.o \
-	sequence/seqplayer.o \
+	sequence/seqplayer_lok.o \
 	sequence/sequences_lok.o \
 	sequence/sequences_v2.o \
 	sequence/sequences_hof.o \
@@ -71,7 +71,6 @@ MODULE_OBJS := \
 	sound/sound_lok.o \
 	sound/drivers/adlib.o \
 	sound/drivers/audstream.o \
-	sound/drivers/midi.o \
 	sound/drivers/pcspeaker_v2.o \
 	text/text.o \
 	text/text_lok.o \
@@ -122,18 +121,28 @@ MODULE_OBJS += \
 	engine/sprites_eob.o \
 	engine/timer_eob.o \
 	graphics/screen_eob.o \
+	graphics/screen_eob_amiga.o \
+	graphics/screen_eob_pc98.o \
+	graphics/screen_eob_segacd.o \
+	graphics/screen_eob_towns.o \
 	gui/gui_eob.o \
+	gui/gui_eob_segacd.o \
 	gui/saveload_eob.o \
+	resource/resource_segacd.o \
 	resource/staticres_eob.o \
 	script/script_eob.o \
+	sequence/seqplayer_eob_segacd.o \
 	sequence/sequences_eob.o \
 	sequence/sequences_darkmoon.o \
 	sound/sound_amiga_eob.o \
 	sound/sound_pc98_eob.o \
+	sound/sound_segacd_eob.o \
 	sound/sound_towns_darkmoon.o \
 	sound/drivers/audiomaster2.o \
 	sound/drivers/mlalf98.o \
-	sound/drivers/pcspeaker_v1.o
+	sound/drivers/pcspeaker_v1.o \
+	sound/drivers/segacd.o \
+	text/text_eob_segacd.o
 endif
 
 # This module can be built as a plugin
@@ -144,9 +153,15 @@ endif
 # Include common rules
 include $(srcdir)/rules.mk
 
+# HACK: Skip this when including the file for detection objects.
+ifeq "$(USE_RULES)" "1"
 ifeq ($(BACKEND), maemo)
-#ugly workaround, screen.cpp crashes gcc version 3.4.4 (CodeSourcery ARM 2005q3-2) with anything but -O3
+# Ugly workaround, screen.cpp crashes gcc version 3.4.4 (CodeSourcery ARM 2005q3-2) with anything but -O3
 $(MODULE)/graphics/screen.o: $(MODULE)/graphics/screen.cpp
 	$(MKDIR) $(*D)/$(DEPDIR)
 	$(CXX) -Wp,-MMD,"$(*D)/$(DEPDIR)/$(*F).d",-MQ,"$@",-MP $(CXXFLAGS) -O3 $(CPPFLAGS) -c $(<) -o $*.o
-endif
+endif # BACKEND=MAEMO
+endif # USE_RULES
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

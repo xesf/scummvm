@@ -21,20 +21,20 @@
  */
 
 #include "ultima/ultima8/misc/pent_include.h"
+#include "ultima/ultima8/misc/direction.h"
 #include "ultima/ultima8/world/actors/actor_bark_notify_process.h"
 #include "ultima/ultima8/gumps/gump.h"
 #include "ultima/ultima8/kernel/delay_process.h"
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/actors/animation.h"
+#include "ultima/ultima8/world/actors/actor_anim_process.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/world/get_object.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(ActorBarkNotifyProcess, GumpNotifyProcess)
+DEFINE_RUNTIME_CLASSTYPE_CODE(ActorBarkNotifyProcess)
 
 ActorBarkNotifyProcess::ActorBarkNotifyProcess()
 	: GumpNotifyProcess() {
@@ -61,7 +61,7 @@ void ActorBarkNotifyProcess::run() {
 	Animation::Sequence lastanim = a->getLastAnim();
 	if (lastanim != Animation::stand && lastanim != Animation::talk)
 		doAnim = false;
-	else if (Kernel::get_instance()->getNumProcesses(_itemNum, 0x00F0) > 0)
+	else if (Kernel::get_instance()->getNumProcesses(_itemNum, ActorAnimProcess::ACTOR_ANIM_PROC_TYPE) > 0)
 		// if busy, don't do talk animation
 		doAnim = false;
 
@@ -71,17 +71,17 @@ void ActorBarkNotifyProcess::run() {
 	ProcId delaypid = Kernel::get_instance()->addProcess(delayproc);
 
 	if (doAnim)
-		a->doAnim(Animation::talk, 8);
+		a->doAnim(Animation::talk, dir_current);
 
 	waitFor(delaypid);
 }
 
-void ActorBarkNotifyProcess::saveData(ODataSource *ods) {
-	GumpNotifyProcess::saveData(ods);
+void ActorBarkNotifyProcess::saveData(Common::WriteStream *ws) {
+	GumpNotifyProcess::saveData(ws);
 }
 
-bool ActorBarkNotifyProcess::loadData(IDataSource *ids, uint32 version) {
-	if (!GumpNotifyProcess::loadData(ids, version)) return false;
+bool ActorBarkNotifyProcess::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!GumpNotifyProcess::loadData(rs, version)) return false;
 
 	return true;
 }

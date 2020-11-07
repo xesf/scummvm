@@ -42,6 +42,8 @@ namespace TwinE {
  * 			UP / RIGHT / LEFT will manually select
  * 			different punch/kick options
  * <li> DISCREET: Kneel down to hide
+ *
+ * @note The values must match the @c TextId indices
  */
 enum HeroBehaviourType {
 	kNormal = 0,
@@ -147,6 +149,18 @@ struct DynamicFlagsStruct {
 	uint16 bUnk8000 : 1;          // 0x8000 unused
 };
 
+/** Control mode types */
+enum ControlMode {
+	kNoMove = 0,
+	kManual = 1,
+	kFollow = 2,
+	kTrack = 3,
+	kFollow2 = 4,
+	kTrackAttack = 5,
+	kSameXZ = 6,
+	kRandom = 7
+};
+
 /** Actors structure */
 struct ActorStruct {
 	StaticFlagsStruct staticFlags;
@@ -157,9 +171,10 @@ struct ActorStruct {
 	AnimationTypes anim = kAnimNone;
 	int32 animExtra = 0;  //field_2
 	int32 brickShape = 0; // field_3
-	uint8 *animExtraPtr = nullptr;
+	const uint8 *animExtraPtr = nullptr;
 	int32 sprite = 0; // field_8
 	uint8 *entityDataPtr = nullptr;
+	int32 entityDataSize = 0;
 
 	int32 x = 0;
 	int32 y = 0;
@@ -169,7 +184,7 @@ struct ActorStruct {
 	int32 bonusParameter = 0; // field_10
 	int32 angle = 0;
 	int32 speed = 0;
-	int32 controlMode = 0;
+	ControlMode controlMode = ControlMode::kNoMove;
 	int32 info0 = 0;         // cropLeft
 	int32 info1 = 0;         // cropTop
 	int32 info2 = 0;         // cropRight
@@ -186,9 +201,11 @@ struct ActorStruct {
 
 	int32 positionInMoveScript = 0;
 	uint8 *moveScript = nullptr;
+	int32 moveScriptSize = 0;
 
 	int32 positionInLifeScript = 0;
 	uint8 *lifeScript = nullptr;
+	int32 lifeScriptSize = 0;
 
 	int32 labelIdx = 0;        // script label index
 	int32 currentLabelPtr = 0; // pointer to LABEL offset
@@ -221,13 +238,52 @@ class Actor {
 private:
 	TwinEEngine* _engine;
 
+	/** Hero 3D entity for normal behaviour */
+	uint8 *heroEntityNORMAL = nullptr; // file3D0
+	int32 heroEntityNORMALSize = 0;
+	/** Hero 3D entity for athletic behaviour */
+	uint8 *heroEntityATHLETIC = nullptr; // file3D1
+	int32 heroEntityATHLETICSize = 0;
+	/** Hero 3D entity for aggressive behaviour */
+	uint8 *heroEntityAGGRESSIVE = nullptr; // file3D2
+	int32 heroEntityAGGRESSIVESize = 0;
+	/** Hero 3D entity for discrete behaviour */
+	uint8 *heroEntityDISCRETE = nullptr; // file3D3
+	int32 heroEntityDISCRETESize = 0;
+	/** Hero 3D entity for protopack behaviour */
+	uint8 *heroEntityPROTOPACK = nullptr; // file3D4
+	int32 heroEntityPROTOPACKSize = 0;
+
+	struct ActorBoundingBox {
+		/** Bottom left X coordinate */
+		int16 bottomLeftX = 0;
+		/** Bottom left Y coordinate */
+		int16 bottomLeftY = 0;
+		/** Bottom left Z coordinate */
+		int16 bottomLeftZ = 0;
+		/** Top left X coordinate */
+		int16 topRightX = 0;
+		/** Top left Y coordinate */
+		int16 topRightY = 0;
+		/** Top left Z coordinate */
+		int16 topRightZ = 0;
+		bool hasBoundingBox = false;
+	};
+
 	void initSpriteActor(int32 actorIdx);
+
+	/**
+	 * Initialize 3D actor body
+	 * @param bodyIdx 3D actor body index
+	 * @param actorIdx 3D actor index
+	 */
+	int32 initBody(int32 bodyIdx, int32 actorIdx, ActorBoundingBox &actorBoundingBox);
+
 public:
 	Actor(TwinEEngine* engine);
-	/** Table with all loaded sprites */
-	uint8 *spriteTable[NUM_SPRITES] {nullptr};
-	/** Table with all loaded sprite sizes */
-	uint32 spriteSizeTable[NUM_SPRITES] {0};
+	~Actor();
+
+	ActorStruct *processActorPtr = nullptr; // processActorVar1
 
 	/** Actor shadow X coordinate */
 	int32 shadowX = 0;
@@ -235,7 +291,7 @@ public:
 	int32 shadowY = 0;
 	/** Actor shadow Z coordinate */
 	int32 shadowZ = 0;
-	/** Actor shadow collition type */
+	/** Actor shadow collition type - brick shape */
 	int8 shadowCollisionType = 0; // shadowVar
 
 	HeroBehaviourType heroBehaviour = kNormal;
@@ -247,17 +303,6 @@ public:
 	int16 previousHeroAngle = 0;
 
 	int16 cropBottomScreen = 0;
-
-	/** Hero 3D entity for normal behaviour */
-	uint8 *heroEntityNORMAL = nullptr; // file3D0
-	/** Hero 3D entity for athletic behaviour */
-	uint8 *heroEntityATHLETIC = nullptr; // file3D1
-	/** Hero 3D entity for aggressive behaviour */
-	uint8 *heroEntityAGGRESSIVE = nullptr; // file3D2
-	/** Hero 3D entity for discrete behaviour */
-	uint8 *heroEntityDISCRETE = nullptr; // file3D3
-	/** Hero 3D entity for protopack behaviour */
-	uint8 *heroEntityPROTOPACK = nullptr; // file3D4
 
 	/** Hero current anim for normal behaviour */
 	int16 heroAnimIdxNORMAL = 0; // TCos0Init
@@ -274,23 +319,11 @@ public:
 	int16 heroAnimIdx[4]; // TCOS
 
 	/** Actors 3D body table - size of NUM_BODIES */
-	uint8 *bodyTable[NUM_BODIES];
+	uint8 *bodyTable[NUM_BODIES]{nullptr};
+	int32 bodyTableSize[NUM_BODIES]{0};
 
 	/** Current position in body table */
 	int32 currentPositionInBodyPtrTab;
-
-	/** Actor bounding box bottom left X coordinate */
-	int16 bottomLeftX; // loadCostumeVar
-	/** Actor bounding box bottom left Y coordinate */
-	int16 bottomLeftY; // loadCostumeVar2
-	/** Actor bounding box bottom left Z coordinate */
-	int16 bottomLeftZ; // loadCostumeVar3
-	/** Actor bounding box top left X coordinate */
-	int16 topRightX; // loadCostumeVar4
-	/** Actor bounding box top left Y coordinate */
-	int16 topRightY; // loadCostumeVar5
-	/** Actor bounding box top left Z coordinate */
-	int16 topRightZ; // loadCostumeVar6
 
 	/** Restart hero variables while opening new scenes */
 	void restartHeroScene();
@@ -298,18 +331,13 @@ public:
 	/** Load hero 3D body and animations */
 	void loadHeroEntities();
 
+	int32 getTextIdForBehaviour() const;
+
 	/**
 	 * Set hero behaviour
 	 * @param behaviour behaviour value to set
 	 */
 	void setBehaviour(int32 behaviour);
-
-	/**
-	 * Initialize 3D actor body
-	 * @param bodyIdx 3D actor body index
-	 * @param actorIdx 3D actor index
-	 */
-	int32 initBody(int32 bodyIdx, int32 actorIdx);
 
 	/** Preload all sprites */
 	void preloadSprites();

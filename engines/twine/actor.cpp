@@ -21,13 +21,14 @@
  */
 
 #include "twine/actor.h"
+#include "common/memstream.h"
 #include "common/system.h"
 #include "common/textconsole.h"
 #include "twine/animations.h"
 #include "twine/extra.h"
 #include "twine/gamestate.h"
 #include "twine/grid.h"
-#include "twine/hqrdepack.h"
+#include "twine/hqr.h"
 #include "twine/movements.h"
 #include "twine/renderer.h"
 #include "twine/resources.h"
@@ -41,8 +42,20 @@ namespace TwinE {
 Actor::Actor(TwinEEngine *engine) : _engine(engine) {
 }
 
+Actor::~Actor() {
+	free(heroEntityNORMAL);
+	free(heroEntityATHLETIC);
+	free(heroEntityAGGRESSIVE);
+	free(heroEntityDISCRETE);
+	free(heroEntityPROTOPACK);
+
+	for (size_t i = 0; i < ARRAYSIZE(bodyTable); ++i) {
+		free(bodyTable[i]);
+	}
+}
+
 void Actor::restartHeroScene() {
-	_engine->_scene->sceneHero->controlMode = 1;
+	_engine->_scene->sceneHero->controlMode = ControlMode::kManual;
 	memset(&_engine->_scene->sceneHero->dynamicFlags, 0, sizeof(_engine->_scene->sceneHero->dynamicFlags));
 	memset(&_engine->_scene->sceneHero->staticFlags, 0, sizeof(_engine->_scene->sceneHero->staticFlags));
 
@@ -66,35 +79,41 @@ void Actor::restartHeroScene() {
 }
 
 void Actor::loadHeroEntities() {
-	if (_engine->_hqrdepack->hqrGetallocEntry(&heroEntityATHLETIC, Resources::HQR_FILE3D_FILE, FILE3DHQR_HEROATHLETIC) == 0) {
+	heroEntityATHLETICSize = HQR::getAllocEntry(&heroEntityATHLETIC, Resources::HQR_FILE3D_FILE, FILE3DHQR_HEROATHLETIC);
+	if (heroEntityATHLETICSize == 0) {
 		error("Failed to load actor athletic 3d data");
 	}
 	_engine->_scene->sceneHero->entityDataPtr = heroEntityATHLETIC;
-	heroAnimIdxATHLETIC = _engine->_animations->getBodyAnimIndex(0, 0);
+	heroAnimIdxATHLETIC = _engine->_animations->getBodyAnimIndex(AnimationTypes::kStanding);
 
-	if (_engine->_hqrdepack->hqrGetallocEntry(&heroEntityAGGRESSIVE, Resources::HQR_FILE3D_FILE, FILE3DHQR_HEROAGGRESSIVE) == 0) {
+	heroEntityAGGRESSIVESize = HQR::getAllocEntry(&heroEntityAGGRESSIVE, Resources::HQR_FILE3D_FILE, FILE3DHQR_HEROAGGRESSIVE);
+	if (heroEntityAGGRESSIVESize == 0) {
 		error("Failed to load actor aggressive 3d data");
 	}
 	_engine->_scene->sceneHero->entityDataPtr = heroEntityAGGRESSIVE;
-	heroAnimIdxAGGRESSIVE = _engine->_animations->getBodyAnimIndex(0, 0);
+	heroAnimIdxAGGRESSIVE = _engine->_animations->getBodyAnimIndex(AnimationTypes::kStanding);
 
-	if (_engine->_hqrdepack->hqrGetallocEntry(&heroEntityDISCRETE, Resources::HQR_FILE3D_FILE, FILE3DHQR_HERODISCRETE) == 0) {
+	heroEntityDISCRETESize = HQR::getAllocEntry(&heroEntityDISCRETE, Resources::HQR_FILE3D_FILE, FILE3DHQR_HERODISCRETE);
+	if (heroEntityDISCRETESize == 0) {
 		error("Failed to load actor discrete 3d data");
 	}
 	_engine->_scene->sceneHero->entityDataPtr = heroEntityDISCRETE;
-	heroAnimIdxDISCRETE = _engine->_animations->getBodyAnimIndex(0, 0);
+	heroAnimIdxDISCRETE = _engine->_animations->getBodyAnimIndex(AnimationTypes::kStanding);
 
-	if (_engine->_hqrdepack->hqrGetallocEntry(&heroEntityPROTOPACK, Resources::HQR_FILE3D_FILE, FILE3DHQR_HEROPROTOPACK) == 0) {
+	heroEntityPROTOPACKSize = HQR::getAllocEntry(&heroEntityPROTOPACK, Resources::HQR_FILE3D_FILE, FILE3DHQR_HEROPROTOPACK);
+	if (heroEntityPROTOPACKSize == 0) {
 		error("Failed to load actor protopack 3d data");
 	}
 	_engine->_scene->sceneHero->entityDataPtr = heroEntityPROTOPACK;
-	heroAnimIdxPROTOPACK = _engine->_animations->getBodyAnimIndex(0, 0);
+	heroAnimIdxPROTOPACK = _engine->_animations->getBodyAnimIndex(AnimationTypes::kStanding);
 
-	if (_engine->_hqrdepack->hqrGetallocEntry(&heroEntityNORMAL, Resources::HQR_FILE3D_FILE, FILE3DHQR_HERONORMAL) == 0) {
+	heroEntityNORMALSize = HQR::getAllocEntry(&heroEntityNORMAL, Resources::HQR_FILE3D_FILE, FILE3DHQR_HERONORMAL);
+	if (heroEntityNORMALSize == 0) {
 		error("Failed to load actor normal 3d data");
 	}
 	_engine->_scene->sceneHero->entityDataPtr = heroEntityNORMAL;
-	heroAnimIdxNORMAL = _engine->_animations->getBodyAnimIndex(0, 0);
+	_engine->_scene->sceneHero->entityDataSize = heroEntityNORMALSize;
+	heroAnimIdxNORMAL = _engine->_animations->getBodyAnimIndex(AnimationTypes::kStanding);
 
 	_engine->_scene->sceneHero->animExtraPtr = _engine->_animations->currentActorAnimExtraPtr;
 }
@@ -104,22 +123,27 @@ void Actor::setBehaviour(int32 behaviour) {
 	case kNormal:
 		heroBehaviour = kNormal;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityNORMAL;
+		_engine->_scene->sceneHero->entityDataSize = heroEntityNORMALSize;
 		break;
 	case kAthletic:
 		heroBehaviour = kAthletic;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityATHLETIC;
+		_engine->_scene->sceneHero->entityDataSize = heroEntityATHLETICSize;
 		break;
 	case kAggressive:
 		heroBehaviour = kAggressive;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityAGGRESSIVE;
+		_engine->_scene->sceneHero->entityDataSize = heroEntityAGGRESSIVESize;
 		break;
 	case kDiscrete:
 		heroBehaviour = kDiscrete;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityDISCRETE;
+		_engine->_scene->sceneHero->entityDataSize = heroEntityDISCRETESize;
 		break;
 	case kProtoPack:
 		heroBehaviour = kProtoPack;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityPROTOPACK;
+		_engine->_scene->sceneHero->entityDataSize = heroEntityPROTOPACKSize;
 		break;
 	};
 
@@ -140,92 +164,86 @@ void Actor::initSpriteActor(int32 actorIdx) {
 	ActorStruct *localActor = _engine->_scene->getActor(actorIdx);
 
 	if (localActor->staticFlags.bIsSpriteActor && localActor->sprite != -1 && localActor->entity != localActor->sprite) {
-		const int16 *ptr = (const int16 *)(_engine->_scene->spriteBoundingBoxPtr + localActor->sprite * 16 + 4);
+		Common::MemoryReadStream stream(_engine->_resources->spriteBoundingBoxPtr, _engine->_resources->spriteBoundingBoxSize);
+		stream.seek(localActor->sprite * 16);
+		stream.skip(4);
 
 		localActor->entity = localActor->sprite;
-		localActor->boudingBox.x.bottomLeft = *(ptr++);
-		localActor->boudingBox.x.topRight = *(ptr++);
-		localActor->boudingBox.y.bottomLeft = *(ptr++);
-		localActor->boudingBox.y.topRight = *(ptr++);
-		localActor->boudingBox.z.bottomLeft = *(ptr++);
-		localActor->boudingBox.z.topRight = *(ptr++);
+		localActor->boudingBox.x.bottomLeft = stream.readSint16LE();
+		localActor->boudingBox.x.topRight = stream.readSint16LE();
+		localActor->boudingBox.y.bottomLeft = stream.readSint16LE();
+		localActor->boudingBox.y.topRight = stream.readSint16LE();
+		localActor->boudingBox.z.bottomLeft = stream.readSint16LE();
+		localActor->boudingBox.z.topRight = stream.readSint16LE();
 	}
 }
 
-int32 Actor::initBody(int32 bodyIdx, int32 actorIdx) {
-	ActorStruct *localActor = _engine->_scene->getActor(actorIdx);
-	uint8 *bodyPtr = localActor->entityDataPtr;
+int32 Actor::getTextIdForBehaviour() const {
+	if (_engine->_actor->heroBehaviour == kAggressive && _engine->_actor->autoAgressive) {
+		return TextId::kBehaviourAgressiveAuto;
+	}
+	// the other values are matching the text ids
+	return _engine->_actor->heroBehaviour;
+}
 
+int32 Actor::initBody(int32 bodyIdx, int32 actorIdx, ActorBoundingBox &actorBoundingBox) {
+	if (bodyIdx == -1) {
+		return -1;
+	}
+	ActorStruct *actor = _engine->_scene->getActor(actorIdx);
+	Common::MemorySeekableReadWriteStream stream(actor->entityDataPtr, actor->entityDataSize);
 	do {
-		uint8 var1 = *(bodyPtr++);
-
-		if (var1 == 0xFF) {
+		const uint8 type = stream.readByte();
+		if (type == 0xFF) {
 			return -1;
 		}
 
-		uint8 *bodyPtr2 = bodyPtr + 1;
+		uint8 idx = stream.readByte();
+		const int32 pos = stream.pos();
+		const uint8 size = stream.readByte();
+		if (type == 1) { // 1 = body data - 3 is animdata
+			if (idx == bodyIdx) {
+				const int16 bodyIndex = stream.readUint16LE();
 
-		if (var1 == 1) {
-			uint8 var2 = *(bodyPtr);
-
-			if (var2 == bodyIdx) {
 				int32 index;
-				uint8 *bodyPtr3 = bodyPtr2 + 1;
-				int16 flag = *((uint16 *)bodyPtr3);
-
-				if (!(flag & 0x8000)) {
-					_engine->_hqrdepack->hqrGetallocEntry(&bodyTable[currentPositionInBodyPtrTab], Resources::HQR_BODY_FILE, flag & 0xFFFF);
-
-					if (!bodyTable[currentPositionInBodyPtrTab]) {
-						error("HQR ERROR: Loading body entities");
-					}
-					_engine->_renderer->prepareIsoModel(bodyTable[currentPositionInBodyPtrTab]);
-					*((uint16 *)bodyPtr3) = currentPositionInBodyPtrTab + 0x8000;
+				if (!(bodyIndex & 0x8000)) {
 					index = currentPositionInBodyPtrTab;
 					currentPositionInBodyPtrTab++;
+					if (bodyTable[index]) {
+						free(bodyTable[index]);
+					}
+					bodyTableSize[index] = HQR::getAllocEntry(&bodyTable[index], Resources::HQR_BODY_FILE, bodyIndex & 0xFFFF);
+					if (bodyTableSize[index] == 0) {
+						error("HQR ERROR: Loading body entities");
+					}
+					_engine->_renderer->prepareIsoModel(bodyTable[index]);
+					stream.seek(stream.pos() - sizeof(uint16));
+					stream.writeUint16LE(index + 0x8000);
 				} else {
-					flag &= 0x7FFF;
-					index = flag;
+					index = bodyIndex & 0x7FFF;
 				}
 
-				bodyPtr3 += 2;
-				bottomLeftX = -32000;
-
-				uint8 *bodyPtr4 = bodyPtr3;
-				bodyPtr3++;
-
-				if (!*bodyPtr4) {
+				actorBoundingBox.hasBoundingBox = stream.readByte();
+				if (!actorBoundingBox.hasBoundingBox) {
 					return index;
 				}
 
-				bodyPtr4 = bodyPtr3;
-				bodyPtr3++;
-
-				if (*bodyPtr4 != 14) {
+				if (stream.readByte() != 14) {
 					return index;
 				}
 
-				// bodyPtr5 = (int16 *) bodyPtr3;
+				actorBoundingBox.bottomLeftX = stream.readUint16LE();
+				actorBoundingBox.bottomLeftY = stream.readUint16LE();
+				actorBoundingBox.bottomLeftZ = stream.readUint16LE();
 
-				bottomLeftX = *((uint16 *)bodyPtr3);
-				bodyPtr3 += 2;
-				bottomLeftY = *((uint16 *)bodyPtr3);
-				bodyPtr3 += 2;
-				bottomLeftZ = *((uint16 *)bodyPtr3);
-				bodyPtr3 += 2;
-
-				topRightX = *((uint16 *)bodyPtr3);
-				bodyPtr3 += 2;
-				topRightY = *((uint16 *)bodyPtr3);
-				bodyPtr3 += 2;
-				topRightZ = *((uint16 *)bodyPtr3);
-				bodyPtr3 += 2;
+				actorBoundingBox.topRightX = stream.readUint16LE();
+				actorBoundingBox.topRightY = stream.readUint16LE();
+				actorBoundingBox.topRightZ = stream.readUint16LE();
 
 				return index;
 			}
 		}
-
-		bodyPtr = *bodyPtr2 + bodyPtr2;
+		stream.seek(pos + size);
 	} while (1);
 }
 
@@ -235,88 +253,81 @@ void Actor::initModelActor(int32 bodyIdx, int16 actorIdx) {
 		return;
 	}
 
-	if (actorIdx == 0 && heroBehaviour == kProtoPack && localActor->armor != 0 && localActor->armor != 1) { // if hero
+	if (IS_HERO(actorIdx) && heroBehaviour == kProtoPack && localActor->armor != 0 && localActor->armor != 1) {
 		setBehaviour(kNormal);
 	}
 
-	int32 entityIdx;
-	if (bodyIdx != -1) {
-		entityIdx = initBody(bodyIdx, actorIdx);
-	} else {
-		entityIdx = -1;
-	}
+	ActorBoundingBox actorBoundingBox;
+	const int32 entityIdx = initBody(bodyIdx, actorIdx, actorBoundingBox);
+	if (entityIdx == -1) {
+		localActor->body = -1;
+		localActor->entity = -1;
 
-	if (entityIdx != -1) {
-		if (localActor->entity == entityIdx) {
-			return;
-		}
-
-		localActor->entity = entityIdx;
-		localActor->body = bodyIdx;
-		int currentIndex = localActor->entity;
-
-		if (bottomLeftX == -32000) {
-			uint16 *ptr = (uint16 *)bodyTable[localActor->entity];
-			ptr++;
-
-			int16 var1 = *((int16 *)ptr++);
-			int16 var2 = *((int16 *)ptr++);
-			localActor->boudingBox.y.bottomLeft = *((int16 *)ptr++);
-			localActor->boudingBox.y.topRight = *((int16 *)ptr++);
-			int16 var3 = *((int16 *)ptr++);
-			int16 var4 = *((int16 *)ptr++);
-
-			int32 result = 0;
-			if (localActor->staticFlags.bUseMiniZv) {
-				int32 result1 = var2 - var1; // take smaller for bound
-				int32 result2 = var4 - var3;
-
-				result = MIN(result1, result2);
-
-				result = ABS(result);
-				result >>= 1;
-			} else {
-				int32 result1 = var2 - var1; // take average for bound
-				int32 result2 = var4 - var3;
-
-				result = result2 + result1;
-				result = ABS(result);
-				result >>= 2;
-			}
-
-			localActor->boudingBox.x.bottomLeft = -result;
-			localActor->boudingBox.x.topRight = result;
-			localActor->boudingBox.z.bottomLeft = -result;
-			localActor->boudingBox.z.topRight = result;
-		} else {
-			localActor->boudingBox.x.bottomLeft = bottomLeftX;
-			localActor->boudingBox.x.topRight = topRightX;
-			localActor->boudingBox.y.bottomLeft = bottomLeftY;
-			localActor->boudingBox.y.topRight = topRightY;
-			localActor->boudingBox.z.bottomLeft = bottomLeftZ;
-			localActor->boudingBox.z.topRight = topRightZ;
-		}
-
-		if (currentIndex == -1)
-			return;
-
-		if (localActor->previousAnimIdx == -1)
-			return;
-
-		_engine->_renderer->copyActorInternAnim(bodyTable[currentIndex], bodyTable[localActor->entity]);
-
+		localActor->boudingBox.x.bottomLeft = 0;
+		localActor->boudingBox.x.topRight = 0;
+		localActor->boudingBox.y.bottomLeft = 0;
+		localActor->boudingBox.y.topRight = 0;
+		localActor->boudingBox.z.bottomLeft = 0;
+		localActor->boudingBox.z.topRight = 0;
 		return;
 	}
 
-	localActor->body = -1;
-	localActor->entity = -1;
+	if (localActor->entity == entityIdx) {
+		return;
+	}
 
-	localActor->boudingBox.x.bottomLeft = 0;
-	localActor->boudingBox.x.topRight = 0;
-	localActor->boudingBox.y.bottomLeft = 0;
-	localActor->boudingBox.y.topRight = 0;
-	localActor->boudingBox.z.bottomLeft = 0;
-	localActor->boudingBox.z.topRight = 0;
+	localActor->entity = entityIdx;
+	localActor->body = bodyIdx;
+	int currentIndex = localActor->entity;
+
+	if (actorBoundingBox.hasBoundingBox) {
+		localActor->boudingBox.x.bottomLeft = actorBoundingBox.bottomLeftX;
+		localActor->boudingBox.x.topRight = actorBoundingBox.topRightX;
+		localActor->boudingBox.y.bottomLeft = actorBoundingBox.bottomLeftY;
+		localActor->boudingBox.y.topRight = actorBoundingBox.topRightY;
+		localActor->boudingBox.z.bottomLeft = actorBoundingBox.bottomLeftZ;
+		localActor->boudingBox.z.topRight = actorBoundingBox.topRightZ;
+	} else {
+		Common::MemoryReadStream stream(bodyTable[localActor->entity], bodyTableSize[localActor->entity]);
+		stream.skip(2);
+		int16 var1 = stream.readSint16LE();
+		int16 var2 = stream.readSint16LE();
+		localActor->boudingBox.y.bottomLeft = stream.readSint16LE();
+		localActor->boudingBox.y.topRight = stream.readSint16LE();
+		int16 var3 = stream.readSint16LE();
+		int16 var4 = stream.readSint16LE();
+
+		int32 result = 0;
+		if (localActor->staticFlags.bUseMiniZv) {
+			int32 result1 = var2 - var1; // take smaller for bound
+			int32 result2 = var4 - var3;
+
+			result = MIN(result1, result2);
+
+			result = ABS(result);
+			result >>= 1;
+		} else {
+			int32 result1 = var2 - var1; // take average for bound
+			int32 result2 = var4 - var3;
+
+			result = result2 + result1;
+			result = ABS(result);
+			result >>= 2;
+		}
+
+		localActor->boudingBox.x.bottomLeft = -result;
+		localActor->boudingBox.x.topRight = result;
+		localActor->boudingBox.z.bottomLeft = -result;
+		localActor->boudingBox.z.topRight = result;
+	}
+
+	if (currentIndex == -1)
+		return;
+
+	if (localActor->previousAnimIdx == -1)
+		return;
+
+	_engine->_renderer->copyActorInternAnim(bodyTable[currentIndex], bodyTable[localActor->entity]);
 }
 
 void Actor::initActor(int16 actorIdx) {
@@ -376,7 +387,7 @@ void Actor::resetActor(int16 actorIdx) {
 
 	actor->angle = 0;
 	actor->speed = 40;
-	actor->controlMode = 0;
+	actor->controlMode = ControlMode::kNoMove;
 
 	actor->info0 = 0;
 	actor->info1 = 0;
@@ -481,7 +492,10 @@ void Actor::processActorExtraBonus(int32 actorIdx) { // GiveExtraBonus
 		return;
 	}
 
-	int8 currentBonus = bonusTable[_engine->getRandomNumber(numBonus)];
+	const int bonusIndex = _engine->getRandomNumber(numBonus);
+	assert(bonusIndex >= 0);
+	assert(bonusIndex < numBonus);
+	int8 currentBonus = bonusTable[bonusIndex];
 	// if bonus is magic an no magic level yet, then give life points
 	if (!_engine->_gameState->magicLevelIdx && currentBonus == 2) {
 		currentBonus = 1;
@@ -491,12 +505,12 @@ void Actor::processActorExtraBonus(int32 actorIdx) { // GiveExtraBonus
 	if (actor->dynamicFlags.bIsDead) {
 		_engine->_extra->addExtraBonus(actor->x, actor->y, actor->z, 0x100, 0, currentBonus, actor->bonusAmount);
 		// FIXME add constant for sample index
-		_engine->_sound->playSample(11, 0x1000, 1, actor->x, actor->y, actor->z, actorIdx);
+		_engine->_sound->playSample(Samples::ItemPopup, 0x1000, 1, actor->x, actor->y, actor->z, actorIdx);
 	} else {
 		int32 angle = _engine->_movements->getAngleAndSetTargetActorDistance(actor->x, actor->z, _engine->_scene->sceneHero->x, _engine->_scene->sceneHero->z);
 		_engine->_extra->addExtraBonus(actor->x, actor->y + actor->boudingBox.y.topRight, actor->z, 200, angle, currentBonus, actor->bonusAmount);
 		// FIXME add constant for sample index
-		_engine->_sound->playSample(11, 0x1000, 1, actor->x, actor->y + actor->boudingBox.y.topRight, actor->z, actorIdx);
+		_engine->_sound->playSample(Samples::ItemPopup, 0x1000, 1, actor->x, actor->y + actor->boudingBox.y.topRight, actor->z, actorIdx);
 	}
 }
 

@@ -4,6 +4,7 @@ MODULE_OBJS := \
 	actor.o \
 	animations.o \
 	collision.o \
+	console.o \
 	debug.o \
 	debug_grid.o \
 	debug_scene.o \
@@ -13,7 +14,7 @@ MODULE_OBJS := \
 	gamestate.o \
 	grid.o \
 	holomap.o \
-	hqrdepack.o \
+	hqr.o \
 	interface.o \
 	input.o \
 	menu.o \
@@ -26,8 +27,8 @@ MODULE_OBJS := \
 	resources.o \
 	scene.o \
 	screens.o \
-	script_life.o \
-	script_move.o \
+	script_life_v1.o \
+	script_move_v1.o \
 	sound.o \
 	text.o \
 	twine.o

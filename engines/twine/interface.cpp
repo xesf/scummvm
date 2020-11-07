@@ -35,14 +35,16 @@ const int32 BOTTOM = 8; // 1000
 
 int32 Interface::checkClipping(int32 x, int32 y) {
 	int32 code = INSIDE;
-	if (x < textWindowLeft)
+	if (x < textWindowLeft) {
 		code |= LEFT;
-	else if (x > textWindowRight)
+	} else if (x > textWindowRight) {
 		code |= RIGHT;
-	if (y < textWindowTop)
+	}
+	if (y < textWindowTop) {
 		code |= TOP;
-	else if (y > textWindowBottom)
+	} else if (y > textWindowBottom) {
 		code |= BOTTOM;
+	}
 	return code;
 }
 
@@ -67,8 +69,9 @@ void Interface::drawLine(int32 startWidth, int32 startHeight, int32 endWidth, in
 	int32 outcode1 = checkClipping(endWidth, endHeight);
 
 	while ((outcode0 | outcode1) != 0) {
-		if (((outcode0 & outcode1) != 0) && (outcode0 != INSIDE))
+		if ((outcode0 & outcode1) != 0 && outcode0 != INSIDE) {
 			return; // Reject lines which are behind one clipping plane
+		}
 
 		// At least one endpoint is outside the clip rectangle; pick it.
 		int32 outcodeOut = outcode0 ? outcode0 : outcode1;
@@ -173,30 +176,38 @@ void Interface::blitBox(int32 left, int32 top, int32 right, int32 bottom, const 
 }
 
 void Interface::drawTransparentBox(int32 left, int32 top, int32 right, int32 bottom, int32 colorAdj) {
-	if (left > SCREEN_TEXTLIMIT_RIGHT)
+	if (left > SCREEN_TEXTLIMIT_RIGHT) {
 		return;
-	if (right < SCREEN_TEXTLIMIT_LEFT)
+	}
+	if (right < SCREEN_TEXTLIMIT_LEFT) {
 		return;
-	if (top > SCREEN_TEXTLIMIT_BOTTOM)
+	}
+	if (top > SCREEN_TEXTLIMIT_BOTTOM) {
 		return;
-	if (bottom < SCREEN_TEXTLIMIT_TOP)
+	}
+	if (bottom < SCREEN_TEXTLIMIT_TOP) {
 		return;
+	}
 
-	if (left < SCREEN_TEXTLIMIT_LEFT)
+	if (left < SCREEN_TEXTLIMIT_LEFT) {
 		left = SCREEN_TEXTLIMIT_LEFT;
-	if (right > SCREEN_TEXTLIMIT_RIGHT)
+	}
+	if (right > SCREEN_TEXTLIMIT_RIGHT) {
 		right = SCREEN_TEXTLIMIT_RIGHT;
-	if (top < SCREEN_TEXTLIMIT_TOP)
+	}
+	if (top < SCREEN_TEXTLIMIT_TOP) {
 		top = SCREEN_TEXTLIMIT_TOP;
-	if (bottom > SCREEN_TEXTLIMIT_BOTTOM)
+	}
+	if (bottom > SCREEN_TEXTLIMIT_BOTTOM) {
 		bottom = SCREEN_TEXTLIMIT_BOTTOM;
+	}
 
 	uint8 *pos = (uint8*)_engine->frontVideoBuffer.getPixels() + _engine->screenLookupTable[top] + left;
-	int32 height = bottom - top;
+	const int32 height = bottom - top;
 	int32 height2 = height + 1;
-	int32 width = right - left + 1;
-	int32 pitch = DEFAULT_SCREEN_WIDTH - width;
-	int32 localMode = colorAdj;
+	const int32 width = right - left + 1;
+	const int32 pitch = DEFAULT_SCREEN_WIDTH - width;
+	const int32 localMode = colorAdj;
 
 	do {
 		int32 var1 = width;
@@ -218,14 +229,18 @@ void Interface::drawTransparentBox(int32 left, int32 top, int32 right, int32 bot
 }
 
 void Interface::drawSplittedBox(int32 left, int32 top, int32 right, int32 bottom, uint8 e) { // Box
-	if (left > SCREEN_TEXTLIMIT_RIGHT)
+	if (left > SCREEN_TEXTLIMIT_RIGHT) {
 		return;
-	if (right < SCREEN_TEXTLIMIT_LEFT)
+	}
+	if (right < SCREEN_TEXTLIMIT_LEFT) {
 		return;
-	if (top > SCREEN_TEXTLIMIT_BOTTOM)
+	}
+	if (top > SCREEN_TEXTLIMIT_BOTTOM) {
 		return;
-	if (bottom < SCREEN_TEXTLIMIT_TOP)
+	}
+	if (bottom < SCREEN_TEXTLIMIT_TOP) {
 		return;
+	}
 
 	// cropping
 	int32 offset = -((right - left) - SCREEN_WIDTH);
@@ -241,20 +256,24 @@ void Interface::drawSplittedBox(int32 left, int32 top, int32 right, int32 bottom
 }
 
 void Interface::setClip(int32 left, int32 top, int32 right, int32 bottom) {
-	if (left < 0)
+	if (left < 0) {
 		left = 0;
+	}
 	textWindowLeft = left;
 
-	if (top < 0)
+	if (top < 0) {
 		top = 0;
+	}
 	textWindowTop = top;
 
-	if (right >= SCREEN_WIDTH)
+	if (right >= SCREEN_WIDTH) {
 		right = SCREEN_TEXTLIMIT_RIGHT;
+	}
 	textWindowRight = right;
 
-	if (bottom >= SCREEN_HEIGHT)
+	if (bottom >= SCREEN_HEIGHT) {
 		bottom = SCREEN_TEXTLIMIT_BOTTOM;
+	}
 	textWindowBottom = bottom;
 }
 

@@ -41,13 +41,20 @@ public:
 		return "TwinE";
 	}
 
-	bool hasFeature(MetaEngineFeature f) const override {
-		return false;
+	int getMaximumSaveSlot() const override {
+		return 6;
 	}
 
 	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override {
 		if (desc) {
-			*engine = new TwinE::TwinEEngine(syst, desc->language, desc->flags);
+			TwineGameType gameType = TwineGameType::GType_LBA;
+			const Common::String gameId = desc->gameId;
+			if (gameId == "lba") {
+				gameType = TwineGameType::GType_LBA;
+			} else if (gameId == "lba2") {
+				gameType = TwineGameType::GType_LBA2;
+			}
+			*engine = new TwinE::TwinEEngine(syst, desc->language, desc->flags, gameType);
 		}
 		return desc != nullptr;
 	}
@@ -218,11 +225,6 @@ Common::KeymapArray TwinEMetaEngine::initKeymaps(const char *target) const {
 		act->addDefaultInputMapping("ESCAPE");
 		gameKeyMap->addAction(act);
 
-		act = new Action("PAGEUP", _("Page Up"));
-		act->setCustomEngineActionEvent(TwinEActionType::PageUp);
-		act->addDefaultInputMapping("PAGEUP");
-		gameKeyMap->addAction(act);
-
 		array[0] = gameKeyMap;
 	}
 
@@ -262,6 +264,12 @@ Common::KeymapArray TwinEMetaEngine::initKeymaps(const char *target) const {
 		act->setCustomEngineActionEvent(TwinEActionType::UILeft);
 		act->addDefaultInputMapping("LEFT");
 		act->addDefaultInputMapping("KP4");
+		uiKeyMap->addAction(act);
+
+		act = new Action("NEXTPAGE", _("Next Page"));
+		act->setCustomEngineActionEvent(TwinEActionType::UINextPage);
+		act->addDefaultInputMapping("SPACE");
+		act->addDefaultInputMapping("PAGEDOWN");
 		uiKeyMap->addAction(act);
 
 		array[1] = uiKeyMap;

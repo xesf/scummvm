@@ -30,7 +30,7 @@
 #include "twine/collision.h"
 #include "twine/flamovies.h"
 #include "twine/grid.h"
-#include "twine/hqrdepack.h"
+#include "twine/hqr.h"
 #include "twine/movements.h"
 #include "twine/resources.h"
 #include "twine/text.h"
@@ -39,17 +39,6 @@
 namespace TwinE {
 
 Sound::Sound(TwinEEngine *engine) : _engine(engine) {
-}
-
-void Sound::sampleVolume(int32 chan, int32 volume) {
-	if (chan == -1) {
-		_engine->_system->getMixer()->setVolumeForSoundType(Audio::Mixer::kPlainSoundType, volume);
-		return;
-	}
-	if (chan < 0 || chan > ARRAYSIZE(samplesPlaying)) {
-		error("Given channel index is out of bounds: %i", chan);
-	}
-	_engine->_system->getMixer()->setChannelVolume(samplesPlaying[chan], volume / 2);
 }
 
 void Sound::setSamplePosition(int32 chan, int32 x, int32 y, int32 z) {
@@ -72,22 +61,18 @@ void Sound::playFlaSample(int32 index, int32 frequency, int32 repeat, int32 x, i
 
 	int channelIdx = getFreeSampleChannelIndex();
 	if (channelIdx == -1) {
+		warning("Failed to play fla sample for index: %i - no free channel", index);
 		return;
 	}
 
 	uint8 *sampPtr;
-	int32 sampSize;
-	Common::String sampfile = Common::String::format("%s", Resources::HQR_FLASAMP_FILE);
-	sampSize = _engine->_hqrdepack->hqrGetallocEntry(&sampPtr, sampfile.c_str(), index);
+	const int32 sampSize = HQR::getAllocEntry(&sampPtr, Resources::HQR_FLASAMP_FILE, index);
 	if (sampSize == 0) {
-		sampfile = Common::String::format(FLA_DIR "%s", Resources::HQR_FLASAMP_FILE);
-		sampSize = _engine->_hqrdepack->hqrGetallocEntry(&sampPtr, sampfile.c_str(), index);
-		if (sampSize == 0) {
-			return;
-		}
+		warning("Failed to load %s", Resources::HQR_FLASAMP_FILE);
+		return;
 	}
 
-	playSample(channelIdx, index, sampPtr, sampSize, repeat, sampfile.c_str());
+	playSample(channelIdx, index, sampPtr, sampSize, repeat, Resources::HQR_FLASAMP_FILE);
 }
 
 void Sound::playSample(int32 index, int32 frequency, int32 repeat, int32 x, int32 y, int32 z, int32 actorIdx) {
@@ -97,17 +82,19 @@ void Sound::playSample(int32 index, int32 frequency, int32 repeat, int32 x, int3
 
 	int channelIdx = getFreeSampleChannelIndex();
 	if (channelIdx == -1) {
+		warning("Failed to play sample for index: %i - no free channel", index);
 		return;
 	}
-	uint8 *sampPtr;
-	int32 sampSize = _engine->_hqrdepack->hqrGetallocEntry(&sampPtr, Resources::HQR_SAMPLES_FILE, index);
+
 	if (actorIdx != -1) {
 		setSamplePosition(channelIdx, x, y, z);
 		// save the actor index for the channel so we can check the position
 		samplesPlayingActors[channelIdx] = actorIdx;
 	}
 
-	playSample(channelIdx, index, sampPtr, sampSize, repeat, Resources::HQR_SAMPLES_FILE);
+	uint8 *sampPtr = _engine->_resources->samplesTable[index];
+	int32 sampSize = _engine->_resources->samplesSizeTable[index];
+	playSample(channelIdx, index, sampPtr, sampSize, repeat, Resources::HQR_SAMPLES_FILE, Audio::Mixer::kSFXSoundType, DisposeAfterUse::NO);
 }
 
 void Sound::playVoxSample(int32 index) {
@@ -116,34 +103,36 @@ void Sound::playVoxSample(int32 index) {
 	}
 
 	int channelIdx = getFreeSampleChannelIndex();
-	if (channelIdx != -1) {
+	if (channelIdx == -1) {
+		warning("Failed to play vox sample for index: %i - no free channel", index);
 		return;
 	}
 
 	uint8 *sampPtr = nullptr;
-	int32 sampSize = _engine->_hqrdepack->hqrGetallocVoxEntry(&sampPtr, _engine->_text->currentVoxBankFile.c_str(), index, _engine->_text->voxHiddenIndex);
+	int32 sampSize = HQR::getAllocVoxEntry(&sampPtr, _engine->_text->currentVoxBankFile.c_str(), index, _engine->_text->voxHiddenIndex);
+	if (sampSize == 0) {
+		warning("Failed to get vox sample for index: %i", index);
+		return;
+	}
 
 	// Fix incorrect sample files first byte
 	if (*sampPtr != 'C') {
 		_engine->_text->hasHiddenVox = *sampPtr != '\0';
 		_engine->_text->voxHiddenIndex++;
-	}
-
-	playSample(channelIdx, index, sampPtr, sampSize, 1, _engine->_text->currentVoxBankFile.c_str());
-}
-
-bool Sound::playSample(int channelIdx, int index, uint8 *sampPtr, int32 sampSize, int32 loop, const char *name) {
-	// Fix incorrect sample files first byte
-	if (*sampPtr != 'C') {
 		*sampPtr = 'C';
 	}
-	Common::MemoryReadStream *stream = new Common::MemoryReadStream(sampPtr, sampSize, DisposeAfterUse::YES);
+
+	playSample(channelIdx, index, sampPtr, sampSize, 1, _engine->_text->currentVoxBankFile.c_str(), Audio::Mixer::kSpeechSoundType);
+}
+
+bool Sound::playSample(int channelIdx, int index, uint8 *sampPtr, int32 sampSize, int32 loop, const char *name, Audio::Mixer::SoundType soundType, DisposeAfterUse::Flag disposeFlag) {
+	Common::MemoryReadStream *stream = new Common::MemoryReadStream(sampPtr, sampSize, disposeFlag);
 	Audio::SeekableAudioStream *audioStream = Audio::makeVOCStream(stream, DisposeAfterUse::YES);
 	if (audioStream == nullptr) {
-		warning("Failed to create voc audio stream for %s", name);
+		warning("Failed to create audio stream for %s", name);
 		return false;
 	}
-	_engine->_system->getMixer()->playStream(Audio::Mixer::kPlainSoundType, &samplesPlaying[channelIdx], audioStream, index);
+	_engine->_system->getMixer()->playStream(soundType, &samplesPlaying[channelIdx], audioStream, index);
 	return true;
 }
 

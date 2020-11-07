@@ -1838,7 +1838,6 @@ psp)
 	_host_os=psp
 	_host_cpu=mipsallegrexel
 	_host_alias=psp
-	append_var CXXFLAGS "-G0"
 	;;
 samsungtv)
 	_host_os=linux
@@ -2908,7 +2907,7 @@ case $_host_os in
 		# to n/a (i.e. 0.0). See bug #11430 for details.
 		echocheck "macOS deployement target"
 		_macos_min_version=undefined
-		for _macos_min_version_check in 1030 140 1050 1060 1070 1080 1090 101000 101100 101200 101300 101400 101500 101600; do
+		for _macos_min_version_check in 1030 1040 1050 1060 1070 1080 1090 101000 101100 101200 101300 101400 101500 101600; do
 			cat > $TMPC << EOF
 #include "AvailabilityMacros.h"
 #if MAC_OS_X_VERSION_MIN_REQUIRED > ${_macos_min_version_check}
@@ -3165,9 +3164,14 @@ EOF
 		;;
 	psp)
 		_optimization_level=-O2
+		_freetypepath="$PSPDEV/psp/bin"
+		if test -z "$PKG_CONFIG_LIBDIR"; then
+			export PKG_CONFIG_LIBDIR="$PSPDEV/psp/lib/pkgconfig"
+		fi
 		append_var CXXFLAGS "-I$PSPSDK/include"
 		# FIXME: Why is the following in CXXFLAGS and not in DEFINES? Change or document this.
 		append_var CXXFLAGS "-D_PSP_FW_VERSION=150"
+		append_var CXXFLAGS "-G0"
 		add_line_to_config_mk 'PSP = 1'
 		;;
 	riscos)
@@ -3365,6 +3369,7 @@ if test -n "$_host"; then
 			# The Raspberry Pi always supports OpenGL ES 2.0 contexts, thus we
 			# take advantage of those.
 			_opengl_mode=gles2
+			_opengl_game_es2=yes
 			;;
 		dreamcast)
 			append_var DEFINES "-DDISABLE_DEFAULT_SAVEFILEMANAGER"
@@ -3477,7 +3482,7 @@ if test -n "$_host"; then
 			_timidity=no
 			;;
 		ios7)
-			append_var DEFINES "-DIPHONE"
+			append_var DEFINES "-DIPHONE -DIPHONE_IOS7 -DIPHONE_SANDBOXED"
 			_backend="ios7"
 			_seq_midi=no
 			_timidity=no
@@ -3626,6 +3631,7 @@ if test -n "$_host"; then
 			# This might be related to a known crash on OpenGL de-init due
 			# to the OpenGL implementation on this platform.
 			_opengl_mode=gles2
+			_opengl_game_es2=yes
 			_vkeybd=yes
 			_port_mk="backends/platform/sdl/switch/switch.mk"
 			;;
@@ -3903,14 +3909,18 @@ EOF
 	if test "$_sdlnet" = yes ; then
 		set_var SDL_NET_LIBS   "$SDL2_NET_LIBS"
 		set_var SDL_NET_CFLAGS "$SDL2_NET_CFLAGS"
+		add_line_to_config_mk "SDL_NET_MAJOR = 2"
 	else
 		cat > $TMPC << EOF
 #include "SDL_net.h"
 int main(int argc, char *argv[]) { SDLNet_Init(); return 0; }
 EOF
 		cc_check $SDL1_NET_LIBS $LIBS $INCLUDES $SDL1_NET_CFLAGS && _sdlnet=yes
-		set_var SDL_NET_LIBS   "$SDL1_NET_LIBS"
-		set_var SDL_NET_CFLAGS "$SDL1_NET_CFLAGS"
+		if test "$_sdlnet" = yes ; then
+			set_var SDL_NET_LIBS   "$SDL1_NET_LIBS"
+			set_var SDL_NET_CFLAGS "$SDL1_NET_CFLAGS"
+			add_line_to_config_mk "SDL_NET_MAJOR = 1"
+		fi
 	fi
 
 	if test "$_sdlnet" = yes ; then
@@ -3918,6 +3928,7 @@ EOF
 		prepend_var LIBS "$SDL_NET_LIBS"
 		append_var INCLUDES "$SDL_NET_CFLAGS"
 	fi
+	define_in_config_if_no "$_sdl" 'WITHOUT_SDL'
 	define_in_config_if_yes "$_sdlnet" 'USE_SDL_NET'
 	echo "$_sdlnet"
 fi
@@ -4993,6 +5004,10 @@ case $_host_os in
 		FLUIDSYNTH_STATIC_LIBS="$FLUIDSYNTH_LIBS -lnx"
 	;;
 
+	psp2)
+		FLUIDSYNTH_STATIC_LIBS="$FLUIDSYNTH_LIBS -lpthread"
+	;;
+
 	*)
 		FLUIDSYNTH_STATIC_LIBS="$FLUIDSYNTH_LIBS -lglib-2.0 -lintl -liconv"
 	;;
@@ -5387,7 +5402,7 @@ echocheck "OpenGL for game"
 
 if test "$_opengl_game" = auto ; then
 	_opengl_game=no
-	if (test "$_backend" = "sdl" && test "$_opengl" = yes) || test "$_backend" = "android3d"; then
+	if (test "$_backend" = "sdl" && test "$_opengl" = yes) || test "$_backend" = "android3d" || test "$_backend" = "switch" || test "$_backend" = "raspberrypi"; then
 		# Try different header filenames
 		# 1) GL/gl.h         This is usually used on POSIX and Windows systems
 		# 2) OpenGL/gl.h     This is used on Mac OS X
@@ -5815,6 +5830,10 @@ if test "$_dialogs" = "no"; then
 	echo "no"
 else
 	case $_host_os in
+	morphos*)
+		echo "morphos"
+		_dialogs=yes
+		;;
 	mingw*)
 		append_var LIBS "-lole32 -luuid"
 		echo "win32"

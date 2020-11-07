@@ -72,7 +72,7 @@ static const uint32 cursorids[] = {
 };
 
 HadeschEngine::HadeschEngine(OSystem *system, const ADGameDescription *desc)
-	: Engine(system), _desc(desc), _rnd("hadesch") {
+	: Engine(system), _desc(desc), _rnd("hadesch"), _cheatsEnabled(false) {
 
 	DebugMan.addDebugChannel(kHadeschDebugGeneral, "general", "General issues");
 	DebugMan.addDebugChannel(kHadeschDebugMessagingSystem, "resources", "Resources");
@@ -518,7 +518,12 @@ Common::Error HadeschEngine::run() {
 
 	debug("HadeschEngine: moving to main loop");
 	_nextRoom.clear();
-	_nextRoom.push_back(kIntroRoom);
+	int loadSlot = ConfMan.getInt("save_slot");
+	if (loadSlot >= 0) {
+		loadGameState(loadSlot);
+	} else {
+		_nextRoom.push_back(kIntroRoom);
+	}
 
 	while (true) {
 		if (_isRestoring) {
@@ -690,6 +695,8 @@ Common::Error HadeschEngine::saveGameStream(Common::WriteStream *stream, bool is
 	Common::Serializer s(nullptr, stream);
 	if (isAutosave)
 		_persistent._slotDescription = "Autosave";
+	if(_persistent._currentRoomId == 0)
+		return Common::kUnknownError;
 	bool res = _persistent.syncGameStream(s);
 	_persistent._slotDescription = "";
 	return res ? Common::kNoError

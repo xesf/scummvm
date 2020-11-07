@@ -89,6 +89,7 @@ enum ScriptOpcode {
 	OPCODE_TAKE_OBJECT,
 	OPCODE_MOVE_OBJECT_TO_ROOM,
 	OPCODE_SAVE_ACTION,
+	OPCODE_CLEAR_LINE,
 	OPCODE_MOVE_TO_ROOM,
 	OPCODE_VAR_ADD,
 	OPCODE_SET_ROOM_DESCRIPTION,
@@ -310,6 +311,8 @@ struct Instruction {
 		clear();
 	}
 
+	Instruction(byte opcode, byte op1 = 0, byte op2 = 0, byte op3 = 0);
+
 	void clear();
 };
 
@@ -387,9 +390,7 @@ public:
 	uint8 _totalInventoryWeight;
 
 	Common::Array<Item> _items;
-
-	Word *_words;
-	size_t _nr_words;
+	Common::Array<Word> _words;
 
 	StringTable _strings;
 	StringTable _strings2;
@@ -398,6 +399,7 @@ public:
 	uint16 _variables[MAX_VARIABLES];
 
 	uint8 _currentReplaceWord;
+	uint8 _wordFlags;
 	uint _updateFlags;
 
 	Common::Array<WordMap> _wordMaps;

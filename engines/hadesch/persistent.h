@@ -35,8 +35,8 @@ struct HadeschSaveDescriptor {
 	HadeschSaveDescriptor(Common::Serializer &s, int slot);
 
 	int _slot;
-	Common::String _heroName;
-	Common::String _slotName;
+	Common::U32String _heroName;
+	Common::U32String _slotName;
 	RoomId _room;
 };
 
@@ -51,8 +51,8 @@ static const int inventorySize = 6;
 struct Persistent {
 	// Generic
 	Gender _gender;
-	Common::String _heroName;
-	Common::String _slotDescription; // valid only in saves
+	Common::U32String _heroName;
+	Common::U32String _slotDescription; // valid only in saves
 	Quest _quest;
 	int _powerLevel[3];
 	RoomId _currentRoomId;
@@ -137,7 +137,7 @@ struct Persistent {
 	bool _troyWallDamaged;
 	bool _troyShowBricks;
 	bool _troyIsDefeated;
-	bool _troyPlayOdysseus;
+	bool _troyPlayedOdysseus;
 	bool _troyMessageIsDelivered;
 	enum TroyKeyAndDecreeState {
 		KEY_AND_DECREE_NOT_GIVEN,

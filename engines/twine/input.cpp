@@ -37,67 +37,32 @@ const char *cutsceneKeyMapId = "cutsceneKeyMap";
 /** Pressed key char map - scanCodeTab2 */
 static const struct KeyProperties {
 	uint8 high;
-	bool pressed;
+	bool cursor;
 	uint8 key;
 } pressedKeyCharMap[] = {
-    {0x01, false, 0x48}, // up
-    {0x02, false, 0x50}, // down
-    {0x04, false, 0x4B}, // left
-    {0x08, false, 0x4D}, // right
-    {0x05, false, 0x47}, // home
-    {0x09, false, 0x49}, // pageup
-    {0x0A, false, 0x51}, // pagedown
-    {0x06, false, 0x4F}, // end
-    {0x01, true, 0x39},  // space bar
-    {0x02, true, 0x1C},  // enter
-    {0x04, true, 0x1D},  // ctrl
-    {0x08, true, 0x38},  // alt
-    {0x10, true, 0x53},  // del
-    {0x20, true, 0x2A},  // left shift
-    {0x20, true, 0x36},  // right shift
-    {0x01, true, 0x3B},  // F1
-    {0x02, true, 0x3C},  // F2
-    {0x04, true, 0x3D},  // F3
-    {0x08, true, 0x3E},  // F4
-    {0x10, true, 0x3F},  // F5
-    {0x20, true, 0x40},  // F6
-    {0x40, true, 0x41},  // F7
-    {0x80, true, 0x42},  // F8
-    {0x01, true, 0x43},  // F9
-    {0x02, true, 0x44},  // F10
-    {0x04, true, 0x57},  // ?
-    {0x08, true, 0x58},  // ?
-    {0x00, true, 0x2A},  // left shift
-    {0x00, true, 0x00},
-    {0x01, false, 0x01}, // esc
-    {0x00, false, 0x00}};
-static_assert(ARRAYSIZE(pressedKeyCharMap) == 31, "Expected size of key char map");
-
-ScopedKeyMapperDisable::ScopedKeyMapperDisable() {
-	g_system->getEventManager()->getKeymapper()->setEnabled(false);
-}
-
-ScopedKeyMapperDisable::~ScopedKeyMapperDisable() {
-	g_system->getEventManager()->getKeymapper()->setEnabled(true);
-}
+    {0x01, true, 0x48}, // up
+    {0x02, true, 0x50}, // down
+    {0x04, true, 0x4B}, // left
+    {0x08, true, 0x4D}, // right
+    {0x01, false, 0x39},  // space bar
+    {0x02, false, 0x1C},  // enter
+    {0x04, false, 0x1D},  // ctrl
+    {0x08, false, 0x38},  // alt
+    {0x10, false, 0x53},  // del
+    {0x20, false, 0x2A},  // left shift
+    {0x20, false, 0x36}  // right shift
+};
 
 ScopedKeyMap::ScopedKeyMap(TwinEEngine* engine, const char *id) : _engine(engine) {
 	_prevKeyMap = _engine->_input->currentKeyMap();
-	_engine->_input->enabledKeyMap(cutsceneKeyMapId);
+	_engine->_input->enableKeyMap(cutsceneKeyMapId);
 }
 
 ScopedKeyMap::~ScopedKeyMap() {
-	_engine->_input->enabledKeyMap(_prevKeyMap.c_str());
+	_engine->_input->enableKeyMap(_prevKeyMap.c_str());
 }
 
 Input::Input(TwinEEngine *engine) : _engine(engine) {}
-
-bool Input::isPressed(Common::KeyCode keycode, bool onlyFirstTime) const {
-	if (onlyFirstTime) {
-		return _pressed[keycode] == 1;
-	}
-	return _pressed[keycode] > 0;
-}
 
 bool Input::isActionActive(TwinEActionType actionType, bool onlyFirstTime) const {
 	if (onlyFirstTime) {
@@ -115,20 +80,29 @@ bool Input::toggleActionIfActive(TwinEActionType actionType) {
 }
 
 bool Input::toggleAbortAction() {
-	return toggleActionIfActive(TwinEActionType::CutsceneAbort) || toggleActionIfActive(TwinEActionType::UIAbort) || toggleActionIfActive(TwinEActionType::Escape);
+	bool abortState = false;
+	abortState |= toggleActionIfActive(TwinEActionType::CutsceneAbort);
+	abortState |= toggleActionIfActive(TwinEActionType::UIAbort);
+	abortState |= toggleActionIfActive(TwinEActionType::Escape);
+	return abortState;
 }
 
 bool Input::isQuickBehaviourActionActive() const {
 	return isActionActive(TwinEActionType::QuickBehaviourNormal) || isActionActive(TwinEActionType::QuickBehaviourAthletic) || isActionActive(TwinEActionType::QuickBehaviourAggressive) || isActionActive(TwinEActionType::QuickBehaviourDiscreet);
 }
 
-void Input::enabledKeyMap(const char *id) {
+bool Input::isMoveOrTurnActionActive() const {
+	return isActionActive(TwinEActionType::TurnLeft) || isActionActive(TwinEActionType::TurnRight) || isActionActive(TwinEActionType::MoveBackward) || isActionActive(TwinEActionType::MoveForward);
+}
+
+bool Input::isHeroActionActive() const {
+	return isActionActive(TwinEActionType::ExecuteBehaviourAction) || isActionActive(TwinEActionType::SpecialAction);
+}
+
+void Input::enableKeyMap(const char *id) {
 	if (_currentKeyMap == id) {
 		return;
 	}
-
-	// switching the keymap must also disable all other action keys
-	memset(_pressed, 0, sizeof(_pressed));
 
 	Common::Keymapper *keymapper = g_system->getEventManager()->getKeymapper();
 	const Common::KeymapArray &keymaps = keymapper->getKeymaps();
@@ -142,45 +116,91 @@ void Input::enabledKeyMap(const char *id) {
 	debug("enable keymap %s", id);
 }
 
+// TODO: get rid of this table
+static constexpr const struct ActionMapping {
+	TwinEActionType action;
+	uint8 localKey;
+} twineactions[] = {
+    {Pause, 0x19},
+    {NextRoom, 0x13},
+    {PreviousRoom, 0x21},
+    {ApplyCellingGrid, 0x14},
+    {IncreaseCellingGridIndex, 0x22},
+    {DecreaseCellingGridIndex, 0x30},
+    {DebugGridCameraPressUp, 0x2E},
+    {DebugGridCameraPressDown, 0x2C},
+    {DebugGridCameraPressLeft, 0x1F},
+    {DebugGridCameraPressRight, 0x2D},
+    {QuickBehaviourNormal, 0x3B},
+    {QuickBehaviourAthletic, 0x3C},
+    {QuickBehaviourAggressive, 0x3D},
+    {QuickBehaviourDiscreet, 0x3E},
+    {ExecuteBehaviourAction, 0x39},
+    {BehaviourMenu, 0x1D},
+    {OptionsMenu, 0x40},
+    {RecenterScreenOnTwinsen, 0x1C},
+    {UseSelectedObject, 0x1C},
+    {ThrowMagicBall, 0x38},
+    {MoveForward, 0x48},
+    {MoveBackward, 0x50},
+    {TurnRight, 0x4D},
+    {TurnLeft, 0x4B},
+    {UseProtoPack, 0x24},
+    {OpenHolomap, 0x23},
+    {InventoryMenu, 0x36},
+    {SpecialAction, 0x11},
+    {Escape, 0x01},
+    {UIEnter, 0x00},
+    {UIAbort, 0x00},
+    {UILeft, 0x00},
+    {UIRight, 0x00},
+    {UIUp, 0x00},
+    {UIDown, 0x00},
+    {UINextPage, 0x00},
+    {CutsceneAbort, 0x00}};
+
+static_assert(ARRAYSIZE(twineactions) == TwinEActionType::Max, "Unexpected action mapping array size");
+
+uint8 Input::processCustomEngineEventStart(const Common::Event &event) {
+	if (!_engine->cfgfile.Debug) {
+		switch (event.customType) {
+		case TwinEActionType::NextRoom:
+		case TwinEActionType::PreviousRoom:
+		case TwinEActionType::ApplyCellingGrid:
+		case TwinEActionType::IncreaseCellingGridIndex:
+		case TwinEActionType::DecreaseCellingGridIndex:
+			break;
+		default:
+			actionStates[event.customType] = 1 + event.kbdRepeat;
+			return twineactions[event.customType].localKey;
+		}
+	} else {
+		actionStates[event.customType] = 1 + event.kbdRepeat;
+		return twineactions[event.customType].localKey;
+	}
+	return 0;
+}
+
+uint8 Input::processCustomEngineEventEnd(const Common::Event &event) {
+	actionStates[event.customType] = 0;
+	return twineactions[event.customType].localKey;
+}
+
 void Input::readKeys() {
-	skippedKey = 0;
-	internalKeyCode = 0;
+	cursorKeys = 0;
 
 	Common::Event event;
 	while (g_system->getEventManager()->pollEvent(event)) {
 		uint8 localKey = 0;
 		switch (event.type) {
 		case Common::EVENT_CUSTOM_ENGINE_ACTION_END:
-			actionStates[event.customType] = 0;
-			localKey = twineactions[event.customType].localKey;
+			localKey = processCustomEngineEventEnd(event);
 			break;
 		case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
-			if (!_engine->cfgfile.Debug) {
-				switch (event.customType) {
-				case TwinEActionType::NextRoom:
-				case TwinEActionType::PreviousRoom:
-				case TwinEActionType::ApplyCellingGrid:
-				case TwinEActionType::IncreaseCellingGridIndex:
-				case TwinEActionType::DecreaseCellingGridIndex:
-					break;
-				default:
-					localKey = twineactions[event.customType].localKey;
-					actionStates[event.customType] = 1 + event.kbdRepeat;
-					break;
-				}
-			} else {
-				localKey = twineactions[event.customType].localKey;
-				actionStates[event.customType] = 1 + event.kbdRepeat;
-			}
+			localKey = processCustomEngineEventStart(event);
 			break;
 		case Common::EVENT_LBUTTONDOWN:
 			leftMouse = 1;
-			break;
-		case Common::EVENT_KEYDOWN:
-			_pressed[event.kbd.keycode] = 1 + event.kbdRepeat;
-			break;
-		case Common::EVENT_KEYUP:
-			_pressed[event.kbd.keycode] = 0;
 			break;
 		case Common::EVENT_RBUTTONDOWN:
 			rightMouse = 1;
@@ -195,19 +215,18 @@ void Input::readKeys() {
 
 		for (int i = 0; i < ARRAYSIZE(pressedKeyCharMap); i++) {
 			if (pressedKeyCharMap[i].key == localKey) {
-				if (pressedKeyCharMap[i].pressed) {
+				if (pressedKeyCharMap[i].cursor) {
+					cursorKeys |= pressedKeyCharMap[i].high;
+				} else {
 					if (event.type == Common::EVENT_CUSTOM_ENGINE_ACTION_END) {
 						pressedKey &= ~pressedKeyCharMap[i].high;
 					} else {
 						pressedKey |= pressedKeyCharMap[i].high;
 					}
-				} else {
-					skippedKey |= pressedKeyCharMap[i].high;
 				}
 				break;
 			}
 		}
-		internalKeyCode = localKey;
 	}
 }
 

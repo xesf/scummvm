@@ -113,19 +113,19 @@ private:
 	 * Create celling grid map from celling grid to block library buffer
 	 * @param gridPtr celling grid buffer pointer
 	 */
-	void createCellingGridMap(uint8 *gridPtr);
+	void createCellingGridMap(const uint8 *gridPtr, int32 gridPtrSize);
 	/**
 	 * Create grid Y column in block buffer
 	 * @param gridEntry current grid index
 	 * @param dest destination block buffer
 	 */
-	void createCellingGridColumn(uint8 *gridEntry, uint8 *dest);
+	void createCellingGridColumn(const uint8 *gridEntry, uint32 gridEntrySize, uint8 *dest, uint32 destSize);
 	/**
 	 * Create grid Y column in block buffer
 	 * @param gridEntry current grid index
 	 * @param dest destination block buffer
 	 */
-	void createGridColumn(uint8 *gridEntry, uint8 *dest);
+	void createGridColumn(const uint8 *gridEntry, uint32 gridEntrySize, uint8 *dest, uint32 destSize);
 	/**
 	 * Load grid bricks according with block librarie usage
 	 * @param gridSize size of the current grid
@@ -139,7 +139,7 @@ private:
 	 * @param buffer brick pointer buffer
 	 * @param ptr brick mask pointer buffer
 	 */
-	int processGridMask(uint8 *buffer, uint8 *ptr);
+	int processGridMask(const uint8 *buffer, uint8 *ptr);
 	/**
 	 * Copy grid mask to allow actors to display over the bricks
 	 * @param index current brick index
@@ -147,10 +147,7 @@ private:
 	 * @param y grid Y coordinate
 	 * @param buffer work video buffer
 	 */
-	void copyGridMask(int32 index, int32 x, int32 y, uint8 *buffer);
-
-public:
-	Grid(TwinEEngine *engine);
+	void copyGridMask(int32 index, int32 x, int32 y, const uint8 *buffer);
 
 	/** Table with all loaded bricks */
 	uint8 *brickTable[NUM_BRICKS]{nullptr};
@@ -162,14 +159,12 @@ public:
 	uint8 brickUsageTable[NUM_BRICKS]{0};
 
 	/** Current grid pointer */
+	int32 currentGridSize = 0;
 	uint8 *currentGrid = nullptr;
 	/** Current block library pointer */
 	uint8 *currentBll = nullptr;
 	/** Number of block libraries */
 	int32 numberOfBll = 0;
-
-	/** Grid block entry types */
-	typedef struct BlockEntry blockMap[GRID_SIZE_X][GRID_SIZE_Z][GRID_SIZE_Y];
 
 	/** Brick data buffer */
 	BrickEntry bricksDataBuffer[28][150];
@@ -180,6 +175,25 @@ public:
 	int32 brickPixelPosX = 0;
 	/** Current brick pixel Y position */
 	int32 brickPixelPosY = 0;
+
+	/** Celling grid brick block buffer */
+	int32 blockBufferSize = 0;
+	uint8 *blockBuffer = nullptr;
+
+public:
+	Grid(TwinEEngine *engine);
+	~Grid();
+
+	/** Grid block entry types */
+	typedef struct BlockEntry blockMap[GRID_SIZE_X][GRID_SIZE_Z][GRID_SIZE_Y];
+
+	uint8* getBlockBuffer(int32 x, int32 y, int32 z);
+	/**
+	 * search down until either ground is found or lower border of the cube is reached
+	 */
+	const uint8* getBlockBufferGround(int32 x, int32 y, int32 z, int16 &ground) const;
+
+	void updateCollisionCoordinates(int32 x, int32 y, int32 z);
 
 	/** New grid camera X coordinates */
 	int32 newCameraX = 0;
@@ -194,9 +208,6 @@ public:
 	int32 cameraY = 0;
 	/** Current grid camera Z coordinates */
 	int32 cameraZ = 0;
-
-	/** Celling grid brick block buffer */
-	uint8 *blockBuffer = nullptr;
 
 	/** Flag to know if the engine is using celling grids */
 	int16 useCellingGrid = 0; // useAnotherGrm
@@ -226,7 +237,7 @@ public:
 	 * @param height sprite height size
 	 * @param spritePtr sprite buffer pointer
 	 */
-	void getSpriteSize(int32 offset, int32 *width, int32 *height, uint8 *spritePtr);
+	void getSpriteSize(int32 offset, int32 *width, int32 *height, const uint8 *spritePtr);
 
 	/**
 	 * Draw brick sprite in the screen
@@ -243,7 +254,7 @@ public:
 	 * @param posY sprite Y position to draw
 	 * @param ptr sprite buffer pointer to draw
 	 */
-	void drawSprite(int32 index, int32 posX, int32 posY, uint8 *spritePtr);
+	void drawSprite(int32 index, int32 posX, int32 posY, const uint8 *spritePtr);
 
 	/**
 	 * Draw sprite or bricks in the screen according with the type
@@ -253,14 +264,14 @@ public:
 	 * @param ptr sprite buffer pointer to draw
 	 * @param isSprite allows to identify if the sprite to display is brick or a single sprite
 	 */
-	void drawBrickSprite(int32 index, int32 posX, int32 posY, uint8 *spritePtr, bool isSprite);
+	void drawBrickSprite(int32 index, int32 posX, int32 posY, const uint8 *spritePtr, bool isSprite);
 
 	/**
 	 * Get block library
 	 * @param index block library index
 	 * @return pointer to the current block index
 	 */
-	uint8 *getBlockLibrary(int32 index);
+	const uint8 *getBlockLibrary(int32 index);
 
 	/** Create grid map from current grid to block library buffer */
 	void createGridMap();

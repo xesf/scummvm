@@ -66,7 +66,7 @@ public:
 	uint32 mainPaletteRGBA[NUMOFCOLORS]{0};
 
 	/** Load and display Adeline Logo */
-	void adelineLogo();
+	bool adelineLogo();
 
 	void convertPalToRGBA(const uint8 *in, uint32 *out);
 
@@ -89,9 +89,9 @@ public:
 	/**
 	 * Load and display a particulary image on \a RESS.HQR file with cross fade effect and delay
 	 * @param index \a RESS.HQR entry index (starting from 0)
-	 * @param time number of seconds to delay
+	 * @param seconds number of seconds to delay
 	 */
-	void loadImageDelay(int32 index, int32 time);
+	bool loadImageDelay(int32 index, int32 seconds);
 
 	/**
 	 * Fade image in
@@ -136,13 +136,13 @@ public:
 	 * Fade image to black
 	 * @param palette current palette to fade
 	 */
-	void fadeToBlack(uint32 *palette);
+	void fadeToBlack(const uint32 *palette);
 
 	/**
 	 * Fade image with another palette source
 	 * @param palette current palette to fade
 	 */
-	void fadeToPal(uint32 *palette);
+	void fadeToPal(const uint32 *palette);
 
 	/** Fade black palette to white palette */
 	void blackToWhite();
@@ -154,13 +154,13 @@ public:
 	 * Fade palette to red palette
 	 * @param palette current palette to fade
 	 */
-	void fadePalRed(uint32 *palette);
+	void fadePalRed(const uint32 *palette);
 
 	/**
 	 * Fade red to palette
 	 * @param palette current palette to fade
 	 */
-	void fadeRedPal(uint32 *palette);
+	void fadeRedPal(const uint32 *palette);
 
 	/**
 	 * Copy a determinate screen buffer to another

@@ -21,7 +21,12 @@
  */
 
 #include "twine/menuoptions.h"
+#include "common/error.h"
+#include "common/keyboard.h"
+#include "common/str-array.h"
 #include "common/system.h"
+#include "common/util.h"
+#include "savestate.h"
 #include "twine/flamovies.h"
 #include "twine/gamestate.h"
 #include "twine/input.h"
@@ -31,21 +36,20 @@
 #include "twine/resources.h"
 #include "twine/scene.h"
 #include "twine/screens.h"
+#include "twine/sound.h"
 #include "twine/text.h"
 #include "twine/twine.h"
 
 namespace TwinE {
 
-/** Main menu continue game option key */
-#define MAINMENU_CONTINUEGAME 21
-/** Main menu enter players name */
-#define MAINMENU_ENTERPLAYERNAME 42
+#define ONSCREENKEYBOARD_WIDTH 14
+#define ONSCREENKEYBOARD_HEIGHT 5
 
 static const char allowedCharIndex[] = " ABCDEFGHIJKLM.NOPQRSTUVWXYZ-abcdefghijklm?nopqrstuvwxyz!0123456789\040\b\r\0";
 
 void MenuOptions::newGame() {
-#if TWINE_PLAY_INTROS
 	_engine->_music->stopMusic();
+	_engine->_sound->stopSamples();
 
 	int32 tmpFlagDisplayText = _engine->cfgfile.FlagDisplayText;
 	_engine->cfgfile.FlagDisplayText = true;
@@ -56,40 +60,42 @@ void MenuOptions::newGame() {
 	_engine->_text->newGameVar4 = 0;
 	_engine->_text->newGameVar5 = 1;
 
-	_engine->_text->initTextBank(2);
+	_engine->_text->initTextBank(TextBankId::Inventory_Intro_and_Holomap);
 	_engine->_text->textClipFull();
 	_engine->_text->setFontCrossColor(15);
 
-	_engine->_text->drawTextFullscreen(150);
-	_engine->readKeys();
+	bool aborted = _engine->_text->drawTextFullscreen(150);
 
 	// intro screen 2
-	_engine->_screens->loadImage(RESSHQR_INTROSCREEN2IMG);
-	_engine->_text->drawTextFullscreen(151);
-	_engine->readKeys();
+	if (!aborted) {
+		_engine->_screens->loadImage(RESSHQR_INTROSCREEN2IMG);
+		aborted |= _engine->_text->drawTextFullscreen(151);
 
-	_engine->_screens->loadImage(RESSHQR_INTROSCREEN3IMG);
-	_engine->_text->drawTextFullscreen(152);
-
-	_engine->_text->newGameVar5 = 0;
-	_engine->_text->textClipSmall();
-	_engine->_text->newGameVar4 = 1;
+		if (!aborted) {
+			_engine->_screens->loadImage(RESSHQR_INTROSCREEN3IMG);
+			aborted |= _engine->_text->drawTextFullscreen(152);
+		}
+	}
+	_engine->cfgfile.FlagDisplayText = tmpFlagDisplayText;
 
 	_engine->_screens->fadeToBlack(_engine->_screens->paletteRGBACustom);
 	_engine->_screens->clearScreen();
 	_engine->flip();
 
-	_engine->_music->playMidiMusic(1);
-	_engine->_flaMovies->playFlaMovie(FLA_INTROD);
+	if (!aborted) {
+		// _engine->_music->playMidiMusic(1);
+		_engine->_flaMovies->playFlaMovie(FLA_INTROD);
+	}
 
+	_engine->_text->textClipSmall();
 	_engine->_screens->clearScreen();
 	_engine->flip();
 
+	_engine->_text->newGameVar4 = 1;
+	_engine->_text->newGameVar5 = 0;
+
 	// set main palette back
 	_engine->setPalette(_engine->_screens->paletteRGBA);
-
-	_engine->cfgfile.FlagDisplayText = tmpFlagDisplayText;
-#endif
 }
 
 void MenuOptions::showCredits() {
@@ -97,8 +103,8 @@ void MenuOptions::showCredits() {
 	int32 tmpShadowMode = _engine->cfgfile.ShadowMode;
 	_engine->cfgfile.ShadowMode = 0;
 	_engine->_gameState->initEngineVars();
-	_engine->_scene->currentSceneIdx = 119;
-	_engine->_scene->needChangeScene = 119;
+	_engine->_scene->currentSceneIdx = LBA1SceneId::Credits_List_Sequence;
+	_engine->_scene->needChangeScene = LBA1SceneId::Credits_List_Sequence;
 
 	_engine->gameEngineLoop();
 
@@ -115,148 +121,288 @@ void MenuOptions::showCredits() {
 	_engine->setPalette(_engine->_screens->paletteRGBA);
 }
 
-void MenuOptions::drawSelectableCharacter(int32 x, int32 y, int32 arg) {
-	char buffer[256];
-	int32 centerX, left, top, centerY, bottom, right, right2;
+void MenuOptions::drawSelectableCharacter(int32 x, int32 y, bool selected) {
+	char buffer[2];
 
-	buffer[0] = allowedCharIndex[y + x * 14];
+	buffer[0] = allowedCharIndex[y + x * ONSCREENKEYBOARD_WIDTH];
+	buffer[1] = '\0';
 
-	centerX = y * 45 + 25;
-	left = centerX - 20;
-	right = centerX + 20;
-	top = x * 56 + 200 - 25;
-	buffer[1] = 0;
-	centerY = x * 56 + 200;
-	bottom = x * 56 + 200 + 25;
+	const int32 centerX = y * 45 + 25;
+	const int32 left = centerX - 20;
+	const int32 right = centerX + 20;
+	const int32 top = x * 56 + 200 - 25;
+	const int32 centerY = x * 56 + 200;
+	const int32 bottom = x * 56 + 200 + 25;
 
-	if (arg != 0) {
+	if (selected) {
 		_engine->_interface->drawSplittedBox(left, top, right, bottom, 91);
 	} else {
 		_engine->_interface->blitBox(left, top, right, bottom, (const int8 *)_engine->workVideoBuffer.getPixels(), left, top, (int8 *)_engine->frontVideoBuffer.getPixels());
-		right2 = right;
-		_engine->_interface->drawTransparentBox(left, top, right2, bottom, 4);
+		_engine->_interface->drawTransparentBox(left, top, right, bottom, 4);
 	}
 
 	_engine->_menu->drawBox(left, top, right, bottom);
-	right2 = right;
 
 	_engine->_text->setFontColor(15);
 	_engine->_text->drawText(centerX - _engine->_text->getTextSize(buffer) / 2, centerY - 18, buffer);
 
-	_engine->copyBlockPhys(left, top, right2, bottom);
+	_engine->copyBlockPhys(left, top, right, bottom);
 }
 
 void MenuOptions::drawSelectableCharacters() {
-	for (int8 x = 0; x < 5; x++) {
-		for (int8 y = 0; y < 14; y++) {
-			drawSelectableCharacter(x, y, 0);
+	for (int8 x = 0; x < ONSCREENKEYBOARD_HEIGHT; x++) {
+		for (int8 y = 0; y < ONSCREENKEYBOARD_WIDTH; y++) {
+			drawSelectableCharacter(x, y, _onScreenKeyboardY == x && _onScreenKeyboardX == y);
 		}
 	}
 }
 
-// 0001F18C
 void MenuOptions::drawPlayerName(int32 centerx, int32 top, int32 type) {
-	const int left = _engine->_text->dialTextBoxLeft;
-	const int right = _engine->_text->dialTextBoxRight;
+	const int32 left = 10;
 	if (type == 1) {
-		_engine->_menu->processPlasmaEffect(left, top, right, 1);
+		_engine->_menu->processPlasmaEffect(left, top, 32);
 	}
 
-	const int bottom = _engine->_text->dialTextBoxBottom;
+	const int right = SCREEN_WIDTH - left;
+	const int bottom = top + PLASMA_HEIGHT;
 	_engine->_menu->drawBox(left, top, right, bottom);
 	_engine->_interface->drawTransparentBox(left + 1, top + 1, right - 1, bottom - 1, 3);
 
-	_engine->_text->drawText(centerx - _engine->_text->getTextSize(playerName) / 2, top, playerName);
-
-	_engine->flip();
-	// TODO: _engine->copyBlockPhys(left, top, right, bottom);
+	_engine->_text->drawText(centerx - _engine->_text->getTextSize(playerName) / 2, top + 6, playerName);
+	_engine->copyBlockPhys(left, top, right, bottom);
 }
 
-int32 MenuOptions::enterPlayerName(int32 textIdx) {
-	_engine->_screens->copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
-	_engine->flip();
-	playerName[0] = '\0'; // TODO: read from settings?
-	while (1) {
-		_engine->_text->initTextBank(0);
-		char buffer[256];
-		_engine->_text->getMenuText(textIdx, buffer, sizeof(buffer));
-		_engine->_text->setFontColor(15);
-		const int halfScreenWidth = (SCREEN_WIDTH / 2);
-		_engine->_text->drawText(halfScreenWidth - (_engine->_text->getTextSize(buffer) / 2), 20, buffer);
-		_engine->copyBlockPhys(0, 0, SCREEN_WIDTH - 1, 99);
-		drawPlayerName(halfScreenWidth, 100, 1);
-		drawSelectableCharacters();
-		_engine->flip();
+/**
+ * @brief Toggle a given @c OSystem::Feature and restore the previous state on destruction
+ */
+class ScopedFeatureState {
+private:
+	OSystem::Feature _feature;
+	bool _changeTo;
+public:
+	ScopedFeatureState(OSystem::Feature feature, bool enable) : _feature(feature), _changeTo(enable) {
+		if (g_system->getFeatureState(feature) != enable) {
+			g_system->setFeatureState(feature, enable);
+			_changeTo = !g_system->getFeatureState(feature);
+		}
+	}
+	~ScopedFeatureState() {
+		g_system->setFeatureState(_feature, _changeTo);
+	}
+};
 
-		// we don't want custom events here - as we are entering the player name
-		ScopedKeyMapperDisable scopedKeyMapperDisable;
-		for (;;) {
-			Common::Event event;
-			while (g_system->getEventManager()->pollEvent(event)) {
-				if (event.type == Common::EVENT_KEYDOWN) {
-					if (event.kbd.keycode == Common::KEYCODE_KP_ENTER || event.kbd.keycode == Common::KEYCODE_RETURN) {
-						return 1;
+bool MenuOptions::enterPlayerName(int32 textIdx) {
+	playerName[0] = '\0'; // TODO: read from settings?
+	_engine->_text->initTextBank(TextBankId::Options_and_menus);
+	char buffer[256];
+	_engine->_text->getMenuText(textIdx, buffer, sizeof(buffer));
+	_engine->_text->setFontColor(15);
+	const int halfScreenWidth = (SCREEN_WIDTH / 2);
+	_engine->_text->drawText(halfScreenWidth - (_engine->_text->getTextSize(buffer) / 2), 20, buffer);
+	_engine->copyBlockPhys(0, 0, SCREEN_WIDTH - 1, 99);
+	_engine->flip();
+
+	ScopedFeatureState scopedVirtualKeyboard(OSystem::kFeatureVirtualKeyboard, true);
+	for (;;) {
+		Common::Event event;
+		while (g_system->getEventManager()->pollEvent(event)) {
+			switch (event.type) {
+			case Common::EVENT_CUSTOM_ENGINE_ACTION_END:
+				_engine->_input->processCustomEngineEventEnd(event);
+				break;
+			case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
+				_engine->_input->processCustomEngineEventStart(event);
+
+				if (_engine->_input->toggleActionIfActive(TwinEActionType::UIEnter)) {
+					if (_onScreenKeyboardLeaveViaOkButton) {
+						if (_onScreenKeyboardX == ONSCREENKEYBOARD_WIDTH - 1 && _onScreenKeyboardY == ONSCREENKEYBOARD_HEIGHT - 1) {
+							if (playerName[0] == '\0') {
+								continue;
+							}
+							return true;
+						}
+						const size_t size = strlen(playerName);
+						if (_onScreenKeyboardX == ONSCREENKEYBOARD_WIDTH - 2 && _onScreenKeyboardY == ONSCREENKEYBOARD_HEIGHT - 1) {
+							if (size >= 1) {
+								playerName[size - 1] = '\0';
+							}
+							continue;
+						}
+						const char chr = allowedCharIndex[_onScreenKeyboardX + _onScreenKeyboardY * ONSCREENKEYBOARD_WIDTH];
+						playerName[size] = chr;
+						playerName[size + 1] = '\0';
+						if (size + 1 >= sizeof(playerName) - 1) {
+							return true;
+						}
+						continue;
 					}
-					const size_t size = strlen(playerName);
-					if (size >= sizeof(playerName) - 1) {
-						return 1;
+					if (playerName[0] == '\0') {
+						continue;
 					}
+
+					return true;
+				}
+				if (_engine->_input->toggleActionIfActive(TwinEActionType::UIAbort)) {
+					return false;
+				}
+				if (_engine->_input->toggleActionIfActive(TwinEActionType::UILeft)) {
+					--_onScreenKeyboardX;
+					if (_onScreenKeyboardX < 0) {
+						_onScreenKeyboardX = ONSCREENKEYBOARD_WIDTH - 1;
+					}
+					_onScreenKeyboardLeaveViaOkButton = true;
+				} else if (_engine->_input->toggleActionIfActive(TwinEActionType::UIRight)) {
+					++_onScreenKeyboardX;
+					if (_onScreenKeyboardX >= ONSCREENKEYBOARD_WIDTH) {
+						_onScreenKeyboardX = 0;
+					}
+					_onScreenKeyboardLeaveViaOkButton = true;
+				}
+				if (_engine->_input->toggleActionIfActive(TwinEActionType::UIUp)) {
+					--_onScreenKeyboardY;
+					if (_onScreenKeyboardY < 0) {
+						_onScreenKeyboardY = ONSCREENKEYBOARD_HEIGHT - 1;
+					}
+					_onScreenKeyboardLeaveViaOkButton = true;
+				} else if (_engine->_input->toggleActionIfActive(TwinEActionType::UIDown)) {
+					++_onScreenKeyboardY;
+					if (_onScreenKeyboardY >= ONSCREENKEYBOARD_HEIGHT) {
+						_onScreenKeyboardY = 0;
+					}
+					_onScreenKeyboardLeaveViaOkButton = true;
+				}
+
+				break;
+			case Common::EVENT_KEYDOWN: {
+				const size_t size = strlen(playerName);
+				if (!Common::isPrint(event.kbd.ascii)) {
+					if (event.kbd.keycode == Common::KEYCODE_BACKSPACE) {
+						if (size >= 1) {
+							playerName[size - 1] = '\0';
+							_onScreenKeyboardLeaveViaOkButton = false;
+						}
+					}
+					continue;
+				}
+				if (size >= sizeof(playerName) - 1) {
+					return true;
+				}
+				if (strchr(allowedCharIndex, event.kbd.ascii)) {
 					playerName[size] = event.kbd.ascii;
 					playerName[size + 1] = '\0';
-					debug("name: %s", playerName);
-
-					drawPlayerName(halfScreenWidth, 100, 1);
-					_engine->flip();
+					_onScreenKeyboardLeaveViaOkButton = false;
 				}
-			}
-			if (_engine->shouldQuit()) {
+
 				break;
 			}
-			_engine->_system->delayMillis(1);
-		};
+			default:
+				break;
+			}
+		}
+		if (_engine->shouldQuit()) {
+			break;
+		}
+		drawPlayerName(halfScreenWidth, 100, 1);
+		drawSelectableCharacters();
+		_engine->_system->delayMillis(1);
 	}
-	return 1;
+	return false;
 }
 
-void MenuOptions::newGameMenu() {
-	// TODO: process players name
-	if (enterPlayerName(MAINMENU_ENTERPLAYERNAME)) {
-		_engine->_gameState->initEngineVars();
-		newGame();
-
-		if (_engine->gameEngineLoop()) {
-			showCredits();
-		}
+bool MenuOptions::newGameMenu() {
+	_engine->_screens->copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
+	_engine->flip();
+	if (!enterPlayerName(TextId::kEnterYourName)) {
+		return false;
 	}
+	_engine->_gameState->initEngineVars();
+	newGame();
+	return true;
 }
 
-void MenuOptions::continueGameMenu() {
-	//TODO: get list of saved games
-	//if(chooseSave(MAINMENU_CONTINUEGAME))
-	{
-		_engine->_gameState->initEngineVars();
-		_engine->_gameState->loadGame();
-		if (_engine->_scene->newHeroX == -1) {
-			_engine->_scene->heroPositionType = ScenePositionType::kNoPosition;
-		}
-		if (_engine->_gameState->gameChapter == 0 && _engine->_scene->currentSceneIdx == 0) {
-			newGame();
-		} else {
-			_engine->_text->newGameVar5 = 0;
-			_engine->_text->textClipSmall();
-			_engine->_text->newGameVar4 = 1;
-		}
-
-		if (_engine->gameEngineLoop()) {
-			showCredits();
-		}
-
-		_engine->_screens->copyScreen(_engine->frontVideoBuffer, _engine->workVideoBuffer);
-		do {
-			_engine->readKeys();
-			_engine->_system->delayMillis(1);
-		} while (!_engine->shouldQuit() && !_engine->_input->toggleAbortAction());
+int MenuOptions::chooseSave(int textIdx, bool showEmptySlots) {
+	const SaveStateList& savegames = _engine->getSaveSlots();
+	if (savegames.empty() && !showEmptySlots) {
+		return -1;
 	}
+
+	_engine->_text->initTextBank(TextBankId::Options_and_menus);
+
+	MenuSettings saveFiles;
+	saveFiles.addButton(TextId::kReturnMenu);
+
+	const int maxButtons = _engine->getMetaEngine().getMaximumSaveSlot() + 1;
+	for (const SaveStateDescriptor& savegame : savegames) {
+		saveFiles.addButton(savegame.getDescription().encode().c_str(), savegame.getSaveSlot());
+		if (saveFiles.getButtonCount() >= maxButtons) {
+			break;
+		}
+	}
+
+	if (showEmptySlots) {
+		while (saveFiles.getButtonCount() < maxButtons) {
+			saveFiles.addButton("EMPTY");
+		}
+	}
+
+	for (;;) {
+		const int32 id = _engine->_menu->processMenu(&saveFiles);
+		switch (id) {
+		case kQuitEngine:
+		case TextId::kReturnMenu:
+			return -1;
+		default:
+			// the first button is the back button - to subtract that one again to get the real slot index
+			return saveFiles.getButtonState(id);
+		}
+	}
+
+	return -1;
+}
+
+bool MenuOptions::continueGameMenu() {
+	_engine->_screens->copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
+	_engine->flip();
+	const int slot = chooseSave(TextId::kContinueGame);
+	if (slot >= 0) {
+		debug("Load slot %i", slot);
+		Common::Error state = _engine->loadGameState(slot);
+		if (state.getCode() != Common::kNoError) {
+			error("Failed to load slot %i", slot);
+			return false;
+		}
+
+		return true;
+	}
+	return false;
+}
+
+bool MenuOptions::deleteSaveMenu() {
+	_engine->_screens->copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
+	_engine->flip();
+	const int slot = chooseSave(TextId::kDeleteSaveGame);
+	if (slot >= 0) {
+		_engine->wipeSaveSlot(slot);
+		return true;
+	}
+	return false;
+}
+
+bool MenuOptions::saveGameMenu() {
+	_engine->_screens->copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
+	_engine->flip();
+	const int slot = chooseSave(TextId::kCreateSaveGame, true);
+	if (slot >= 0) {
+		// TODO: enter description
+		Common::Error state = _engine->saveGameState(slot, "description", false);
+		if (state.getCode() != Common::kNoError) {
+			error("Failed to save slot %i", slot);
+			return false;
+		}
+
+		return true;
+	}
+	return false;
 }
 
 } // namespace TwinE

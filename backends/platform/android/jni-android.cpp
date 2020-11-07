@@ -91,6 +91,9 @@ jmethodID JNI::_MID_convertEncoding = 0;
 jmethodID JNI::_MID_getAllStorageLocations = 0;
 jmethodID JNI::_MID_initSurface = 0;
 jmethodID JNI::_MID_deinitSurface = 0;
+jmethodID JNI::_MID_createDirectoryWithSAF = 0;
+jmethodID JNI::_MID_createFileWithSAF = 0;
+jmethodID JNI::_MID_closeFileWithSAF = 0;
 
 jmethodID JNI::_MID_EGL10_eglSwapBuffers = 0;
 
@@ -134,7 +137,11 @@ jint JNI::onLoad(JavaVM *vm) {
 	if (_vm->GetEnv((void **)&env, JNI_VERSION_1_2))
 		return JNI_ERR;
 
+#ifdef BACKEND_ANDROID3D
+	jclass cls = env->FindClass("org/residualvm/residualvm/ResidualVM");
+#else
 	jclass cls = env->FindClass("org/scummvm/scummvm/ScummVM");
+#endif
 	if (cls == 0)
 		return JNI_ERR;
 
@@ -583,6 +590,9 @@ void JNI::create(JNIEnv *env, jobject self, jobject asset_manager,
 	FIND_METHOD(, convertEncoding, "(Ljava/lang/String;Ljava/lang/String;[B)[B");
 	FIND_METHOD(, initSurface, "()Ljavax/microedition/khronos/egl/EGLSurface;");
 	FIND_METHOD(, deinitSurface, "()V");
+	FIND_METHOD(, createDirectoryWithSAF, "(Ljava/lang/String;)Z");
+	FIND_METHOD(, createFileWithSAF, "(Ljava/lang/String;)Ljava/lang/String;");
+	FIND_METHOD(, closeFileWithSAF, "(Ljava/lang/String;)V");
 
 	_jobj_egl = env->NewGlobalRef(egl);
 	_jobj_egl_display = env->NewGlobalRef(egl_display);
@@ -726,10 +736,12 @@ void JNI::setPause(JNIEnv *env, jobject self, jboolean value) {
 		else
 			JNI::_pauseToken.clear();
 
-		/*if (value &&
+#ifdef BACKEND_ANDROID3D
+		if (value &&
 				g_engine->hasFeature(Engine::kSupportsSavingDuringRuntime) &&
 				g_engine->canSaveGameStateCurrently())
-			g_engine->saveGameState(0, "Android parachute");*/
+			g_engine->saveGameState(0, "Android parachute");
+#endif
 	}
 
 	pause = value;
@@ -799,6 +811,63 @@ Common::Array<Common::String> JNI::getAllStorageLocations() {
 	}
 
 	return *res;
+}
+
+bool JNI::createDirectoryWithSAF(const Common::String &dirPath) {
+	JNIEnv *env = JNI::getEnv();
+	jstring javaDirPath = env->NewStringUTF(dirPath.c_str());
+
+	bool created = env->CallBooleanMethod(_jobj, _MID_createDirectoryWithSAF, javaDirPath);
+
+	if (env->ExceptionCheck()) {
+		LOGE("JNI - Failed to create directory with SAF enhanced method");
+
+		env->ExceptionDescribe();
+		env->ExceptionClear();
+		created = false;
+	}
+
+	return created;
+
+}
+
+Common::String JNI::createFileWithSAF(const Common::String &filePath) {
+	JNIEnv *env = JNI::getEnv();
+	jstring javaFilePath = env->NewStringUTF(filePath.c_str());
+
+	jstring hackyFilenameJSTR = (jstring)env->CallObjectMethod(_jobj, _MID_createFileWithSAF, javaFilePath);
+
+
+	if (env->ExceptionCheck()) {
+		LOGE("JNI - Failed to create file with SAF enhanced method");
+
+		env->ExceptionDescribe();
+		env->ExceptionClear();
+		hackyFilenameJSTR = env->NewStringUTF("");
+	}
+
+	Common::String hackyFilenameStr = convertFromJString(env, hackyFilenameJSTR, "UTF-8");
+
+	//LOGD("JNI - _MID_createFileWithSAF returned %s", hackyFilenameStr.c_str());
+	env->DeleteLocalRef(hackyFilenameJSTR);
+
+	return hackyFilenameStr;
+
+}
+
+void JNI::closeFileWithSAF(const Common::String &hackyFilename) {
+	JNIEnv *env = JNI::getEnv();
+	jstring javaHackyFilename = env->NewStringUTF(hackyFilename.c_str());
+
+	env->CallVoidMethod(_jobj, _MID_closeFileWithSAF, javaHackyFilename);
+
+	if (env->ExceptionCheck()) {
+		LOGE("JNI - Failed to close file with SAF enhanced method");
+
+		env->ExceptionDescribe();
+		env->ExceptionClear();
+	}
+
 }
 
 

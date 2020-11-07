@@ -23,34 +23,60 @@
 #ifndef TWINE_GAMESTATE_H
 #define TWINE_GAMESTATE_H
 
+#include "common/savefile.h"
 #include "common/scummsys.h"
 #include "twine/actor.h"
+#include "twine/menu.h"
+#include "twine/holomap.h"
 
 namespace TwinE {
 
 #define NUM_GAME_FLAGS 255
 #define NUM_INVENTORY_ITEMS 28
 
+/**
+ * This gameflag indicates that the inventory items are taken from Twinson because he went to jail
+ */
 #define GAMEFLAG_INVENTORY_DISABLED 70
 
 enum InventoryItems {
 	kiHolomap = 0,
 	kiMagicBall = 1,
 	kiUseSabre = 2,
+	kiGawleysHorn = 3,
 	kiTunic = 4,
 	kiBookOfBu = 5,
+	kSendellsMedallion = 6,
+	kFlaskOfClearWater = 7,
+	kRedCard = 8,
+	kBlueCard = 9,
+	kIDCard = 10,
+	kMrMiesPass = 11,
 	kiProtoPack = 12,
+	kSnowboard = 13,
 	kiPinguin = 14,
+	kGasItem = 15,
+	kPirateFlag = 16,
+	kMagicFlute = 17,
+	kSpaceGuitar = 18,
+	kHairDryer = 19,
+	kAncesteralKey = 20,
+	kBottleOfSyrup = 21,
+	kEmptyBottle = 22,
+	kFerryTicket = 23,
+	kKeypad = 24,
+	kCoffeeCan  = 25,
 	kiBonusList = 26,
-	kiCloverLeaf = 27
+	kiCloverLeaf = 27,
+	MaxInventoryItems = 28
 };
 
 /** Magicball strength*/
 enum MagicballStrengthType {
-	kNoBallStrenght = 2,
-	kYellowBallStrenght = 3,
-	kGreenBallStrenght = 4,
-	kRedBallStrenght = 6,
+	kNoBallStrength = 2,
+	kYellowBallStrength = 3,
+	kGreenBallStrength = 4,
+	kRedBallStrength = 6,
 	kFireBallStrength = 8
 };
 
@@ -66,7 +92,24 @@ private:
 public:
 	GameState(TwinEEngine *engine);
 
-	/** LBA engine game flags to save quest states */
+	/**
+	 * LBA engine game flags to save quest states
+	 *
+	 * 0-27: inventory related
+	 * 28-199: story related
+	 * 200-255: video related
+	 *
+	 * 35: If 0, a zommed sequence of opening the ventilation shaft will be played when Twinsen escapes
+	 * his house after arresting Zoe. Set to 1 after the sequence (also if Twinsen is killed during the arrest).
+	 * 47: Value of 1 indicates that Twinsen has opened the door to the Citadel Island Tavern's basement.
+	 * The door will be always open from now on.
+	 * 70: Set to 1 if inventory items are taken from Twinsen when he goes to jail (inventory is empty),
+	 * set to 0 after he gets back his stuff.
+	 * 92: Set to 1 if the green grobo in the Citadel Island Tavern has told Twinsen about taking Zoe to the
+	 * port and leaving for another island.
+	 * 107: Set to 1 after Twinsen kills yellow groboclone in the Citadel Island Tavern (after the Tavern has
+	 * been closed down). Makes the Tavern open again and groboclone not appear any more.
+	 */
 	// TODO: why not NUM_GAME_FLAGS?
 	uint8 gameFlags[256];
 
@@ -96,19 +139,19 @@ public:
 	int16 inventoryNumGas = 0;
 
 	/** Its using FunFrock Sabre */
-	int16 usingSabre = 0;
+	bool usingSabre = false;
 
 	/** Inventory used flags */
 	uint8 inventoryFlags[NUM_INVENTORY_ITEMS];
 
-	uint8 holomapFlags[150]; // GV14
+	uint8 holomapFlags[NUM_LOCATIONS]; // GV14
 
 	char playerName[30];
 
 	int32 gameChoices[10];         // inGameMenuData
-	int32 numChoices = 0;             // numOfOptionsInChoice
-	int16 gameChoicesSettings[18]; // choiceTab -  same structure as menu settings
-	int32 choiceAnswer = 0;           // inGameMenuAnswer
+	int32 numChoices = 0;          // numOfOptionsInChoice
+	MenuSettings gameChoicesSettings; // choiceTab -  same structure as menu settings
+	int32 choiceAnswer = 0;        // inGameMenuAnswer
 
 	/** Initialize all engine variables */
 	void initEngineVars();
@@ -118,8 +161,8 @@ public:
 
 	void processFoundItem(int32 item);
 
-	bool loadGame();
-	bool saveGame();
+	bool loadGame(Common::SeekableReadStream *file);
+	bool saveGame(Common::WriteStream *file);
 
 	void processGameChoices(int32 choiceIdx);
 

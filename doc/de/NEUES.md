@@ -42,8 +42,17 @@ Programmcodes finden Sie auf Englisch unter:
  SCI:
    - Unterstützung für RGB-Rendering (16/32bpp) für SCI0 - SCI1.1-Spiele hinzugefügt. Dadurch werden Probleme
      mit der Farbpalette während Bildschirmübergängen und Probleme bei der Darstellung von Mac-QuickTime-Videos korrigiert.
+   - Unterstützung für benutzerdefinierte Farbpaletten in SQ3 und LSL2 des FreeSCI-Projekts hinzugefügt.
+     Wenn diese Mods aktiviert werden, wird die grafische Darstellung in diesen beiden Spielen verbessert.
 
- Tinsel:
+ SCUMM:
+   - Textdarstellung in der chinesischen, japanischen und koreanischen Version von The Dig und
+     the Curse of Monkey Island korrigiert. Diese Fehlerkorrekturen beinhalten auch einige allgemeine
+     Verbesserungen an der Textdarstellung (hauptsächlich bezüglich der Formatierung von Text-Umbrüchen).
+   - Darstellung des Pause- und Neustart-Dialogs in der chinesischen, japanischen und koreanischen Version
+     der Benutzeroberfläche korrigiert.
+
+   Tinsel:
    - Unterstützung für die Rückkehr zur ScummVM-Benutzeroberfläche hinzugefügt.
 
  Stark:

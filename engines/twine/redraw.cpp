@@ -21,6 +21,7 @@
  */
 
 #include "twine/redraw.h"
+#include "common/memstream.h"
 #include "common/textconsole.h"
 #include "graphics/surface.h"
 #include "twine/actor.h"
@@ -28,7 +29,7 @@
 #include "twine/collision.h"
 #include "twine/debug_scene.h"
 #include "twine/grid.h"
-#include "twine/hqrdepack.h"
+#include "twine/hqr.h"
 #include "twine/input.h"
 #include "twine/interface.h"
 #include "twine/menu.h"
@@ -49,28 +50,32 @@ void Redraw::addRedrawCurrentArea(int32 left, int32 top, int32 right, int32 bott
 
 	while (i < numOfRedrawBox) {
 		int32 leftValue;
-		if (currentRedrawList[i].left >= left)
+		if (currentRedrawList[i].left >= left) {
 			leftValue = left;
-		else
+		} else {
 			leftValue = currentRedrawList[i].left;
+		}
 
 		int32 rightValue;
-		if (currentRedrawList[i].right <= right)
+		if (currentRedrawList[i].right <= right) {
 			rightValue = right;
-		else
+		} else {
 			rightValue = currentRedrawList[i].right;
+		}
 
 		int32 topValue;
-		if (currentRedrawList[i].top >= top)
+		if (currentRedrawList[i].top >= top) {
 			topValue = top;
-		else
+		} else {
 			topValue = currentRedrawList[i].top;
+		}
 
 		int32 bottomValue;
-		if (currentRedrawList[i].bottom <= bottom)
+		if (currentRedrawList[i].bottom <= bottom) {
 			bottomValue = bottom;
-		else
+		} else {
 			bottomValue = currentRedrawList[i].bottom;
+		}
 
 		if ((rightValue - leftValue) * (bottomValue - topValue) < ((currentRedrawList[i].bottom - currentRedrawList[i].top) * (currentRedrawList[i].right - currentRedrawList[i].left) + area)) {
 			currentRedrawList[i].left = leftValue;
@@ -98,11 +103,11 @@ void Redraw::addRedrawCurrentArea(int32 left, int32 top, int32 right, int32 bott
 }
 
 void Redraw::addRedrawArea(int32 left, int32 top, int32 right, int32 bottom) {
-	if (left < 0) {
-		left = 0;
+	if (left < SCREEN_TEXTLIMIT_LEFT) {
+		left = SCREEN_TEXTLIMIT_LEFT;
 	}
-	if (top < 0) {
-		top = 0;
+	if (top < SCREEN_TEXTLIMIT_TOP) {
+		top = SCREEN_TEXTLIMIT_TOP;
 	}
 	if (right >= SCREEN_WIDTH) {
 		right = SCREEN_TEXTLIMIT_RIGHT;
@@ -198,19 +203,16 @@ void Redraw::updateOverlayTypePosition(int16 X1, int16 Y1, int16 X2, int16 Y2) {
 
 // TODO: convert to bool and check if this isn't always true...
 void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
-	int16 tmp_projPosX;
-	int16 tmp_projPosY;
-	ActorStruct *actor;
-
-	tmp_projPosX = _engine->_renderer->projPosXScreen;
-	tmp_projPosY = _engine->_renderer->projPosYScreen;
+	int16 tmp_projPosX = _engine->_renderer->projPosXScreen;
+	int16 tmp_projPosY = _engine->_renderer->projPosYScreen;
 
 	_engine->_interface->resetClip();
 
 	if (bgRedraw) {
 		_engine->freezeTime();
-		if (_engine->_scene->needChangeScene != -1 && _engine->_scene->needChangeScene != -2)
+		if (_engine->_scene->needChangeScene != -1 && _engine->_scene->needChangeScene != -2) {
 			_engine->_screens->fadeOut(_engine->_screens->paletteRGBA);
+		}
 		_engine->_screens->clearScreen();
 		_engine->_grid->redrawGrid();
 		updateOverlayTypePosition(tmp_projPosX, tmp_projPosY, _engine->_renderer->projPosXScreen, _engine->_renderer->projPosYScreen);
@@ -233,10 +235,10 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 
 	// Process actors drawing list
 	for (modelActorPos = 0; modelActorPos < _engine->_scene->sceneNumActors; modelActorPos++, spriteActorPos++, shadowActorPos++) {
-		actor = _engine->_scene->getActor(modelActorPos);
+		ActorStruct *actor = _engine->_scene->getActor(modelActorPos);
 		actor->dynamicFlags.bIsVisible = 0; // reset visible state
 
-		if (_engine->_grid->useCellingGrid == -1 || actor->y <= (*(int16 *)(_engine->_grid->cellingGridIdx * 24 + (int8 *)_engine->_scene->sceneZones + 8))) {
+		if (_engine->_grid->useCellingGrid == -1 || actor->y <= _engine->_scene->sceneZones[_engine->_grid->cellingGridIdx].topRight.y) {
 			// no redraw required
 			if (actor->staticFlags.bIsBackgrounded && bgRedraw == 0) {
 				// get actor position on screen
@@ -309,8 +311,7 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 				if (_engine->lbaTime - extra->lifeTime > 35) {
 					extra->lifeTime = _engine->lbaTime;
 					extra->type &= 0xFBFF;
-					// FIXME make constant for sample index
-					_engine->_sound->playSample(11, 4096, 1, extra->x, extra->y, extra->z);
+					_engine->_sound->playSample(Samples::ItemPopup, 4096, 1, extra->x, extra->y, extra->z);
 				}
 			} else {
 				if ((extra->type & 1) || (extra->type & 0x40) || (extra->actorIdx + extra->lifeTime - 150 < _engine->lbaTime) || (!((_engine->lbaTime + extra->lifeTime) & 8))) {
@@ -353,14 +354,14 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 			// Drawing actors
 			if (flags < 0xC00) {
 				if (!flags) {
-					_engine->_animations->setModelAnimation(actor2->animPosition, _engine->_animations->animTable[actor2->previousAnimIdx], _engine->_actor->bodyTable[actor2->entity], &actor2->animTimerData);
+					_engine->_animations->setModelAnimation(actor2->animPosition, _engine->_resources->animTable[actor2->previousAnimIdx], _engine->_actor->bodyTable[actor2->entity], &actor2->animTimerData);
 
 					if (!_engine->_renderer->renderIsoModel(actor2->x - _engine->_grid->cameraX, actor2->y - _engine->_grid->cameraY, actor2->z - _engine->_grid->cameraZ, 0, actor2->angle, 0, _engine->_actor->bodyTable[actor2->entity])) {
-						if (renderLeft < 0) {
+						if (renderLeft < SCREEN_TEXTLIMIT_LEFT) {
 							renderLeft = SCREEN_TEXTLIMIT_LEFT;
 						}
 
-						if (renderTop < 0) {
+						if (renderTop < SCREEN_TEXTLIMIT_TOP) {
 							renderTop = SCREEN_TEXTLIMIT_TOP;
 						}
 
@@ -402,13 +403,13 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 			}
 			// Drawing shadows
 			else if (flags == 0xC00 && !_engine->_actor->cropBottomScreen) {
-				DrawListStruct shadow = drawList[pos];
+				const DrawListStruct& shadow = drawList[pos];
 
 				// get actor position on screen
 				_engine->_renderer->projectPositionOnScreen(shadow.x - _engine->_grid->cameraX, shadow.y - _engine->_grid->cameraY, shadow.z - _engine->_grid->cameraZ);
 
 				int32 spriteWidth, spriteHeight;
-				_engine->_grid->getSpriteSize(shadow.field_A, &spriteWidth, &spriteHeight, _engine->_scene->spriteShadowPtr);
+				_engine->_grid->getSpriteSize(shadow.field_A, &spriteWidth, &spriteHeight, _engine->_resources->spriteShadowPtr);
 
 				// calculate sprite size and position on screen
 				renderLeft = _engine->_renderer->projPosX - (spriteWidth / 2);
@@ -419,7 +420,7 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 				_engine->_interface->setClip(renderLeft, renderTop, renderRight, renderBottom);
 
 				if (_engine->_interface->textWindowLeft <= _engine->_interface->textWindowRight && _engine->_interface->textWindowTop <= _engine->_interface->textWindowBottom) {
-					_engine->_grid->drawSprite(shadow.field_A, renderLeft, renderTop, _engine->_scene->spriteShadowPtr);
+					_engine->_grid->drawSprite(shadow.field_A, renderLeft, renderTop, _engine->_resources->spriteShadowPtr);
 				}
 
 				const int32 tmpX = (shadow.x + 0x100) >> 9;
@@ -439,17 +440,19 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 			}
 			// Drawing sprite actors
 			else if (flags == 0x1000) {
-				int32 spriteWidth, spriteHeight;
-				uint8 *spritePtr = _engine->_actor->spriteTable[actor2->entity];
+				const uint8 *spritePtr = _engine->_resources->spriteTable[actor2->entity];
 
 				// get actor position on screen
 				_engine->_renderer->projectPositionOnScreen(actor2->x - _engine->_grid->cameraX, actor2->y - _engine->_grid->cameraY, actor2->z - _engine->_grid->cameraZ);
 
+				int32 spriteWidth, spriteHeight;
 				_engine->_grid->getSpriteSize(0, &spriteWidth, &spriteHeight, spritePtr);
 
 				// calculate sprite position on screen
-				renderLeft = _engine->_renderer->projPosX + *((int16 *)(_engine->_scene->spriteBoundingBoxPtr + (actor2->entity * 16)));
-				renderTop = _engine->_renderer->projPosY + *((int16 *)(_engine->_scene->spriteBoundingBoxPtr + (actor2->entity * 16) + 2));
+				Common::MemoryReadStream stream(_engine->_resources->spriteBoundingBoxPtr, _engine->_resources->spriteBoundingBoxSize);
+				stream.seek(actor2->entity * 16);
+				renderLeft = _engine->_renderer->projPosX + stream.readSint16LE();
+				renderTop = _engine->_renderer->projPosY + stream.readSint16LE();
 				renderRight = renderLeft + spriteWidth;
 				renderBottom = renderTop + spriteHeight;
 
@@ -497,15 +500,17 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 					_engine->_extra->drawExtraSpecial(actorIdx, _engine->_renderer->projPosX, _engine->_renderer->projPosY);
 				} else {
 					int32 spriteWidth, spriteHeight;
-					_engine->_grid->getSpriteSize(0, &spriteWidth, &spriteHeight, _engine->_actor->spriteTable[extra->info0]);
+					_engine->_grid->getSpriteSize(0, &spriteWidth, &spriteHeight, _engine->_resources->spriteTable[extra->info0]);
 
 					// calculate sprite position on screen
-					renderLeft = _engine->_renderer->projPosX + *(int16 *)(_engine->_scene->spriteBoundingBoxPtr + extra->info0 * 16);
-					renderTop = _engine->_renderer->projPosY + *(int16 *)(_engine->_scene->spriteBoundingBoxPtr + extra->info0 * 16 + 2);
+					Common::MemoryReadStream stream(_engine->_resources->spriteBoundingBoxPtr, _engine->_resources->spriteBoundingBoxSize);
+					stream.seek(extra->info0 * 16);
+					renderLeft = _engine->_renderer->projPosX + stream.readSint16LE();
+					renderTop = _engine->_renderer->projPosY + stream.readSint16LE();
 					renderRight = renderLeft + spriteWidth;
 					renderBottom = renderTop + spriteHeight;
 
-					_engine->_grid->drawSprite(0, renderLeft, renderTop, _engine->_actor->spriteTable[extra->info0]);
+					_engine->_grid->drawSprite(0, renderLeft, renderTop, _engine->_resources->spriteTable[extra->info0]);
 				}
 
 				_engine->_interface->setClip(renderLeft, renderTop, renderRight, renderBottom);
@@ -562,14 +567,15 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 			// process overlay type
 			switch (overlay->type) {
 			case koSprite: {
-				int16 offsetX, offsetY;
-				int32 spriteWidth, spriteHeight;
-				uint8 *spritePtr = _engine->_actor->spriteTable[overlay->info0];
+				const uint8 *spritePtr = _engine->_resources->spriteTable[overlay->info0];
 
+				int32 spriteWidth, spriteHeight;
 				_engine->_grid->getSpriteSize(0, &spriteWidth, &spriteHeight, spritePtr);
 
-				offsetX = *((int16 *)(_engine->_scene->spriteBoundingBoxPtr + (overlay->info0 * 16)));
-				offsetY = *((int16 *)(_engine->_scene->spriteBoundingBoxPtr + (overlay->info0 * 16) + 2));
+				Common::MemoryReadStream stream(_engine->_resources->spriteBoundingBoxPtr, _engine->_resources->spriteBoundingBoxSize);
+				stream.seek(overlay->info0 * 16);
+				const int16 offsetX = stream.readSint16LE();
+				const int16 offsetY = stream.readSint16LE();
 
 				renderLeft = offsetX + overlay->x;
 				renderTop = offsetY + overlay->y;
@@ -584,12 +590,11 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 				break;
 			}
 			case koNumber: {
-				int32 textLength, textHeight;
 				char text[10];
 				snprintf(text, sizeof(text), "%d", overlay->info0);
 
-				textLength = _engine->_text->getTextSize(text);
-				textHeight = 48;
+				const int32 textLength = _engine->_text->getTextSize(text);
+				const int32 textHeight = 48;
 
 				renderLeft = overlay->x - (textLength / 2);
 				renderTop = overlay->y - 24;
@@ -608,15 +613,13 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 				break;
 			}
 			case koNumberRange: {
-				int32 textLength, textHeight, range;
+				const int32 range = _engine->_collision->getAverageValue(overlay->info1, overlay->info0, 100, overlay->lifeTime - _engine->lbaTime - 50);
+
 				char text[10];
-
-				range = _engine->_collision->getAverageValue(overlay->info1, overlay->info0, 100, overlay->lifeTime - _engine->lbaTime - 50);
-
 				sprintf(text, "%d", range);
 
-				textLength = _engine->_text->getTextSize(text);
-				textHeight = 48;
+				const int32 textLength = _engine->_text->getTextSize(text);
+				const int32 textHeight = 48;
 
 				renderLeft = overlay->x - (textLength / 2);
 				renderTop = overlay->y - 24;
@@ -635,7 +638,7 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 				break;
 			}
 			case koInventoryItem: {
-				int32 item = overlay->info0;
+				const int32 item = overlay->info0;
 
 				_engine->_interface->drawSplittedBox(10, 10, 69, 69, 0);
 				_engine->_interface->setClip(10, 10, 69, 69);
@@ -654,23 +657,22 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 			}
 			case koText: {
 				char text[256];
-
 				_engine->_text->getMenuText(overlay->info0, text, sizeof(text));
 
-				int32 textLength = _engine->_text->getTextSize(text);
-				int32 textHeight = 48;
+				const int32 textLength = _engine->_text->getTextSize(text);
+				const int32 textHeight = 48;
 
 				renderLeft = overlay->x - (textLength / 2);
 				renderTop = overlay->y - 24;
 				renderRight = overlay->x + (textLength / 2);
 				renderBottom = overlay->y + textHeight;
 
-				if (renderLeft < 0) {
-					renderLeft = 0;
+				if (renderLeft < SCREEN_TEXTLIMIT_LEFT) {
+					renderLeft = SCREEN_TEXTLIMIT_LEFT;
 				}
 
-				if (renderTop < 0) {
-					renderTop = 0;
+				if (renderTop < SCREEN_TEXTLIMIT_TOP) {
+					renderTop = SCREEN_TEXTLIMIT_TOP;
 				}
 
 				if (renderRight > SCREEN_TEXTLIMIT_RIGHT) {
@@ -728,8 +730,6 @@ void Redraw::redrawEngineActions(int32 bgRedraw) { // fullRedraw
 }
 
 void Redraw::drawBubble(int32 actorIdx) {
-	int32 spriteWidth, spriteHeight;
-	uint8 *spritePtr;
 	ActorStruct *actor = _engine->_scene->getActor(actorIdx);
 
 	// get actor position on screen
@@ -740,7 +740,8 @@ void Redraw::drawBubble(int32 actorIdx) {
 		bubbleActor = actorIdx;
 	}
 
-	spritePtr = _engine->_actor->spriteTable[bubbleSpriteIndex];
+	const uint8 *spritePtr = _engine->_resources->spriteTable[bubbleSpriteIndex];
+	int32 spriteWidth, spriteHeight;
 	_engine->_grid->getSpriteSize(0, &spriteWidth, &spriteHeight, spritePtr);
 
 	// calculate sprite position on screen

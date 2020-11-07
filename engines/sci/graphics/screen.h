@@ -150,6 +150,11 @@ public:
 	void grabPalette(byte *buffer, uint start, uint num) const;
 	void setPalette(const byte *buffer, uint start, uint num, bool update = true);
 
+	byte getCurPaletteMapValue() const { return _curPaletteMapValue; }
+	void setCurPaletteMapValue(byte val) { _curPaletteMapValue = val; }
+	void setPaletteMods(const PaletteMod *mods, unsigned int count);
+	bool paletteModsEnabled() const { return _paletteModsEnabled; }
+
 private:
 	uint16 _width;
 	uint16 _height;
@@ -196,6 +201,12 @@ private:
 	byte *_displayedScreen;
 	byte *_rgbScreen;
 
+	// For RGB per-view/pic palette mods
+	byte *_paletteMapScreen;
+	byte _curPaletteMapValue;
+	PaletteMod _paletteMods[256];
+	bool _paletteModsEnabled;
+
 	byte *_backupScreen; // for bak* functions
 
 	void convertToRGB(const Common::Rect &rect);
@@ -240,17 +251,16 @@ public:
 		}
 
 		// Set pixel for visual, priority and control map directly, those are not upscaled
-		int offset = y * _width + x;
+		const int offset = y * _width + x;
 
 		if (drawMask & GFX_SCREEN_MASK_VISUAL) {
 			_visualScreen[offset] = color;
-
-			int displayOffset = 0;
+			if (_paletteMapScreen)
+				_paletteMapScreen[offset] = _curPaletteMapValue;
 
 			switch (_upscaledHires) {
 			case GFX_SCREEN_UPSCALED_DISABLED:
-				displayOffset = offset;
-				_displayScreen[displayOffset] = color;
+				_displayScreen[offset] = color;
 				break;
 
 			case GFX_SCREEN_UPSCALED_640x400:
@@ -271,7 +281,7 @@ public:
 	}
 
 	void putPixel480x300(int16 x, int16 y, byte drawMask, byte color, byte priority, byte control) {
-		int offset = ((y * 3) / 2 * _width) + ((x * 3) / 2);
+		const int offset = ((y * 3) / 2 * _width) + ((x * 3) / 2);
 
 		// All maps are upscaled
 		// TODO: figure out, what Sierra exactly did on Mac for these games
@@ -317,6 +327,9 @@ public:
 		if (drawMask & GFX_SCREEN_MASK_VISUAL) {
 			_visualScreen[offset] = color;
 			_displayScreen[offset] = color;
+			if (_paletteMapScreen)
+				_paletteMapScreen[offset] = _curPaletteMapValue;
+
 		}
 		if (drawMask & GFX_SCREEN_MASK_PRIORITY) {
 			_priorityScreen[offset] = priority;
@@ -390,6 +403,11 @@ public:
 			// Do not scale ourselves, but put it on the display directly
 			putPixelOnDisplay(x, actualY, color);
 		} else {
+			if (_upscaledHires == GFX_SCREEN_UPSCALED_480x300) {
+				putPixel480x300(x, actualY, GFX_SCREEN_MASK_VISUAL, color, 0, 0);
+				return;
+			}
+
 			int offset = actualY * _width + x;
 
 			_visualScreen[offset] = color;

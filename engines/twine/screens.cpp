@@ -23,22 +23,25 @@
 #include "common/system.h"
 #include "graphics/surface.h"
 #include "twine/screens.h"
-#include "twine/hqrdepack.h"
+#include "twine/hqr.h"
 #include "twine/music.h"
 #include "twine/resources.h"
 #include "twine/twine.h"
 
 namespace TwinE {
 
-void Screens::adelineLogo() {
+bool Screens::adelineLogo() {
 	_engine->_music->playMidiMusic(31);
 
-	loadImageDelay(RESSHQR_ADELINEIMG, 7);
+	if (loadImageDelay(RESSHQR_ADELINEIMG, 7)) {
+		return true;
+	}
 	palCustom = true;
+	return false;
 }
 
 void Screens::loadMenuImage(bool fade_in) {
-	if (_engine->_hqrdepack->hqrGetEntry((uint8*)_engine->workVideoBuffer.getPixels(), Resources::HQR_RESS_FILE, RESSHQR_MENUIMG) == 0) {
+	if (HQR::getEntry((uint8*)_engine->workVideoBuffer.getPixels(), Resources::HQR_RESS_FILE, RESSHQR_MENUIMG) == 0) {
 		warning("Failed to load menu image");
 		return;
 	}
@@ -53,7 +56,7 @@ void Screens::loadMenuImage(bool fade_in) {
 }
 
 void Screens::loadCustomPalette(int32 index) {
-	if (_engine->_hqrdepack->hqrGetEntry(palette, Resources::HQR_RESS_FILE, index) == 0) {
+	if (HQR::getEntry(palette, Resources::HQR_RESS_FILE, index) == 0) {
 		warning("Failed to load custom palette %i", index);
 		return;
 	}
@@ -61,22 +64,22 @@ void Screens::loadCustomPalette(int32 index) {
 }
 
 void Screens::convertPalToRGBA(const uint8* in, uint32* out) {
-	uint8* palDest = (uint8*)out;
+	uint8* paletteOut = (uint8*)out;
 	for (int i = 0; i < NUMOFCOLORS; i++) {
-		palDest[0] = in[0];
-		palDest[1] = in[1];
-		palDest[2] = in[2];
-		palDest += 4;
+		paletteOut[0] = in[0];
+		paletteOut[1] = in[1];
+		paletteOut[2] = in[2];
+		paletteOut += 4;
 		in += 3;
 	}
 }
 
 void Screens::loadImage(int32 index, bool fade_in) {
-	if (_engine->_hqrdepack->hqrGetEntry((uint8*)_engine->workVideoBuffer.getPixels(), Resources::HQR_RESS_FILE, index) == 0) {
+	if (HQR::getEntry((uint8*)_engine->workVideoBuffer.getPixels(), Resources::HQR_RESS_FILE, index) == 0) {
 		warning("Failed to load image with index %i", index);
 		return;
 	}
-	debug("Load image: %i", index);
+	debug(0, "Load image: %i", index);
 	copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
 	loadCustomPalette(index + 1);
 	if (fade_in) {
@@ -88,10 +91,14 @@ void Screens::loadImage(int32 index, bool fade_in) {
 	palCustom = true;
 }
 
-void Screens::loadImageDelay(int32 index, int32 time) {
+bool Screens::loadImageDelay(int32 index, int32 seconds) {
 	loadImage(index);
-	_engine->delaySkip(1000 * time);
+	if (_engine->delaySkip(1000 * seconds)) {
+		adjustPalette(0, 0, 0, paletteRGBACustom, 100);
+		return true;
+	}
 	fadeOut(paletteRGBACustom);
+	return false;
 }
 
 void Screens::fadeIn(uint32 *pal) {
@@ -122,21 +129,21 @@ int32 Screens::crossDot(int32 modifier, int32 color, int32 param, int32 intensit
 }
 
 void Screens::adjustPalette(uint8 R, uint8 G, uint8 B, const uint32 *rgbaPal, int32 intensity) {
-	uint32 pal2[NUMOFCOLORS];
+	uint32 pal[NUMOFCOLORS];
 
 	int32 counter = 0;
 
-	const uint8 *pal = (const uint8*)rgbaPal;
-	uint8 *localPalette = (uint8*)pal2;
-	uint8 *newR = &localPalette[0];
-	uint8 *newG = &localPalette[1];
-	uint8 *newB = &localPalette[2];
-	uint8 *newA = &localPalette[3];
+	const uint8 *paletteIn = (const uint8*)rgbaPal;
+	uint8 *paletteOut = (uint8*)pal;
+	uint8 *newR = &paletteOut[0];
+	uint8 *newG = &paletteOut[1];
+	uint8 *newB = &paletteOut[2];
+	uint8 *newA = &paletteOut[3];
 
 	for (int32 i = 0; i < NUMOFCOLORS; i++) {
-		*newR = crossDot(R, pal[counter], 100, intensity);
-		*newG = crossDot(G, pal[counter + 1], 100, intensity);
-		*newB = crossDot(B, pal[counter + 2], 100, intensity);
+		*newR = crossDot(R, paletteIn[counter], 100, intensity);
+		*newG = crossDot(G, paletteIn[counter + 1], 100, intensity);
+		*newB = crossDot(B, paletteIn[counter + 2], 100, intensity);
 		*newA = 0;
 
 		newR += 4;
@@ -147,29 +154,28 @@ void Screens::adjustPalette(uint8 R, uint8 G, uint8 B, const uint32 *rgbaPal, in
 		counter += 4;
 	}
 
-	_engine->setPalette(pal2);
+	_engine->setPalette(pal);
 }
 
 void Screens::adjustCrossPalette(const uint32 *pal1, const uint32 *pal2) {
 	uint32 pal[NUMOFCOLORS];
 
-	int32 i;
 	int32 counter = 0;
 	int32 intensity = 0;
 
 	const uint8 *pal1p = (const uint8*)pal1;
 	const uint8 *pal2p = (const uint8*)pal2;
-	uint8 *localPalette = (uint8*)pal;
+	uint8 *paletteOut = (uint8*)pal;
 	do {
 		counter = 0;
 
-		uint8 *newR = &localPalette[counter];
-		uint8 *newG = &localPalette[counter + 1];
-		uint8 *newB = &localPalette[counter + 2];
-		uint8 *newA = &localPalette[counter + 3];
+		uint8 *newR = &paletteOut[counter];
+		uint8 *newG = &paletteOut[counter + 1];
+		uint8 *newB = &paletteOut[counter + 2];
+		uint8 *newA = &paletteOut[counter + 3];
 
-		for (i = 0; i < NUMOFCOLORS; i++) {
-			*newR = crossDot(pal1p[counter], pal2p[counter], 100, intensity);
+		for (int32 i = 0; i < NUMOFCOLORS; i++) {
+			*newR = crossDot(pal1p[counter + 0], pal2p[counter + 0], 100, intensity);
 			*newG = crossDot(pal1p[counter + 1], pal2p[counter + 1], 100, intensity);
 			*newB = crossDot(pal1p[counter + 2], pal2p[counter + 2], 100, intensity);
 			*newA = 0;
@@ -189,7 +195,7 @@ void Screens::adjustCrossPalette(const uint32 *pal1, const uint32 *pal2) {
 	} while (intensity <= 100);
 }
 
-void Screens::fadeToBlack(uint32 *pal) {
+void Screens::fadeToBlack(const uint32 *pal) {
 	if (palResetted) {
 		return;
 	}
@@ -202,7 +208,7 @@ void Screens::fadeToBlack(uint32 *pal) {
 	palResetted = true;
 }
 
-void Screens::fadeToPal(uint32 *pal) {
+void Screens::fadeToPal(const uint32 *pal) {
 	for (int32 i = 0; i <= 100; i += 3) {
 		adjustPalette(0, 0, 0, pal, i);
 		_engine->_system->delayMillis(1000 / 50);
@@ -232,14 +238,14 @@ void Screens::setBackPal() {
 	palResetted = true;
 }
 
-void Screens::fadePalRed(uint32 *pal) {
+void Screens::fadePalRed(const uint32 *pal) {
 	for (int32 i = 100; i >= 0; i -= 2) {
 		adjustPalette(0xFF, 0, 0, pal, i);
 		_engine->_system->delayMillis(1000 / 50);
 	}
 }
 
-void Screens::fadeRedPal(uint32 *pal) {
+void Screens::fadeRedPal(const uint32 *pal) {
 	for (int32 i = 0; i <= 100; i += 2) {
 		adjustPalette(0xFF, 0, 0, pal, i);
 		_engine->_system->delayMillis(1000 / 50);

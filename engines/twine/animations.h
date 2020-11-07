@@ -25,11 +25,9 @@
 
 #include "common/scummsys.h"
 #include "twine/actor.h"
+#include "twine/scene.h"
 
 namespace TwinE {
-
-/** Total number of animations allowed in the game */
-#define NUM_ANIMS 600
 
 class TwinEEngine;
 
@@ -40,19 +38,22 @@ private:
 	int32 getAnimMode(uint8 **ptr);
 	void applyAnimStep(uint8 **ptr, int32 bp, int32 bx);
 
-public:
-	Animations(TwinEEngine *engine);
-	/** Table with all loaded animations */
-	uint8 *animTable[NUM_ANIMS]{nullptr};
-	/** Table with all loaded animations sizes */
-	uint32 animSizeTable[NUM_ANIMS]{0};
+	/**
+	 * Verify animation at keyframe
+	 * @param animIdx Animation index
+	 * @param animPtr Animation pointer
+	 * @param bodyPtr Body model poitner
+	 * @param animTimerDataPtr Animation time data
+	 */
+	int32 verifyAnimAtKeyframe(int32 animPos, uint8 *animPtr, uint8 *bodyPtr, AnimTimerDataStruct *animTimerDataPtr);
+
+	uint8 *animBuffer1 = nullptr;
+	uint8 *animBuffer2 = nullptr;
 
 	/** Rotation by anim and not by engine */
 	int16 processRotationByAnim = 0; // processActorVar5
 	/** Last rotation angle */
 	int16 processLastRotationAngle = 0; // processActorVar6
-	/** Current process actor index */
-	int16 currentlyProcessedActorIdx = 0;
 
 	/** Current step X coornidate */
 	int16 currentStepX = 0;
@@ -60,16 +61,20 @@ public:
 	int16 currentStepY = 0;
 	/** Current step Z coornidate */
 	int16 currentStepZ = 0;
-	/** Current actor anim extra pointer */
-	uint8 *currentActorAnimExtraPtr = nullptr;
 
 	/** Pointer to current animation keyframe */
 	uint8 *keyFramePtr = nullptr;
 	/** Pointer to last animation keyframe */
-	uint8 *lastKeyFramePtr = nullptr;
+	const uint8 *lastKeyFramePtr = nullptr;
 
-	uint8 *animBuffer1 = nullptr;
-	uint8 *animBuffer2 = nullptr;
+public:
+	Animations(TwinEEngine *engine);
+	~Animations();
+
+	/** Current process actor index */
+	int16 currentlyProcessedActorIdx = 0;
+	/** Current actor anim extra pointer */
+	const uint8 *currentActorAnimExtraPtr = nullptr;
 
 	/**
 	 * Set animation keyframe
@@ -84,13 +89,13 @@ public:
 	 * Get total number of keyframes in animation
 	 * @param animPtr Pointer to animation
 	 */
-	int32 getNumKeyframes(uint8 *animPtr);
+	int32 getNumKeyframes(const uint8 *animPtr);
 
 	/**
 	 * Get first keyframes in animation
 	 * @param animPtr Pointer to animation
 	 */
-	int32 getStartKeyframe(uint8 *animPtr);
+	int32 getStartKeyframe(const uint8 *animPtr);
 
 	/**
 	 * Set new body animation
@@ -106,24 +111,14 @@ public:
 	 * @param animIdx Entity animation index
 	 * @param actorIdx Actor index
 	 */
-	int32 getBodyAnimIndex(int32 animIdx, int32 actorIdx);
+	int32 getBodyAnimIndex(AnimationTypes animIdx, int32 actorIdx = OWN_ACTOR_SCENE_INDEX);
 
 	/**
 	 * Stock animation - copy the next keyFrame from a different buffer
-	 * @param animPtr Animation pointer
 	 * @param bodyPtr Body model poitner
 	 * @param animTimerDataPtr Animation time data
 	 */
-	int32 stockAnimation(uint8 *animPtr, uint8 *bodyPtr, AnimTimerDataStruct *animTimerDataPtr);
-
-	/**
-	 * Verify animation at keyframe
-	 * @param animIdx Animation index
-	 * @param animPtr Animation pointer
-	 * @param bodyPtr Body model poitner
-	 * @param animTimerDataPtr Animation time data
-	 */
-	int32 verifyAnimAtKeyframe(int32 animPos, uint8 *animPtr, uint8 *bodyPtr, AnimTimerDataStruct *animTimerDataPtr);
+	int32 stockAnimation(uint8 *bodyPtr, AnimTimerDataStruct *animTimerDataPtr);
 
 	/**
 	 * Initialize animation

@@ -70,8 +70,9 @@ void DebugGrid::changeGrid() {
 	// Press up - more X positions
 	if (_engine->_input->toggleActionIfActive(TwinEActionType::NextRoom)) {
 		_engine->_scene->currentSceneIdx++;
-		if (_engine->_scene->currentSceneIdx > NUM_SCENES)
-			_engine->_scene->currentSceneIdx = 0;
+		if (_engine->_scene->currentSceneIdx >= LBA1SceneId::SceneIdMax) {
+			_engine->_scene->currentSceneIdx = LBA1SceneId::Citadel_Island_Prison;
+		}
 		_engine->_scene->needChangeScene = _engine->_scene->currentSceneIdx;
 		_engine->_redraw->reqBgRedraw = true;
 	}
@@ -79,8 +80,9 @@ void DebugGrid::changeGrid() {
 	// Press down - less X positions
 	if (_engine->_input->toggleActionIfActive(TwinEActionType::PreviousRoom)) {
 		_engine->_scene->currentSceneIdx--;
-		if (_engine->_scene->currentSceneIdx < 0)
-			_engine->_scene->currentSceneIdx = NUM_SCENES;
+		if (_engine->_scene->currentSceneIdx < LBA1SceneId::Citadel_Island_Prison) {
+			_engine->_scene->currentSceneIdx = LBA1SceneId::SceneIdMax - 1;
+		}
 		_engine->_scene->needChangeScene = _engine->_scene->currentSceneIdx;
 		_engine->_redraw->reqBgRedraw = true;
 	}
@@ -90,14 +92,16 @@ void DebugGrid::applyCellingGrid() {
 	// Increase celling grid index
 	if (_engine->_input->toggleActionIfActive(TwinEActionType::IncreaseCellingGridIndex)) {
 		_engine->_grid->cellingGridIdx++;
-		if (_engine->_grid->cellingGridIdx > 133)
+		if (_engine->_grid->cellingGridIdx > 133) {
 			_engine->_grid->cellingGridIdx = 133;
+		}
 	}
 	// Decrease celling grid index
 	else if (_engine->_input->toggleActionIfActive(TwinEActionType::DecreaseCellingGridIndex)) {
 		_engine->_grid->cellingGridIdx--;
-		if (_engine->_grid->cellingGridIdx < 0)
+		if (_engine->_grid->cellingGridIdx < 0) {
 			_engine->_grid->cellingGridIdx = 0;
+		}
 	}
 	// Enable/disable celling grid
 	else if (_engine->_input->toggleActionIfActive(TwinEActionType::ApplyCellingGrid)) {

@@ -108,13 +108,15 @@ Persistent::Persistent() {
 	_troyShowBricks = false;
 	_troyShowBricks = false;
 	_troyIsDefeated = false;
-	_troyPlayOdysseus = false;
+	_troyPlayedOdysseus = false;
 	_troyKeyAndDecreeState = KEY_AND_DECREE_NOT_GIVEN;
 	_troyMessageIsDelivered = false;
 	_troyCatacombCounter = 0;
 	_troyCatacombsUnlocked = false;
 	_troyPlayedOdysseusCongrats = false;
 	_troyPlayFinish = false;
+	_doQuestIntro = false;
+	_gender = kUnknown;
 
 	for (unsigned i = 0; i < ARRAYSIZE(_catacombVariants); i++)
 		for (unsigned j = 0; j < ARRAYSIZE(_catacombVariants[0]); j++)
@@ -161,9 +163,17 @@ bool Persistent::isInInventory(InventoryItem item) {
 
 HadeschSaveDescriptor::HadeschSaveDescriptor(Common::Serializer &s, int slot) {
 	s.matchBytes("hadesch", 7);
-	s.syncVersion(0);
-	s.syncString(_heroName);
-	s.syncString(_slotName);
+	s.syncVersion(2);
+	if (s.getVersion() < 2) {
+		Common::String str;
+		s.syncString(str);
+		_heroName = str;
+		s.syncString(str);
+		_slotName = str;
+	} else {
+		s.syncString32(_heroName);
+		s.syncString32(_slotName);
+	}
 	s.syncAsByte(_room);
 	_slot = slot;
 }
@@ -171,11 +181,19 @@ HadeschSaveDescriptor::HadeschSaveDescriptor(Common::Serializer &s, int slot) {
 bool Persistent::syncGameStream(Common::Serializer &s) {
 	if(!s.matchBytes("hadesch", 7))
 		return false;
-	if (!s.syncVersion(0))
+	if (!s.syncVersion(2))
 		return false;
 
-	s.syncString(_heroName);
-	s.syncString(_slotDescription);
+	if (s.getVersion() < 2) {
+		Common::String str;
+		s.syncString(str);
+		_heroName = str;
+		s.syncString(str);
+		_slotDescription = str;
+	} else {
+		s.syncString32(_heroName);
+		s.syncString32(_slotDescription);
+	}
 
 	s.syncAsByte(_currentRoomId);
 	s.syncAsByte(_previousRoomId);
@@ -249,7 +267,7 @@ bool Persistent::syncGameStream(Common::Serializer &s) {
 	s.syncAsByte(_troyShowBricks);
 	s.syncAsByte(_troyShowBricks);
 	s.syncAsByte(_troyIsDefeated);
-	s.syncAsByte(_troyPlayOdysseus);
+	s.syncAsByte(_troyPlayedOdysseus);
 	s.syncAsByte(_troyKeyAndDecreeState);
 	s.syncAsByte(_troyMessageIsDelivered);
 	s.syncAsByte(_troyCatacombCounter);
@@ -284,6 +302,8 @@ bool Persistent::syncGameStream(Common::Serializer &s) {
 
 	for (unsigned i = 0; i < ARRAYSIZE(_inventory); i++)
 		s.syncAsByte(_inventory[i]);
+
+	s.syncAsByte(_gender, 1);
 
 	debug("serialized");
 

@@ -25,7 +25,7 @@
 
 #include "common/scummsys.h"
 #include "twine/gamestate.h"
-#include "twine/hqrdepack.h"
+#include "twine/hqr.h"
 
 namespace TwinE {
 
@@ -86,6 +86,8 @@ namespace TwinE {
 #define SPRITEHQR_CLOVERLEAF 7
 #define SPRITEHQR_CLOVERLEAFBOX 41
 
+#define SPRITEHQR_MAGICBALL_YELLOW 1
+#define SPRITEHQR_MAGICBALL_FIRE 13
 #define SPRITEHQR_MAGICBALL_GREEN 42
 #define SPRITEHQR_MAGICBALL_RED 43
 #define SPRITEHQR_MAGICBALL_YELLOW_TRANS 44
@@ -94,6 +96,12 @@ namespace TwinE {
 
 #define SPRITEHQR_DIAG_BUBBLE_RIGHT 90
 #define SPRITEHQR_DIAG_BUBBLE_LEFT 91
+
+/** Total number of animations allowed in the game */
+#define NUM_ANIMS 600
+
+/** Total number of samples allowed in the game */
+#define NUM_SAMPLES 243
 
 class TwinEEngine;
 class Resources {
@@ -111,10 +119,36 @@ private:
 
 public:
 	Resources(TwinEEngine *engine) : _engine(engine) {}
+	~Resources();
+
 	/** Table with all loaded samples */
 	uint8 *inventoryTable[NUM_INVENTORY_ITEMS] {nullptr};
 	/** Table with all loaded samples sizes */
 	uint32 inventorySizeTable[NUM_INVENTORY_ITEMS] {0};
+
+	/** Table with all loaded sprites */
+	uint8 *spriteTable[NUM_SPRITES] {nullptr};
+	/** Table with all loaded sprite sizes */
+	uint32 spriteSizeTable[NUM_SPRITES] {0};
+
+	/** Table with all loaded animations */
+	uint8 *animTable[NUM_ANIMS]{nullptr};
+	/** Table with all loaded animations sizes */
+	uint32 animSizeTable[NUM_ANIMS]{0};
+
+	/** Table with all loaded samples */
+	uint8 *samplesTable[NUM_SAMPLES]{nullptr};
+	/** Table with all loaded samples sizes */
+	uint32 samplesSizeTable[NUM_SAMPLES]{0};
+
+	/** Font buffer pointer */
+	int32 fontBufSize = 0;
+	uint8 *fontPtr = nullptr;
+
+	uint32 spriteShadowSize = 0;
+	uint8 *spriteShadowPtr = nullptr;
+	uint32 spriteBoundingBoxSize = 0;
+	uint8 *spriteBoundingBoxPtr = nullptr;
 
 	/** Initialize resource pointers */
 	void initResources();
@@ -125,17 +159,28 @@ public:
 	static constexpr const char *HQR_TEXT_FILE = "text.hqr";
 	// samples
 	static constexpr const char *HQR_SAMPLES_FILE = "samples.hqr";
-	// isometric grids
+	/**
+	 * This file contains isometric grids that are used to display area backgrounds and define 3D shape of the surface.
+	 * Each of the entries is associated with the entry of lba_bll.hqr with the same index. lba_bll entries define block
+	 * sets for use with the grids. Each grid may use only one set of blocks (one entry of lba_bll.hqr).
+	 */
 	static constexpr const char *HQR_LBA_GRI_FILE = "lba_gri.hqr";
-	// isometric libraries
+	// isometric libraries for use in grids.
 	static constexpr const char *HQR_LBA_BLL_FILE = "lba_bll.hqr";
-	// isometric bricks
+	/**
+	 * isometric bricks, which are some kind of tiles, that are used for building the terrains in LBA 1 isometric scenes.
+	 * One brick is the tiniest piece of a grid, which has 64 x 64 x 25 cells. Bricks cannot be used directly on a grid,
+	 * but instead they are grouped into blocks by block libraries, which are then referenced by grids
+	 */
 	static constexpr const char *HQR_LBA_BRK_FILE = "lba_brk.hqr";
-	// scenes
+	// scenes (active area content (actors, scripts, etc.))
 	static constexpr const char *HQR_SCENE_FILE = "scene.hqr";
 	// sprites
 	static constexpr const char *HQR_SPRITES_FILE = "sprites.hqr";
-	// model/animation entities
+	/**
+	 * model/animation entities
+	 * contains data associating 3D models (Body.hqr) with animations (Anim.hqr) for the game characters.
+	 */
 	static constexpr const char *HQR_FILE3D_FILE = "file3d.hqr";
 	// 3d model data
 	static constexpr const char *HQR_BODY_FILE = "body.hqr";

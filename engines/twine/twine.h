@@ -30,6 +30,7 @@
 #include "graphics/managed_surface.h"
 #include "graphics/pixelformat.h"
 #include "graphics/surface.h"
+#include "metaengine.h"
 #include "twine/actor.h"
 #include "twine/input.h"
 #include "twine/detection.h"
@@ -48,7 +49,7 @@ namespace TwinE {
 /** Original screen height */
 #define DEFAULT_SCREEN_HEIGHT 480
 /** Scale screen to double size */
-#define SCALE 1
+#define SCALE 1 // TODO: remove me or support me
 /** Original screen width */
 #define SCREEN_WIDTH DEFAULT_SCREEN_WIDTH *SCALE
 /** Original screen height */
@@ -58,8 +59,6 @@ namespace TwinE {
 
 /** Number of colors used in the game */
 #define NUMOFCOLORS 256
-
-#define TWINE_PLAY_INTROS 1
 
 static const struct TwinELanguage {
 	const char *name;
@@ -86,9 +85,7 @@ enum MovieType {
 	CONF_MOVIE_FLAPCX = 3
 };
 
-// TODO: persist on shutdown
 /** Configuration file structure
-
 	Used in the engine to load/use certain parts of code according with
 	this settings. Check \a lba.cfg file for valid values for each settings.\n
 	All the settings with (*) means they are new and only exist in this engine. */
@@ -108,20 +105,26 @@ struct ConfigFile {
 	int32 Sound = 0;
 	/** Allow various movie types */
 	int32 Movie = CONF_MOVIE_FLA;
-	/** Use cross fade effect while changing images, or be as the original */
-	int32 CrossFade = 0;
 	/** Flag used to keep the game frames per second */
 	int32 Fps = 0;
 	/** Flag to display game debug */
 	bool Debug = false;
-	/** Use original autosaving system or save when you want */
-	int32 UseAutoSaving = 0;
-	/** Shadow mode type, value: all, character only, none */
-	int32 ShadowMode = 0;
-	/** SceZoom mode type */
-	bool SceZoom = false;
+
+	// these settings are not available in the original version
+	/** Use cross fade effect while changing images, or be as the original */
+	int32 CrossFade = 0;
 	/** Flag to toggle Wall Collision */
 	int32 WallCollision = 0;
+	/** Use original autosaving system or save when you want */
+	int32 UseAutoSaving = 0;
+
+	// these settings can be changed in-game - and must be persisted
+	/** Shadow mode type, value: all, character only, none */
+	int32 ShadowMode = 0;
+	// TODO: currently unused
+	int32 PolygonDetails = 2;
+	/** Scenery Zoom */
+	bool SceZoom = false;
 };
 
 class Actor;
@@ -131,7 +134,6 @@ class Extra;
 class GameState;
 class Grid;
 class Movements;
-class HQRDepack;
 class Interface;
 class Menu;
 class FlaMovies;
@@ -152,22 +154,47 @@ struct Keyboard;
 class Debug;
 class DebugScene;
 
+enum class EngineState {
+	Menu,
+	GameLoop,
+	LoadedGame,
+	QuitGame
+};
+
+struct ScopedEngineFreeze {
+	TwinEEngine* _engine;
+	ScopedEngineFreeze(TwinEEngine* engine);
+	~ScopedEngineFreeze();
+};
+
 class TwinEEngine : public Engine {
 private:
 	int32 isTimeFreezed = 0;
 	int32 saveFreezedTime = 0;
 	ActorMoveStruct loopMovePtr; // mainLoopVar1
 	PauseToken _pauseToken;
+	TwineGameType _gameType;
+	EngineState _state = EngineState::Menu;
 
 public:
-	TwinEEngine(OSystem *system, Common::Language language, uint32 flags);
+	TwinEEngine(OSystem *system, Common::Language language, uint32 flagsTwineGameType, TwineGameType gameType);
 	~TwinEEngine() override;
 
 	Common::Error run() override;
 	bool hasFeature(EngineFeature f) const override;
 
-	bool isLBA1() const { return _gameFlags & TwineGameType::GType_LBA;};
-	bool isLBA2() const { return _gameFlags & TwineGameType::GType_LBA2;};
+	bool canLoadGameStateCurrently() override { return true; }
+	bool canSaveGameStateCurrently() override;
+
+	Common::Error loadGameStream(Common::SeekableReadStream *stream) override;
+	Common::Error saveGameStream(Common::WriteStream *stream, bool isAutosave = false) override;
+
+	void wipeSaveSlot(int slot);
+	SaveStateList getSaveSlots() const;
+	void autoSave();
+
+	bool isLBA1() const { return _gameType == TwineGameType::GType_LBA; };
+	bool isLBA2() const { return _gameType == TwineGameType::GType_LBA2; };
 
 	Actor *_actor;
 	Animations *_animations;
@@ -176,7 +203,6 @@ public:
 	GameState *_gameState;
 	Grid *_grid;
 	Movements *_movements;
-	HQRDepack *_hqrdepack;
 	Interface *_interface;
 	Menu *_menu;
 	FlaMovies *_flaMovies;
@@ -201,9 +227,6 @@ public:
 	 * Contains all the data used in the engine to configurated the game in particulary ways. */
 	ConfigFile cfgfile;
 
-	/** CD Game directory */
-	const char *cdDir = "";
-
 	/** Initialize LBA engine */
 	void initEngine();
 	void initMCGA();
@@ -220,6 +243,9 @@ public:
 	int32 runGameEngine();
 	/** Allocate video memory, both front and back buffers */
 	void allocVideoMemory();
+	/**
+	 * @return A random value between [0-max)
+	 */
 	int getRandomNumber(uint max = 0x7FFF);
 	int32 quitGame = 0;
 	int32 lbaTime = 0;
@@ -232,13 +258,11 @@ public:
 	/** temporary screen table */
 	int32 screenLookupTable[2000]{0};
 
-	int32 loopPressedKey = 0;
-	int32 previousLoopPressedKey = 0;
 	int32 loopInventoryItem = 0;
 	int32 loopActorStep = 0;
 
 	/** Disable screen recenter */
-	int16 disableScreenRecenter = 0;
+	bool disableScreenRecenter = false;
 
 	int32 zoomScreen = 0;
 
@@ -259,7 +283,7 @@ public:
 	 * Deplay certain seconds till proceed - Can also Skip this delay
 	 * @param time time in seconds to delay
 	 */
-	void delaySkip(uint32 time);
+	bool delaySkip(uint32 time);
 
 	/**
 	 * Set a new palette in the SDL screen buffer

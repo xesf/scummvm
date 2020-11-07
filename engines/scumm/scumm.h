@@ -358,6 +358,7 @@ protected:
 
 	virtual void loadLanguageBundle() {}
 	void loadCJKFont();
+	void loadKorFont();
 	void setupMusic(int midi);
 	void setTalkSpeed(int talkspeed);
 	int getTalkSpeed();
@@ -1137,13 +1138,23 @@ public:
 
 	// Somewhat hackish stuff for 2 byte support (Chinese/Japanese/Korean)
 	bool _useCJKMode;
+	bool _useMultiFont;
+	int _numLoadedFont;
+	int _currentFont;
+	int _2byteShadow;
+
 	int _2byteHeight;
 	int _2byteWidth;
+	int _krStrPost;
 	byte _newLineCharacter;
 	byte *get2byteCharPtr(int idx);
 
-protected:
+//protected:
 	byte *_2byteFontPtr;
+	byte *_2byteMultiFontPtr[20];
+	int _2byteMultiHeight[20];
+	int _2byteMultiWidth[20];
+	int _2byteMultiShadow[20];
 
 public:
 

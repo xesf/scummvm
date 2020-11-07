@@ -44,6 +44,7 @@ MODULE_OBJS := \
 	asylum.o \
 	console.o \
 	detection.o \
+	metaengine.o \
 	respack.o
 
 # This module can be built as a plugin

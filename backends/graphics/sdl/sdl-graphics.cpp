@@ -46,9 +46,17 @@ SdlGraphicsManager::SdlGraphicsManager(SdlEventSource *source, SdlWindow *window
 
 void SdlGraphicsManager::activateManager() {
 	_eventSource->setGraphicsManager(this);
+
+	// Register the graphics manager as a event observer
+	g_system->getEventManager()->getEventDispatcher()->registerObserver(this, 10, false);
 }
 
 void SdlGraphicsManager::deactivateManager() {
+	// Unregister the event observer
+	if (g_system->getEventManager()->getEventDispatcher()) {
+		g_system->getEventManager()->getEventDispatcher()->unregisterObserver(this);
+	}
+
 	_eventSource->setGraphicsManager(0);
 }
 
@@ -162,7 +170,7 @@ void SdlGraphicsManager::initSizeHint(const Graphics::ModeList &modes) {
 #endif
 }
 
-bool SdlGraphicsManager::showMouse(const bool visible) {
+bool SdlGraphicsManager::showMouse(bool visible) {
 	if (visible == _cursorVisible) {
 		return visible;
 	}
@@ -183,7 +191,14 @@ bool SdlGraphicsManager::showMouse(const bool visible) {
 	return WindowedGraphicsManager::showMouse(visible);
 }
 
+bool SdlGraphicsManager::lockMouse(bool lock) {
+	return _window->lockMouse(lock);
+}
+
 bool SdlGraphicsManager::notifyMousePosition(Common::Point &mouse) {
+	mouse.x = CLIP<int16>(mouse.x, 0, _windowWidth - 1);
+	mouse.y = CLIP<int16>(mouse.y, 0, _windowHeight - 1);
+
 	int showCursor = SDL_DISABLE;
 	bool valid = true;
 	if (_activeArea.drawRect.contains(mouse)) {
@@ -320,7 +335,7 @@ bool SdlGraphicsManager::notifyEvent(const Common::Event &event) {
 
 	switch ((CustomEventAction) event.customType) {
 	case kActionToggleMouseCapture:
-		getWindow()->toggleMouseGrab();
+		getWindow()->grabMouse(!getWindow()->mouseIsGrabbed());
 		return true;
 
 	case kActionToggleFullscreen:
@@ -337,8 +352,10 @@ bool SdlGraphicsManager::notifyEvent(const Common::Event &event) {
 }
 
 void SdlGraphicsManager::toggleFullScreen() {
-	if (!hasFeature(OSystem::kFeatureFullscreenMode))
+	if (!g_system->hasFeature(OSystem::kFeatureFullscreenMode) ||
+	   (!g_system->hasFeature(OSystem::kFeatureFullscreenToggleKeepsContext) && g_system->hasFeature(OSystem::kFeatureOpenGLForGame))) {
 		return;
+	}
 
 	beginGFXTransaction();
 	setFeatureState(OSystem::kFeatureFullscreenMode, !getFeatureState(OSystem::kFeatureFullscreenMode));
@@ -357,7 +374,7 @@ Common::Keymap *SdlGraphicsManager::getKeymap() {
 	Keymap *keymap = new Keymap(Keymap::kKeymapTypeGlobal, "sdl-graphics", _("Graphics"));
 	Action *act;
 
-	if (hasFeature(OSystem::kFeatureFullscreenMode)) {
+	if (g_system->hasFeature(OSystem::kFeatureFullscreenMode)) {
 		act = new Action("FULS", _("Toggle fullscreen"));
 		act->addDefaultInputMapping("A+RETURN");
 		act->addDefaultInputMapping("A+KP_ENTER");
@@ -427,7 +444,7 @@ Common::Keymap *SdlGraphicsManager::getKeymap() {
 	};
 
 	for (uint i = 0; i < ARRAYSIZE(filters); i++) {
-		act = new Action(filters[i].id, filters[i].description);
+		act = new Action(filters[i].id, _(filters[i].description));
 		act->addDefaultInputMapping(String::format("C+A+%d", i + 1));
 		act->addDefaultInputMapping(String::format("C+A+KP%d", i + 1));
 		act->setCustomBackendActionEvent(kActionSetScaleFilter1 + i);

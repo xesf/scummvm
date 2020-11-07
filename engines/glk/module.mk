@@ -4,12 +4,12 @@ MODULE_OBJS := \
 	blorb.o \
 	conf.o \
 	debugger.o \
-	detection.o \
 	events.o \
 	fonts.o \
 	glk.o \
 	glk_api.o \
 	glk_dispa.o \
+	metaengine.o \
 	pc_speaker.o \
 	picture.o \
 	quetzal.o \
@@ -17,6 +17,7 @@ MODULE_OBJS := \
 	screen.o \
 	selection.o \
 	sound.o \
+	speech.o \
 	streams.o \
 	time.o \
 	unicode.o \
@@ -26,12 +27,8 @@ MODULE_OBJS := \
 	window_graphics.o \
 	window_pair.o \
 	window_text_buffer.o \
-	window_text_grid.o
-
-ifdef ENABLE_GLK_ADRIFT
-MODULE_OBJS += \
+	window_text_grid.o \
 	adrift/adrift.o \
-	adrift/detection.o \
 	adrift/os_glk.o \
 	adrift/scdebug.o \
 	adrift/scevents.o \
@@ -57,27 +54,17 @@ MODULE_OBJS += \
 	adrift/serialization.o \
 	adrift/sxfile.o \
 	adrift/sxglob.o \
-	adrift/sxutils.o
-endif
-
-ifdef ENABLE_GLK_ADVSYS
-MODULE_OBJS += \
+	adrift/sxutils.o \
 	advsys/advsys.o \
-	advsys/detection.o \
 	advsys/game.o \
 	advsys/glk_interface.o \
-	advsys/vm.o
-endif
-
-ifdef ENABLE_GLK_AGT
-MODULE_OBJS += \
+	advsys/vm.o \
 	agt/agil.o \
 	agt/agt.o \
 	agt/agtread.o \
 	agt/agxfile.o \
 	agt/auxfile.o \
 	agt/debugcmd.o \
-	agt/detection.o \
 	agt/disassemble.o \
 	agt/exec.o \
 	agt/filename.o \
@@ -91,13 +78,8 @@ MODULE_OBJS += \
 	agt/savegame.o \
 	agt/token.o \
 	agt/util.o \
-	agt/vars.o
-endif
-
-ifdef ENABLE_GLK_ALAN2
-MODULE_OBJS += \
+	agt/vars.o \
 	alan2/alan2.o \
-	alan2/detection.o \
 	alan2/alan_version.o \
 	alan2/args.o \
 	alan2/debug.o \
@@ -112,11 +94,7 @@ MODULE_OBJS += \
 	alan2/rules.o \
 	alan2/stack.o \
 	alan2/sysdep.o \
-	alan2/types.o
-endif
-
-ifdef ENABLE_GLK_ALAN3
-MODULE_OBJS += \
+	alan2/types.o \
 	alan3/acode.o \
 	alan3/act.o \
 	alan3/actor.o \
@@ -131,7 +109,6 @@ MODULE_OBJS += \
 	alan3/current.o \
 	alan3/debug.o \
 	alan3/decode.o \
-	alan3/detection.o \
 	alan3/dictionary.o \
 	alan3/event.o \
 	alan3/exe.o \
@@ -164,15 +141,10 @@ MODULE_OBJS += \
 	alan3/syserr.o \
 	alan3/types.o \
 	alan3/utils.o \
-	alan3/word.o
-endif
-
-ifdef ENABLE_GLK_ARCHETYPE
-MODULE_OBJS += \
+	alan3/word.o \
 	archetype/archetype.o \
 	archetype/array.o \
 	archetype/crypt.o \
-	archetype/detection.o \
 	archetype/error.o \
 	archetype/expression.o \
 	archetype/game_stat.o \
@@ -188,58 +160,35 @@ MODULE_OBJS += \
 	archetype/string.o \
 	archetype/sys_object.o \
 	archetype/timestamp.o \
-	archetype/token.o
-endif
-
-ifdef ENABLE_GLK_FROTZ
-MODULE_OBJS += \
-	frotz/bitmap_font.o \
-	frotz/config.o \
-	frotz/detection.o \
-	frotz/frotz.o \
-	frotz/glk_interface.o \
-	frotz/mem.o \
-	frotz/pics.o \
-	frotz/pics_decoder.o \
-	frotz/processor.o \
-	frotz/processor_buffer.o \
-	frotz/processor_input.o \
-	frotz/processor_maths.o \
-	frotz/processor_mem.o \
-	frotz/processor_objects.o \
-	frotz/processor_screen.o \
-	frotz/processor_streams.o \
-	frotz/processor_table.o \
-	frotz/processor_text.o \
-	frotz/processor_variables.o \
-	frotz/processor_windows.o \
-	frotz/quetzal.o \
-	frotz/screen.o \
-	frotz/sound_folder.o \
-	frotz/windows.o
-endif
-
-ifdef ENABLE_GLK_GLULXE
-MODULE_OBJS += \
-	glulxe/accel.o \
-	glulxe/detection.o \
-	glulxe/exec.o \
-	glulxe/float.o \
-	glulxe/funcs.o \
-	glulxe/gestalt.o \
-	glulxe/glkop.o \
-	glulxe/glulxe.o \
-	glulxe/heap.o \
-	glulxe/operand.o \
-	glulxe/search.o \
-	glulxe/serial.o \
-	glulxe/string.o \
-	glulxe/vm.o
-endif
-
-ifdef ENABLE_GLK_HUGO
-MODULE_OBJS += \
-	hugo/detection.o \
+	archetype/token.o \
+	comprehend/charset.o \
+	comprehend/comprehend.o \
+	comprehend/debugger.o \
+	comprehend/debugger_dumper.o \
+	comprehend/dictionary.o \
+	comprehend/draw_surface.o \
+	comprehend/file_buf.o \
+	comprehend/game.o \
+	comprehend/game_cc.o \
+	comprehend/game_data.o \
+	comprehend/game_oo.o \
+	comprehend/game_opcodes.o \
+	comprehend/game_tm.o \
+	comprehend/game_tr.o \
+	comprehend/pics.o \
+	glulx/accel.o \
+	glulx/exec.o \
+	glulx/float.o \
+	glulx/funcs.o \
+	glulx/gestalt.o \
+	glulx/glkop.o \
+	glulx/glulx.o \
+	glulx/heap.o \
+	glulx/operand.o \
+	glulx/search.o \
+	glulx/serial.o \
+	glulx/string.o \
+	glulx/vm.o \
 	hugo/heexpr.o \
 	hugo/heglk.o \
 	hugo/hemedia.o \
@@ -251,12 +200,8 @@ MODULE_OBJS += \
 	hugo/heset.o \
 	hugo/htokens.o \
 	hugo/hugo.o \
-	hugo/stringfn.o
-endif
-
-ifdef ENABLE_GLK_JACL
-MODULE_OBJS += \
-	jacl/detection.o \
+	hugo/resource_archive.o \
+	hugo/stringfn.o \
 	jacl/display.o \
 	jacl/encapsulate.o \
 	jacl/errors.o \
@@ -271,29 +216,14 @@ MODULE_OBJS += \
 	jacl/logging.o \
 	jacl/parser.o \
 	jacl/resolvers.o \
-	jacl/utils.o
-endif
-
-ifdef ENABLE_GLK_LEVEL9
-MODULE_OBJS += \
+	jacl/utils.o \
 	level9/bitmap.o \
-	level9/detection.o \
 	level9/level9.o \
 	level9/level9_main.o \
-	level9/os_glk.o
-endif
-
-ifdef ENABLE_GLK_MAGNETIC
-MODULE_OBJS += \
-	magnetic/detection.o \
+	level9/os_glk.o \
 	magnetic/emu.o \
 	magnetic/glk.o \
-	magnetic/magnetic.o
-endif
-
-ifdef ENABLE_GLK_QUEST
-MODULE_OBJS += \
-	quest/detection.o \
+	magnetic/magnetic.o \
 	quest/geas_file.o \
 	quest/geas_glk.o \
 	quest/geas_runner.o \
@@ -302,18 +232,8 @@ MODULE_OBJS += \
 	quest/quest.o \
 	quest/read_file.o \
 	quest/string.o \
-	quest/streams.o
-endif
-
-ifdef ENABLE_GLK_SCOTT
-MODULE_OBJS += \
-	scott/detection.o \
-	scott/scott.o
-endif
-
-ifdef ENABLE_GLK_TADS
-MODULE_OBJS += \
-	tads/detection.o \
+	quest/streams.o \
+	scott/scott.o \
 	tads/os_banners.o \
 	tads/os_buffer.o \
 	tads/os_glk.o \
@@ -353,8 +273,48 @@ MODULE_OBJS += \
 	tads/tads2/tokenizer_hash.o \
 	tads/tads2/vocabulary.o \
 	tads/tads2/vocabulary_parser.o \
-	tads/tads3/tads3.o
-endif
+	tads/tads3/tads3.o \
+	zcode/bitmap_font.o \
+	zcode/config.o \
+	zcode/zcode.o \
+	zcode/glk_interface.o \
+	zcode/mem.o \
+	zcode/pics.o \
+	zcode/pics_decoder.o \
+	zcode/processor.o \
+	zcode/processor_buffer.o \
+	zcode/processor_input.o \
+	zcode/processor_maths.o \
+	zcode/processor_mem.o \
+	zcode/processor_objects.o \
+	zcode/processor_screen.o \
+	zcode/processor_streams.o \
+	zcode/processor_table.o \
+	zcode/processor_text.o \
+	zcode/processor_variables.o \
+	zcode/processor_windows.o \
+	zcode/quetzal.o \
+	zcode/screen.o \
+	zcode/sound_folder.o \
+	zcode/windows.o \
+	detection.o \
+	adrift/detection.o \
+	advsys/detection.o \
+	agt/detection.o \
+	alan2/detection.o \
+	alan3/detection.o \
+	archetype/detection.o \
+	comprehend/detection.o \
+	glulx/detection.o \
+	hugo/detection.o \
+	jacl/detection.o \
+	level9/detection.o \
+	magnetic/detection.o \
+	quest/detection.o \
+	scott/detection.o \
+	tads/detection.o \
+	zcode/detection.o
+
 
 # This module can be built as a plugin
 ifeq ($(ENABLE_GLK), DYNAMIC_PLUGIN)
@@ -363,3 +323,32 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Skip building the following objects if a static
+# module is enabled, because it already has the contents.
+ifneq ($(ENABLE_GLK), STATIC_PLUGIN)
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o
+
+# Sub-engine detection objects
+DETECT_OBJS += $(MODULE)/adrift/detection.o
+DETECT_OBJS += $(MODULE)/advsys/detection.o
+DETECT_OBJS += $(MODULE)/agt/detection.o
+DETECT_OBJS += $(MODULE)/alan2/detection.o
+DETECT_OBJS += $(MODULE)/alan3/detection.o
+DETECT_OBJS += $(MODULE)/archetype/detection.o
+DETECT_OBJS += $(MODULE)/comprehend/detection.o
+DETECT_OBJS += $(MODULE)/glulx/detection.o
+DETECT_OBJS += $(MODULE)/hugo/detection.o
+DETECT_OBJS += $(MODULE)/jacl/detection.o
+DETECT_OBJS += $(MODULE)/level9/detection.o
+DETECT_OBJS += $(MODULE)/magnetic/detection.o
+DETECT_OBJS += $(MODULE)/quest/detection.o
+DETECT_OBJS += $(MODULE)/scott/detection.o
+DETECT_OBJS += $(MODULE)/tads/detection.o
+DETECT_OBJS += $(MODULE)/zcode/detection.o
+
+# Dependencies of detection objects
+DETECT_OBJS += $(MODULE)/blorb.o
+DETECT_OBJS += $(MODULE)/advsys/game.o
+endif

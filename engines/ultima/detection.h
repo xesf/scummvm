@@ -24,9 +24,6 @@
 #define ULTIMA_DETECTION
 
 #include "engines/advancedDetector.h"
-#include "backends/keymapper/keymapper.h"
-
-#define MAX_SAVES 99
 
 namespace Ultima {
 
@@ -43,8 +40,10 @@ enum GameId {
 	GAME_ULTIMA_UNDERWORLD1,
 	GAME_ULTIMA_UNDERWORLD2,
 	GAME_ULTIMA7,
-	GAME_ULTIMA8
-	// There is no game after Ultima 8. Nope.. none at all.
+	GAME_ULTIMA8,
+	GAME_CRUSADER_REG,
+	GAME_CRUSADER_REM
+	// There is no ultima game after Ultima 8. Nope.. none at all.
 };
 
 enum UltimaGameFeatures {
@@ -59,15 +58,10 @@ struct UltimaGameDescription {
 
 } // End of namespace Ultima
 
-class UltimaMetaEngine : public AdvancedMetaEngine {
-private:
-	/**
-	 * Gets the game Id given a target string
-	 */
-	static Common::String getGameId(const char *target);
+class UltimaMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
-	UltimaMetaEngine();
-	~UltimaMetaEngine() override {}
+	UltimaMetaEngineDetection();
+	~UltimaMetaEngineDetection() override {}
 
 	const char *getEngineId() const override {
 		return "ultima";
@@ -80,22 +74,6 @@ public:
 	const char *getOriginalCopyright() const override {
 		return "Ultima Games (C) 1980-1995 Origin Systems Inc.";
 	}
-
-	const char *getSavegamePattern(const char *target = nullptr) const override;
-	const char *getSavegameFile(int saveGameIdx, const char *target = nullptr) const override;
-
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
-	int getMaximumSaveSlot() const override;
-
-	/**
-	 * Return a list of all save states associated with the given target.
-	 */
-	SaveStateList listSaves(const char *target) const override;
-
-	/**
-	 * Initialize keymaps
-	 */
-	Common::KeymapArray initKeymaps(const char *target) const override;
 };
 
 #endif

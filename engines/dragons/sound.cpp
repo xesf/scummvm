@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  */
+#include <audio/soundfont/rawfile.h>
+#include <audio/soundfont/vab/vab.h>
+#include <audio/soundfont/vgmcoll.h>
 #include "audio/mixer.h"
 #include "audio/audiostream.h"
 #include "audio/decoders/raw.h"
@@ -68,16 +71,18 @@ void CdIntToPos_0(uint32 param_1) { //, byte *param_2)
 						   (uint)(second >> 4) * 10 + ((uint)second & 0xf)) * 0x4b +
 						  (uint)(sector >> 4) * 10 + ((uint)sector & 0xf) + -0x96;
 
-	debug("Seek Audio %2X:%2X:%2X  in: %d out %d", minute, second, sector, param_1, out);
+	debug(3, "Seek Audio %2X:%2X:%2X  in: %d out %d", minute, second, sector, param_1, out);
 
 	return;
 }
 
 void SoundManager::playSpeech(uint32 textIndex) {
 	if (isSpeechPlaying()) {
-//		_vm->_mixer->stopHandle(_speechHandle);
-		return;
+		_vm->_mixer->stopHandle(_speechHandle);
 	}
+
+	// Reduce music volume while playing dialog.
+	_midiPlayer->setVolume(_musicVolume / 2);
 
 	struct SpeechLocation speechLocation;
 	if (!getSpeechLocation(textIndex, &speechLocation)) {
@@ -89,18 +94,12 @@ void SoundManager::playSpeech(uint32 textIndex) {
 		error("Failed to open dtspeech.xa");
 	}
 	CdIntToPos_0(speechLocation.sectorStart * 32);
-	//TODO move the stream creation logic inside PSXAudioTrack.
-	fd->seek(((speechLocation.sectorStart * 32) + speechLocation.startOffset) * RAW_CD_SECTOR_SIZE);
-	PSXAudioTrack *_audioTrack = new PSXAudioTrack(fd, Audio::Mixer::kSpeechSoundType);
-	for (int i = 0x0; i < speechLocation.sectorEnd - speechLocation.sectorStart; i++) {
-		fd->seek(((speechLocation.sectorStart * 32) + speechLocation.startOffset + i * 32) * RAW_CD_SECTOR_SIZE);
-		_audioTrack->queueAudioFromSector(fd);
-	}
-	_audioTrack->getAudioStream()->finish();
+	PSXAudioTrack *_audioTrack = new PSXAudioTrack();
+
+	_vm->setFlags(ENGINE_FLAG_8000);
+	_vm->_mixer->playStream(Audio::Mixer::kSpeechSoundType, &_speechHandle, _audioTrack->createNewAudioStream(fd, speechLocation.sectorStart, speechLocation.startOffset, speechLocation.sectorEnd), -1, _speechVolume);
 	fd->close();
 	delete fd;
-	_vm->setFlags(ENGINE_FLAG_8000);
-	_vm->_mixer->playStream(Audio::Mixer::kSpeechSoundType, &_speechHandle, _audioTrack->getAudioStream(), -1, _speechVolume);
 	delete _audioTrack;
 }
 
@@ -127,7 +126,7 @@ bool SoundManager::getSpeechLocation(uint32 talkId, struct SpeechLocation *locat
 			location->startOffset = startOffset;
 			location->sectorEnd = end;
 			foundId = true;
-			debug("sectors [%d-%d] unk byte = %d", start * 32, end * 32, startOffset);
+			debug(3, "sectors [%d-%d] unk byte = %d", start * 32, end * 32, startOffset);
 			break;
 		}
 	}
@@ -138,25 +137,18 @@ bool SoundManager::getSpeechLocation(uint32 talkId, struct SpeechLocation *locat
 	return foundId;
 }
 
-void SoundManager::PauseCDMusic() {
-	//TODO check PauseCDMusic() to see if we need any more logic.
+void SoundManager::resumeMusic() {
 	if (isSpeechPlaying()) {
 		_vm->_mixer->stopHandle(_speechHandle);
 		_vm->clearFlags(ENGINE_FLAG_8000);
 	}
+	if (_currentSong != -1) {
+		_midiPlayer->resume();
+	}
 }
 
-SoundManager::PSXAudioTrack::PSXAudioTrack(Common::SeekableReadStream *sector, Audio::Mixer::SoundType soundType) {
-	sector->skip(19);
-	byte format = sector->readByte();
-	bool stereo = (format & (1 << 0)) != 0;
-	uint rate = (format & (1 << 2)) ? 18900 : 37800;
-	_audStream = Audio::makeQueuingAudioStream(rate, stereo);
-
+SoundManager::PSXAudioTrack::PSXAudioTrack() {
 	memset(&_adpcmStatus, 0, sizeof(_adpcmStatus));
-}
-
-SoundManager::PSXAudioTrack::~PSXAudioTrack() {
 }
 
 // Ha! It's palindromic!
@@ -171,7 +163,7 @@ static const int s_xaTable[5][2] = {
 	{ 122, -60 }
 };
 
-void SoundManager::PSXAudioTrack::queueAudioFromSector(Common::SeekableReadStream *sector) {
+void SoundManager::PSXAudioTrack::queueAudioFromSector(Audio::QueuingAudioStream *audStream, Common::SeekableReadStream *sector) {
 	sector->skip(24);
 
 	// This XA audio is different (yet similar) from normal XA audio! Watch out!
@@ -182,7 +174,7 @@ void SoundManager::PSXAudioTrack::queueAudioFromSector(Common::SeekableReadStrea
 	byte *buf = new byte[AUDIO_DATA_CHUNK_SIZE];
 	sector->read(buf, AUDIO_DATA_CHUNK_SIZE);
 
-	int channels = _audStream->isStereo() ? 2 : 1;
+	int channels = audStream->isStereo() ? 2 : 1;
 	int16 *dst = new int16[AUDIO_DATA_SAMPLE_COUNT];
 	int16 *leftChannel = dst;
 	int16 *rightChannel = dst + 1;
@@ -245,30 +237,47 @@ void SoundManager::PSXAudioTrack::queueAudioFromSector(Common::SeekableReadStrea
 
 	int flags = Audio::FLAG_16BITS;
 
-	if (_audStream->isStereo())
+	if (audStream->isStereo())
 		flags |= Audio::FLAG_STEREO;
 
 #ifdef SCUMM_LITTLE_ENDIAN
 	flags |= Audio::FLAG_LITTLE_ENDIAN;
 #endif
 
-	_audStream->queueBuffer((byte *)dst, AUDIO_DATA_SAMPLE_COUNT * 2, DisposeAfterUse::YES, flags);
+	audStream->queueBuffer((byte *)dst, AUDIO_DATA_SAMPLE_COUNT * 2, DisposeAfterUse::YES, flags);
 	delete[] buf;
+}
+
+Audio::QueuingAudioStream *SoundManager::PSXAudioTrack::createNewAudioStream(Common::File *fd, uint16 sectorStart, int8 startOffset, uint16 sectorEnd) {
+	fd->seek(((sectorStart * 32) + startOffset) * RAW_CD_SECTOR_SIZE);
+	fd->skip(19);
+	byte format = fd->readByte();
+	bool stereo = (format & (1 << 0)) != 0;
+	uint rate = (format & (1 << 2)) ? 18900 : 37800;
+
+	Audio::QueuingAudioStream *audStream = Audio::makeQueuingAudioStream(rate, stereo);
+	for (int i = 0x0; i < sectorEnd - sectorStart; i++) {
+		fd->seek(((sectorStart * 32) + startOffset + i * 32) * RAW_CD_SECTOR_SIZE);
+		queueAudioFromSector(audStream, fd);
+	}
+	audStream->finish();
+	return audStream;
 }
 
 SoundManager::SoundManager(DragonsEngine *vm, BigfileArchive *bigFileArchive, DragonRMS *dragonRMS)
 		: _vm(vm),
+		  _sfxVolume(0),
+		  _musicVolume(0),
+		  _speechVolume(0),
 		  _bigFileArchive(bigFileArchive),
 		  _dragonRMS(dragonRMS) {
 	_dat_8006bb60_sound_related = 0;
+	_currentSong = -1;
 
 	bool allSoundIsMuted = false;
 	if (ConfMan.hasKey("mute")) {
 		allSoundIsMuted = ConfMan.getBool("mute");
 	}
-	_speechVolume = ConfMan.getInt("speech_volume");
-	_sfxVolume = ConfMan.getInt("sfx_volume");
-	_musicVolume = ConfMan.getInt("music_volume");
 
 	if (ConfMan.hasKey("speech_mute") && !allSoundIsMuted) {
 		_vm->_mixer->muteSoundType(_vm->_mixer->kSpeechSoundType, ConfMan.getBool("speech_mute"));
@@ -283,7 +292,10 @@ SoundManager::SoundManager(DragonsEngine *vm, BigfileArchive *bigFileArchive, Dr
 	}
 
 	SomeInitSound_FUN_8003f64c();
-	loadMusAndGlob();
+	initVabData();
+	_midiPlayer = new MidiMusicPlayer(_bigFileArchive, _vabMusx);
+
+	syncSoundSettings();
 }
 
 SoundManager::~SoundManager() {
@@ -293,74 +305,79 @@ SoundManager::~SoundManager() {
 
 	stopAllVoices();
 
+	_midiPlayer->stop();
+
+	delete _midiPlayer;
 	delete _vabMusx;
+	delete _vabMsf;
 	delete _vabGlob;
 }
 
 void SoundManager::SomeInitSound_FUN_8003f64c() {
 	// TODO: Check if this changes on different game versions?
-	memset(_soundArr, 0x10, sizeof(_soundArr));
+	memset(_sfxVolumeTbl, 0x10, sizeof(_sfxVolumeTbl));
 
-	_soundArr[192] = 0x0b;
-	_soundArr[193] = 0x0b;
-	_soundArr[226] = _soundArr[226] | 0x80u;
-	_soundArr[229] = 0x0b;
-	_soundArr[230] = 0x0b;
-	_soundArr[450] = 0x0b;
-	_soundArr[451] = 0x0b;
-	_soundArr[514] = 0x8b;
-	_soundArr[515] = 0x0b;
-	_soundArr[516] = 0x0b;
-	_soundArr[578] = 0x0b;
-	_soundArr[579] = 0x0b;
-	_soundArr[580] = 0x0b;
-	_soundArr[611] = 0x0b;
-	_soundArr[674] = 0x8b;
-	_soundArr[675] = 0x88;
-	_soundArr[711] = 0x08;
-	_soundArr[866] = 0x0b;
-	_soundArr[896] = 0x0b;
-	_soundArr[897] = _soundArr[897] | 0x80u;
-	_soundArr[930] = _soundArr[930] | 0x80u;
-	_soundArr[934] = 0x8b;
-	_soundArr[935] = 0x8b;
-	_soundArr[936] = 0x0b;
-	_soundArr[937] = 0x88;
-	_soundArr[941] = 0x0b;
-	_soundArr[964] = 0x0b;
-	_soundArr[995] = _soundArr[995] | 0x80u;
-	_soundArr[1027] = 0x08;
-	_soundArr[1056] = 0x8b;
-	_soundArr[1059] = _soundArr[1059] | 0x80u;
-	_soundArr[1122] = 0x0b;
-	_soundArr[1250] = 0x08;
-	_soundArr[1252] = 0x0b;
-	_soundArr[1256] = 0x0b;
-	_soundArr[1257] = 0x08;
-	_soundArr[1258] = 0x0b;
-	_soundArr[1284] = 0x0b;
-	_soundArr[1378] = 0x0b;
-	_soundArr[1379] = _soundArr[1379] | 0x80u;
-	_soundArr[1380] = 0x0b;
-	_soundArr[1385] = 0x0b;
-	_soundArr[1443] = 0x8b;
-	_soundArr[1444] = _soundArr[1444] | 0x80u;
-	_soundArr[1445] = _soundArr[1445] | 0x80u;
-	_soundArr[1446] = 0x8b;
-	_soundArr[1472] = 0x8b;
-	_soundArr[1508] = _soundArr[1508] | 0x80u;
-	_soundArr[1575] = 0x08;
-	_soundArr[1576] = 0x08;
-	_soundArr[1577] = 0x08;
-	_soundArr[1604] = 0x08;
-	_soundArr[1605] = 0x08;
-	_soundArr[1610] = 0x0b;
-	_soundArr[1611] = 0x0b;
-	_soundArr[1612] = 0x0b;
+	_sfxVolumeTbl[192] = 0x0b;
+	_sfxVolumeTbl[193] = 0x0b;
+	_sfxVolumeTbl[226] = _sfxVolumeTbl[226] | 0x80u;
+	_sfxVolumeTbl[229] = 0x0b;
+	_sfxVolumeTbl[230] = 0x0b;
+	_sfxVolumeTbl[450] = 0x0b;
+	_sfxVolumeTbl[451] = 0x0b;
+	_sfxVolumeTbl[514] = 0x8b;
+	_sfxVolumeTbl[515] = 0x0b;
+	_sfxVolumeTbl[516] = 0x0b;
+	_sfxVolumeTbl[578] = 0x0b;
+	_sfxVolumeTbl[579] = 0x0b;
+	_sfxVolumeTbl[580] = 0x0b;
+	_sfxVolumeTbl[611] = 0x0b;
+	_sfxVolumeTbl[674] = 0x8b;
+	_sfxVolumeTbl[675] = 0x88;
+	_sfxVolumeTbl[711] = 0x08;
+	_sfxVolumeTbl[866] = 0x0b;
+	_sfxVolumeTbl[896] = 0x0b;
+	_sfxVolumeTbl[897] = _sfxVolumeTbl[897] | 0x80u;
+	_sfxVolumeTbl[930] = _sfxVolumeTbl[930] | 0x80u;
+	_sfxVolumeTbl[934] = 0x8b;
+	_sfxVolumeTbl[935] = 0x8b;
+	_sfxVolumeTbl[936] = 0x0b;
+	_sfxVolumeTbl[937] = 0x88;
+	_sfxVolumeTbl[941] = 0x0b;
+	_sfxVolumeTbl[964] = 0x0b;
+	_sfxVolumeTbl[995] = _sfxVolumeTbl[995] | 0x80u;
+	_sfxVolumeTbl[1027] = 0x08;
+	_sfxVolumeTbl[1056] = 0x8b;
+	_sfxVolumeTbl[1059] = _sfxVolumeTbl[1059] | 0x80u;
+	_sfxVolumeTbl[1122] = 0x0b;
+	_sfxVolumeTbl[1250] = 0x08;
+	_sfxVolumeTbl[1252] = 0x0b;
+	_sfxVolumeTbl[1256] = 0x0b;
+	_sfxVolumeTbl[1257] = 0x08;
+	_sfxVolumeTbl[1258] = 0x0b;
+	_sfxVolumeTbl[1284] = 0x0b;
+	_sfxVolumeTbl[1378] = 0x0b;
+	_sfxVolumeTbl[1379] = _sfxVolumeTbl[1379] | 0x80u;
+	_sfxVolumeTbl[1380] = 0x0b;
+	_sfxVolumeTbl[1385] = 0x0b;
+	_sfxVolumeTbl[1443] = 0x8b;
+	_sfxVolumeTbl[1444] = _sfxVolumeTbl[1444] | 0x80u;
+	_sfxVolumeTbl[1445] = _sfxVolumeTbl[1445] | 0x80u;
+	_sfxVolumeTbl[1446] = 0x8b;
+	_sfxVolumeTbl[1472] = 0x8b;
+	_sfxVolumeTbl[1508] = _sfxVolumeTbl[1508] | 0x80u;
+	_sfxVolumeTbl[1575] = 0x08;
+	_sfxVolumeTbl[1576] = 0x08;
+	_sfxVolumeTbl[1577] = 0x08;
+	_sfxVolumeTbl[1604] = 0x08;
+	_sfxVolumeTbl[1605] = 0x08;
+	_sfxVolumeTbl[1610] = 0x0b;
+	_sfxVolumeTbl[1611] = 0x0b;
+	_sfxVolumeTbl[1612] = 0x0b;
 }
 
-void SoundManager::loadMusAndGlob() {
+void SoundManager::initVabData() {
 	_vabMusx = loadVab("musx.vh", "musx.vb");
+	_vabMsf = loadVab("musx.vh", "musx.vb");
 	_vabGlob = loadVab("glob.vh", "glob.vb");
 }
 
@@ -398,36 +415,37 @@ void SoundManager::playOrStopSound(uint16 soundId) {
 void SoundManager::playSound(uint16 soundId, uint16 volumeId) {
 	byte volume = 0;
 
-	volume = _soundArr[volumeId];
-	_soundArr[volumeId] = _soundArr[volumeId] | 0x40u;      // Set bit 0x40
+	volume = _sfxVolumeTbl[volumeId] & 0x1fu;
+	_sfxVolumeTbl[volumeId] = _sfxVolumeTbl[volumeId] | 0x40u;      // Set bit 0x40
 
-	VabSound *vabSound = ((soundId & 0x8000u) != 0) ? _vabGlob : _vabMusx;
-
-	// TODO: CdVolume!
-	int cdVolume = 1;
-	int newVolume = cdVolume * volume;
-	if (newVolume < 0) {
-		newVolume += 0xf;
-	}
+	VabSound *vabSound = ((soundId & 0x8000u) != 0) ? _vabGlob : _vabMsf;
 
 	uint16 realId = soundId & 0x7fffu;
 
 	uint16 program = realId >> 4u;
 	uint16 key = ((realId & 0xfu) << 1u | 0x40u);
 
-	// TODO: Volume
 	if (isVoicePlaying(soundId)) {
 		stopVoicePlaying(soundId);
 	}
 
-	Audio::SoundHandle *handle = getVoiceHandle(soundId);
-	if (handle) {
-		_vm->_mixer->playStream(Audio::Mixer::kSFXSoundType, handle, vabSound->getAudioStream(program, key), -1, _sfxVolume);
+	if (vabSound->hasSound(program, key)) {
+		Audio::SoundHandle *handle = getVoiceHandle(soundId);
+		if (handle) {
+			uint8 adjustedVolume = (uint8)((float)_sfxVolume * ((float)volume / 31));
+			debug(3, "Playing SFX: Master Volume %d  Adjusted Volume %d diff %f%%", _sfxVolume, adjustedVolume, 100 * ((float)volume / 31));
+			Audio::AudioStream *audioStream = vabSound->getAudioStream(program, key);
+			if (audioStream) {
+				_vm->_mixer->playStream(Audio::Mixer::kSFXSoundType, handle, audioStream, -1, adjustedVolume);
+			}
+		}
+	} else {
+		warning("Sound not found Program: %d, key %d", program, key);
 	}
 }
 
 void SoundManager::stopSound(uint16 soundId, uint16 volumeId) {
-	_soundArr[volumeId] = _soundArr[volumeId] & 0xbfu;      // Clear bit 0x40
+	_sfxVolumeTbl[volumeId] = _sfxVolumeTbl[volumeId] & 0xbfu;      // Clear bit 0x40
 
 //	uint16 vabId = getVabFromSoundId(soundId);
 
@@ -436,12 +454,14 @@ void SoundManager::stopSound(uint16 soundId, uint16 volumeId) {
 
 uint16 SoundManager::getVabFromSoundId(uint16 soundId) {
 	// TODO
-	return -1;
+	return 0;
 }
 
 void SoundManager::loadMsf(uint32 sceneId) {
 	char msfFileName[] = "XXXX.MSF";
 	memcpy(msfFileName, _dragonRMS->getSceneName(sceneId), 4);
+
+	debug(3, "Loading SFX file %s", msfFileName);
 
 	if (_bigFileArchive->doesFileExist(msfFileName)) {
 		uint32 msfSize;
@@ -451,8 +471,8 @@ void SoundManager::loadMsf(uint32 sceneId) {
 
 		stopAllVoices();
 
-		delete _vabMusx;
-		_vabMusx = new VabSound(msfStream, _vm);
+		delete _vabMsf;
+		_vabMsf = new VabSound(msfStream, _vm);
 	}
 }
 
@@ -488,6 +508,40 @@ void SoundManager::stopAllVoices() {
 	for (int i = 0; i < NUM_VOICES; i++) {
 		_vm->_mixer->stopHandle(_voice[i].handle);
 	}
+}
+
+void SoundManager::playMusic(int16 song) {
+	char sceneName[5] = "nnnn";
+	char filename[12] = "xxxxznn.msq";
+
+	if (_currentSong == song) {
+		return;
+	}
+
+	_currentSong = song;
+
+	memcpy(sceneName, _vm->_dragonRMS->getSceneName(_vm->getCurrentSceneId()), 4);
+	snprintf(filename, 12, "%sz%02d.msq", sceneName, song);
+	debug(1, "Load music file %s", filename);
+
+	if (!_bigFileArchive->doesFileExist(filename)) {
+		warning("Could not find music file %s", filename);
+		return;
+	}
+
+	uint32 dataSize;
+	byte *seqData = _bigFileArchive->load(filename, dataSize);
+	Common::MemoryReadStream *seq = new Common::MemoryReadStream(seqData, dataSize, DisposeAfterUse::YES);
+	_midiPlayer->playSong(seq);
+	delete seq;
+}
+
+void SoundManager::syncSoundSettings() {
+	_musicVolume = CLIP<int>(ConfMan.getInt("music_volume"), 0, 255);
+	_sfxVolume = CLIP<int>(ConfMan.getInt("sfx_volume"), 0, 255);
+	_speechVolume = CLIP<int>(ConfMan.getInt("speech_volume"), 0, 255);
+
+	_midiPlayer->setVolume(_musicVolume);
 }
 
 } // End of namespace Dragons

@@ -31,11 +31,8 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(JPFont, Font)
-
-
-JPFont::JPFont(ShapeFont *jpfont, unsigned int fontnum_)
-	: _fontNum(fontnum_), _shapeFont(jpfont) {
+JPFont::JPFont(ShapeFont *jpfont, unsigned int fontnum)
+	: _fontNum(fontnum), _shapeFont(jpfont) {
 	assert(_shapeFont->frameCount() > 256);
 }
 

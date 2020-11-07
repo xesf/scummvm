@@ -44,10 +44,6 @@ public:
 		return _fileSystem;
 	}
 
-	//! Get the current users pentagram home path
-	//! \returns ~/.pentagram or equivilant
-	static Std::string getHomePath();
-
 	//! Open a file as readable. Streamed.
 	//! \param vfn the (virtual) filename
 	//! \param is_text open in text mode?
@@ -57,8 +53,8 @@ public:
 	//! Open a file as writable. Streamed.
 	//! \param vfn the (virtual) filename
 	//! \param is_text open in text mode?
-	//! \return nullptr on failure
-	ODataSource *WriteFile(const Std::string &vfn, bool is_text = false);
+	//! \return a new writestream, or nullptr on failure
+	Common::WriteStream *WriteFile(const Std::string &vfn, bool is_text = false);
 
 	//! Mount a virtual path
 	//! \param vpath the name of the vpath (should start with '@')
@@ -106,7 +102,7 @@ private:
 
 	// rewrite virtual path in-place (i.e., fvn is replaced)
 	// returns false if no rewriting was done
-	bool rewrite_virtual_path(Std::string &vfn);
+	bool rewrite_virtual_path(Std::string &vfn) const;
 
 	Std::map<Common::String, Std::string> _virtualPaths;
 

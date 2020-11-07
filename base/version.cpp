@@ -56,18 +56,12 @@
  * to properly work in exports (i.e. release tar balls etc.).
  */
 const char *gScummVMVersion = SCUMMVM_VERSION SCUMMVM_REVISION;
-#ifdef __amigaos4__
+#if defined(__amigaos4__) || defined(__MORPHOS__)
 static const char *version_cookie __attribute__((used)) = "$VER: ScummVM " SCUMMVM_VERSION SCUMMVM_REVISION " (" AMIGA_DATE ")";
 #endif
-#ifdef __PLAYSTATION2__
-const char *gScummVMBuildDate = "Git Master"; /* ScummVM Git Master */
-const char *gScummVMVersionDate = SCUMMVM_VERSION SCUMMVM_REVISION " - PlayStation2";
-const char *gScummVMFullVersion = "ScummVM " SCUMMVM_VERSION SCUMMVM_REVISION " - PlayStation2";
-#else
 const char *gScummVMBuildDate = __DATE__ " " __TIME__;
 const char *gScummVMVersionDate = SCUMMVM_VERSION SCUMMVM_REVISION " (" __DATE__ " " __TIME__ ")";
 const char *gScummVMFullVersion = "ScummVM " SCUMMVM_VERSION SCUMMVM_REVISION " (" __DATE__ " " __TIME__ ")";
-#endif
 const char *gScummVMFeatures = ""
 #ifdef TAINTED_BUILD
 	// TAINTED means the build contains engines/subengines not enabled by default
@@ -143,6 +137,10 @@ const char *gScummVMFeatures = ""
 	"FreeType2 "
 #endif
 
+#ifdef USE_FRIBIDI
+	"FriBiDi "
+#endif
+
 #ifdef USE_JPEG
 	"JPEG "
 #endif
@@ -174,5 +172,20 @@ const char *gScummVMFeatures = ""
 #ifdef USE_SDL_NET
 	"SDL_net "
 #endif
+#endif
+#ifdef USE_TINYGL
+	"TinyGL "
+#endif
+#ifdef USE_OPENGL
+	"OpenGL "
+#ifdef USE_OPENGL_SHADERS
+	"(with shaders) "
+#endif
+#endif
+#ifdef USE_GLES2
+	"OpenGL ES 2 "
+#endif
+#ifdef USE_GLEW
+	"GLEW "
 #endif
 	;

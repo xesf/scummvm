@@ -26,10 +26,6 @@
 #include "audio/mixer.h"
 #include "audio/midiplayer.h"
 
-namespace Audio {
-class PCSpeaker;
-}
-
 namespace Ultima {
 namespace Ultima8 {
 
@@ -39,18 +35,41 @@ public:
 	~MidiPlayer() override;
 
 	/**
-	 * Play the specified music
+	 * Load the specified music data
 	 */
-	void play(byte *data, size_t size);
+	void load(byte *data, size_t size, int seqNo, bool speedHack);
+
+	/**
+	 * Play the specified music track, starting at the
+	 * specified branch. Use branchNo -1 to start from the
+	 * beginning.
+	 */
+	void play(int trackNo, int branchNo);
 
 	/**
 	 * Sets whether the music should loop
 	 */
 	void setLooping(bool loop);
 
+	/**
+	 * Returns true if the current music track has a branch
+	 * defined for the specified index.
+	 */
+	bool hasBranchIndex(uint8 index);
+
 	bool isFMSynth() const {
-		return false;
+		return _isFMSynth;
+	};
+
+	static void xmidiCallback(byte eventData, void *data);
+
+	byte getSequenceCallbackData(int seq) const {
+		assert(seq == 0 || seq == 1);
+		return _callbackData[seq];
 	}
+private:
+	bool _isFMSynth;
+	static byte _callbackData[2];
 };
 
 } // End of namespace Ultima8

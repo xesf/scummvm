@@ -30,6 +30,15 @@
 namespace Common {
 
 /**
+ * @defgroup common_substream Substreams
+ * @ingroup common_stream
+ *
+ * @brief API for managing readable data substreams.
+ *
+ * @{
+ */
+
+/**
  * SubReadStream provides access to a ReadStream restricted to the range
  * [currentPosition, currentPosition+end).
  *
@@ -66,7 +75,7 @@ public:
  * Manipulating the parent stream directly /will/ mess up a substream.
  * @see SubReadStream
  */
-class SeekableSubReadStream : public SubReadStream, public SeekableReadStream {
+class SeekableSubReadStream : public SubReadStream, virtual public SeekableReadStream {
 protected:
 	SeekableReadStream *_parentStream;
 	uint32 _begin;
@@ -86,12 +95,20 @@ public:
  * Manipulating the parent stream directly /will/ mess up a substream.
  * @see SubReadStream
  */
-class SeekableSubReadStreamEndian : public SeekableSubReadStream, public ReadStreamEndian {
+class SeekableSubReadStreamEndian :  virtual public SeekableSubReadStream, virtual public SeekableReadStreamEndian {
 public:
 	SeekableSubReadStreamEndian(SeekableReadStream *parentStream, uint32 begin, uint32 end, bool bigEndian, DisposeAfterUse::Flag disposeParentStream = DisposeAfterUse::NO)
 		: SeekableSubReadStream(parentStream, begin, end, disposeParentStream),
+		  SeekableReadStreamEndian(bigEndian),
 		  ReadStreamEndian(bigEndian) {
 	}
+
+	virtual int32 pos() const { return SeekableSubReadStream::pos(); }
+	virtual int32 size() const { return SeekableSubReadStream::size(); }
+
+	virtual bool seek(int32 offset, int whence = SEEK_SET) { return SeekableSubReadStream::seek(offset, whence); }
+	void hexdump(int len, int bytesPerLine = 16, int startOffset = 0) { SeekableSubReadStream::hexdump(len, bytesPerLine, startOffset); }
+	bool skip(uint32 offset) { return SeekableSubReadStream::seek(offset, SEEK_CUR); }
 };
 
 /**
@@ -116,6 +133,7 @@ public:
 	virtual uint32 read(void *dataPtr, uint32 dataSize);
 };
 
+/** @} */
 
 } // End of namespace Common
 

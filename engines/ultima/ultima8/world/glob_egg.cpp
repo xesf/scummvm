@@ -28,14 +28,12 @@
 #include "ultima/ultima8/world/item_factory.h"
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/kernel/core_app.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
 // p_dynamic_cast stuff
-DEFINE_RUNTIME_CLASSTYPE_CODE(GlobEgg, Item)
+DEFINE_RUNTIME_CLASSTYPE_CODE(GlobEgg)
 
 GlobEgg::GlobEgg() {
 }
@@ -54,13 +52,13 @@ void GlobEgg::enterFastArea() {
 	}
 
 	// Expand it
-	if (!(_flags & FLG_FASTAREA)) {
-		MapGlob *glob = GameData::get_instance()->getGlob(_quality);
+	if (!hasFlags(FLG_FASTAREA)) {
+		const MapGlob *glob = GameData::get_instance()->getGlob(_quality);
 		if (!glob) return;
 
-		Std::vector<GlobItem>::iterator iter;
+		Std::vector<GlobItem>::const_iterator iter;
 		for (iter = glob->_contents.begin(); iter != glob->_contents.end(); ++iter) {
-			GlobItem &globitem = *iter;
+			const GlobItem &globitem = *iter;
 			Item *item = ItemFactory::createItem(globitem.shape, globitem.frame,
 			                                     0,
 			                                     FLG_DISPOSABLE | FLG_FAST_ONLY,
@@ -79,14 +77,12 @@ void GlobEgg::enterFastArea() {
 	Item::enterFastArea();
 }
 
-void GlobEgg::saveData(ODataSource *ods) {
-	Item::saveData(ods);
+void GlobEgg::saveData(Common::WriteStream *ws) {
+	Item::saveData(ws);
 }
 
-bool GlobEgg::loadData(IDataSource *ids, uint32 version) {
-	if (!Item::loadData(ids, version)) return false;
-
-	return true;
+bool GlobEgg::loadData(Common::ReadStream *rs, uint32 version) {
+	return Item::loadData(rs, version);
 }
 
 } // End of namespace Ultima8

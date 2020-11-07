@@ -20,16 +20,10 @@
  *
  */
 
-#include "plumbers/plumbers.h"
-
 #include "base/plugins.h"
 
 #include "engines/advancedDetector.h"
-
-namespace Plumbers {
-const char *PlumbersGame::getGameId() const { return _gameDescription->gameId; }
-Common::Platform PlumbersGame::getPlatform() const { return _gameDescription->platform; }
-}
+#include "engines/game.h"
 
 static const PlainGameDescriptor plumbersGames[] = {
 	{"plumbers", "Plumbers Don't Wear Ties!"},
@@ -50,7 +44,6 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NOMIDI)
 	},
 
-	/*
 	// Plumbers 3DO version
 	{
 		"plumbers",
@@ -61,16 +54,15 @@ static const ADGameDescription gameDescriptions[] = {
 		ADGF_UNSTABLE,
 		GUIO1(GUIO_NOMIDI)
 	},
-	*/
 
 	AD_TABLE_END_MARKER
 };
 
 } // End of namespace Plumbers
 
-class PlumbersMetaEngine : public AdvancedMetaEngine {
+class PlumbersMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
-	PlumbersMetaEngine() : AdvancedMetaEngine(Plumbers::gameDescriptions, sizeof(ADGameDescription), plumbersGames) {
+	PlumbersMetaEngineDetection() : AdvancedMetaEngineDetection(Plumbers::gameDescriptions, sizeof(ADGameDescription), plumbersGames) {
 	}
 
 	const char *getEngineId() const override {
@@ -84,24 +76,6 @@ public:
 	const char *getOriginalCopyright() const override {
 		return "Plumbers Don't Wear Ties (C) 1993-94 Kirin Entertainment";
 	}
-
-	bool hasFeature(MetaEngineFeature f) const override;
-	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 };
 
-bool PlumbersMetaEngine::hasFeature(MetaEngineFeature f) const {
-	return false;
-}
-
-bool PlumbersMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	if (desc)
-		*engine = new Plumbers::PlumbersGame(syst, desc);
-
-	return desc != nullptr;
-}
-
-#if PLUGIN_ENABLED_DYNAMIC(PLUMBERS)
-REGISTER_PLUGIN_DYNAMIC(PLUMBERS, PLUGIN_TYPE_ENGINE, PlumbersMetaEngine);
-#else
-REGISTER_PLUGIN_STATIC(PLUMBERS, PLUGIN_TYPE_ENGINE, PlumbersMetaEngine);
-#endif
+REGISTER_PLUGIN_STATIC(PLUMBERS_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, PlumbersMetaEngineDetection);

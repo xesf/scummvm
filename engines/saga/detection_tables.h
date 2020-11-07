@@ -22,6 +22,10 @@
 
 // Game detection information and MD5s
 
+// From sage/scene.h, these are some defines that also
+// help with detection.
+#include "saga/shared_detection_defines.h"
+
 namespace Saga {
 
 static const GameResourceDescription ITE_Resources = {
@@ -361,6 +365,30 @@ static const SAGAGameDescription gameDescriptions[] = {
 		ITEMacPatch_Files,
 	},
 
+	// Inherit the earth - MAC CD GOG version 1.1
+	{
+		{
+			"ite",
+			"GOG CD Mac v1.1",
+			{
+				{"ite_i.rsc",					GAME_RESOURCEFILE,	"a6433e34b97b15e64fe8214651012db9", 8927165},
+				{"scripts_i.rsc",				GAME_SCRIPTFILE,	"a891405405edefc69c9d6c420c868b84", 335927},
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformUnknown,	// Most of the resources are Little Endian
+			ADGF_CD,
+			GUIO0()
+		},
+		GID_ITE,
+		GF_SOME_MAC_RESOURCES,
+		ITE_DEFAULT_SCENE,
+		&ITE_Resources,
+		ARRAYSIZE(ITE_GameFonts),
+		ITE_GameFonts,
+		NULL,
+	},
+
 
 	// ITE PC CD versions //////////////////////////////////////////////////////////////////////////////////////
 
@@ -598,6 +626,30 @@ static const SAGAGameDescription gameDescriptions[] = {
 		NULL,
 	},
 #endif
+
+	// Inherit the Earth - Japanese PC-98 CD version
+ 	{
+ 		{
+ 			"ite",
+ 			"CD",
+ 			{
+			 	{"ite.rsc",		GAME_RESOURCEFILE, "8f4315a9bb10ec839253108a032c8b54", 8921524},
+			 	{"scripts.rsc",	GAME_SCRIPTFILE, "875ffcf269efc49088423fc4572859ae", 477849},
+			 	AD_LISTEND
+ 			},
+ 			Common::JA_JPN,
+ 			Common::kPlatformPC98,
+ 			ADGF_CD,
+ 			GUIO0()
+ 		},
+ 		GID_ITE,
+ 		0,
+ 		ITE_DEFAULT_SCENE,
+ 		&ITE_Resources,
+ 		ARRAYSIZE(ITE_GameFonts),
+ 		ITE_GameFonts,
+ 		NULL,
+ 	},
 
 	// ITE floppy versions ////////////////////////////////////////////////////////////////////////////////////
 

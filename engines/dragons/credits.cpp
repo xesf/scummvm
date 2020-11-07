@@ -39,6 +39,10 @@ Credits::Credits(DragonsEngine *vm, FontManager *fontManager, BigfileArchive *bi
 	_updateCounter = 0;
 	_yOffset = 0;
 	_linesRemaining = 0x1a;
+
+	_creditsData = nullptr;
+	_dataLength = 0;
+	_curPosition = 0;
 }
 
 void Credits::start() {
@@ -75,9 +79,9 @@ void Credits::update() {
 		_updateCounter = 2;
 		_yOffset = (_yOffset + 1) % 208;
 		if (_yOffset % 8 == 0) {
-			if (_curPosition <= _dataLength) {
+			if (_curPosition < _dataLength) {
 				uint32 length = strlen(_curPtr);
-				debug("Credit line: %s", _curPtr);
+				debug(3, "Credit line: %s", _curPtr);
 				convertToWideChar(line, (byte *)_curPtr, 40);
 				_curPtr += length + 1;
 				_curPosition += length + 1;
@@ -85,7 +89,7 @@ void Credits::update() {
 				if (_linesRemaining) {
 					_linesRemaining--;
 				}
-				convertToWideChar(line, (byte *)" ", 40);
+				convertToWideChar(line, (const byte *)" ", 40);
 			}
 			_fontManager->_fonts[0]->renderToSurface(_surface, 0, (_yOffset + 200) % 208, line, 40);
 
@@ -102,7 +106,7 @@ void Credits::update() {
 
 }
 
-void Credits::convertToWideChar(uint16 *destBuf, byte *text, uint16 maxLength) {
+void Credits::convertToWideChar(uint16 *destBuf, const byte *text, uint16 maxLength) {
 	bool finished = false;
 	for (int i = 0; i < maxLength; i++) {
 		if (text[i] == 0) {

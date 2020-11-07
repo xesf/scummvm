@@ -25,6 +25,7 @@
 
 #include "ultima/shared/std/containers.h"
 #include "ultima/ultima8/usecode/intrinsics.h"
+#include "ultima/ultima8/misc/direction.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -34,10 +35,9 @@ class Item;
 class UCList;
 class TeleportEgg;
 class EggHatcherProcess;
-class IDataSource;
-class ODataSource;
 
 #define MAP_NUM_CHUNKS  64
+#define MAP_NUM_TARGET_ITEMS 200
 
 class CurrentMap {
 	friend class World;
@@ -71,6 +71,13 @@ public:
 	void removeItemFromList(Item *item, int32 oldx, int32 oldy);
 	void removeItem(Item *item);
 
+	//! Add an item to the list of possible targets (in Crusader)
+	void addTargetItem(const Item *item);
+	//! Remove an item from the list of possible targets (in Crusader)
+	void removeTargetItem(const Item *item);
+	//! Find the best target item in the given direction
+	Item *findBestTargetItem(int32 x, int32 y, Direction dir, DirectionMode dirmode);
+
 	//! Update the fast area for the cameras position
 	void updateFastArea(int32 from_x, int32 from_y, int32 from_z, int32 to_x, int32 to_y, int32 to_z);
 
@@ -86,49 +93,52 @@ public:
 	//! \param y y coordinate of search center if item is 0.
 	void areaSearch(UCList *itemlist, const uint8 *loopscript,
 	                uint32 scriptsize, const Item *item, uint16 range,
-					bool recurse, int32 x = 0, int32 y = 0);
+					bool recurse, int32 x = 0, int32 y = 0) const;
 
 	// Surface search: Search above and below an item.
 	void surfaceSearch(UCList *itemlist, const uint8 *loopscript,
 	                   uint32 scriptsize, const Item *item, bool above,
-					   bool below, bool recurse = false);
+					   bool below, bool recurse = false) const;
 
 	// Surface search: Search above and below an item.
 	void surfaceSearch(UCList *itemlist, const uint8 *loopscript,
 	                   uint32 scriptsize, ObjId id,
 	                   int32 origin[3], int32 dims[2],
-	                   bool above, bool below, bool recurse = false);
+	                   bool above, bool below, bool recurse = false) const;
 
 	// Collision detection. Returns true if the box [x,y,z]-[x-xd,y-yd,z+zd]
 	// does not collide with any solid items.
-	// Additionally, if support is not NULL, *support is set to the item
-	// supporting the given box, or 0 if it isn't supported.
-	// If under_roof is not NULL, *roof is set to the roof item with the lowest
-	// z coordinate that's over the box, or 0 if there is no roof above box.
+	// Additionally:
+	// * If support is not NULL, *support is set to the item supporting
+	//   the given box, or 0 if it isn't supported.
+	// * If roof is not NULL, *roof is set to the roof item with the lowest
+	//   z coordinate that's over the box, or 0 if there is no roof above box.
+	// * If blocker is not NULL, *blocker will be set to an item blocking
+	//   the whole box if there is one, or 0 if there is no such item.
 	// Ignores collisions which were already occurring at the start position.
 	// NB: isValidPosition doesn't consider item 'item'.
 	bool isValidPosition(int32 x, int32 y, int32 z,
 	                     int32 startx, int32 starty, int32 startz,
 	                     int xd, int yd, int zd, uint32 shapeflags,
-	                     ObjId item,
-	                     const Item **support = 0, ObjId *roof = 0) const;
+	                     ObjId item, const Item **support = 0,
+	                     ObjId *roof = 0, const Item **blocker = 0) const;
 
 	// Note that this version of isValidPosition does not look for start
 	// position collisions.
 	bool isValidPosition(int32 x, int32 y, int32 z,
 	                     int xd, int yd, int zd, uint32 shapeflags,
-	                     ObjId item,
-	                     const Item **support = 0, ObjId *roof = 0) const;
+	                     ObjId item, const Item **support = 0,
+						 ObjId *roof = 0, const Item **blocker = 0) const;
 
 	// Note that this version of isValidPosition can not take 'flipped'
 	// into account!
 	bool isValidPosition(int32 x, int32 y, int32 z, uint32 shape,
 	                     ObjId item, const Item **support = 0,
-                         ObjId *roof = 0) const;
+                         ObjId *roof = 0, const Item **blocker = 0) const;
 
 	//! Scan for a valid position for item in directions orthogonal to movedir
-	bool scanForValidPosition(int32 x, int32 y, int32 z, Item *item,
-	                          int movedir, bool wantsupport,
+	bool scanForValidPosition(int32 x, int32 y, int32 z, const Item *item,
+	                          Direction movedir, bool wantsupport,
 	                          int32 &tx, int32 &ty, int32 &tz);
 
 	struct SweepItem {
@@ -160,7 +170,7 @@ public:
 		// Bitmask. Bit 0 is x, 1 is y, 2 is z.
 
 		// Use this func to get the interpolated location of the hit
-		void GetInterpolatedCoords(int32 out[3], int32 start[3], int32 end[3]) {
+		void GetInterpolatedCoords(int32 out[3], const int32 start[3], const int32 end[3]) const {
 			for (int i = 0; i < 3; i++)
 				out[i] = start[i] + ((end[i] - start[i]) * (_hitTime >= 0 ? _hitTime : 0) + (end[i] > start[i] ? 0x2000 : -0x2000)) / 0x4000;
 		}
@@ -180,14 +190,14 @@ public:
 	//!         true if any items were hit.
 	bool sweepTest(const int32 start[3], const int32 end[3],
 	               const int32 dims[3], uint32 shapeflags,
-	               ObjId item, bool solid_only, Std::list<SweepItem> *hit);
+	               ObjId item, bool solid_only, Std::list<SweepItem> *hit) const;
 
 	TeleportEgg *findDestination(uint16 id);
 
 	// Not allowed to modify the list. Remember to use const_iterator
 	const Std::list<Item *> *getItemList(int32 gx, int32 gy) const;
 
-	bool isChunkFast(int32 cx, int32 cy) {
+	bool isChunkFast(int32 cx, int32 cy) const {
 		// CONSTANTS!
 		if (cx < 0 || cy < 0 || cx >= MAP_NUM_CHUNKS || cy >= MAP_NUM_CHUNKS)
 			return false;
@@ -195,33 +205,41 @@ public:
 	}
 
 	// A simple trace to find the top item at a specific xy point
-	Item *traceTopItem(int32 x, int32 y, int32 ztop, int32 zbot, ObjId ignore, uint32 shflags);
+	const Item *traceTopItem(int32 x, int32 y, int32 ztop, int32 zbot, ObjId ignore, uint32 shflags);
 
 	// Set the entire map as being 'fast'
 	void setWholeMapFast();
 
-	void save(ODataSource *ods);
-	bool load(IDataSource *ids, uint32 version);
+	void save(Common::WriteStream *ws);
+	bool load(Common::ReadStream *rs, uint32 version);
 
 	INTRINSIC(I_canExistAt);
+	INTRINSIC(I_canExistAtPoint);
 
 private:
 	void loadItems(Std::list<Item *> itemlist, bool callCacheIn);
 	void createEggHatcher();
 
+	//! clip the given map chunk numbers to iterate over them safely
+	void clipMapChunks(int &minx, int &maxx, int &miny, int &maxy) const;
+
 	Map *_currentMap;
 
 	// item lists. Lots of them :-)
 	// items[x][y]
-	Std::list<Item *> **_items;
+	Std::list<Item *> _items[MAP_NUM_CHUNKS][MAP_NUM_CHUNKS];
 
 	ProcId _eggHatcher;
 
 	// Fast area bit masks -> fast[ry][rx/32]&(1<<(rx&31));
-	uint32 **_fast;
+	uint32 _fast[MAP_NUM_CHUNKS][MAP_NUM_CHUNKS / 32];
 	int32 _fastXMin, _fastYMin, _fastXMax, _fastYMax;
 
 	int _mapChunkSize;
+
+	//! Items that are "targetable" in Crusader. It might be faster to store
+	//! this in a more fancy data structure, but this works fine.
+	ObjId _targets[200];
 
 	void setChunkFast(int32 cx, int32 cy);
 	void unsetChunkFast(int32 cx, int32 cy);

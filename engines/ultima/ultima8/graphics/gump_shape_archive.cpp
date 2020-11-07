@@ -29,23 +29,21 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(GumpShapeArchive, ShapeArchive)
-
 GumpShapeArchive::~GumpShapeArchive() {
 	for (unsigned int i = 0; i < _gumpItemArea.size(); ++i)
 		delete _gumpItemArea[i];
 }
 
-void GumpShapeArchive::loadGumpage(IDataSource *ds) {
-	unsigned int total = ds->getSize() / 8;
+void GumpShapeArchive::loadGumpage(Common::SeekableReadStream *rs) {
+	unsigned int total = rs->size() / 8;
 	_gumpItemArea.resize(total + 1);
 	for (unsigned int i = 1; i <= total; ++i) {
-		int x, y, w, h;
-		x = static_cast<int16>(ds->read2());
-		y = static_cast<int16>(ds->read2());
-		w = static_cast<int16>(ds->read2()) - x;
-		h = static_cast<int16>(ds->read2()) - y;
-		_gumpItemArea[i] = new Rect(x, y, w, h);
+		int x1, y1, x2, y2;
+		x1 = static_cast<int16>(rs->readUint16LE());
+		y1 = static_cast<int16>(rs->readUint16LE());
+		x2 = static_cast<int16>(rs->readUint16LE());
+		y2 = static_cast<int16>(rs->readUint16LE());
+		_gumpItemArea[i] = new Rect(x1, y1, x2, y2);
 	}
 }
 

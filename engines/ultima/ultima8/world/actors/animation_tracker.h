@@ -30,9 +30,7 @@ namespace Ultima {
 namespace Ultima8 {
 
 class Actor;
-class IDataSource;
-class ODataSource;
-struct AnimAction;
+class AnimAction;
 struct AnimFrame;
 
 class AnimationTracker {
@@ -43,12 +41,12 @@ public:
 	//! initialize the AnimationTracker for the given actor, action, dir
 	//! if state is non-zero, start from that state instead of the Actor's
 	//! current state
-	bool init(Actor *actor, Animation::Sequence action, uint32 dir,
-	          PathfindingState *state = 0);
+	bool init(const Actor *actor, Animation::Sequence action, Direction dir,
+	          const PathfindingState *state = 0);
 
 	//! evaluate the maximum distance the actor will travel if the current
 	//! animation runs to completion by incremental calls to step
-	void evaluateMaxAnimTravel(int32 &max_endx, int32 &max_endy, uint32 dir_);
+	void evaluateMaxAnimTravel(int32 &max_endx, int32 &max_endy, Direction dir);
 
 	//! do a single step of the animation
 	//! returns true if everything ok, false if not
@@ -73,7 +71,7 @@ public:
 		z = _z;
 	}
 
-	void getInterpolatedPosition(int32 &x_, int32 &y_, int32 &z_, int fc)
+	void getInterpolatedPosition(int32 &x, int32 &y, int32 &z, int fc)
             const;
 
 	//! get the difference between current position and previous position
@@ -85,14 +83,14 @@ public:
 	}
 
 	//! get the current AnimAction
-	AnimAction *getAnimAction() const {
+	const AnimAction *getAnimAction() const {
 		return _animAction;
 	}
 
 	//! get the current AnimFrame
-	AnimFrame *getAnimFrame() const;
+	const AnimFrame *getAnimFrame() const;
 
-	void setTargetedMode(int32 x_, int32 y_, int32 z_);
+	void setTargetedMode(int32 x, int32 y, int32 z);
 
 	bool isDone() const {
 		return _done;
@@ -107,8 +105,8 @@ public:
 		return _hitObject;
 	}
 
-	bool load(IDataSource *ids, uint32 version);
-	void save(ODataSource *ods);
+	bool load(Common::ReadStream *rs, uint32 version);
+	void save(Common::WriteStream *ods);
 
 private:
 	enum Mode {
@@ -124,9 +122,9 @@ private:
 	unsigned int _currentFrame;
 
 	ObjId _actor;
-	unsigned int _dir;
+	Direction _dir;
 
-	AnimAction *_animAction;
+	const AnimAction *_animAction;
 
 	// actor state
 	int32 _prevX, _prevY, _prevZ;

@@ -50,9 +50,15 @@ TextBufferWindow::TextBufferWindow(Windows *windows, uint rock) : TextWindow(win
 	_attrs = _lines[0]._attrs;
 
 	Common::copy(&g_conf->_tStyles[0], &g_conf->_tStyles[style_NUMSTYLES], _styles);
+
+	if (g_conf->_speak)
+		gli_initialize_tts();
 }
 
 TextBufferWindow::~TextBufferWindow() {
+	if (g_conf->_speak)
+		gli_free_tts();
+
 	if (_inBuf) {
 		if (g_vm->gli_unregister_arr)
 			(*g_vm->gli_unregister_arr)(_inBuf, _inMax, "&+#!Cn", _inArrayRock);
@@ -269,12 +275,12 @@ bool TextBufferWindow::putPicture(Picture *pic, uint align, uint linkval) {
 	return true;
 }
 
-uint TextBufferWindow::drawPicture(uint image, uint align, uint scaled, uint width, uint height) {
+uint TextBufferWindow::drawPicture(const Common::String &name, uint align, uint scaled, uint width, uint height) {
 	Picture *pic;
 	uint hyperlink;
 	int error;
 
-	pic = g_vm->_pictures->load(image);
+	pic = g_vm->_pictures->load(name);
 
 	if (!pic)
 		return false;
@@ -735,7 +741,7 @@ void TextBufferWindow::cancelLineEvent(Event *ev) {
 	int len;
 	void *inbuf;
 	int inmax;
-	int unicode = _lineRequestUni;
+	bool unicode = _lineRequestUni;
 	Event dummyEv;
 
 	if (!ev)
@@ -815,6 +821,8 @@ void TextBufferWindow::redraw() {
 	bool selBuf;
 	int tx, tsc, tsw, lsc, rsc;
 	Screen &screen = *g_vm->_screen;
+
+	gli_tts_flush();
 
 	Window::redraw();
 
@@ -1296,7 +1304,7 @@ void TextBufferWindow::acceptReadLine(uint32 arg) {
 		if (_historyPos < 0)
 			_historyPos += HISTORYLEN;
 		s = _history[_historyPos];
-		putTextUni(s.c_str(), s.size(), _inFence, _numChars - _inFence);
+		putTextUni(s.u32_str(), s.size(), _inFence, _numChars - _inFence);
 		break;
 
 	case keycode_Down:
@@ -1306,7 +1314,7 @@ void TextBufferWindow::acceptReadLine(uint32 arg) {
 		if (_historyPos >= HISTORYLEN)
 			_historyPos -= HISTORYLEN;
 		s = _history[_historyPos];
-		putTextUni(s.c_str(), s.size(), _inFence, _numChars - _inFence);
+		putTextUni(s.u32_str(), s.size(), _inFence, _numChars - _inFence);
 		break;
 
 	// Cursor movement keys, during line input.
@@ -1391,7 +1399,7 @@ void TextBufferWindow::acceptLine(uint32 keycode) {
 	Common::U32String s, o;
 	int inmax;
 	gidispatch_rock_t inarrayrock;
-	int unicode = _lineRequestUni;
+	bool unicode = _lineRequestUni;
 
 	if (!_inBuf)
 		return;

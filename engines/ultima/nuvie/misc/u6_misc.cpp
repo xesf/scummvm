@@ -25,6 +25,7 @@
 #include "ultima/nuvie/core/nuvie_defs.h"
 #include "ultima/nuvie/misc/u6_misc.h"
 #include "ultima/nuvie/conf/configuration.h"
+#include "common/config-manager.h"
 #include "common/file.h"
 #include "common/fs.h"
 #include "common/str.h"
@@ -104,7 +105,7 @@ bool find_casesensitive_path(Std::string path, Std::string filename, Std::string
 	for (dir_iter = directories.begin(); dir_iter != directories.end();) {
 		string dir = *dir_iter;
 
-		::debug("%s, ", dir.c_str());
+		::debug(1, "%s, ", dir.c_str());
 
 		if (find_path(tmp_path, dir) == false)
 			return false;
@@ -119,7 +120,7 @@ bool find_casesensitive_path(Std::string path, Std::string filename, Std::string
 
 	new_path = tmp_path;
 
-	::debug("\nproper path = %s", new_path.c_str());
+	::debug(1, "\nproper path = %s", new_path.c_str());
 	return true;
 }
 
@@ -135,7 +136,7 @@ bool find_path(Std::string path, Std::string &dir_str) {
 		return false;
 
 	for (item = readdir(dir); item != NULL; item = readdir(dir)) {
-		debug("trying %s, want %s\n", item->d_name, dir_str.c_str());
+		debug("trying %s, want %s", item->d_name, dir_str.c_str());
 		if (strlen(item->d_name) == dir_str.length() && Common::scumm_stricmp(item->d_name, dir_str.c_str()) == 0) {
 			dir_str = item->d_name;
 			return true;
@@ -229,7 +230,7 @@ void build_path(Std::string path, Std::string filename, Std::string &full_path) 
 
 bool has_fmtowns_support(Configuration *config) {
 	Std::string townsdir;
-	config->value("config/ultima6/townsdir", townsdir, "");
+	config->value("config/townsdir", townsdir, "");
 	if (townsdir != "" && directory_exists(townsdir.c_str()))
 		return true;
 
@@ -237,8 +238,8 @@ bool has_fmtowns_support(Configuration *config) {
 }
 
 bool directory_exists(const char *directory) {
-	Common::FSNode dir(directory);
-	return dir.exists();
+	Common::FSNode gameDir(ConfMan.get("path"));
+	return Common::FSNode(directory).exists() || gameDir.getChild(directory).exists();
 }
 
 bool file_exists(const char *path) {

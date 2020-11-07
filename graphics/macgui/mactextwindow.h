@@ -28,39 +28,23 @@
 
 namespace Graphics {
 
-struct SelectedText {
-	int startX, startY;
-	int endX, endY;
-	int startRow, startCol;
-	int endRow, endCol;
-
-	SelectedText() {
-		startX = startY = -1;
-		endX = endY = -1;
-		startRow = startCol = -1;
-		endRow = endCol = -1;
-	}
-
-	bool needsRender() {
-		return startX != endX || startY != endY;
-	}
-};
-
 class MacTextWindow : public MacWindow {
 public:
 	MacTextWindow(MacWindowManager *wm, const MacFont *font, int fgcolor, int bgcolor, int maxWidth, TextAlign textAlignment, MacMenu *menu, bool cursorHandler = true);
 	virtual ~MacTextWindow();
 
-	virtual void resize(int w, int h);
+	virtual void resize(int w, int h, bool inner = false);
 
 	virtual bool processEvent(Common::Event &event);
 
 	virtual bool draw(ManagedSurface *g, bool forceRedraw = false);
+	virtual bool draw(bool forceRedraw = false);
+	virtual void blit(ManagedSurface *g, Common::Rect &dest);
 
 	void setTextWindowFont(const MacFont *macFont);
 	const MacFont *getTextWindowFont();
 
-	void appendText(Common::U32String str, const MacFont *macFont, bool skipAdd = false);
+	void appendText(const Common::U32String &str, const MacFont *macFont, bool skipAdd = false);
 	void appendText(const Common::String &str, const MacFont *macFont, bool skipAdd = false);
 	void clearText();
 
@@ -69,9 +53,9 @@ public:
 
 	void undrawCursor();
 
-	const Common::U32String getInput() { return _inputText; }
+	const Common::U32String &getInput() { return _inputText; }
 	void clearInput();
-	void appendInput(Common::U32String str);
+	void appendInput(const Common::U32String &str);
 	void appendInput(const Common::String &str);
 
 	Common::U32String getSelection(bool formatted = false, bool newlines = true);

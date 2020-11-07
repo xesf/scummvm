@@ -28,7 +28,7 @@
 #include "graphics/pixelformat.h"
 #include "graphics/scaler.h"
 #include "common/events.h"
-#include "common/system.h"
+#include "common/mutex.h"
 
 #include "backends/events/sdl/sdl-events.h"
 
@@ -75,16 +75,13 @@ public:
 	SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSource, SdlWindow *window);
 	virtual ~SurfaceSdlGraphicsManager();
 
-	virtual void activateManager() override;
-	virtual void deactivateManager() override;
-
 	virtual bool hasFeature(OSystem::Feature f) const override;
 	virtual void setFeatureState(OSystem::Feature f, bool enable) override;
 	virtual bool getFeatureState(OSystem::Feature f) const override;
 
 	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const override;
 	virtual int getDefaultGraphicsMode() const override;
-	virtual bool setGraphicsMode(int mode) override;
+	virtual bool setGraphicsMode(int mode, uint flags = OSystem::kGfxModeNoFlags) override;
 	virtual int getGraphicsMode() const override;
 	virtual void resetGraphicsScale() override;
 #ifdef USE_RGB_COLOR
@@ -137,7 +134,7 @@ public:
 	virtual void setCursorPalette(const byte *colors, uint start, uint num) override;
 
 #ifdef USE_OSD
-	virtual void displayMessageOnOSD(const char *msg) override;
+	virtual void displayMessageOnOSD(const Common::U32String &msg) override;
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) override;
 #endif
 
@@ -400,7 +397,7 @@ protected:
 	 * Mutex which prevents multiple threads from interfering with each other
 	 * when accessing the screen.
 	 */
-	OSystem::MutexRef _graphicsMutex;
+	Common::Mutex _graphicsMutex;
 
 #ifdef USE_SDL_DEBUG_FOCUSRECT
 	bool _enableFocusRectDebugCode;

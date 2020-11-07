@@ -99,6 +99,8 @@ void WindowsTextToSpeechManager::init() {
 		return;
 	}
 
+	_speechState = NO_VOICE;
+
 #ifdef USE_TRANSLATION
 	setLanguage(TransMan.getCurrentLanguage());
 #else
@@ -172,7 +174,7 @@ DWORD WINAPI startSpeech(LPVOID parameters) {
 	return 0;
 }
 
-bool WindowsTextToSpeechManager::say(Common::String str, Action action, Common::String charset) {
+bool WindowsTextToSpeechManager::say(const Common::U32String &str, Action action) {
 	if (_speechState == BROKEN || _speechState == NO_VOICE) {
 		warning("The text to speech cannot speak in this state");
 		return true;
@@ -181,20 +183,11 @@ bool WindowsTextToSpeechManager::say(Common::String str, Action action, Common::
 	if (isSpeaking() && action == DROP)
 		return true;
 
-	if (charset.empty()) {
-#ifdef USE_TRANSLATION
-		charset = TransMan.getCurrentCharset();
-#else
-		charset = "ASCII";
-#endif
-	}
-
 	// We have to set the pitch by prepending xml code at the start of the said string;
-	Common::String pitch= Common::String::format("<pitch absmiddle=\"%d\">", _ttsState->_pitch / 10);
-	str.replace((uint32)0, 0, pitch);
-	WCHAR *strW = (WCHAR *) Common::Encoding::convert("UTF-16", charset, str.c_str(), str.size());
+	Common::U32String pitch = Common::U32String::format(Common::U32String("<pitch absmiddle=\"%d\">%S"), _ttsState->_pitch / 10, str.c_str());
+	WCHAR *strW = (WCHAR *) Common::Encoding::convert("UTF-16", pitch);
 	if (strW == nullptr) {
-		warning("Cannot convert from %s encoding for text to speech", charset.c_str());
+		warning("Cannot convert from UTF-32 encoding for text to speech");
 		return true;
 	}
 
@@ -360,7 +353,7 @@ void WindowsTextToSpeechManager::createVoice(void *cpVoiceToken) {
 	if (SUCCEEDED(hr)) {
 		buffer = Win32::unicodeToAnsi(descW);
 		desc = buffer;
-		delete[] buffer;
+		free(buffer);
 		CoTaskMemFree(descW);
 	}
 
@@ -387,9 +380,7 @@ void WindowsTextToSpeechManager::createVoice(void *cpVoiceToken) {
 		warning("Could not get the language attribute for voice: %s", desc.c_str());
 		return;
 	}
-	buffer = Win32::unicodeToAnsi(data);
-	Common::String language = lcidToLocale(buffer);
-	delete[] buffer;
+	Common::String language = lcidToLocale(wcstol(data, NULL, 16));
 	CoTaskMemFree(data);
 
 	// only get the voices for the current language
@@ -405,9 +396,7 @@ void WindowsTextToSpeechManager::createVoice(void *cpVoiceToken) {
 		warning("Could not get the gender attribute for voice: %s", desc.c_str());
 		return;
 	}
-	buffer = Win32::unicodeToAnsi(data);
-	Common::TTSVoice::Gender gender = !strcmp(buffer, "Male") ? Common::TTSVoice::MALE : Common::TTSVoice::FEMALE;
-	delete[] buffer;
+	Common::TTSVoice::Gender gender = !wcscmp(data, L"Male") ? Common::TTSVoice::MALE : Common::TTSVoice::FEMALE;
 	CoTaskMemFree(data);
 
 	// age
@@ -417,39 +406,24 @@ void WindowsTextToSpeechManager::createVoice(void *cpVoiceToken) {
 		warning("Could not get the age attribute for voice: %s", desc.c_str());
 		return;
 	}
-	buffer = Win32::unicodeToAnsi(data);
-	Common::TTSVoice::Age age = !strcmp(buffer, "Adult") ? Common::TTSVoice::ADULT : Common::TTSVoice::UNKNOWN_AGE;
-	delete[] buffer;
+	Common::TTSVoice::Age age = !wcscmp(data, L"Adult") ? Common::TTSVoice::ADULT : Common::TTSVoice::UNKNOWN_AGE;
 	CoTaskMemFree(data);
 
 	_ttsState->_availableVoices.push_back(Common::TTSVoice(gender, age, (void *) voiceToken, desc));
 }
 
-int strToInt(Common::String str) {
-	str.toUppercase();
-	int result = 0;
-	for (unsigned i = 0; i < str.size(); i++) {
-		if (str[i] < '0' || (str[i] > '9' && str[i] < 'A') || str[i] > 'F')
-			break;
-		int num = (str[i] <= '9') ? str[i] - '0' : str[i] - 55;
-		result = result * 16 + num;
-	}
-	return result;
-}
-
-Common::String WindowsTextToSpeechManager::lcidToLocale(Common::String lcid) {
-	LCID locale = strToInt(lcid);
-	int nchars = GetLocaleInfoW(locale, LOCALE_SISO639LANGNAME, NULL, 0);
-	wchar_t *languageCode = new wchar_t[nchars];
-	GetLocaleInfoW(locale, LOCALE_SISO639LANGNAME, languageCode, nchars);
-	char *resultTmp = Win32::unicodeToAnsi(languageCode);
-	Common::String result = resultTmp;
+Common::String WindowsTextToSpeechManager::lcidToLocale(LCID locale) {
+	int nchars = GetLocaleInfoA(locale, LOCALE_SISO639LANGNAME, NULL, 0);
+	char *languageCode = new char[nchars];
+	GetLocaleInfoA(locale, LOCALE_SISO639LANGNAME, languageCode, nchars);
+	Common::String result = languageCode;
 	delete[] languageCode;
-	free(resultTmp);
 	return result;
 }
 
 void WindowsTextToSpeechManager::updateVoices() {
+	if (_speechState == BROKEN)
+		return;
 	_ttsState->_availableVoices.clear();
 	ISpObjectToken *cpVoiceToken = nullptr;
 	IEnumSpObjectTokens *cpEnum = nullptr;
@@ -458,7 +432,11 @@ void WindowsTextToSpeechManager::updateVoices() {
 	ISpObjectTokenCategory *cpCategory;
 	HRESULT hr = CoCreateInstance(CLSID_SpObjectTokenCategory, NULL, CLSCTX_ALL, IID_ISpObjectTokenCategory, (void**)&cpCategory);
 	if (SUCCEEDED(hr)) {
-		hr = cpCategory->SetId(SPCAT_VOICES, FALSE);
+		hr = cpCategory->SetId(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_OneCore\\Voices", FALSE);
+		if (!SUCCEEDED(hr)) {
+			hr = cpCategory->SetId(SPCAT_VOICES, FALSE);
+		}
+
 		if (SUCCEEDED(hr)) {
 			hr = cpCategory->EnumTokens(NULL, NULL, &cpEnum);
 		}

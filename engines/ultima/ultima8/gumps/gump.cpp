@@ -29,8 +29,6 @@
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/gumps/gump_notify_process.h"
 #include "ultima/ultima8/kernel/kernel.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 #include "ultima/ultima8/kernel/object_manager.h"
 #include "ultima/ultima8/gumps/scaler_gump.h"
 #include "ultima/ultima8/ultima8.h"
@@ -38,9 +36,12 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(Gump, Object)
+DEFINE_RUNTIME_CLASSTYPE_CODE(Gump)
 
-Gump::Gump() : Object(), _parent(nullptr), _children() {
+Gump::Gump() : Object(), _parent(nullptr), _owner(0),
+	_x(0), _y(0), _flags(0), _layer(0), _index(-1),
+	_shape(nullptr), _frameNum(0), _focusChild(nullptr),
+	_notifier(0), _processResult(0) {
 }
 
 Gump::Gump(int inX, int inY, int width, int height, uint16 inOwner,
@@ -82,12 +83,18 @@ void Gump::SetShape(FrameID frame, bool adjustsize) {
 	_frameNum = frame._frameNum;
 
 	if (adjustsize && _shape) {
-		ShapeFrame *sf = _shape->getFrame(_frameNum);
-		_dims.w = sf->_width;
-		_dims.h = sf->_height;
+		UpdateDimsFromShape();
 	}
 }
 
+void Gump::UpdateDimsFromShape() {
+	const ShapeFrame *sf = _shape->getFrame(_frameNum);
+	assert(sf);
+	_dims.left = -sf->_xoff;
+	_dims.top = -sf->_yoff;
+	_dims.setWidth(sf->_width);
+	_dims.setHeight(sf->_height);
+}
 
 void Gump::CreateNotifier() {
 	assert(_notifier == 0);
@@ -104,7 +111,7 @@ void Gump::SetNotifyProcess(GumpNotifyProcess *proc) {
 }
 
 GumpNotifyProcess *Gump::GetNotifyProcess() {
-	return p_dynamic_cast<GumpNotifyProcess *>(Kernel::get_instance()->
+	return dynamic_cast<GumpNotifyProcess *>(Kernel::get_instance()->
 	        getProcess(_notifier));
 }
 
@@ -187,7 +194,7 @@ void Gump::CloseItemDependents() {
 	}
 }
 
-bool Gump::GetMouseCursor(int32 mx, int32 my, Shape &shape_, int32 &frame) {
+bool Gump::GetMouseCursor(int32 mx, int32 my, Shape &shape, int32 &frame) {
 	ParentToGump(mx, my);
 
 	bool ret = false;
@@ -203,7 +210,7 @@ bool Gump::GetMouseCursor(int32 mx, int32 my, Shape &shape_, int32 &frame) {
 
 		// It's got the point
 		if (g->PointOnGump(mx, my))
-			ret = g->GetMouseCursor(mx, my, shape_, frame);
+			ret = g->GetMouseCursor(mx, my, shape, frame);
 
 		if (ret) break;
 	}
@@ -230,7 +237,7 @@ void Gump::Paint(RenderSurface *surf, int32 lerp_factor, bool scaled) {
 
 	// Set new clipping rect
 	Rect new_rect = _dims;
-	new_rect.Intersect(old_rect);
+	new_rect.clip(old_rect);
 	surf->SetClippingRect(new_rect);
 
 	// Paint This
@@ -300,10 +307,9 @@ void Gump::PaintCompositing(RenderSurface *surf, int32 lerp_factor,
 	surf->GetClippingRect(old_rect);
 
 	// Set new clipping rect
-	int32 cx = _dims.x, cy = _dims.y, cw = _dims.w, ch = _dims.h;
-	GumpRectToScreenSpace(cx, cy, cw, ch, ROUND_OUTSIDE);
-	Rect new_rect(cx, cy, cw, ch);
-	new_rect.Intersect(old_rect);
+	Rect new_rect(_dims);
+	GumpRectToScreenSpace(new_rect, ROUND_OUTSIDE);
+	new_rect.clip(old_rect);
 	surf->SetClippingRect(new_rect);
 
 	// Iterate all children
@@ -365,26 +371,26 @@ void Gump::setRelativePosition(Gump::Position pos, int xoffset, int yoffset) {
 
 		switch (pos) {
 		case CENTER:
-			Move(rect.w / 2 - _dims.w / 2 + xoffset,
-			     rect.h / 2 - _dims.h / 2 + yoffset);
+			Move(rect.width() / 2 - _dims.width() / 2 + xoffset,
+			     rect.height() / 2 - _dims.height() / 2 + yoffset);
 			break;
 		case TOP_LEFT:
 			Move(xoffset, yoffset);
 			break;
 		case TOP_RIGHT:
-			Move(rect.w - _dims.w + xoffset, yoffset);
+			Move(rect.width() - _dims.width() + xoffset, yoffset);
 			break;
 		case BOTTOM_LEFT:
-			Move(xoffset, rect.h - _dims.h + yoffset);
+			Move(xoffset, rect.height() - _dims.height() + yoffset);
 			break;
 		case BOTTOM_RIGHT:
-			Move(rect.w - _dims.w + xoffset, rect.h - _dims.h + yoffset);
+			Move(rect.width() - _dims.width() + xoffset, rect.height() - _dims.height() + yoffset);
 			break;
 		case TOP_CENTER:
-			Move(rect.w / 2 - _dims.w / 2 + xoffset, yoffset);
+			Move(rect.width() / 2 - _dims.width() / 2 + xoffset, yoffset);
 			break;
 		case BOTTOM_CENTER:
-			Move(rect.w / 2 - _dims.w / 2 + xoffset, rect.h - _dims.h + yoffset);
+			Move(rect.width() / 2 - _dims.width() / 2 + xoffset, rect.height() - _dims.height() + yoffset);
 			break;
 		default:
 			break;
@@ -397,7 +403,7 @@ bool Gump::PointOnGump(int mx, int my) {
 	ParentToGump(gx, gy);
 
 	// First check again rectangle
-	if (!_dims.InRect(gx, gy)) {
+	if (!_dims.contains(gx, gy)) {
 		return false;
 	}
 
@@ -406,7 +412,7 @@ bool Gump::PointOnGump(int mx, int my) {
 		return true;
 	}
 
-	ShapeFrame *sf = _shape->getFrame(_frameNum);
+	const ShapeFrame *sf = _shape->getFrame(_frameNum);
 	assert(sf);
 	if (sf->hasPoint(gx, gy)) {
 		return true;
@@ -447,49 +453,49 @@ void Gump::GumpToScreenSpace(int32 &gx, int32 &gy, PointRoundDir r) {
 // Convert a parent relative point to a gump point
 void Gump::ParentToGump(int32 &px, int32 &py, PointRoundDir) {
 	px -= _x;
-	px += _dims.x;
+	px += _dims.left;
 	py -= _y;
-	py += _dims.y;
+	py += _dims.top;
 }
 
 // Convert a gump point to parent relative point
 void Gump::GumpToParent(int32 &gx, int32 &gy, PointRoundDir) {
-	gx -= _dims.x;
+	gx -= _dims.left;
 	gx += _x;
-	gy -= _dims.y;
+	gy -= _dims.top;
 	gy += _y;
 }
 
 // Transform a rectangle to screenspace from gumpspace
-void Gump::GumpRectToScreenSpace(int32 &gx, int32 &gy, int32 &gw, int32 &gh,
-                                 RectRoundDir r) {
+void Gump::GumpRectToScreenSpace(Rect &gr, RectRoundDir r) {
 	PointRoundDir tl = (r == ROUND_INSIDE ? ROUND_BOTTOMRIGHT : ROUND_TOPLEFT);
 	PointRoundDir br = (r == ROUND_OUTSIDE ? ROUND_BOTTOMRIGHT : ROUND_TOPLEFT);
 
-	int32 x1 = gx, y1 = gy;
-	int32 x2 = gx + gw, y2 = gy + gh;
+	int32 x1 = gr.left, y1 = gr.top;
+	int32 x2 = gr.right, y2 = gr.bottom;
 	GumpToScreenSpace(x1, y1, tl);
 	GumpToScreenSpace(x2, y2, br);
-	gx = x1;
-	gy = y1;
-	if (gw != 0) gw = x2 - x1;
-	if (gh != 0) gh = y2 - y1;
+	gr.moveTo(x1, y1);
+	if (gr.width() != 0)
+		gr.setWidth(x2 - x1);
+	if (gr.height() != 0)
+		gr.setHeight(y2 - y1);
 }
 
 // Transform a rectangle to gumpspace from screenspace
-void Gump::ScreenSpaceToGumpRect(int32 &sx, int32 &sy, int32 &sw, int32 &sh,
-                                 RectRoundDir r) {
+void Gump::ScreenSpaceToGumpRect(Rect &sr, RectRoundDir r) {
 	PointRoundDir tl = (r == ROUND_INSIDE ? ROUND_BOTTOMRIGHT : ROUND_TOPLEFT);
 	PointRoundDir br = (r == ROUND_OUTSIDE ? ROUND_BOTTOMRIGHT : ROUND_TOPLEFT);
 
-	int32 x1 = sx, y1 = sy;
-	int32 x2 = sx + sw, y2 = sy + sh;
+	int32 x1 = sr.left, y1 = sr.top;
+	int32 x2 = sr.right, y2 = sr.bottom;
 	ScreenSpaceToGump(x1, y1, tl);
 	ScreenSpaceToGump(x2, y2, br);
-	sx = x1;
-	sy = y1;
-	if (sw != 0) sw = x2 - x1;
-	if (sh != 0) sh = y2 - y1;
+	sr.moveTo(x1, y1);
+	if (sr.width() != 0)
+		sr.setWidth(x2 - x1);
+	if (sr.height() != 0)
+		sr.setHeight(y2 - y1);
 }
 
 uint16 Gump::TraceObjId(int32 mx, int32 my) {
@@ -527,13 +533,9 @@ bool Gump::GetLocationOfItem(uint16 itemid, int32 &gx, int32 &gy,
 	return false;
 }
 
-// Find a child gump of the specified type
-Gump *Gump::FindGump(const RunTimeClassType &t, bool recursive,
-                     bool no_inheritance) {
-	// If that is our type, then return us!
-	if (GetClassType() == t)
-		return this;
-	else if (!no_inheritance && IsOfType(t))
+// Find a child gump that matches the matching function 
+Gump *Gump::FindGump(const FindGumpPredicate predicate, bool recursive) {
+	if (predicate(this))
 		return this;
 
 	// Iterate all children
@@ -547,9 +549,7 @@ Gump *Gump::FindGump(const RunTimeClassType &t, bool recursive,
 		if (g->_flags & FLAG_CLOSING)
 			continue;
 
-		if (g->GetClassType() == t)
-			return g;
-		else if (!no_inheritance && g->IsOfType(t))
+		if (predicate(g))
 			return g;
 	}
 
@@ -567,7 +567,7 @@ Gump *Gump::FindGump(const RunTimeClassType &t, bool recursive,
 		if (g->_flags & FLAG_CLOSING)
 			continue;
 
-		g = g->FindGump(t, recursive, no_inheritance);
+		g = g->FindGump(predicate, recursive);
 
 		if (g)
 			return g;
@@ -693,7 +693,7 @@ void Gump::StopDraggingChild(Gump *gump) {
 // Input handling
 //
 
-Gump *Gump::OnMouseDown(int button, int32 mx, int32 my) {
+Gump *Gump::onMouseDown(int button, int32 mx, int32 my) {
 	// Convert to local coords
 	ParentToGump(mx, my);
 
@@ -708,7 +708,7 @@ Gump *Gump::OnMouseDown(int button, int32 mx, int32 my) {
 		if (g->_flags & FLAG_CLOSING || g->IsHidden()) continue;
 
 		// It's got the point
-		if (g->PointOnGump(mx, my)) handled = g->OnMouseDown(button, mx, my);
+		if (g->PointOnGump(mx, my)) handled = g->onMouseDown(button, mx, my);
 
 		if (handled) break;
 	}
@@ -716,7 +716,7 @@ Gump *Gump::OnMouseDown(int button, int32 mx, int32 my) {
 	return handled;
 }
 
-Gump *Gump::OnMouseMotion(int32 mx, int32 my) {
+Gump *Gump::onMouseMotion(int32 mx, int32 my) {
 	// Convert to local coords
 	ParentToGump(mx, my);
 
@@ -731,7 +731,7 @@ Gump *Gump::OnMouseMotion(int32 mx, int32 my) {
 		if (g->_flags & FLAG_CLOSING || g->IsHidden()) continue;
 
 		// It's got the point
-		if (g->PointOnGump(mx, my)) handled = g->OnMouseMotion(mx, my);
+		if (g->PointOnGump(mx, my)) handled = g->onMouseMotion(mx, my);
 
 		if (handled) break;
 	}
@@ -777,35 +777,35 @@ bool Gump::mustSave(bool toplevel) const {
 	return true;
 }
 
-void Gump::saveData(ODataSource *ods) {
-	Object::saveData(ods);
+void Gump::saveData(Common::WriteStream *ws) {
+	Object::saveData(ws);
 
-	ods->write2(_owner);
-	ods->write4(static_cast<uint32>(_x));
-	ods->write4(static_cast<uint32>(_y));
-	ods->write4(static_cast<uint32>(_dims.x));
-	ods->write4(static_cast<uint32>(_dims.y));
-	ods->write4(static_cast<uint32>(_dims.w));
-	ods->write4(static_cast<uint32>(_dims.h));
-	ods->write4(_flags);
-	ods->write4(static_cast<uint32>(_layer));
-	ods->write4(static_cast<uint32>(_index));
+	ws->writeUint16LE(_owner);
+	ws->writeUint32LE(static_cast<uint32>(_x));
+	ws->writeUint32LE(static_cast<uint32>(_y));
+	ws->writeUint32LE(static_cast<uint32>(_dims.left));
+	ws->writeUint32LE(static_cast<uint32>(_dims.top));
+	ws->writeUint32LE(static_cast<uint32>(_dims.width()));
+	ws->writeUint32LE(static_cast<uint32>(_dims.height()));
+	ws->writeUint32LE(_flags);
+	ws->writeUint32LE(static_cast<uint32>(_layer));
+	ws->writeUint32LE(static_cast<uint32>(_index));
 
 	uint16 flex = 0;
 	uint32 shapenum = 0;
 	if (_shape) {
 		_shape->getShapeId(flex, shapenum);
 	}
-	ods->write2(flex);
-	ods->write4(shapenum);
+	ws->writeUint16LE(flex);
+	ws->writeUint32LE(shapenum);
 
-	ods->write4(_frameNum);
+	ws->writeUint32LE(_frameNum);
 	if (_focusChild)
-		ods->write2(_focusChild->getObjId());
+		ws->writeUint16LE(_focusChild->getObjId());
 	else
-		ods->write2(0);
-	ods->write2(_notifier);
-	ods->write4(_processResult);
+		ws->writeUint16LE(0);
+	ws->writeUint16LE(_notifier);
+	ws->writeUint32LE(_processResult);
 
 	unsigned int childcount = 0;
 	Std::list<Gump *>::iterator it;
@@ -815,49 +815,51 @@ void Gump::saveData(ODataSource *ods) {
 	}
 
 	// write children:
-	ods->write4(childcount);
+	ws->writeUint32LE(childcount);
 	for (it = _children.begin(); it != _children.end(); ++it) {
 		if (!(*it)->mustSave(false)) continue;
 
-		(*it)->save(ods);
+		ObjectManager::get_instance()->saveObject(ws, *it);
 	}
 }
 
-bool Gump::loadData(IDataSource *ids, uint32 version) {
-	if (!Object::loadData(ids, version)) return false;
+bool Gump::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!Object::loadData(rs, version)) return false;
 
-	_owner = ids->read2();
-	_x = static_cast<int32>(ids->read4());
-	_y = static_cast<int32>(ids->read4());
+	_owner = rs->readUint16LE();
+	_x = static_cast<int32>(rs->readUint32LE());
+	_y = static_cast<int32>(rs->readUint32LE());
 
-	int dx = static_cast<int32>(ids->read4());
-	int dy = static_cast<int32>(ids->read4());
-	int dw = static_cast<int32>(ids->read4());
-	int dh = static_cast<int32>(ids->read4());
-	_dims.Set(dx, dy, dw, dh);
+	int dx = static_cast<int32>(rs->readUint32LE());
+	int dy = static_cast<int32>(rs->readUint32LE());
+	int dw = static_cast<int32>(rs->readUint32LE());
+	int dh = static_cast<int32>(rs->readUint32LE());
+	_dims.moveTo(dx, dy);
+	_dims.setWidth(dw);
+	_dims.setHeight(dh);
 
-	_flags = ids->read4();
-	_layer = static_cast<int32>(ids->read4());
-	_index = static_cast<int32>(ids->read4());
+	_flags = rs->readUint32LE();
+	_layer = static_cast<int32>(rs->readUint32LE());
+	_index = static_cast<int32>(rs->readUint32LE());
 
 	_shape = nullptr;
-	ShapeArchive *flex = GameData::get_instance()->getShapeFlex(ids->read2());
-	uint32 shapenum = ids->read4();
+	ShapeArchive *flex = GameData::get_instance()->getShapeFlex(rs->readUint16LE());
+	uint32 shapenum = rs->readUint32LE();
 	if (flex) {
 		_shape = flex->getShape(shapenum);
 	}
 
-	_frameNum = ids->read4();
-	uint16 focusid = ids->read2();
+	_frameNum = rs->readUint32LE();
+	uint16 focusid = rs->readUint16LE();
 	_focusChild = nullptr;
-	_notifier = ids->read2();
-	_processResult = ids->read4();
+	_notifier = rs->readUint16LE();
+	_processResult = rs->readUint32LE();
 
 	// read children
-	uint32 childcount = ids->read4();
+	uint32 childcount = rs->readUint32LE();
 	for (unsigned int i = 0; i < childcount; ++i) {
-		Object *obj = ObjectManager::get_instance()->loadObject(ids, version);
-		Gump *child = p_dynamic_cast<Gump *>(obj);
+		Object *obj = ObjectManager::get_instance()->loadObject(rs, version);
+		Gump *child = dynamic_cast<Gump *>(obj);
 		if (!child) return false;
 
 		AddChild(child, false);

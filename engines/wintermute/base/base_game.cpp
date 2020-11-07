@@ -36,6 +36,9 @@
 #include "engines/wintermute/base/font/base_font.h"
 #include "engines/wintermute/base/font/base_font_storage.h"
 #include "engines/wintermute/base/gfx/base_renderer.h"
+#ifdef ENABLE_WME3D
+#include "engines/wintermute/base/gfx/base_renderer3d.h"
+#endif
 #include "engines/wintermute/base/base_keyboard_state.h"
 #include "engines/wintermute/base/base_parser.h"
 #include "engines/wintermute/base/base_quick_msg.h"
@@ -54,6 +57,7 @@
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/scriptables/script.h"
 #include "engines/wintermute/base/sound/base_sound.h"
+#include "engines/wintermute/ext/plugins.h"
 #include "engines/wintermute/video/video_player.h"
 #include "engines/wintermute/video/video_theora_player.h"
 #include "engines/wintermute/utils/utils.h"
@@ -75,6 +79,14 @@
 
 #if EXTENDED_DEBUGGER_ENABLED
 #include "engines/wintermute/base/scriptables/debuggable/debuggable_script_engine.h"
+#endif
+
+#ifdef ENABLE_WME3D
+#include "graphics/renderer.h"
+#include "engines/util.h"
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+#include "graphics/opengl/context.h"
+#endif
 #endif
 
 namespace Wintermute {
@@ -140,7 +152,16 @@ BaseGame::BaseGame(const Common::String &targetName) : BaseObject(this), _target
 
 	_cursorNoninteractive = nullptr;
 
+#ifdef ENABLE_WME3D
+	_useD3D = true;
+	_renderer3D = nullptr;
+	_playing3DGame = false;
+
+	_supportsRealTimeShadows = false;
+	_maxShadowType = SHADOW_STENCIL;
+#else
 	_useD3D = false;
+#endif
 
 	_musicSystem = new BaseGameMusic(this);
 
@@ -245,8 +266,6 @@ BaseGame::~BaseGame() {
 
 	cleanup();
 
-	delete _cachedThumbnail;
-
 	delete _mathClass;
 	delete _directoryClass;
 
@@ -262,8 +281,6 @@ BaseGame::~BaseGame() {
 	delete _renderer;
 	delete _musicSystem;
 	delete _settings;
-
-	_cachedThumbnail = nullptr;
 
 	_mathClass = nullptr;
 	_directoryClass = nullptr;
@@ -294,6 +311,8 @@ BaseGame::~BaseGame() {
 bool BaseGame::cleanup() {
 	delete _loadingIcon;
 	_loadingIcon = nullptr;
+
+	deleteSaveThumbnail();
 
 	_engineLogCallback = nullptr;
 	_engineLogCallbackData = nullptr;
@@ -482,7 +501,44 @@ bool BaseGame::initialize1() {
 
 //////////////////////////////////////////////////////////////////////
 bool BaseGame::initialize2() { // we know whether we are going to be accelerated
+#ifdef ENABLE_WME3D
+#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+	initGraphics3d(_settings->getResWidth(), _settings->getResHeight());
+	bool backendCapableOpenGL = g_system->hasFeature(OSystem::kFeatureOpenGLForGame);
+#endif
+
+	Common::String rendererConfig = ConfMan.get("renderer");
+	Graphics::RendererType desiredRendererType = Graphics::parseRendererTypeCode(rendererConfig);
+
+#if defined(USE_OPENGL_GAME)
+	// Check the OpenGL context actually supports shaders
+	if (backendCapableOpenGL && desiredRendererType == Graphics::kRendererTypeOpenGLShaders && !OpenGLContext.shadersSupported) {
+		desiredRendererType = Graphics::kRendererTypeOpenGL;
+	}
+#endif
+
+#if defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
+	if (backendCapableOpenGL && desiredRendererType == Graphics::kRendererTypeOpenGLShaders) {
+		_renderer3D = makeOpenGL3DShaderRenderer(this);
+	}
+#endif // defined(USE_GLES2) || defined(USE_OPENGL_SHADERS)
+#if defined(USE_OPENGL_GAME)
+	if (backendCapableOpenGL && desiredRendererType == Graphics::kRendererTypeOpenGL) {
+		_renderer3D = makeOpenGL3DRenderer(this);
+	}
+#endif // defined(USE_OPENGL)
+	if (_playing3DGame && desiredRendererType == Graphics::kRendererTypeTinyGL) {
+		// TODO
+		//_renderer3D = makeTinyGL3DRenderer(this);
+	}
+	_renderer = _renderer3D;
+#if !defined(USE_OPENGL_GAME) && !defined(USE_OPENGL_SHADERS) && !defined(USE_GLES2)
+	if (!_playing3DGame && !_renderer3D)
+		_renderer = makeOSystemRenderer(this);
+#endif
+#else
 	_renderer = makeOSystemRenderer(this);
+#endif
 	if (_renderer == nullptr) {
 		return STATUS_FAILED;
 	}
@@ -563,6 +619,42 @@ void BaseGame::LOG(bool res, const char *fmt, ...) {
 	//QuickMessage(buff);
 }
 
+#ifdef ENABLE_WME3D
+bool BaseGame::setMaxShadowType(TShadowType maxShadowType) {
+	if (maxShadowType > SHADOW_STENCIL) {
+		maxShadowType = SHADOW_STENCIL;
+	}
+
+	if (maxShadowType < 0) {
+		maxShadowType = SHADOW_NONE;
+	}
+
+	if (maxShadowType == SHADOW_FLAT && !_supportsRealTimeShadows) {
+		maxShadowType = SHADOW_SIMPLE;
+	}
+
+	_maxShadowType = maxShadowType;
+
+	return STATUS_OK;
+}
+
+TShadowType BaseGame::getMaxShadowType(BaseObject *object) {
+	if (object) {
+		return MIN(_maxShadowType, object->_shadowType);
+	} else {
+		return _maxShadowType;
+	}
+}
+
+uint32 BaseGame::getAmbientLightColor() {
+	return 0x00000000;
+}
+
+bool BaseGame::getFogParams(FogParameters &fogParameters) {
+	fogParameters._enabled = false;
+	return true;
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void BaseGame::setEngineLogCallback(ENGINE_LOG_CALLBACK callback, void *data) {
@@ -1431,6 +1523,19 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 		return STATUS_OK;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// [FoxTail] ValidSaveSlotVersion
+	// Checks if given slot stores game state of compatible game version
+	// This version always returs true
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "ValidSaveSlotVersion") == 0) {
+		stack->correctParams(1);
+		/* int slot = */ stack->pop()->getInt();
+		// do nothing
+		stack->pushBool(true);
+		return STATUS_OK;
+	}
 #endif
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1611,6 +1716,13 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 		byte green = stack->pop()->getInt(0);
 		byte blue = stack->pop()->getInt(0);
 		byte alpha = stack->pop()->getInt(0xFF);
+
+		// HACK: Corrosion fades screen to black while opening main menu
+		// Thus, we get black screenshots when saving game from in-game menus
+		// Let's take & keep screenshot before entering main menu
+		if (duration == 750 && BaseEngine::instance().getGameId() == "corrosion") {
+			storeSaveThumbnail();
+		}
 
 		bool system = (strcmp(name, "SystemFadeOut") == 0 || strcmp(name, "SystemFadeOutAsync") == 0);
 
@@ -1912,21 +2024,42 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 		return STATUS_OK;
 	}
 
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// IsShadowTypeSupported
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "IsShadowTypeSupported") == 0) {
+		stack->correctParams(1);
+		TShadowType type = static_cast<TShadowType>(stack->pop()->getInt());
+
+		switch (type) {
+		case SHADOW_NONE:
+		case SHADOW_SIMPLE:
+			stack->pushBool(true);
+			break;
+
+		case SHADOW_FLAT:
+			stack->pushBool(_supportsRealTimeShadows);
+			break;
+
+		case SHADOW_STENCIL:
+			stack->pushBool(_gameRef->_renderer3D->stencilSupported());
+			break;
+
+		default:
+			stack->pushBool(false);
+		}
+
+		return STATUS_OK;
+	}
+#endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// StoreSaveThumbnail
 	//////////////////////////////////////////////////////////////////////////
 	else if (strcmp(name, "StoreSaveThumbnail") == 0) {
 		stack->correctParams(0);
-		delete _cachedThumbnail;
-		_cachedThumbnail = new SaveThumbHelper(this);
-		if (DID_FAIL(_cachedThumbnail->storeThumbnail())) {
-			delete _cachedThumbnail;
-			_cachedThumbnail = nullptr;
-			stack->pushBool(false);
-		} else {
-			stack->pushBool(true);
-		}
-
+		stack->pushBool(storeSaveThumbnail());
 		return STATUS_OK;
 	}
 
@@ -1935,10 +2068,8 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 	//////////////////////////////////////////////////////////////////////////
 	else if (strcmp(name, "DeleteSaveThumbnail") == 0) {
 		stack->correctParams(0);
-		delete _cachedThumbnail;
-		_cachedThumbnail = nullptr;
+		deleteSaveThumbnail();
 		stack->pushNULL();
-
 		return STATUS_OK;
 	}
 
@@ -2180,6 +2311,32 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 		return STATUS_OK;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// [FoxTail] GetFiles
+	// Used at kalimba.script on F9 keypress to reload list of available music
+	// Known params: "*.mb"
+	// Original implementation does not seem to look up at DCP packages
+	// This implementation looks up at savegame storage and for actual files 
+	// Return value expected to be an Array of Strings
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "GetFiles") == 0) {
+		stack->correctParams(1);
+		const char *pattern = stack->pop()->getString();
+
+		Common::StringArray fnames;
+		BaseFileManager::getEngineInstance()->listMatchingFiles(fnames, pattern);
+		
+		stack->pushInt(0);
+		BaseScriptable *arr = makeSXArray(_gameRef, stack);
+		for (uint32 i = 0; i < fnames.size(); i++) {
+			stack->pushString(fnames[i].c_str());
+			((SXArray *)arr)->push(stack->pop());
+		}
+
+ 		stack->pushNative(arr, false);
+ 		return STATUS_OK;
+	}
 #endif
 
 	//////////////////////////////////////////////////////////////////////////
@@ -2415,6 +2572,93 @@ ScValue *BaseGame::scGetProperty(const Common::String &name) {
 		_scValue->setInt(_fps);
 		return _scValue;
 	}
+
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// Shadows (obsolete)
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "Shadows") {
+		_scValue->setBool(_maxShadowType > SHADOW_NONE);
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// SimpleShadows (obsolete)
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "SimpleShadows") {
+		_scValue->setBool(_maxShadowType == SHADOW_SIMPLE);
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// SupportsRealTimeShadows (obsolete)
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "SupportsRealTimeShadows") {
+		_renderer3D->enableShadows();
+		_scValue->setBool(_supportsRealTimeShadows);
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// MaxShadowType
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "MaxShadowType") {
+		_scValue->setInt(_maxShadowType);
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// MaxActiveLights
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "MaxActiveLights") {
+		if (_useD3D) {
+			_scValue->setInt(_renderer3D->maximumLightsCount());
+		} else {
+			_scValue->setInt(0);
+		}
+
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Direct3DDevice
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "Direct3DDevice") {
+		warning("BaseGame::scGetProperty Direct3D device is not available");
+		_scValue->setNULL();
+
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// DirectDrawInterface
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "DirectDrawInterface") {
+		warning("BaseGame::scGetProperty DirectDraw interface is not available");
+		_scValue->setNULL();
+
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// HardwareTL
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "HardwareTL") {
+		// TODO: Once we have a TinyGL renderer, we could potentially return false here
+		// otherwise, as long as WME3D is enabled, vertex processing is done by the hardware
+		_scValue->setBool(true);
+		return _scValue;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// UsedMemory
+	//////////////////////////////////////////////////////////////////////////
+	else if (name == "UsedMemory") {
+		// wme only returns a non-zero value in debug mode
+		_scValue->setInt(0);
+		return _scValue;
+	}
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// AcceleratedMode / Accelerated (RO)
@@ -2663,6 +2907,10 @@ ScValue *BaseGame::scGetProperty(const Common::String &name) {
 			_scValue->setString("1.2.362");
 		} else if (BaseEngine::instance().getTargetExecutable() == FOXTAIL_1_2_527) {
 			_scValue->setString("1.2.527");
+		} else if (BaseEngine::instance().getTargetExecutable() == FOXTAIL_1_2_896) {
+			_scValue->setString("1.2.896");
+		} else if (BaseEngine::instance().getTargetExecutable() == FOXTAIL_1_2_902) {
+			_scValue->setString("1.2.902");
 		} else {
 			_scValue->setString("UNKNOWN");
 		}
@@ -2845,6 +3093,42 @@ bool BaseGame::scSetProperty(const char *name, ScValue *value) {
 		_videoSubtitles = value->getBool();
 		return STATUS_OK;
 	}
+
+#ifdef ENABLE_WME3D
+	//////////////////////////////////////////////////////////////////////////
+	// Shadows (obsolete)
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "Shadows") == 0) {
+		if (value->getBool()) {
+			setMaxShadowType(SHADOW_STENCIL);
+		} else {
+			setMaxShadowType(SHADOW_NONE);
+		}
+
+		return STATUS_OK;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// SimpleShadows (obsolete)
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "SimpleShadows") == 0) {
+		if (value->getBool()) {
+			setMaxShadowType(SHADOW_SIMPLE);
+		} else {
+			setMaxShadowType(SHADOW_STENCIL);
+		}
+
+		return STATUS_OK;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// MaxShadowType
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "MaxShadowType") == 0) {
+		setMaxShadowType(static_cast<TShadowType>(value->getInt()));
+		return STATUS_OK;
+	}
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// TextEncoding
@@ -3357,17 +3641,42 @@ bool BaseGame::externalCall(ScScript *script, ScStack *stack, ScStack *thisStack
 
 #ifdef ENABLE_FOXTAIL
 	//////////////////////////////////////////////////////////////////////////
+	// [FoxTail] IsNumber
+	// Used at kalimba.script to check if string token is a number
+	// If true is returned, then ToInt() is called for same parameter
+	// ToInt(string) implementation is using atoi(), so let's use it here too
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "IsNumber") == 0) {
+		stack->correctParams(1);
+		ScValue *val = stack->pop();
+		
+		bool result = false;
+		if (val->isInt() || val->isFloat()) {
+			result = true;
+		} else if (val->isString()) {
+			const char *str = val->getString();
+			result = (atoi(str) != 0) || (strcmp(str, "0") == 0);
+		}
+
+		stack->pushBool(result);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	// [FoxTail] Split
 	// Returns array of words of a string, using another as a delimeter
-	// Used to split strings by 1 character delimeter in various scripts
-	// All the delimeters ever used in FoxTail are: " ", "@", "#", "$", "&"
-	// So, this implementation takes 1st char of delimeter string only
+	// Used to split strings by 1-2 characters delimeter in various scripts
+	// All the delimeters ever used in FoxTail are:
+	//   " ", "@", "#", "$", "&", ",", "\\", "@h", "@i", "@p", "@s"
 	//////////////////////////////////////////////////////////////////////////
 	else if (strcmp(name, "Split") == 0) {
 		stack->correctParams(2);
 		const char *str = stack->pop()->getString();
-		const char sep = stack->pop()->getString()[0];
-		size_t size = strlen(str) + 1;
+		Common::String sep = stack->pop()->getString();
+		uint32 size = strlen(str) + 1;
+
+		// Let's make copies before modifying stack
+		char *copy = new char[size];
+		strcpy(copy, str);
 
 		// There is no way to makeSXArray() with exactly 1 given element
 		// That's why we are creating empty Array and SXArray::push() later
@@ -3375,15 +3684,17 @@ bool BaseGame::externalCall(ScScript *script, ScStack *stack, ScStack *thisStack
 		BaseScriptable *arr = makeSXArray(_gameRef, stack);
 
 		// Iterating string copy, replacing delimeter with '\0' and pushing matches
-		char *copy = new char[size];
-		strcpy(copy, str);
+		// Only non-empty matches should be pushed
 		char *begin = copy;
 		for (char *it = copy; it < copy + size; it++) {
-			if (*it == sep || *it == '\0') {
+			if (strncmp(it, sep.c_str(), sep.size()) == 0 || *it == '\0') {
 				*it = '\0';
-				stack->pushString(begin);
-				((SXArray *)arr)->push(stack->pop());
-				begin = it + 1;
+				if (it != begin) {
+					stack->pushString(begin);
+					((SXArray *)arr)->push(stack->pop());
+				}
+				begin = it + sep.size();
+				it = begin - 1;
 			}
 		}
 
@@ -3391,7 +3702,37 @@ bool BaseGame::externalCall(ScScript *script, ScStack *stack, ScStack *thisStack
 
 		delete[] copy;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// [FoxTail] Trim / lTrim / rTrim
+	// Removes whitespaces from a string from the left & right
+	//////////////////////////////////////////////////////////////////////////
+	else if (strcmp(name, "Trim") == 0 || strcmp(name, "lTrim") == 0 || strcmp(name, "rTrim") == 0) {
+		stack->correctParams(1);
+		const char *str = stack->pop()->getString();
+		char *copy = new char[strlen(str) + 1];
+		strcpy(copy, str); 
+
+		char *ptr = copy;
+		if (strcmp(name, "rTrim") != 0) {
+			ptr = Common::ltrim(ptr);
+		}
+		if (strcmp(name, "lTrim") != 0) {
+			ptr = Common::rtrim(ptr);
+		}
+
+		stack->pushString(ptr);
+
+		delete[] copy;
+	}
 #endif
+
+	//////////////////////////////////////////////////////////////////////////
+	// Plugins: emulate object constructors from known "wme_*.dll" plugins
+	//////////////////////////////////////////////////////////////////////////
+	else if(!DID_FAIL(EmulatePluginCall(_gameRef, stack, thisStack, name))) {
+		return STATUS_OK;
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// failure
@@ -3558,6 +3899,12 @@ bool BaseGame::persist(BasePersistenceManager *persistMgr) {
 		_quitting = false;
 	}
 
+#ifdef ENABLE_WME3D
+	if (BaseEngine::instance().getFlags() & GF_3D) {
+		persistMgr->transferSint32(TMEMBER_INT(_maxShadowType));
+	}
+#endif
+
 	return STATUS_OK;
 }
 
@@ -3691,6 +4038,15 @@ bool BaseGame::handleMouseWheel(int32 delta) {
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
+bool BaseGame::handleCustomActionStart(BaseGameCustomAction action) {
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool BaseGame::handleCustomActionEnd(BaseGameCustomAction action) {
+	return false;
+}
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseGame::getVersion(byte *verMajor, byte *verMinor, byte *extMajor, byte *extMinor) const {
@@ -3977,6 +4333,23 @@ bool BaseGame::drawCursor(BaseSprite *cursor) {
 		_lastCursor = cursor;
 	}
 	return cursor->draw(_mousePos.x, _mousePos.y);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool BaseGame::storeSaveThumbnail() {
+	delete _cachedThumbnail;
+	_cachedThumbnail = new SaveThumbHelper(this);
+	if (DID_FAIL(_cachedThumbnail->storeThumbnail())) {
+		deleteSaveThumbnail();
+		return false;
+	}
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void BaseGame::deleteSaveThumbnail() {
+	delete _cachedThumbnail;
+	_cachedThumbnail = nullptr;
 }
 
 

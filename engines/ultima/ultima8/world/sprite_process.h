@@ -63,6 +63,9 @@ public:
 	//! The SpriteProcess destructor
 	~SpriteProcess(void) override;
 
+	//! Move the sprite to a new location
+	void move(int x, int y, int z);
+
 	//! The SpriteProcess run function
 	void run() override;
 
@@ -73,9 +76,8 @@ protected:
 	void init();
 
 public:
-	bool loadData(IDataSource *ids, uint32 version);
-protected:
-	void saveData(ODataSource *ods) override;
+	bool loadData(Common::ReadStream *rs, uint32 version);
+	void saveData(Common::WriteStream *ws) override;
 };
 
 } // End of namespace Ultima8

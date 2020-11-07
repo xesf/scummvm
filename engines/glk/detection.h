@@ -26,16 +26,12 @@
 #include "engines/advancedDetector.h"
 #include "engines/game.h"
 
-#define MAX_SAVES 99
-
 /**
  * ScummVM Meta Engine interface
  */
-class GlkMetaEngine : public MetaEngine {
-private:
-	Common::String findFileByGameId(const Common::String &gameId) const;
+class GlkMetaEngineDetection : public MetaEngineDetection {
 public:
-	GlkMetaEngine() : MetaEngine() {}
+	GlkMetaEngineDetection() : MetaEngineDetection() {}
 
 	const char *getName() const override {
 		return "Glk";
@@ -48,13 +44,6 @@ public:
 	const char *getOriginalCopyright() const override {
 		return "Infocom games (C) Infocom\nScott Adams games (C) Scott Adams";
 	}
-
-	bool hasFeature(MetaEngineFeature f) const override;
-	Common::Error createInstance(OSystem *syst, Engine **engine) const override;
-	SaveStateList listSaves(const char *target) const override;
-	int getMaximumSaveSlot() const override;
-	void removeSaveState(const char *target, int slot) const override;
-	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 
 	/**
 	 * Returns a list of games supported by this engine.
@@ -77,6 +66,11 @@ public:
 	 * Calls each sub-engine in turn to ensure no game Id accidentally shares the same Id
 	 */
 	void detectClashes() const;
+
+	/**
+	 * Return a list of extra GUI options for the specified target.
+	 */
+	const ExtraGuiOptions getExtraGuiOptions(const Common::String &target) const override;
 };
 
 namespace Glk {
@@ -88,11 +82,13 @@ struct GameDescriptor {
 	const char *_gameId;
 	const char *_description;
 	uint _options;
+	GameSupportLevel _supportLevel;
 
 	GameDescriptor(const char *gameId, const char *description, uint options) :
-		_gameId(gameId), _description(description), _options(options) {}
-	GameDescriptor(const PlainGameDescriptor &gd) : _gameId(gd.gameId), _description(gd.description),
-		_options(0) {}
+		_gameId(gameId), _description(description), _options(options),
+		_supportLevel(kStableGame) {}
+	GameDescriptor(const PlainGameDescriptor &gd) : _gameId(gd.gameId),
+		_description(gd.description), _options(0), _supportLevel(kStableGame) {}
 
 	static PlainGameDescriptor empty() {
 		return GameDescriptor(nullptr, nullptr, 0);
@@ -111,13 +107,17 @@ struct GameDescriptor {
  */
 class GlkDetectedGame : public DetectedGame {
 public:
-	GlkDetectedGame(const char *id, const char *desc, const Common::String &filename);
 	GlkDetectedGame(const char *id, const char *desc, const Common::String &filename,
-		Common::Language lang);
+		GameSupportLevel supportLevel = kStableGame);
 	GlkDetectedGame(const char *id, const char *desc, const Common::String &filename,
-		const Common::String &md5, size_t filesize);
-	GlkDetectedGame(const char *id, const char *desc, const char *extra, const Common::String &filename,
-		Common::Language lang);
+		Common::Language lang, GameSupportLevel supportLevel = kStableGame);
+	GlkDetectedGame(const char *id, const char *desc, const Common::String &filename,
+		const Common::String &md5, size_t filesize, GameSupportLevel supportLevel = kStableGame);
+	GlkDetectedGame(const char *id, const char *desc, const char *extra,
+		const Common::String &filename, Common::Language lang,
+		GameSupportLevel supportLevel = kStableGame);
+
+	static Common::String getGlkGUIOptions();
 };
 
 /**

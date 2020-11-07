@@ -37,14 +37,15 @@ class Shape;
 class Item;
 class GumpNotifyProcess;
 
-//
-// Class Gump
-//
-// Desc: Base Gump Class that all other Gumps inherit from
-//
+class Gump;
+typedef bool (*FindGumpPredicate)(Gump *g);
+template<class T> inline bool IsOfType(Gump *g) { return dynamic_cast<T*>(g) != nullptr; }
 
+/**
+ * A Gump is a single GUI element within the game, like the backpack window, menu,
+ * conversation text, etc.  Like most windowing systems, gumps nest.
+ */
 class Gump : public Object {
-	friend class GumpList;
 protected:
 	uint16 _owner;        // Owner item
 	Gump *_parent;        // Parent gump
@@ -95,6 +96,9 @@ public:
 
 	void                        SetShape(FrameID frame, bool adjustsize = false);
 
+	//! Update the width/height to match the gump's current shape frame
+	void 						UpdateDimsFromShape();
+
 	//! Set the Gump's frame
 	inline void                 Set_frameNum(uint32 frameNum) {
 		_frameNum = frameNum;
@@ -106,23 +110,18 @@ public:
 	//! \param takefocus If true, set parent's _focusChild to this
 	virtual void                InitGump(Gump *newparent, bool take_focus = true);
 
-	//! Find a gump of the specified type (this or child)
-	//! \param t Type of gump to look for
+	//! Find a gump of that matches a predicate function (this or child)
+	//! \param predicate Function to check if a gump is a match
 	//! \param recursive Recursively search through children?
-	//! \param no_inheritance Exactly this type, or is a subclass also allowed?
 	//! \return the desired Gump, or NULL if not found
-	virtual Gump               *FindGump(const RunTimeClassType &t,
-	                                     bool recursive = true,
-	                                     bool no_inheritance = false);
+	virtual Gump               *FindGump(FindGumpPredicate predicate, bool recursive = true);
 
 	//! Find a gump of the specified type (this or child)
 	//! \param T Type of gump to look for
 	//! \param recursive Recursively search through children?
-	//! \param no_inheritance Exactly this type, or is a subclass also allowed?
 	//! \return the desired Gump, or NULL if not found
-	template<class T> Gump     *FindGump(bool recursive = true,
-	                                     bool no_inheritance = false) {
-		return FindGump(T::ClassType, recursive, no_inheritance);
+	template<class T> Gump     *FindGump(bool recursive = true) {
+		return FindGump(&IsOfType<T>, recursive);
 	}
 
 	//! Find gump (this, child or NULL) at parent coordinates (mx,my)
@@ -133,7 +132,7 @@ public:
 	//! If this gump doesn't want to set the cursor, the gump list will
 	//! attempt to get the cursor shape from the next lower gump.
 	//! \return true if this gump wants to set the cursor, false otherwise
-	virtual bool GetMouseCursor(int32 mx, int32 my, Shape &shape_, int32 &frame);
+	virtual bool GetMouseCursor(int32 mx, int32 my, Shape &shape, int32 &frame);
 
 	// Notify gumps the render surface changed.
 	virtual void        RenderSurfaceChanged();
@@ -196,7 +195,7 @@ public:
 	virtual void        Close(bool no_del = false);
 
 	//! Check to see if a Gump is Closing
-	bool                IsClosing() {
+	bool                IsClosing() const {
 		return (_flags & FLAG_CLOSING) != 0;
 	}
 
@@ -210,6 +209,11 @@ public:
 	virtual void        MoveRelative(int x, int y) {
 		_x += x;
 		_y += y;
+	}
+
+	void getLocation(int32 &x, int32 &y) const {
+		x = _x;
+		y = _y;
 	}
 
 	enum Position {
@@ -271,12 +275,10 @@ public:
 		PointRoundDir r = ROUND_TOPLEFT);
 
 	//! Transform a rectangle to screenspace from gumpspace
-	virtual void GumpRectToScreenSpace(int32 &gx, int32 &gy,
-		int32 &gw, int32 &gh, RectRoundDir r = ROUND_OUTSIDE);
+	virtual void GumpRectToScreenSpace(Rect &gr, RectRoundDir r = ROUND_OUTSIDE);
 
 	//! Transform a rectangle to gumpspace from screenspace
-	virtual void ScreenSpaceToGumpRect(int32 &sx, int32 &sy,
-		int32 &sw, int32 &sh, RectRoundDir r = ROUND_OUTSIDE);
+	virtual void ScreenSpaceToGumpRect(Rect &sr, RectRoundDir r = ROUND_OUTSIDE);
 
 	//! Trace a click, and return ObjId
 	virtual uint16 TraceObjId(int32 mx, int32 my);
@@ -293,10 +295,10 @@ public:
 	//
 	// mx and my are relative to parents position
 	//
-	// OnMouseDown returns the Gump that handled the Input, if it was handled.
+	// onMouseDown returns the Gump that handled the Input, if it was handled.
 	// The MouseUp,MouseDouble events will be sent to the same gump.
 	//
-	// OnMouseMotion works like OnMouseDown,
+	// onMouseMotion works like onMouseDown,
 	// but independently of the other methods.
 	//
 	// Unhandled input will be passed down to the next lower gump.
@@ -305,16 +307,16 @@ public:
 	//
 
 	// Return Gump that handled event
-	virtual Gump       *OnMouseDown(int button, int32 mx, int32 my);
-	virtual void        OnMouseUp(int button, int32 mx, int32 my) { }
-	virtual void        OnMouseClick(int button, int32 mx, int32 my) { }
-	virtual void        OnMouseDouble(int button, int32 mx, int32 my) { }
-	virtual Gump       *OnMouseMotion(int32 mx, int32 my);
+	virtual Gump       *onMouseDown(int button, int32 mx, int32 my);
+	virtual void        onMouseUp(int button, int32 mx, int32 my) { }
+	virtual void        onMouseClick(int button, int32 mx, int32 my) { }
+	virtual void        onMouseDouble(int button, int32 mx, int32 my) { }
+	virtual Gump       *onMouseMotion(int32 mx, int32 my);
 
-	// OnMouseOver is only call when the mouse first passes over the gump
-	// OnMouseLeft is call as the mouse leaves the gump.
-	virtual void        OnMouseOver() { };
-	virtual void        OnMouseLeft() { };
+	// onMouseOver is only call when the mouse first passes over the gump
+	// onMouseLeft is call as the mouse leaves the gump.
+	virtual void        onMouseOver() { };
+	virtual void        onMouseLeft() { };
 
 	// Keyboard input gets sent to the FocusGump. Or if there isn't one, it
 	// will instead get sent to the default key handler. TextInput requires
@@ -458,9 +460,8 @@ public:
 		LAYER_CONSOLE       = 16        // Layer for the console
 	};
 
-	bool loadData(IDataSource *ids, uint32 version);
-protected:
-	void saveData(ODataSource *ods) override;
+	bool loadData(Common::ReadStream *rs, uint32 version);
+	void saveData(Common::WriteStream *ws) override;
 };
 
 } // End of namespace Ultima8

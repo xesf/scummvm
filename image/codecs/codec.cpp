@@ -32,6 +32,7 @@
 #include "image/codecs/indeo3.h"
 #include "image/codecs/indeo4.h"
 #include "image/codecs/indeo5.h"
+#include "image/codecs/jyv1.h"
 #include "image/codecs/mjpeg.h"
 #include "image/codecs/mpeg.h"
 #include "image/codecs/msvideo1.h"
@@ -195,7 +196,14 @@ byte *Codec::createQuickTimeDitherTable(const byte *palette, uint colorCount) {
 	return buf;
 }
 
-Codec *createBitmapCodec(uint32 tag, int width, int height, int bitsPerPixel) {
+Codec *createBitmapCodec(uint32 tag, uint32 streamTag, int width, int height, int bitsPerPixel) {
+	// Crusader videos are special cased here because the frame type is not in the "compression"
+	// tag but in the "stream handler" tag for these files
+	if (JYV1Decoder::isJYV1StreamTag(streamTag)) {
+		assert(bitsPerPixel == 8);
+		return new JYV1Decoder(width, height, streamTag);
+	}
+
 	switch (tag) {
 	case SWAP_CONSTANT_32(0):
 		return new BitmapRawDecoder(width, height, bitsPerPixel);
@@ -265,6 +273,9 @@ Codec *createQuickTimeCodec(uint32 tag, int width, int height, int bitsPerPixel)
 	case MKTAG('Q','k','B','k'):
 		// CDToons: Used by most of the Broderbund games.
 		return new CDToonsDecoder(width, height);
+	case MKTAG('r','a','w',' '):
+		// Used my L-Zone-mac (Director game)
+		return new BitmapRawDecoder(width, height, bitsPerPixel);
 	default:
 		warning("Unsupported QuickTime codec \'%s\'", tag2str(tag));
 	}

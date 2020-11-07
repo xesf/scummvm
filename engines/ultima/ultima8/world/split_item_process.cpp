@@ -25,28 +25,26 @@
 #include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/graphics/shape_info.h"
 #include "ultima/ultima8/world/get_object.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
 // p_dynamic_cast stuff
-DEFINE_RUNTIME_CLASSTYPE_CODE(SplitItemProcess, Process)
+DEFINE_RUNTIME_CLASSTYPE_CODE(SplitItemProcess)
 
-SplitItemProcess::SplitItemProcess() : Process() {
+SplitItemProcess::SplitItemProcess() : Process(), _target(0) {
 
 }
 
-SplitItemProcess::SplitItemProcess(Item *original, Item *target_) {
+SplitItemProcess::SplitItemProcess(Item *original, Item *target) {
 	assert(original);
-	assert(target_);
+	assert(target);
 
 	assert(original->getShapeInfo()->hasQuantity());
-	assert(target_->getShapeInfo()->hasQuantity());
+	assert(target->getShapeInfo()->hasQuantity());
 
 	_itemNum = original->getObjId();
-	_target = target_->getObjId();
+	_target = target->getObjId();
 
 	// type = TODO
 }
@@ -75,7 +73,6 @@ void SplitItemProcess::run() {
 		targetitem->callUsecodeEvent_combine();
 	} else {
 		targetitem->destroy();
-		targetitem = nullptr;
 	}
 
 	if (origcount > 0) {
@@ -83,7 +80,6 @@ void SplitItemProcess::run() {
 		original->callUsecodeEvent_combine();
 	} else {
 		original->destroy(); // note: this terminates us
-		original = nullptr;
 	}
 
 	_result = 0;
@@ -92,16 +88,16 @@ void SplitItemProcess::run() {
 		terminate();
 }
 
-void SplitItemProcess::saveData(ODataSource *ods) {
-	Process::saveData(ods);
+void SplitItemProcess::saveData(Common::WriteStream *ws) {
+	Process::saveData(ws);
 
-	ods->write2(_target);
+	ws->writeUint16LE(_target);
 }
 
-bool SplitItemProcess::loadData(IDataSource *ids, uint32 version) {
-	if (!Process::loadData(ids, version)) return false;
+bool SplitItemProcess::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!Process::loadData(rs, version)) return false;
 
-	_target = ids->read2();
+	_target = rs->readUint16LE();
 
 	return true;
 }

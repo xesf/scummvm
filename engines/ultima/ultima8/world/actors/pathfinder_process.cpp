@@ -26,9 +26,7 @@
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/actors/pathfinder.h"
 #include "ultima/ultima8/world/get_object.h"
-
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
+#include "ultima/ultima8/misc/direction_util.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -36,20 +34,24 @@ namespace Ultima8 {
 static const unsigned int PATH_OK = 1;
 static const unsigned int PATH_FAILED = 0;
 
+const uint16 PathfinderProcess::PATHFINDER_PROC_TYPE = 0x204;
+
 // p_dynamic_cast stuff
-DEFINE_RUNTIME_CLASSTYPE_CODE(PathfinderProcess, Process)
+DEFINE_RUNTIME_CLASSTYPE_CODE(PathfinderProcess)
 
-PathfinderProcess::PathfinderProcess() : Process() {
-
+PathfinderProcess::PathfinderProcess() : Process(),
+		_currentStep(0), _targetItem(0), _hitMode(false),
+		_targetX(0), _targetY(0), _targetZ(0) {
 }
 
-PathfinderProcess::PathfinderProcess(Actor *actor_, ObjId item_, bool hit) {
-	assert(actor_);
-	_itemNum = actor_->getObjId();
-	_type = 0x0204; // CONSTANT !
+PathfinderProcess::PathfinderProcess(Actor *actor, ObjId itemid, bool hit) :
+		_currentStep(0), _targetItem(itemid), _hitMode(hit),
+		_targetX(0), _targetY(0), _targetZ(0) {
+	assert(actor);
+	_itemNum = actor->getObjId();
+	_type = PATHFINDER_PROC_TYPE; // CONSTANT !
 
-
-	Item *item = getItem(item_);
+	Item *item = getItem(itemid);
 	if (!item) {
 		perr << "PathfinderProcess: non-existent target" << Std::endl;
 		// can't get there...
@@ -58,15 +60,12 @@ PathfinderProcess::PathfinderProcess(Actor *actor_, ObjId item_, bool hit) {
 		return;
 	}
 
-	_currentStep = 0;
-	_targetItem = item_;
-	_hitMode = hit;
 	assert(_targetItem);
 
 	item->getLocation(_targetX, _targetY, _targetZ);
 
 	Pathfinder pf;
-	pf.init(actor_);
+	pf.init(actor);
 	pf.setTarget(item, hit);
 
 	bool ok = pf.pathfind(_path);
@@ -80,23 +79,17 @@ PathfinderProcess::PathfinderProcess(Actor *actor_, ObjId item_, bool hit) {
 	}
 
 	// TODO: check if flag already set? kill other pathfinders?
-	actor_->setActorFlag(Actor::ACT_PATHFINDING);
+	actor->setActorFlag(Actor::ACT_PATHFINDING);
 }
 
-PathfinderProcess::PathfinderProcess(Actor *actor_,
-                                     int32 x, int32 y, int32 z) {
-	assert(actor_);
-	_itemNum = actor_->getObjId();
-
-	_targetX = x;
-	_targetY = y;
-	_targetZ = z;
-	_targetItem = 0;
-
-	_currentStep = 0;
+PathfinderProcess::PathfinderProcess(Actor *actor, int32 x, int32 y, int32 z) :
+		_targetX(x), _targetY(y), _targetZ(z), _targetItem(0), _currentStep(0),
+		_hitMode(false) {
+	assert(actor);
+	_itemNum = actor->getObjId();
 
 	Pathfinder pf;
-	pf.init(actor_);
+	pf.init(actor);
 	pf.setTarget(_targetX, _targetY, _targetZ);
 
 	bool ok = pf.pathfind(_path);
@@ -110,7 +103,7 @@ PathfinderProcess::PathfinderProcess(Actor *actor_,
 	}
 
 	// TODO: check if flag already set? kill other pathfinders?
-	actor_->setActorFlag(Actor::ACT_PATHFINDING);
+	actor->setActorFlag(Actor::ACT_PATHFINDING);
 }
 
 PathfinderProcess::~PathfinderProcess() {
@@ -131,7 +124,7 @@ void PathfinderProcess::run() {
 	Actor *actor = getActor(_itemNum);
 	assert(actor);
 	// if not in the fastarea, do nothing
-	if (!(actor->getFlags() & Item::FLG_FASTAREA)) return;
+	if (!actor->hasFlags(Item::FLG_FASTAREA)) return;
 
 
 	bool ok = true;
@@ -174,7 +167,7 @@ void PathfinderProcess::run() {
 	// FIXME: this should happen before the pathfinder is actually called,
 	// since the running animation may move the actor, which could break
 	// the found _path.
-	if (actor->getActorFlags() & Actor::ACT_ANIMLOCK) {
+	if (actor->hasActorFlags(Actor::ACT_ANIMLOCK)) {
 		perr << "PathfinderProcess: ANIMLOCK, waiting" << Std::endl;
 		return;
 	}
@@ -245,38 +238,38 @@ void PathfinderProcess::run() {
 	waitFor(animpid);
 }
 
-void PathfinderProcess::saveData(ODataSource *ods) {
-	Process::saveData(ods);
+void PathfinderProcess::saveData(Common::WriteStream *ws) {
+	Process::saveData(ws);
 
-	ods->write2(_targetItem);
-	ods->write2(static_cast<uint16>(_targetX));
-	ods->write2(static_cast<uint16>(_targetY));
-	ods->write2(static_cast<uint16>(_targetZ));
-	ods->write1(_hitMode ? 1 : 0);
-	ods->write2(static_cast<uint16>(_currentStep));
+	ws->writeUint16LE(_targetItem);
+	ws->writeUint16LE(static_cast<uint16>(_targetX));
+	ws->writeUint16LE(static_cast<uint16>(_targetY));
+	ws->writeUint16LE(static_cast<uint16>(_targetZ));
+	ws->writeByte(_hitMode ? 1 : 0);
+	ws->writeUint16LE(static_cast<uint16>(_currentStep));
 
-	ods->write2(static_cast<uint16>(_path.size()));
+	ws->writeUint16LE(static_cast<uint16>(_path.size()));
 	for (unsigned int i = 0; i < _path.size(); ++i) {
-		ods->write2(static_cast<uint16>(_path[i]._action));
-		ods->write2(static_cast<uint16>(_path[i]._direction));
+		ws->writeUint16LE(static_cast<uint16>(_path[i]._action));
+		ws->writeUint16LE(static_cast<uint16>(Direction_ToUsecodeDir(_path[i]._direction)));
 	}
 }
 
-bool PathfinderProcess::loadData(IDataSource *ids, uint32 version) {
-	if (!Process::loadData(ids, version)) return false;
+bool PathfinderProcess::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!Process::loadData(rs, version)) return false;
 
-	_targetItem = ids->read2();
-	_targetX = ids->read2();
-	_targetY = ids->read2();
-	_targetZ = ids->read2();
-	_hitMode = (ids->read1() != 0);
-	_currentStep = ids->read2();
+	_targetItem = rs->readUint16LE();
+	_targetX = rs->readUint16LE();
+	_targetY = rs->readUint16LE();
+	_targetZ = rs->readUint16LE();
+	_hitMode = (rs->readByte() != 0);
+	_currentStep = rs->readUint16LE();
 
-	unsigned int pathsize = ids->read2();
+	unsigned int pathsize = rs->readUint16LE();
 	_path.resize(pathsize);
 	for (unsigned int i = 0; i < pathsize; ++i) {
-		_path[i]._action = static_cast<Animation::Sequence>(ids->read2());
-		_path[i]._direction = ids->read2();
+		_path[i]._action = static_cast<Animation::Sequence>(rs->readUint16LE());
+		_path[i]._direction = Direction_FromUsecodeDir(rs->readUint16LE());
 	}
 
 	return true;

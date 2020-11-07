@@ -13,7 +13,7 @@ all: $(EXECUTABLE).dwp
 endif
 
 ifdef USE_PANDOC
-all: README$(PANDOCEXT) NEWS$(PANDOCEXT) doc/de/NEUES$(PANDOCEXT)
+all: PANDOC_CONVERT
 endif
 
 ######################################################################
@@ -34,8 +34,10 @@ MODULES += \
 	image \
 	graphics \
 	audio \
+	math \
 	common \
-	po
+	po \
+	doc
 
 ifdef USE_MT32EMU
 MODULES += audio/softsynth/mt32
@@ -51,6 +53,38 @@ CPPFLAGS := $(DEFINES) $(INCLUDES)
 
 # Include the build instructions for all modules
 -include $(addprefix $(srcdir)/, $(addsuffix /module.mk,$(MODULES)))
+
+# Store original info
+MODULES_ORIG:= $(MODULES)
+MODULE_DIRS_ORIG := $(MODULE_DIRS)
+KYRARPG_COMMON_OBJ_ORIG := $(KYRARPG_COMMON_OBJ)
+
+# Skip rules for these files, by resetting the LOAD_RULES_MK
+LOAD_RULES_MK :=
+
+# Reset detection objects, which uptill now are filled with only
+# enabled engines.
+DETECT_OBJS :=
+
+# Include all engine's module files, which populate DETECT_OBJS
+-include $(srcdir)/engines/*/module.mk
+
+# Reset stuff
+MODULES := $(MODULES_ORIG)
+MODULE :=
+MODULE_OBJS :=
+MODULE_DIRS := $(MODULE_DIRS_ORIG)
+PLUGIN :=
+KYRARPG_COMMON_OBJ := $(KYRARPG_COMMON_OBJ_ORIG)
+
+# Enable-rules again
+LOAD_RULES_MK := 1
+
+ifneq ($(DETECTION_STATIC), 1)
+-include $(srcdir)/engines/detect_modules.mk
+else
+MODULE_DIRS += $(sort $(dir $(DETECT_OBJS)))
+endif
 
 # Depdir information
 DEPDIRS = $(addsuffix $(DEPDIR),$(MODULE_DIRS))
@@ -86,7 +120,7 @@ endif
 endif
 
 # The build rule for the ScummVM executable
-$(EXECUTABLE): $(OBJS)
+$(EXECUTABLE): $(DETECT_OBJS) $(OBJS)
 	$(QUIET_LINK)$(LD) $(LDFLAGS) $(PRE_OBJS_FLAGS) $+ $(POST_OBJS_FLAGS) $(LIBS) -o $@
 
 ifdef SPLIT_DWARF
@@ -99,7 +133,7 @@ distclean: clean clean-devtools
 
 clean:
 	$(RM_REC) $(DEPDIRS)
-	$(RM) $(OBJS) $(EXECUTABLE)
+	$(RM) $(OBJS) $(DETECT_OBJS) $(EXECUTABLE)
 ifdef SPLIT_DWARF
 	$(RM) $(OBJS:.o=.dwo)
 	$(RM) $(EXECUTABLE).dwp
@@ -201,6 +235,11 @@ ifdef AMIGAOS
 AMIGA_DATE = $(shell gdate '+%d.%m.%Y')
 VERFLAGS += -DAMIGA_DATE=\"$(AMIGA_DATE)\"
 endif
+ifdef MORPHOS
+# MorphOS needs date in specific format for the version cookie
+AMIGA_DATE = $(shell date +"%-d.%-m.%Y")
+VERFLAGS += -DAMIGA_DATE=\"$(AMIGA_DATE)\"
+endif
 
 ######################################################################
 # Get git's working copy information
@@ -244,6 +283,10 @@ VERFILE := $(DISTDIR)/$(DISTNAME)/base/internal_version.h
 
 ifdef USE_PANDOC
 # Convert README.md and NEWS.md to plain text for any platform that might require it
+PANDOC_CONVERT: README$(PANDOCEXT) CONTRIBUTING$(PANDOCEXT) NEWS$(PANDOCEXT) doc/de/NEUES$(PANDOCEXT)
+	@sed -i'' -e "s/NEWS.md/NEWS$(PANDOCEXT)/g" README$(PANDOCEXT)
+	@sed -i'' -e "s/CONTRIBUTING.md/CONTRIBUTING$(PANDOCEXT)/g" README$(PANDOCEXT)
+
 %$(PANDOCEXT): %.md
 	$(QUIET)$(MKDIR) $(*D)
 	$(QUIET_PANDOC)$(PANDOC) -f gfm -t $(PANDOCFORMAT) --metadata pagetitle=$(basename $(notdir $@)) -s -o $@ $<
@@ -278,9 +321,9 @@ dist-src: \
 	@#DEB-src?
 
 # Common files
-DIST_FILES_DOCS:=$(addprefix $(srcdir)/,AUTHORS COPYING COPYING.BSD COPYING.LGPL COPYING.FREEFONT COPYING.OFL COPYRIGHT NEWS.md README.md)
+DIST_FILES_DOCS:=$(addprefix $(srcdir)/,AUTHORS COPYING COPYING.BSD COPYING.LGPL COPYING.FREEFONT COPYING.OFL COPYING.ISC COPYING.LUA COPYING.MIT COPYING.TINYGL COPYRIGHT NEWS.md README.md CONTRIBUTING.md)
 ifdef USE_PANDOC
-DIST_FILES_DOCS+=README$(PANDOCEXT) NEWS$(PANDOCEXT)
+DIST_FILES_DOCS+=README$(PANDOCEXT) NEWS$(PANDOCEXT) CONTRIBUTING$(PANDOCEXT)
 endif
 
 DIST_FILES_DOCS_languages=cz da de es fr it no-nb se
@@ -297,7 +340,7 @@ DIST_FILES_DOCS_no-nb:=$(addprefix $(srcdir)/doc/no-nb/,HurtigStart)
 DIST_FILES_DOCS_se:=$(addprefix $(srcdir)/doc/se/,LasMig Snabbstart)
 
 # Themes files
-DIST_FILES_THEMES=scummmodern.zip scummclassic.zip scummremastered.zip
+DIST_FILES_THEMES=scummmodern.zip scummclassic.zip scummremastered.zip residualvm.zip
 ifdef USE_TRANSLATION
 DIST_FILES_THEMES+=translations.dat
 endif
@@ -338,6 +381,9 @@ endif
 ifdef ENABLE_LURE
 DIST_FILES_ENGINEDATA+=lure.dat
 endif
+ifdef ENABLE_MACVENTURE
+DIST_FILES_ENGINEDATA+=macventure.dat
+endif
 ifdef ENABLE_MORTEVIELLE
 DIST_FILES_ENGINEDATA+=mort.dat
 endif
@@ -371,20 +417,44 @@ endif
 ifdef ENABLE_WINTERMUTE
 DIST_FILES_ENGINEDATA+=wintermute.zip
 endif
-ifdef ENABLE_MACVENTURE
-DIST_FILES_ENGINEDATA+=macventure.dat
-endif
 ifdef ENABLE_XEEN
 DIST_FILES_ENGINEDATA+=xeen.ccs
 endif
 ifdef USE_FREETYPE2
 DIST_FILES_ENGINEDATA+=fonts.dat
 endif
+DIST_FILES_ENGINEDATA+=macgui.dat
+ifdef ENABLE_GRIM
+DIST_FILES_ENGINEDATA+=grim-patch.lab
+endif
+ifdef ENABLE_MONKEY4
+DIST_FILES_ENGINEDATA+=monkey4-patch.m4b
+endif
+ifdef ENABLE_MYST3
+DIST_FILES_ENGINEDATA+=myst3.dat
+endif
 DIST_FILES_ENGINEDATA:=$(addprefix $(srcdir)/dists/engine-data/,$(DIST_FILES_ENGINEDATA))
 
 # pred.dic is currently only used for the AGI engine
 ifdef ENABLE_AGI
 DIST_FILES_ENGINEDATA+=$(srcdir)/dists/pred.dic
+endif
+
+# Shaders: install if USE_OPENGL_SHADERS or USE_GLES2 defined
+DIST_FILES_SHADERS=
+ifneq ($(USE_OPENGL_SHADERS)$(USE_GLES2),)
+ifdef ENABLE_GRIM
+DIST_FILES_SHADERS+=$(wildcard $(srcdir)/engines/grim/shaders/*)
+endif
+ifdef ENABLE_MYST3
+DIST_FILES_SHADERS+=$(wildcard $(srcdir)/engines/myst3/shaders/*)
+endif
+ifdef ENABLE_STARK
+DIST_FILES_SHADERS+=$(wildcard $(srcdir)/engines/stark/shaders/*)
+endif
+ifdef ENABLE_WINTERMUTE
+DIST_FILES_SHADERS+=$(wildcard $(srcdir)/engines/wintermute/base/gfx/opengl/shaders/*)
+endif
 endif
 
 .PHONY: all clean distclean plugins dist-src

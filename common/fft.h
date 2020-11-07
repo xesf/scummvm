@@ -34,13 +34,22 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_fft Fast Fourier Transform (FFT)
+ * @ingroup common
+ *
+ * @brief  API for the FFT algorithm.
+ *
+ * @{
+ */
+
 class CosineTable;
 
 /**
  * (Inverse) Fast Fourier Transform.
  *
  * Used in engines:
- *  - scumm
+ *  - SCUMM
  */
 class FFT {
 public:
@@ -49,10 +58,10 @@ public:
 
 	const uint16 *getRevTab() const;
 
-	/** Do the permutation needed BEFORE calling calc(). */
+	/** Perform the permutation needed BEFORE calling calc(). */
 	void permute(Complex *z);
 
-	/** Do a complex FFT.
+	/** Perform a complex FFT.
 	 *
 	 *  The input data must be permuted before.
 	 *  No 1.0/sqrt(n) normalization is done.
@@ -79,6 +88,8 @@ private:
 	void fft16(Complex *z);
 	void fft(int n, int logn, Complex *z);
 };
+
+/** @} */
 
 } // End of namespace Common
 

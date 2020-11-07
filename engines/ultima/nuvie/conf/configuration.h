@@ -29,9 +29,12 @@
 #include "ultima/detection.h"
 
 namespace Ultima {
+namespace Shared {
+class XMLTree;
+} // End of namespace Shared
+
 namespace Nuvie {
 
-class XMLTree;
 class ConfigNode;
 
 #define NUVIE_CONF_READONLY true
@@ -59,14 +62,22 @@ class ConfigNode;
  */
 class Configuration {
 private:
-	Std::vector<XMLTree*> _trees;
+	Std::vector<Shared::XMLTree*> _trees;
     Common::HashMap<Common::String, Common::String, Common::IgnoreCase_Hash,
         Common::IgnoreCase_EqualTo> _localKeys;
+	Common::HashMap<Common::String, Common::String, Common::IgnoreCase_Hash,
+		Common::IgnoreCase_EqualTo> _settings;
 	Std::string _configFilename;
     bool _configChanged;
 
     // Sets default configurations common to both enhanced and unhenaced
     void setCommonDefaults(GameId gameType);
+
+	// sets up unenhanced version defaults
+	void setUnenhancedDefaults(GameId gameType);
+
+	// sets up enhanced version defaults
+	void setEnhancedDefaults(GameId gameType);
 public:
 	Configuration();
 	~Configuration();
@@ -77,14 +88,12 @@ public:
     // Returns true if default settings for game have previously been set
     bool isDefaultsSet() const;
 
-    // sets up unenhanced version defaults
-    void setUnenhancedDefaults(GameId gameType);
-
-    // sets up enhanced version defaults
-    void setEnhancedDefaults(GameId gameType);
+	// Loads up the configuration settings
+	void load(GameId gameId, bool isEnhanced);
 
 	// write all (writable) config files
 	void write();
+
 	// clear everything
 	void clear();
 
@@ -111,8 +120,8 @@ public:
 	// list all subkeys of a key. (no guaranteed order in result)
 	Std::set<Std::string> listKeys(const Std::string &key, bool longformat = false);
 
-	typedef Std::pair<Std::string, Std::string> KeyType;
-	typedef Std::vector<KeyType> KeyTypeList;
+	typedef Std::pair<Common::String, Common::String> KeyType;
+	typedef Common::Array<KeyType> KeyTypeList;
 
 	void getSubkeys(KeyTypeList &ktl, Std::string basekey);
 };

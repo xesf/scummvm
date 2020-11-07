@@ -22,6 +22,8 @@
 
 #include "backends/base-backend.h"
 
+#include "graphics/pixelbuffer.h"
+
 #ifndef DISABLE_DEFAULT_EVENT_MANAGER
 #include "backends/events/default/default-events.h"
 #endif
@@ -33,19 +35,13 @@
 
 #include "gui/message.h"
 
-void BaseBackend::displayMessageOnOSD(const char *msg) {
+void BaseBackend::displayMessageOnOSD(const Common::U32String &msg) {
 	// Display the message for 1.5 seconds
 	GUI::TimedMessageDialog dialog(msg, 1500);
 	dialog.runModal();
 }
 
 void BaseBackend::initBackend() {
-	// Init Event manager
-#ifndef DISABLE_DEFAULT_EVENT_MANAGER
-	if (!_eventManager)
-		_eventManager = new DefaultEventManager(getDefaultEventSource());
-#endif
-
 	// Init audio CD manager
 #ifndef DISABLE_DEFAULT_AUDIOCD_MANAGER
 	if (!_audiocdManager)
@@ -60,4 +56,14 @@ void BaseBackend::fillScreen(uint32 col) {
 	if (screen)
 		screen->fillRect(Common::Rect(screen->w, screen->h), col);
 	unlockScreen();
+}
+
+void EventsBaseBackend::initBackend() {
+	// Init Event manager
+#ifndef DISABLE_DEFAULT_EVENT_MANAGER
+	if (!_eventManager)
+		_eventManager = new DefaultEventManager(this);
+#endif
+
+	BaseBackend::initBackend();
 }

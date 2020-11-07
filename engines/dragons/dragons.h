@@ -25,17 +25,9 @@
 #include "gui/EventRecorder.h"
 #include "engines/engine.h"
 #include "dragons/specialopcodes.h"
+#include "dragons/detection.h"
 
 namespace Dragons {
-
-enum {
-	kGameIdDragons = 1
-};
-
-struct DragonsGameDescription {
-	ADGameDescription desc;
-	int gameId;
-};
 
 struct SaveHeader {
 	Common::String description;
@@ -94,12 +86,41 @@ enum UnkFlags {
 	ENGINE_UNK1_FLAG_80 = 0x80
 };
 
+enum MouseWheel {
+	MOUSE_WHEEL_NO_EVENT,
+	MOUSE_WHEEL_DOWN,
+	MOUSE_WHEEL_UP
+};
+
 struct PaletteCyclingInstruction {
 	int16 paletteType;
 	int16 startOffset;
 	int16 endOffset;
 	int16 updateInterval;
 	int16 updateCounter;
+};
+
+enum DragonsAction {
+	kDragonsActionNone,
+	kDragonsActionUp,
+	kDragonsActionDown,
+	kDragonsActionLeft,
+	kDragonsActionRight,
+	kDragonsActionSquare,
+	kDragonsActionTriangle,
+	kDragonsActionCircle,
+	kDragonsActionCross,
+	kDragonsActionL1,
+	kDragonsActionR1,
+	kDragonsActionSelect,
+	kDragonsActionChangeCommand,
+	kDragonsActionInventory,
+	kDragonsActionEnter,
+	kDragonsActionMenu,
+	kDragonsActionPause,
+	kDragonsActionDebug,
+	kDragonsActionDebugGfx,
+	kDragonsActionQuit
 };
 
 class BigfileArchive;
@@ -138,6 +159,9 @@ struct LoadingScreenState {
 		flameOffsetIdx = 0;
 		loadingFlamesUpdateCounter = 0;
 		loadingFlamesRiseCounter = 0;
+
+		memset(flames, 0, ARRAYSIZE(flames)*sizeof(flames[0]));
+		memset(quads, 0, ARRAYSIZE(quads)*sizeof(quads[0]));
 	}
 };
 
@@ -195,7 +219,9 @@ private:
 	bool _leftMouseButtonDown;
 	bool _rightMouseButtonUp;
 	bool _iKeyUp;
+	bool _downKeyDown;
 	bool _downKeyUp;
+	bool _upKeyDown;
 	bool _upKeyUp;
 	bool _enterKeyUp;
 
@@ -209,6 +235,7 @@ private:
 	bool _dKeyDown;
 	bool _oKeyDown;
 	bool _pKeyDown;
+	MouseWheel _mouseWheel;
 
 	bool _debugMode;
 	bool _isGamePaused;
@@ -233,6 +260,7 @@ public:
 	bool canLoadGameStateCurrently() override;
 	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave) override;
 	bool canSaveGameStateCurrently() override;
+	void syncSoundSettings() override;
 
 	void updateActorSequences();
 	void setFlags(uint32 flags);
@@ -258,9 +286,13 @@ public:
 
 	void playOrStopSound(uint16 soundId);
 
-	//TODO what are these functions really doing?
-	void call_fade_related_1f();
-	void fade_related(uint32 flags);
+	void fadeFromBlack();
+	void fadeFromBlackExcludingFont();
+	void fadeFromBlack(uint32 flags);
+
+	void fadeToBlack();
+	void fadeToBlackExcludingFont();
+	void fadeToBlack(uint32 flags);
 
 	uint16 ipt_img_file_related();
 	void performAction();
@@ -295,6 +327,8 @@ public:
 	bool checkForActionButtonRelease();
 	bool checkForDownKeyRelease();
 	bool checkForUpKeyRelease();
+	bool checkForWheelUp();
+	bool checkForWheelDown();
 
 	bool isDebugMode();
 
@@ -306,12 +340,20 @@ public:
 
 	void loadingScreenUpdate();
 
+	void clearAllText();
+
 	//TODO this logic should probably go in its own class.
+	uint16 getBigFileTotalRecords();
 	uint32 getBigFileInfoTblFromDragonEXE();
 	uint32 getFontOffsetFromDragonEXE();
 	uint32 getSpeechTblOffsetFromDragonEXE();
 	uint32 getCutscenePaletteOffsetFromDragonEXE();
 	uint32 defaultResponseOffsetFromDragonEXE();
+	uint16 getCursorHandPointerSequenceID();
+	uint32 getMiniGame3StartingDialog();
+	uint32 getMiniGame3PickAHatDialog();
+	uint32 getMiniGame3DataOffset();
+	uint32 getDialogTextId(uint32 textId);
 private:
 	bool savegame(const char *filename, const char *description);
 	bool loadgame(const char *filename);
@@ -346,6 +388,13 @@ private:
 	void loadingScreen();
 
 	void mainMenu();
+
+	bool checkAudioVideoFiles();
+	bool validateAVFile(const char *filename);
+
+	uint32 getDialogTextIdGrb(uint32 textId);
+	uint32 getDialogTextIdDe(uint32 textId);
+	uint32 getDialogTextIdFr(uint32 textId);
 };
 
 DragonsEngine *getEngine();

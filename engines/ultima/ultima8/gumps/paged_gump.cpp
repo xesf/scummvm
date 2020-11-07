@@ -32,7 +32,7 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(PagedGump, ModalGump)
+DEFINE_RUNTIME_CLASSTYPE_CODE(PagedGump)
 
 PagedGump::PagedGump(int left, int right, int top, int shape):
 	ModalGump(0, 0, 5, 5), _leftOff(left), _rightOff(right), _topOff(top),
@@ -60,11 +60,7 @@ void PagedGump::InitGump(Gump *newparent, bool take_focus) {
 	ModalGump::InitGump(newparent, take_focus);
 
 	_shape = GameData::get_instance()->getGumps()->getShape(_gumpShape);
-	ShapeFrame *sf = _shape->getFrame(0);
-	assert(sf);
-
-	_dims.w = sf->_width;
-	_dims.h = sf->_height;
+	UpdateDimsFromShape();
 
 	FrameID buttonleft(GameData::GUMPS, pageOverShape, 0);
 	FrameID buttonright(GameData::GUMPS, pageOverShape, 1);
@@ -159,12 +155,12 @@ void PagedGump::addPage(Gump *g) {
 		_nextButton->UnhideGump();
 }
 
-bool PagedGump::loadData(IDataSource *ids) {
+bool PagedGump::loadData(Common::ReadStream *rs) {
 	CANT_HAPPEN_MSG("Trying to load ModalGump");
 	return false;
 }
 
-void PagedGump::saveData(ODataSource *ods) {
+void PagedGump::saveData(Common::WriteStream *ws) {
 	CANT_HAPPEN_MSG("Trying to save ModalGump");
 }
 

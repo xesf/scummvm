@@ -48,11 +48,11 @@ uint32 QuetzalBase::getInterpreterTag(InterpreterType interpType) {
 		return MKTAG('A', 'L', 'N', '3');
 	case INTERPRETER_ARCHETYPE:
 		return MKTAG('A', 'R', 'C', 'H');
-	case INTERPRETER_FROTZ:
-		return MKTAG('Z', 'C', 'O', 'D');
+	case INTERPRETER_COMPREHEND:
+		return MKTAG('C', 'O', 'M', 'P');
 	case INTERPRETER_GEAS:
 		return MKTAG('G', 'E', 'A', 'S');
-	case INTERPRETER_GLULXE:
+	case INTERPRETER_GLULX:
 		return MKTAG('G', 'L', 'U', 'L');
 	case INTERPRETER_HUGO:
 		return MKTAG('H', 'U', 'G', 'O');
@@ -72,6 +72,8 @@ uint32 QuetzalBase::getInterpreterTag(InterpreterType interpType) {
 		return MKTAG('T', 'A', 'D', '2');
 	case INTERPRETER_TADS3:
 		return MKTAG('T', 'A', 'D', '3');
+	case INTERPRETER_ZCODE:
+		return MKTAG('Z', 'C', 'O', 'D');
 	default:
 		error("Invalid interpreter type");
 	}
@@ -252,7 +254,11 @@ void QuetzalWriter::addCommonChunks(const Common::String &saveName) {
 		// Write out intrepreter type, language, and game Id
 		ws.writeUint32BE(getInterpreterTag(g_vm->getInterpreterType()));
 		const char *langCode = getLanguageCode(g_vm->getLanguage());
-		ws.write(langCode, strlen(langCode) + 1);
+		if (langCode)
+			ws.write(langCode, strlen(langCode) + 1);
+		else
+			ws.writeByte('\0');
+
 		Common::String md5 = g_vm->getGameMD5();
 		ws.write(md5.c_str(), md5.size());
 		ws.writeByte('\0');

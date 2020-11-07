@@ -54,8 +54,7 @@
  *      Fully Playable*
  *
  *  Known bugs:
- *      PDA is not usable(ActionText is not implemented)
- *      missing menu
+ *      PDA is partially usable(ActionText is not implemented)
  */
 
 struct ADGameDescription;
@@ -104,8 +103,6 @@ public:
 	virtual Common::String getSaveStateName(int slot) const override {
 		return Common::String::format("%s.s%02d", _targetName.c_str(), slot);
 	}
-
-	static void pauseEngine(void *engine, bool pause); // for MacWndMgr
 
 	friend class Console;
 

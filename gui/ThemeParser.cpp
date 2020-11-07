@@ -41,7 +41,8 @@ static const TextDataInfo kTextDataDefaults[] = {
 	{ kTextDataButton,			"text_button" },
 	{ kTextDataNormalFont,		"text_normal" },
 	{ kTextDataTooltip,			"tooltip_normal" },
-	{ kTextDataConsole,			"console" }
+	{ kTextDataConsole,			"console" },
+	{ kTextDataExtraLang,		"extra_lang" }
 };
 
 
@@ -80,8 +81,12 @@ static TextColor parseTextColorId(const Common::String &name) {
 	return kTextColorMAX;
 }
 
-static Graphics::TextAlign parseTextHAlign(const Common::String &val) {
-	if (val == "left")
+Graphics::TextAlign parseTextHAlign(const Common::String &val) {
+	if (val == "start")
+		return Graphics::kTextAlignStart;
+	else if (val == "end")
+		return Graphics::kTextAlignEnd;
+	else if (val == "left")
 		return Graphics::kTextAlignLeft;
 	else if (val == "right")
 		return Graphics::kTextAlignRight;
@@ -175,16 +180,54 @@ bool ThemeParser::parserCallback_font(ParserNode *node) {
 		return true;
 	}
 
-	// Default to a point size of 12.
-	int pointsize = 12;
-	if (node->values.contains("point_size")) {
-		if (sscanf(node->values["point_size"].c_str(), "%d", &pointsize) != 1 || pointsize <= 0)
-			return parserError(Common::String::format("Font \"%s\" has invalid point size \"%s\"", node->values["id"].c_str(), node->values["point_size"].c_str()));
+	return true;
+}
+
+bool ThemeParser::parserCallback_language(ParserNode *node) {
+	if (resolutionCheck(node->values["resolution"]) == false) {
+		node->ignore = true;
+		return true;
 	}
 
-	TextData textDataId = parseTextDataId(node->values["id"]);
-	if (!_theme->addFont(textDataId, node->values["file"], node->values["scalable_file"], pointsize))
-		return parserError("Error loading Font in theme engine.");
+	TextData textDataId = parseTextDataId(getParentNode(node)->values["id"]);
+
+	// Default to a point size of 12.
+	int pointsize = 12;
+	Common::String ps;
+	if (node->values.contains("point_size")) {
+		ps = node->values["point_size"];
+	} else if (getParentNode(node)->values.contains("point_size")) {
+		ps = getParentNode(node)->values["point_size"];
+	}
+
+	if (!ps.empty()) {
+		if (sscanf(ps.c_str(), "%d", &pointsize) != 1 || pointsize <= 0)
+			return parserError(Common::String::format("Font \"%s\" has invalid point size \"%s\"", node->values["id"].c_str(), ps.c_str()));
+	}
+
+	Common::String file;
+	if (node->values.contains("file")) {
+		file = node->values["file"];
+	} else if (getParentNode(node)->values.contains("file")) {
+		file = getParentNode(node)->values["file"];
+	}
+
+	if (file.empty()) {
+		return parserError("Missing required property 'file' in either <font> or <language>");
+	}
+
+	Common::String scalableFile;
+	if (node->values.contains("scalable_file")) {
+		scalableFile = node->values["scalable_file"];
+	} else if (getParentNode(node)->values.contains("scalable_file")) {
+		scalableFile = getParentNode(node)->values["scalable_file"];
+	}
+
+
+	_theme->storeFontNames(textDataId, node->values["id"], file, scalableFile, pointsize);
+
+	if (!_theme->addFont(textDataId, node->values["id"], file, scalableFile, pointsize))
+		return parserError("Error loading localized Font in theme engine.");
 
 	return true;
 }
@@ -684,12 +727,7 @@ bool ThemeParser::parserCallback_widget(ParserNode *node) {
 		var = node->values["name"];
 		int width = -1;
 		int height = -1;
-		bool enabled = true;
-
-		if (node->values.contains("enabled")) {
-			if (!Common::parseBool(node->values["enabled"], enabled))
-				return parserError("Invalid value for Widget enabling (expecting true/false)");
-		}
+		bool useRTL = true;
 
 		if (node->values.contains("width")) {
 			if (_theme->getEvaluator()->hasVar(node->values["width"]) == true)
@@ -707,14 +745,18 @@ bool ThemeParser::parserCallback_widget(ParserNode *node) {
 				return parserError("Corrupted height value in key for " + var);
 		}
 
-		Graphics::TextAlign alignH = Graphics::kTextAlignLeft;
+		Graphics::TextAlign alignH = Graphics::kTextAlignStart;
 
 		if (node->values.contains("textalign")) {
 			if ((alignH = parseTextHAlign(node->values["textalign"])) == Graphics::kTextAlignInvalid)
 				return parserError("Invalid value for text alignment.");
 		}
 
-		_theme->getEvaluator()->addWidget(var, width, height, node->values["type"], enabled, alignH);
+		if (node->values.contains("rtl")) {
+			useRTL = false;
+		}
+
+		_theme->getEvaluator()->addWidget(var, node->values["type"], width, height, alignH, useRTL);
 	}
 
 	return true;
@@ -722,17 +764,11 @@ bool ThemeParser::parserCallback_widget(ParserNode *node) {
 
 bool ThemeParser::parserCallback_dialog(ParserNode *node) {
 	Common::String name = node->values["name"];
-	bool enabled = true;
 	int inset = 0;
 
 	if (resolutionCheck(node->values["resolution"]) == false) {
 		node->ignore = true;
 		return true;
-	}
-
-	if (node->values.contains("enabled")) {
-		if (!Common::parseBool(node->values["enabled"], enabled))
-			return parserError("Invalid value for Dialog enabling (expecting true/false)");
 	}
 
 	if (node->values.contains("inset")) {
@@ -757,7 +793,7 @@ bool ThemeParser::parserCallback_dialog(ParserNode *node) {
 			return false;
 	}
 
-	_theme->getEvaluator()->addDialog(name, overlays, width, height, enabled, inset);
+	_theme->getEvaluator()->addDialog(name, overlays, width, height, inset);
 
 	if (node->values.contains("shading")) {
 		int shading = 0;
@@ -774,9 +810,13 @@ bool ThemeParser::parserCallback_dialog(ParserNode *node) {
 }
 
 bool ThemeParser::parserCallback_import(ParserNode *node) {
+	Common::String importedName = node->values["layout"];
 
-	if (!_theme->getEvaluator()->addImportedLayout(node->values["layout"]))
-		return parserError("Error importing external layout");
+	if (!_theme->getEvaluator()->hasDialog(importedName))
+		return parserError("Imported layout was not found: " + importedName);
+
+	_theme->getEvaluator()->addImportedLayout(importedName);
+
 	return true;
 }
 
@@ -964,7 +1004,7 @@ bool ThemeParser::parseCommonLayoutProps(ParserNode *node, const Common::String 
 
 
 	if (node->values.contains("textalign")) {
-		Graphics::TextAlign alignH = Graphics::kTextAlignLeft;
+		Graphics::TextAlign alignH = Graphics::kTextAlignStart;
 
 		if ((alignH = parseTextHAlign(node->values["textalign"])) == Graphics::kTextAlignInvalid)
 			return parserError("Invalid value for text alignment.");

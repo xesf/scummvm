@@ -63,10 +63,16 @@ protected:
 			XML_KEY(fonts)
 				XML_KEY(font)
 					XML_PROP(id, true)
-					XML_PROP(file, true)
+					XML_PROP(file, false)
 					XML_PROP(resolution, false)
 					XML_PROP(scalable_file, false)
 					XML_PROP(point_size, false)
+					XML_KEY(language)
+						XML_PROP(id, true)
+						XML_PROP(file, false)
+						XML_PROP(scalable_file, false)
+						XML_PROP(point_size, false)
+					KEY_END()
 				KEY_END()
 
 				XML_KEY(text_color)
@@ -177,6 +183,7 @@ protected:
 					XML_PROP(padding, false)
 					XML_PROP(resolution, false)
 					XML_PROP(textalign, false)
+					XML_PROP(rtl, false)
 				KEY_END()
 			KEY_END()
 
@@ -185,7 +192,6 @@ protected:
 				XML_PROP(overlays, true)
 				XML_PROP(size, false)
 				XML_PROP(shading, false)
-				XML_PROP(enabled, false)
 				XML_PROP(resolution, false)
 				XML_PROP(inset, false)
 				XML_KEY(layout)
@@ -203,8 +209,8 @@ protected:
 						XML_PROP(width, false)
 						XML_PROP(height, false)
 						XML_PROP(type, false)
-						XML_PROP(enabled, false)
 						XML_PROP(textalign, false)
+						XML_PROP(rtl, false)
 					KEY_END()
 
 					XML_KEY(space)
@@ -224,6 +230,7 @@ protected:
 	bool parserCallback_font(ParserNode *node);
 	bool parserCallback_text_color(ParserNode *node);
 	bool parserCallback_fonts(ParserNode *node);
+	bool parserCallback_language(ParserNode *node);
 	bool parserCallback_text(ParserNode *node);
 	bool parserCallback_palette(ParserNode *node);
 	bool parserCallback_color(ParserNode *node);

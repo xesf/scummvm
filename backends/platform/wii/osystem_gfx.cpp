@@ -198,7 +198,7 @@ int OSystem_Wii::getDefaultGraphicsMode() const {
 	return gmStandard;
 }
 
-bool OSystem_Wii::setGraphicsMode(int mode) {
+bool OSystem_Wii::setGraphicsMode(int mode, uint flags) {
 	_configGraphicsMode = mode;
 	return true;
 }
@@ -244,13 +244,18 @@ void OSystem_Wii::initSize(uint width, uint height,
 #endif
 
 	uint newWidth, newHeight;
+
+#ifdef USE_RGB_COLOR
 	if (_pfGame.bytesPerPixel > 1) {
 		newWidth = ROUNDUP(width, 4);
 		newHeight = ROUNDUP(height, 4);
 	} else {
+#endif
 		newWidth = ROUNDUP(width, 8);
 		newHeight = ROUNDUP(height, 4);
+#ifdef USE_RGB_COLOR
 	}
+#endif
 
 	if (_gameWidth != newWidth || _gameHeight != newHeight) {
 		assert((newWidth <= 640) && (newHeight <= 480));
@@ -331,7 +336,7 @@ void OSystem_Wii::setPalette(const byte *colors, uint start, uint num) {
 	u16 *d = _texGame.palette;
 
 	for (uint i = 0; i < num; ++i, s +=3)
-		d[start + i] = Graphics::RGBToColor<Graphics::ColorMasks<565> >(s[0], s[1], s[2]);
+		d[start + i] = _pfRGB565.RGBToColor(s[0], s[1], s[2]);
 
 	gfx_tex_flush_palette(&_texGame);
 
@@ -339,7 +344,7 @@ void OSystem_Wii::setPalette(const byte *colors, uint start, uint num) {
 	d = _cursorPalette;
 
 	for (uint i = 0; i < num; ++i, s += 3) {
-		d[start + i] = Graphics::ARGBToColor<Graphics::ColorMasks<3444> >(0xff, s[0], s[1], s[2]);
+		d[start + i] = _pfRGB3444.ARGBToColor(0xff, s[0], s[1], s[2]);
 	}
 
 	if (_cursorPaletteDisabled) {
@@ -362,7 +367,7 @@ void OSystem_Wii::grabPalette(byte *colors, uint start, uint num) const {
 
 	u8 r, g, b;
 	for (uint i = 0; i < num; ++i, d += 3) {
-		Graphics::colorToRGB<Graphics::ColorMasks<565> >(s[start + i], r, g, b);
+		_pfRGB565.colorToRGB(s[start + i], r, g, b);
 		d[0] = r;
 		d[1] = g;
 		d[2] = b;
@@ -391,7 +396,7 @@ void OSystem_Wii::setCursorPalette(const byte *colors, uint start, uint num) {
 	u16 *d = _texMouse.palette;
 
 	for (uint i = 0; i < num; ++i, s += 3)
-		d[start + i] = Graphics::ARGBToColor<Graphics::ColorMasks<3444> >(0xff, s[0], s[1], s[2]);
+		d[start + i] = _pfRGB3444.ARGBToColor(0xff, s[0], s[1], s[2]);
 
 	_cursorPaletteDirty = true;
 }
@@ -630,7 +635,7 @@ int16 OSystem_Wii::getOverlayHeight() {
 }
 
 Graphics::PixelFormat OSystem_Wii::getOverlayFormat() const {
-	return Graphics::createPixelFormat<3444>();
+	return _pfRGB3444;
 }
 
 bool OSystem_Wii::showMouse(bool visible) {
@@ -651,7 +656,6 @@ void OSystem_Wii::setMouseCursor(const void *buf, uint w, uint h, int hotspotX,
 									const Graphics::PixelFormat *format) {
 	gfx_tex_format_t tex_format = GFX_TF_PALETTE_RGB5A3;
 	uint tw, th;
-	bool tmpBuf = false;
 	uint32 oldKeycolor = _mouseKeyColor;
 
 #ifdef USE_RGB_COLOR
@@ -666,13 +670,12 @@ void OSystem_Wii::setMouseCursor(const void *buf, uint w, uint h, int hotspotX,
 		tw = ROUNDUP(w, 4);
 		th = ROUNDUP(h, 4);
 
-		if (_pfCursor != _pfRGB3444)
-			tmpBuf = true;
 	} else {
 #endif
 		_mouseKeyColor = keycolor & 0xff;
 		tw = ROUNDUP(w, 8);
 		th = ROUNDUP(h, 4);
+
 #ifdef USE_RGB_COLOR
 	}
 #endif
@@ -684,64 +687,60 @@ void OSystem_Wii::setMouseCursor(const void *buf, uint w, uint h, int hotspotX,
 
 	gfx_tex_set_bilinear_filter(&_texMouse, _bilinearFilter);
 
-	if ((tw != w) || (th != h))
-		tmpBuf = true;
+	u8 bpp = _texMouse.bpp >> 3;
+	byte *tmp = (byte *) malloc(tw * th * bpp);
 
-	if (!tmpBuf) {
-		gfx_tex_convert(&_texMouse, (const byte *)buf);
-	} else {
-		u8 bpp = _texMouse.bpp >> 3;
-		byte *tmp = (byte *) malloc(tw * th * bpp);
+	if (!tmp) {
+		printf("could not alloc temp cursor buffer\n");
+		::abort();
+	}
 
-		if (!tmp) {
-			printf("could not alloc temp cursor buffer\n");
+	if (bpp > 1)
+		memset(tmp, 0, tw * th * bpp);
+	else
+		memset(tmp, _mouseKeyColor, tw * th);
+
+#ifdef USE_RGB_COLOR
+	if (bpp > 1) {
+
+		if (!Graphics::crossBlit(tmp, (const byte *)buf,
+									tw * _pfRGB3444.bytesPerPixel,
+									w * _pfCursor.bytesPerPixel,
+									tw, th, _pfRGB3444, _pfCursor)) {
+			printf("crossBlit failed (cursor)\n");
 			::abort();
 		}
 
-		if (bpp > 1)
-			memset(tmp, 0, tw * th * bpp);
-		else
-			memset(tmp, _mouseKeyColor, tw * th);
-
-#ifdef USE_RGB_COLOR
-		if (bpp > 1) {
-			if (!Graphics::crossBlit(tmp, (const byte *)buf,
-										tw * _pfRGB3444.bytesPerPixel,
-										w * _pfCursor.bytesPerPixel,
-										tw, th, _pfRGB3444, _pfCursor)) {
-				printf("crossBlit failed (cursor)\n");
-				::abort();
+		// nasty, shouldn't the frontend set the alpha channel?
+		const u16 *s = (const u16 *) buf;
+		u16 *d = (u16 *) tmp;
+		for (u16 y = 0; y < h; ++y) {
+			for (u16 x = 0; x < w; ++x) {
+				if (*s++ == _mouseKeyColor)
+					*d++ &= ~(7 << 12);
+				else
+					d++;
 			}
 
-			// nasty, shouldn't the frontend set the alpha channel?
-			const u16 *s = (const u16 *) buf;
-			u16 *d = (u16 *) tmp;
-			for (u16 y = 0; y < h; ++y) {
-				for (u16 x = 0; x < w; ++x) {
-					if (*s++ == _mouseKeyColor)
-						*d++ &= ~(7 << 12);
-					else
-						d++;
-				}
-
-				d += tw - w;
-			}
-		} else {
-#endif
-			byte *dst = tmp;
-			const byte *src = (const byte *)buf;
-			do {
-				memcpy(dst, src, w * bpp);
-				src += w * bpp;
-				dst += tw * bpp;
-			} while (--h);
-#ifdef USE_RGB_COLOR
+			d += tw - w;
 		}
+	} else {
+#endif
+		const byte *s = (const byte *)buf;
+		byte *d = (byte *) tmp;
+		for (u16 y = 0; y < h; ++y) {
+			for (u16 x = 0; x < w; ++x) {
+				*d++ = *s++;
+			}
+			d += tw - w;
+		}
+
+#ifdef USE_RGB_COLOR
+	}
 #endif
 
-		gfx_tex_convert(&_texMouse, tmp);
-		free(tmp);
-	}
+	gfx_tex_convert(&_texMouse, tmp);
+	free(tmp);
 
 	_mouseHotspotX = hotspotX;
 	_mouseHotspotY = hotspotY;

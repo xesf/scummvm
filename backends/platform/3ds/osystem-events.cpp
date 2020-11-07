@@ -91,8 +91,8 @@ static void doJoyEvent(Common::Queue<Common::Event> *queue, u32 keysPressed, u32
 }
 
 static void eventThreadFunc(void *arg) {
-	OSystem_3DS *osys = (OSystem_3DS *)g_system;
-	auto eventQueue = (Common::Queue<Common::Event> *)arg;
+	OSystem_3DS *osys = dynamic_cast<OSystem_3DS *>(g_system);
+	Common::Queue<Common::Event> *eventQueue = (Common::Queue<Common::Event> *)arg;
 
 	uint32 touchStartTime = osys->getMillis();
 	touchPosition  lastTouch  = {0, 0};
@@ -168,16 +168,20 @@ static void eventThreadFunc(void *arg) {
 		hidCircleRead(&circle);
 
 		if (circle.dx != lastCircle.dx) {
+			int32 position = (int32)circle.dx * Common::JOYAXIS_MAX / CIRCLE_MAX;
+
 			event.type              = Common::EVENT_JOYAXIS_MOTION;
 			event.joystick.axis     = Common::JOYSTICK_AXIS_LEFT_STICK_X;
-			event.joystick.position = (int32)circle.dx * Common::JOYAXIS_MAX / CIRCLE_MAX;
+			event.joystick.position = CLIP<int32>(position, Common::JOYAXIS_MIN, Common::JOYAXIS_MAX);
 			pushEventQueue(eventQueue, event);
 		}
 
 		if (circle.dy != lastCircle.dy) {
+			int32 position = -(int32)circle.dy * Common::JOYAXIS_MAX / CIRCLE_MAX;
+
 			event.type              = Common::EVENT_JOYAXIS_MOTION;
 			event.joystick.axis     = Common::JOYSTICK_AXIS_LEFT_STICK_Y;
-			event.joystick.position = -(int32)circle.dy * Common::JOYAXIS_MAX / CIRCLE_MAX;
+			event.joystick.position = CLIP<int32>(position, Common::JOYAXIS_MIN, Common::JOYAXIS_MAX);
 			pushEventQueue(eventQueue, event);
 		}
 
@@ -202,13 +206,13 @@ static void eventThreadFunc(void *arg) {
 }
 
 static void aptHookFunc(APT_HookType hookType, void *param) {
-	OSystem_3DS *osys = (OSystem_3DS *)g_system;
+	OSystem_3DS *osys = dynamic_cast<OSystem_3DS *>(g_system);
 
 	switch (hookType) {
 		case APTHOOK_ONSUSPEND:
 		case APTHOOK_ONSLEEP:
 			if (g_engine) {
-				g_engine->pauseEngine(true);
+				osys->_sleepPauseToken = g_engine->pauseEngine();
 			}
 			osys->sleeping = true;
 			if (R_SUCCEEDED(gspLcdInit())) {
@@ -219,17 +223,15 @@ static void aptHookFunc(APT_HookType hookType, void *param) {
 		case APTHOOK_ONRESTORE:
 		case APTHOOK_ONWAKEUP:
 			if (g_engine) {
-				g_engine->pauseEngine(false);
+				osys->_sleepPauseToken.clear();
 			}
 			osys->sleeping = false;
 			loadConfig();
 			break;
-		default: {
-			Common::StackLock lock(*eventMutex);
-			Common::Event event;
-			event.type = Common::EVENT_QUIT;
-			g_system->getEventManager()->pushEvent(event);
-		}
+		case APTHOOK_ONEXIT:
+			break;
+		default:
+			warning("Unhandled APT hook, type: %d", hookType);
 	}
 }
 
@@ -338,10 +340,18 @@ Common::KeymapperDefaultBindings *OSystem_3DS::getKeymapperDefaultBindings() {
 }
 
 bool OSystem_3DS::pollEvent(Common::Event &event) {
-	aptMainLoop(); // Call apt hook when necessary
+	if (!aptMainLoop()) {
+		// The system requested us to quit
+		if (_sleepPauseToken.isActive()) {
+			_sleepPauseToken.clear();
+		}
+
+		event.type = Common::EVENT_QUIT;
+		return true;
+	}
 
 	// If magnify mode is on when returning to Launcher, turn it off
-	if (_eventManager->shouldRTL()) {
+	if (_eventManager->shouldReturnToLauncher()) {
 		if (_magnifyMode == MODE_MAGON) {
 			_magnifyMode = MODE_MAGOFF;
 			updateSize();
@@ -442,13 +452,14 @@ void OSystem_3DS::runOptionsDialog() {
 
 	optionsDialogRunning = true;
 
+	PauseToken pauseToken;
 	OptionsDialog dialog;
 	if (g_engine) {
-		g_engine->pauseEngine(true);
+		pauseToken = g_engine->pauseEngine();
 	}
 	int result = dialog.runModal();
 	if (g_engine) {
-		g_engine->pauseEngine(false);
+		pauseToken.clear();
 	}
 
 	if (result > 0) {

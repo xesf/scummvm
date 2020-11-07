@@ -2,6 +2,7 @@ MODULE := image
 
 MODULE_OBJS := \
 	bmp.o \
+	cel_3do.o \
 	iff.o \
 	jpeg.o \
 	pcx.o \
@@ -15,6 +16,7 @@ MODULE_OBJS := \
 	codecs/indeo3.o \
 	codecs/indeo4.o \
 	codecs/indeo5.o \
+	codecs/jyv1.o \
 	codecs/mjpeg.o \
 	codecs/msrle.o \
 	codecs/msrle4.o \

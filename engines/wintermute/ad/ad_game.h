@@ -52,6 +52,9 @@ public:
 	bool onMouseRightDown() override;
 	bool onMouseRightUp() override;
 
+	bool handleCustomActionStart(BaseGameCustomAction action) override;
+	bool handleCustomActionEnd(BaseGameCustomAction action) override;
+
 	bool displayDebugInfo() override;
 
 	bool addSpeechDir(const char *dir);
@@ -92,6 +95,14 @@ public:
 	int32 _texTalkLifeTime;
 
 	TTalkSkipButton _talkSkipButton;
+
+#ifdef ENABLE_WME3D
+	uint32 getAmbientLightColor() override;
+
+	TShadowType getMaxShadowType(BaseObject *object) override;
+
+	bool getFogParams(FogParameters &fogParameters) override;
+#endif
 
 	bool getVersion(byte *verMajor, byte *verMinor, byte *extMajor, byte *extMinor) const override;
 	bool scheduleChangeScene(const char *filename, bool fadeIn);

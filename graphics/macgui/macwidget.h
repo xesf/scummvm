@@ -23,7 +23,10 @@
 #ifndef GRAPHICS_MACGUI_MACWIDGET_H
 #define GRAPHICS_MACGUI_MACWIDGET_H
 
+#include "common/array.h"
+#include "common/events.h"
 #include "common/rect.h"
+#include "graphics/managed_surface.h"
 
 namespace Common {
 	struct Event;
@@ -31,33 +34,78 @@ namespace Common {
 
 namespace Graphics {
 
-class BaseMacWindow;
 class ManagedSurface;
+class MacWindowManager;
 
 class MacWidget {
-	friend class MacEditableText;
 
 public:
-	MacWidget(int w, int h, bool focusable);
-	virtual ~MacWidget() {}
+	MacWidget(MacWidget *parent, int x, int y, int w, int h, MacWindowManager *wm, bool focusable, uint16 border = 0, uint16 gutter = 0, uint16 shadow = 0, uint fgcolor = 0, uint bgcolor= 0xff);
+	virtual ~MacWidget();
 
+	/**
+	 * Accessor method for the complete dimensions of the widget.
+	 * @return Dimensions of the widget relative to the parent's position.
+	 */
 	const Common::Rect &getDimensions() { return _dims; }
-	bool isFocusable() { return _focusable; }
-	virtual void setActive(bool active) = 0;
+
+	/**
+	 * Method for indicating whether the widget is active or inactive.
+	 * Used by the WM to handle focus on windows, etc.
+	 * @param active Desired state of the widget.
+	 */
+	virtual void setActive(bool active);
+
+	/**
+	 * Method for marking the widget for redraw.
+	 * @param dirty True if the widget needs to be redrawn.
+	 */
 	void setDirty(bool dirty) { _contentIsDirty = dirty; }
-	virtual bool draw(ManagedSurface *g, bool forceRedraw = false) = 0;
-	virtual bool processEvent(Common::Event &event) = 0;
-	virtual bool hasAllFocus() = 0;
-	void setParent(BaseMacWindow *parent) { _parent = parent; }
+
+	virtual bool needsRedraw() { return _contentIsDirty; }
+
+	virtual bool draw(ManagedSurface *g, bool forceRedraw = false);
+	virtual bool draw(bool forceRedraw = false);
+	virtual void blit(ManagedSurface *g, Common::Rect &dest);
+	virtual bool processEvent(Common::Event &event);
+	virtual bool hasAllFocus() { return _active; }
+	virtual bool isEditable() { return _editable; }
+
+	virtual void setColors(uint32 fg, uint32 bg);
+
+	virtual void setDimensions(const Common::Rect &r) {
+		_dims = r;
+	}
+
+	Common::Point getAbsolutePos();
+	MacWidget *findEventHandler(Common::Event &event, int dx, int dy);
+
+	void removeWidget(MacWidget *child, bool del = true);
+
+	Graphics::ManagedSurface *getSurface() { return _composeSurface; }
 
 protected:
-	bool _focusable;
+	uint16 _border;
+	uint16 _gutter;
+	uint16 _shadow;
+
+	uint32 _fgcolor, _bgcolor;
+
+	Graphics::ManagedSurface *_composeSurface;
+
 	bool _contentIsDirty;
+
+public:
+	bool _focusable;
+	bool _active;
+	bool _editable;
+	uint _priority;
 
 	Common::Rect _dims;
 
-public:
-	BaseMacWindow *_parent;
+	MacWindowManager *_wm;
+	MacWidget *_parent;
+	Common::Array<MacWidget *> _children;
 };
 
 } // End of namespace Graphics

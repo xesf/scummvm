@@ -31,6 +31,12 @@
 #include "graphics/fontman.h"
 #include "graphics/macgui/macwindow.h"
 
+#include "engines/engine.h"
+
+namespace Common {
+class Archive;
+}
+
 namespace Graphics {
 
 namespace MacGUIConstants {
@@ -40,10 +46,12 @@ enum {
 
 enum {
 	kColorBlack = 0,
-	kColorGray = 1,
-	kColorWhite = 2,
-	kColorGreen = 3,
-	kColorGreen2 = 4,
+	kColorGray80 = 1,
+	kColorGray88 = 2,
+	kColorGrayEE = 3,
+	kColorWhite = 4,
+	kColorGreen = 5,
+	kColorGreen2 = 6,
 	kColorCount
 };
 
@@ -56,22 +64,40 @@ enum {
 	kPatternDarkGray = 6
 };
 
+enum MacCursorType {
+	kMacCursorArrow,
+	kMacCursorBeam,
+	kMacCursorCrossHair,
+	kMacCursorCrossBar,
+	kMacCursorWatch,
+	kMacCursorCustom,
+	kMacCursorOff
+};
+
 enum {
 	kWMModeNone         	= 0,
 	kWMModeNoDesktop    	= (1 << 0),
 	kWMModeAutohideMenu 	= (1 << 1),
 	kWMModalMenuMode 		= (1 << 2),
 	kWMModeForceBuiltinFonts= (1 << 3),
-	kWMModeUnicode			= (1 << 4)
+	kWMModeUnicode			= (1 << 4),
+	kWMModeManualDrawWidgets= (1 << 5),
+	kWMModeFullscreen       = (1 << 6),
+	kWMModeButtonDialogStyle= (1 << 7),
+	kWMMode32bpp			= (1 << 8)
 };
 
 }
 using namespace MacGUIConstants;
 
+class Cursor;
+
 class ManagedSurface;
 
+class MacCursor;
 class MacMenu;
 class MacTextWindow;
+class MacWidget;
 
 class MacFont;
 
@@ -81,19 +107,31 @@ typedef Common::Array<byte *> MacPatterns;
 
 struct MacPlotData {
 	Graphics::ManagedSurface *surface;
+	Graphics::ManagedSurface *mask;
 	MacPatterns *patterns;
 	uint fillType;
 	int fillOriginX;
 	int fillOriginY;
 	int thickness;
 	uint bgColor;
+	bool invert;
 
-	MacPlotData(Graphics::ManagedSurface *s, MacPatterns *p, uint f, int fx, int fy, int t, uint bg) :
-		surface(s), patterns(p), fillType(f), fillOriginX(fx), fillOriginY(fy), thickness(t), bgColor(bg) {
+	MacPlotData(Graphics::ManagedSurface *s, Graphics::ManagedSurface *m, MacPatterns *p, uint f, int fx, int fy, int t, uint bg, bool inv = false) :
+		surface(s), mask(m), patterns(p), fillType(f), fillOriginX(fx), fillOriginY(fy), thickness(t), bgColor(bg), invert(inv) {
 	}
 };
 
-void macDrawPixel(int x, int y, int color, void *data);
+struct ZoomBox {
+	Common::Rect start;
+	Common::Rect end;
+	Common::Array<Common::Rect> last;
+	int delay;
+	int step;
+	uint32 startTime;
+	uint32 nextTime;
+};
+
+typedef void (* MacDrawPixPtr)(int, int, int, void *);
 
 /**
  * A manager class to handle window creation, destruction,
@@ -101,15 +139,25 @@ void macDrawPixel(int x, int y, int color, void *data);
  */
 class MacWindowManager {
 public:
-	MacWindowManager(uint32 mode = 0);
+	MacWindowManager(uint32 mode = 0, MacPatterns *patterns = nullptr);
 	~MacWindowManager();
+
+	MacDrawPixPtr getDrawPixel();
 
 	/**
 	 * Mutator to indicate the surface onto which the desktop will be drawn.
 	 * Note that this method should be called as soon as the WM is created.
 	 * @param screen Surface on which the desktop will be drawn.
 	 */
-	void setScreen(ManagedSurface *screen) { _screen = screen; delete _screenCopy; _screenCopy = nullptr; }
+	void setScreen(ManagedSurface *screen);
+
+	/**
+	 * Mutator to indicate the dimensions of the desktop, when a backing surface is not used.
+	 * Note that this method should be called as soon as the WM is created.
+	 * @param screen Surface on which the desktop will be drawn.
+	 */
+	void setScreen(int w, int h);
+
 	/**
 	 * Create a window with the given parameters.
 	 * Note that this method allocates the necessary memory for the window.
@@ -145,7 +193,11 @@ public:
 	 */
 	MacMenu *addMenu();
 
+	void removeMenu();
 	void activateMenu();
+
+	void activateScreenCopy();
+	void disableScreenCopy();
 
 	bool isMenuActive();
 
@@ -158,11 +210,13 @@ public:
 	 * Set delay in milliseconds when menu appears (works only with autohide menu)
 	 */
 	void setMenuDelay(int delay) { _menuDelay = delay; }
+
 	/**
 	 * Set the desired window state to active.
 	 * @param id ID of the window that has to be set to active.
 	 */
-	void setActive(int id);
+	void setActiveWindow(int id);
+
 	/**
 	 * Mark a window for removal.
 	 * Note that the window data will be destroyed.
@@ -206,45 +260,88 @@ public:
 	 */
 	MacPatterns &getPatterns() { return _patterns; }
 
+	/**
+	 * Sets an active widget, typically the one which steals the input
+	 * It also sends deactivation message to the previous one
+	 * @param widget Pointer to the widget to activate, nullptr for no widget
+	 */
+	void setActiveWidget(MacWidget *widget);
+
+	MacWidget *getActiveWidget() { return _activeWidget; }
+
+	Common::Rect getScreenBounds() { return _screen ? _screen->getBounds() : _screenDims; }
+
+	void clearWidgetRefs(MacWidget *widget);
+
+	void pushCursor(MacCursorType type, Cursor *cursor = nullptr);
+	void replaceCursor(MacCursorType type, Cursor *cursor = nullptr);
+
 	void pushArrowCursor();
 	void pushBeamCursor();
 	void pushCrossHairCursor();
 	void pushCrossBarCursor();
 	void pushWatchCursor();
-	void pushCustomCursor(byte *data, int w, int h, int transcolor);
+
+	void pushCustomCursor(const byte *data, int w, int h, int hx, int hy, int transcolor);
+	void pushCustomCursor(const Graphics::Cursor *cursor);
 	void popCursor();
 
-	void pauseEngine(bool pause);
+	PauseToken pauseEngine();
 
 	void setMode(uint32 mode);
 
-	void setEnginePauseCallback(void *engine, void (*pauseCallback)(void *engine, bool pause));
+	void setEngine(Engine *engine);
 	void setEngineRedrawCallback(void *engine, void (*redrawCallback)(void *engine));
 
 	void passPalette(const byte *palette, uint size);
 	uint findBestColor(byte cr, byte cg, byte cb);
+	void decomposeColor(uint32 color, byte &r, byte &g, byte &b);
+
+	void renderZoomBox(bool redraw = false);
+	void addZoomBox(ZoomBox *box);
+
+	void removeMarked();
+
+	void loadDataBundle();
+	BorderOffsets getBorderOffsets(byte windowType);
+	Common::SeekableReadStream *getBorderFile(byte windowType, bool isActive);
+	Common::SeekableReadStream *getFile(const Common::String &filename);
 
 public:
 	MacFontManager *_fontMan;
 	uint32 _mode;
 
+	Common::Point _lastClickPos;
 	Common::Point _lastMousePos;
 	Common::Rect _menuHotzone;
 
 	bool _menuTimerActive;
+	bool _mouseDown;
 
-	int _colorBlack, _colorWhite;
+	uint32 _colorBlack, _colorGray80, _colorGray88, _colorGrayEE, _colorWhite, _colorGreen, _colorGreen2;
+
+	MacWidget *_hoveredWidget;
 
 private:
+	void loadDesktop();
 	void drawDesktop();
 
-	void removeMarked();
 	void removeFromStack(BaseMacWindow *target);
 	void removeFromWindowList(BaseMacWindow *target);
 
+	void zoomBoxInner(Common::Rect &r, Graphics::MacPlotData &pd);
+	bool haveZoomBox() { return !_zoomBoxes.empty(); }
+
+	void adjustDimensions(const Common::Rect &clip, const Common::Rect &dims, int &adjWidth, int &adjHeight);
+
 public:
+	TransparentSurface *_desktopBmp;
+	ManagedSurface *_desktop;
+	PixelFormat _pixelformat;
+
 	ManagedSurface *_screen;
 	ManagedSurface *_screenCopy;
+	Common::Rect _screenDims;
 
 private:
 	Common::List<BaseMacWindow *> _windowStack;
@@ -265,12 +362,22 @@ private:
 	MacMenu *_menu;
 	uint32 _menuDelay;
 
-	void *_engineP;
+	Engine *_engineP;
 	void *_engineR;
-	void (*_pauseEngineCallback)(void *engine, bool pause);
 	void (*_redrawEngineCallback)(void *engine);
 
-	bool _cursorIsArrow;
+	MacCursorType _tempType;
+	MacCursorType _cursorType;
+	Cursor *_cursor;
+
+	MacWidget *_activeWidget;
+
+	PauseToken *_screenCopyPauseToken;
+
+	Common::Array<ZoomBox *> _zoomBoxes;
+	Common::HashMap<uint32, uint> _colorHash;
+
+	Common::Archive *_dataBundle;
 };
 
 } // End of namespace Graphics

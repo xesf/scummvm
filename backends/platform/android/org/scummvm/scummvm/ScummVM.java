@@ -1,27 +1,31 @@
 package org.scummvm.scummvm;
 
-import android.util.Log;
+import androidx.annotation.NonNull;
 import android.content.res.AssetManager;
-import android.view.SurfaceHolder;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.os.Build;
+import android.util.Log;
+import android.view.SurfaceHolder;
 
-import javax.microedition.khronos.opengles.GL10;
+import java.io.UnsupportedEncodingException;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
-
-import java.io.File;
-import java.util.LinkedHashMap;
-import java.util.List;
+import javax.microedition.khronos.opengles.GL10;
 
 public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 	final protected static String LOG_TAG = "ScummVM";
 	final private AssetManager _asset_manager;
 	final private Object _sem_surface;
+	final private MyScummVMDestroyedCallback _svm_destroyed_callback;
 
 	private EGL10 _egl;
 	private EGLDisplay _egl_display = EGL10.EGL_NO_DISPLAY;
@@ -36,39 +40,45 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 
 	private String[] _args;
 
-	final private native void create(AssetManager asset_manager,
-										EGL10 egl, EGLDisplay egl_display,
-										AudioTrack audio_track,
-										int sample_rate, int buffer_size);
-	final private native void destroy();
-	final private native void setSurface(int width, int height);
-	final private native int main(String[] args);
+	private native void create(AssetManager asset_manager,
+	                           EGL10 egl,
+							   EGLDisplay egl_display,
+	                           AudioTrack audio_track,
+							   int sample_rate,
+							   int buffer_size);
+	private native void destroy();
+	private native void setSurface(int width, int height);
+	private native int main(String[] args);
 
 	// pause the engine and all native threads
 	final public native void setPause(boolean pause);
 	// Feed an event to ScummVM.  Safe to call from other threads.
 	final public native void pushEvent(int type, int arg1, int arg2, int arg3,
 										int arg4, int arg5, int arg6);
-	final public native String getCurrentCharset();
 
 	// Callbacks from C++ peer instance
 	abstract protected void getDPI(float[] values);
 	abstract protected void displayMessageOnOSD(String msg);
 	abstract protected void openUrl(String url);
 	abstract protected boolean hasTextInClipboard();
-	abstract protected byte[] getTextFromClipboard();
-	abstract protected boolean setTextInClipboard(byte[] text);
+	abstract protected String getTextFromClipboard();
+	abstract protected boolean setTextInClipboard(String text);
 	abstract protected boolean isConnectionLimited();
 	abstract protected void setWindowCaption(String caption);
 	abstract protected void showVirtualKeyboard(boolean enable);
 	abstract protected void showKeyboardControl(boolean enable);
 	abstract protected String[] getSysArchives();
+	abstract protected byte[] convertEncoding(String to, String from, byte[] string) throws UnsupportedEncodingException;
 	abstract protected String[] getAllStorageLocations();
+	abstract protected String[] getAllStorageLocationsNoPermissionRequest();
+	abstract protected boolean createDirectoryWithSAF(String dirPath);
+	abstract protected String createFileWithSAF(String filePath);
+	abstract protected void closeFileWithSAF(String hackyFilename);
 
-	public ScummVM(AssetManager asset_manager, SurfaceHolder holder) {
+	public ScummVM(AssetManager asset_manager, SurfaceHolder holder, final MyScummVMDestroyedCallback scummVMDestroyedCallback) {
 		_asset_manager = asset_manager;
 		_sem_surface = new Object();
-
+		_svm_destroyed_callback = scummVMDestroyedCallback;
 		holder.addCallback(this);
 	}
 
@@ -85,12 +95,12 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 		// the orientation may reset on standby mode and the theme manager
 		// could assert when using a portrait resolution. so lets not do that.
 		if (height > width) {
-			Log.d(LOG_TAG, String.format("Ignoring surfaceChanged: %dx%d (%d)",
+			Log.d(LOG_TAG, String.format(Locale.ROOT, "Ignoring surfaceChanged: %dx%d (%d)",
 											width, height, format));
 			return;
 		}
 
-		Log.d(LOG_TAG, String.format("surfaceChanged: %dx%d (%d)",
+		Log.d(LOG_TAG, String.format(Locale.ROOT, "surfaceChanged: %dx%d (%d)",
 										width, height, format));
 
 		// store values for the native code
@@ -147,11 +157,14 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 		deinitAudio();
 
 		destroy();
-		// On exit, tear everything down for a fresh restart next time.
-		System.exit(res);
+
+		// Don't exit force-ably here!
+		if (_svm_destroyed_callback != null) {
+			_svm_destroyed_callback.handle(res);
+		}
 	}
 
-	final private void initEGL() throws Exception {
+	private void initEGL() throws Exception {
 		_egl = (EGL10)EGLContext.getEGL();
 		_egl_display = _egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
 
@@ -177,7 +190,7 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 											EGL10.EGL_NO_CONTEXT, null);
 
 		if (_egl_context == EGL10.EGL_NO_CONTEXT)
-			throw new Exception(String.format("Failed to create context: 0x%x",
+			throw new Exception(String.format(Locale.ROOT, "Failed to create context: 0x%x",
 												_egl.eglGetError()));
 	}
 
@@ -187,15 +200,15 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 													_surface_holder, null);
 
 		if (_egl_surface == EGL10.EGL_NO_SURFACE)
-			throw new Exception(String.format(
-					"eglCreateWindowSurface failed: 0x%x", _egl.eglGetError()));
+			throw new Exception(String.format(Locale.ROOT,
+				"eglCreateWindowSurface failed: 0x%x", _egl.eglGetError()));
 
 		_egl.eglMakeCurrent(_egl_display, _egl_surface, _egl_surface,
 							_egl_context);
 
 		GL10 gl = (GL10)_egl_context.getGL();
 
-		Log.i(LOG_TAG, String.format("Using EGL %s (%s); GL %s/%s (%s)",
+		Log.i(LOG_TAG, String.format(Locale.ROOT, "Using EGL %s (%s); GL %s/%s (%s)",
 						_egl.eglQueryString(_egl_display, EGL10.EGL_VERSION),
 						_egl.eglQueryString(_egl_display, EGL10.EGL_VENDOR),
 						gl.glGetString(GL10.GL_VERSION),
@@ -218,7 +231,7 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 		_egl_surface = EGL10.EGL_NO_SURFACE;
 	}
 
-	final private void deinitEGL() {
+	private void deinitEGL() {
 		if (_egl_display != EGL10.EGL_NO_DISPLAY) {
 			_egl.eglMakeCurrent(_egl_display, EGL10.EGL_NO_SURFACE,
 								EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
@@ -239,40 +252,56 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 		_egl = null;
 	}
 
-	final private void initAudio() throws Exception {
+	private void initAudio() throws Exception {
 		_sample_rate = AudioTrack.getNativeOutputSampleRate(
 									AudioManager.STREAM_MUSIC);
 		_buffer_size = AudioTrack.getMinBufferSize(_sample_rate,
-									AudioFormat.CHANNEL_CONFIGURATION_STEREO,
+									AudioFormat.CHANNEL_OUT_STEREO,
 									AudioFormat.ENCODING_PCM_16BIT);
 
 		// ~50ms
 		int buffer_size_want = (_sample_rate * 2 * 2 / 20) & ~1023;
 
 		if (_buffer_size < buffer_size_want) {
-			Log.w(LOG_TAG, String.format(
+			Log.w(LOG_TAG, String.format(Locale.ROOT,
 				"adjusting audio buffer size (was: %d)", _buffer_size));
 
 			_buffer_size = buffer_size_want;
 		}
 
-		Log.i(LOG_TAG, String.format("Using %d bytes buffer for %dHz audio",
+		Log.i(LOG_TAG, String.format(Locale.ROOT, "Using %d bytes buffer for %dHz audio",
 										_buffer_size, _sample_rate));
 
-		_audio_track = new AudioTrack(AudioManager.STREAM_MUSIC,
-									_sample_rate,
-									AudioFormat.CHANNEL_CONFIGURATION_STEREO,
-									AudioFormat.ENCODING_PCM_16BIT,
-									_buffer_size,
-									AudioTrack.MODE_STREAM);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			_audio_track = new AudioTrack(
+				new AudioAttributes.Builder()
+					.setUsage(AudioAttributes.USAGE_MEDIA)
+					.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+					.build(),
+				new AudioFormat.Builder()
+					.setSampleRate(_sample_rate)
+					.setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+					.setChannelMask(AudioFormat.CHANNEL_OUT_STEREO).build(),
+				_buffer_size,
+				AudioTrack.MODE_STREAM,
+				AudioManager.AUDIO_SESSION_ID_GENERATE);
+		} else {
+			//support for Android KitKat or lower
+			_audio_track = new AudioTrack(AudioManager.STREAM_MUSIC,
+				_sample_rate,
+				AudioFormat.CHANNEL_OUT_STEREO,
+				AudioFormat.ENCODING_PCM_16BIT,
+				_buffer_size,
+				AudioTrack.MODE_STREAM);
+		}
 
 		if (_audio_track.getState() != AudioTrack.STATE_INITIALIZED)
 			throw new Exception(
-				String.format("Error initializing AudioTrack: %d",
+				String.format(Locale.ROOT, "Error initializing AudioTrack: %d",
 								_audio_track.getState()));
 	}
 
-	final private void deinitAudio() {
+	private void deinitAudio() {
 		if (_audio_track != null)
 			_audio_track.stop();
 
@@ -354,31 +383,32 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 			return score;
 		}
 
+		@NonNull
 		public String toString() {
 			String s;
 
 			if (get(EGL10.EGL_ALPHA_SIZE) > 0)
-				s = String.format("[%d] RGBA%d%d%d%d",
+				s = String.format(Locale.ROOT, "[%d] RGBA%d%d%d%d",
 									get(EGL10.EGL_CONFIG_ID),
 									get(EGL10.EGL_RED_SIZE),
 									get(EGL10.EGL_GREEN_SIZE),
 									get(EGL10.EGL_BLUE_SIZE),
 									get(EGL10.EGL_ALPHA_SIZE));
 			else
-				s = String.format("[%d] RGB%d%d%d",
+				s = String.format(Locale.ROOT, "[%d] RGB%d%d%d",
 									get(EGL10.EGL_CONFIG_ID),
 									get(EGL10.EGL_RED_SIZE),
 									get(EGL10.EGL_GREEN_SIZE),
 									get(EGL10.EGL_BLUE_SIZE));
 
 			if (get(EGL10.EGL_DEPTH_SIZE) > 0)
-				s += String.format(" D%d", get(EGL10.EGL_DEPTH_SIZE));
+				s += String.format(Locale.ROOT, " D%d", get(EGL10.EGL_DEPTH_SIZE));
 
 			if (get(EGL10.EGL_STENCIL_SIZE) > 0)
-				s += String.format(" S%d", get(EGL10.EGL_STENCIL_SIZE));
+				s += String.format(Locale.ROOT, " S%d", get(EGL10.EGL_STENCIL_SIZE));
 
 			if (get(EGL10.EGL_SAMPLES) > 0)
-				s += String.format(" MSAAx%d", get(EGL10.EGL_SAMPLES));
+				s += String.format(Locale.ROOT, " MSAAx%d", get(EGL10.EGL_SAMPLES));
 
 			if ((get(EGL10.EGL_SURFACE_TYPE) & EGL10.EGL_WINDOW_BIT) > 0)
 				s += " W";
@@ -399,15 +429,15 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 				s += " NON_CONFORMANT";
 
 			default:
-				s += String.format(" unknown CAVEAT 0x%x",
+				s += String.format(Locale.ROOT, " unknown CAVEAT 0x%x",
 									get(EGL10.EGL_CONFIG_CAVEAT));
 			}
 
 			return s;
 		}
-	};
+	}
 
-	final private EGLConfig chooseEglConfig(EGLConfig[] configs) {
+	private EGLConfig chooseEglConfig(EGLConfig[] configs) {
 		EGLConfig res = configs[0];
 		int bestScore = -1;
 
@@ -422,7 +452,7 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 
 			int score = attr.weight();
 
-			Log.d(LOG_TAG, String.format("%s (%d)", attr.toString(), score));
+			Log.d(LOG_TAG, String.format(Locale.ROOT, "%s (%d)", attr.toString(), score));
 
 			if (score > bestScore) {
 				res = config;
@@ -434,21 +464,21 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 			Log.e(LOG_TAG,
 					"Unable to find an acceptable EGL config, expect badness.");
 
-		Log.d(LOG_TAG, String.format("Chosen EGL config: %s",
+		Log.d(LOG_TAG, String.format(Locale.ROOT, "Chosen EGL config: %s",
 										new EglAttribs(res).toString()));
 
 		return res;
 	}
 
 	static {
-		// For grabbing with gdb...
-		final boolean sleep_for_debugger = false;
-		if (sleep_for_debugger) {
-			try {
-				Thread.sleep(20 * 1000);
-			} catch (InterruptedException e) {
-			}
-		}
+//		// For grabbing with gdb...
+//		final boolean sleep_for_debugger = false;
+//		if (sleep_for_debugger) {
+//			try {
+//				Thread.sleep(20 * 1000);
+//			} catch (InterruptedException ignored) {
+//			}
+//		}
 
 		System.loadLibrary("scummvm");
 	}

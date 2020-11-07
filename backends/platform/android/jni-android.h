@@ -31,6 +31,8 @@
 #include "common/fs.h"
 #include "common/archive.h"
 #include "common/array.h"
+#include "common/ustr.h"
+#include "engines/engine.h"
 
 class OSystem_Android;
 
@@ -56,17 +58,18 @@ public:
 
 	static void setReadyForEvents(bool ready);
 
-	static void setWindowCaption(const char *caption);
+	static void setWindowCaption(const Common::String &caption);
 	static void getDPI(float *values);
-	static void displayMessageOnOSD(const char *msg);
-	static bool openUrl(const char *url);
+	static void displayMessageOnOSD(const Common::U32String &msg);
+	static bool openUrl(const Common::String &url);
 	static bool hasTextInClipboard();
-	static Common::String getTextFromClipboard();
-	static bool setTextInClipboard(const Common::String &text);
+	static Common::U32String getTextFromClipboard();
+	static bool setTextInClipboard(const Common::U32String &text);
 	static bool isConnectionLimited();
 	static void showVirtualKeyboard(bool enable);
 	static void showKeyboardControl(bool enable);
 	static void addSysArchivesToSearchSet(Common::SearchSet &s, int priority);
+	static char *convertEncoding(const char *to, const char *from, const char *string, size_t length);
 
 	static inline bool haveSurface();
 	static inline bool swapBuffers();
@@ -81,6 +84,10 @@ public:
 									int size);
 
 	static Common::Array<Common::String> getAllStorageLocations();
+
+	static bool createDirectoryWithSAF(const Common::String &dirPath);
+	static Common::String createFileWithSAF(const Common::String &filePath);
+	static void closeFileWithSAF(const Common::String &hackyFilename);
 
 private:
 	static JavaVM *_vm;
@@ -107,9 +114,13 @@ private:
 	static jmethodID _MID_showVirtualKeyboard;
 	static jmethodID _MID_showKeyboardControl;
 	static jmethodID _MID_getSysArchives;
+	static jmethodID _MID_convertEncoding;
 	static jmethodID _MID_getAllStorageLocations;
 	static jmethodID _MID_initSurface;
 	static jmethodID _MID_deinitSurface;
+	static jmethodID _MID_createDirectoryWithSAF;
+	static jmethodID _MID_createFileWithSAF;
+	static jmethodID _MID_closeFileWithSAF;
 
 	static jmethodID _MID_EGL10_eglSwapBuffers;
 
@@ -138,7 +149,10 @@ private:
 							int arg2, int arg3, int arg4, int arg5, int arg6);
 	static void setPause(JNIEnv *env, jobject self, jboolean value);
 
-	static jstring getCurrentCharset(JNIEnv *env, jobject self);
+	static jstring convertToJString(JNIEnv *env, const Common::String &str, const Common::String &from);
+	static Common::String convertFromJString(JNIEnv *env, const jstring &jstr, const Common::String &to);
+
+	static PauseToken _pauseToken;
 };
 
 inline bool JNI::haveSurface() {

@@ -3,8 +3,8 @@ MODULE := engines/sci
 MODULE_OBJS := \
 	console.o \
 	decompressor.o \
-	detection.o \
 	event.o \
+	metaengine.o \
 	resource.o \
 	resource_audio.o \
 	resource_patcher.o \
@@ -50,7 +50,6 @@ MODULE_OBJS := \
 	graphics/controls16.o \
 	graphics/coordadjuster.o \
 	graphics/cursor.o \
-	graphics/font.o \
 	graphics/fontsjis.o \
 	graphics/maciconbar.o \
 	graphics/menu.o \
@@ -60,6 +59,8 @@ MODULE_OBJS := \
 	graphics/portrait.o \
 	graphics/ports.o \
 	graphics/remap.o \
+	graphics/scifont.o \
+	graphics/scifx.o \
 	graphics/screen.o \
 	graphics/text16.o \
 	graphics/transitions.o \
@@ -73,7 +74,8 @@ MODULE_OBJS := \
 	sound/soundcmd.o \
 	sound/sync.o \
 	sound/drivers/adlib.o \
-	sound/drivers/amigamac.o \
+	sound/drivers/amigamac0.o \
+	sound/drivers/amigamac1.o \
 	sound/drivers/cms.o \
 	sound/drivers/fb01.o \
 	sound/drivers/fmtowns.o \
@@ -112,3 +114,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

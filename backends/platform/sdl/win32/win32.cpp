@@ -33,6 +33,7 @@
 #define _WIN32_IE 0x500
 #endif
 #include <shlobj.h>
+#include <wchar.h>
 
 #include "common/scummsys.h"
 #include "common/config-manager.h"
@@ -65,6 +66,7 @@ void OSystem_Win32::init() {
 	_fsFactory = new WindowsFilesystemFactory();
 
 	// Create Win32 specific window
+	initSDL();
 	_window = new SdlWindow_Win32();
 
 #if defined(USE_TASKBAR)
@@ -310,15 +312,15 @@ Common::String OSystem_Win32::getDefaultLogFileName() {
 
 namespace {
 
-class Win32ResourceArchive : public Common::Archive {
+class Win32ResourceArchive final : public Common::Archive {
 	friend BOOL CALLBACK EnumResNameProc(HMODULE hModule, LPCTSTR lpszType, LPTSTR lpszName, LONG_PTR lParam);
 public:
 	Win32ResourceArchive();
 
-	virtual bool hasFile(const Common::String &name) const;
-	virtual int listMembers(Common::ArchiveMemberList &list) const;
-	virtual const Common::ArchiveMemberPtr getMember(const Common::String &name) const;
-	virtual Common::SeekableReadStream *createReadStreamForMember(const Common::String &name) const;
+	virtual bool hasFile(const Common::String &name) const override;
+	virtual int listMembers(Common::ArchiveMemberList &list) const override;
+	virtual const Common::ArchiveMemberPtr getMember(const Common::String &name) const override;
+	virtual Common::SeekableReadStream *createReadStreamForMember(const Common::String &name) const override;
 private:
 	typedef Common::List<Common::String> FilenameList;
 
@@ -436,9 +438,11 @@ char *OSystem_Win32::convertEncoding(const char* to, const char *from, const cha
 #endif
 	// UTF-32 is really important for us, because it is used for the
 	// transliteration in Common::Encoding and Win32 cannot convert it
+	Common::String tempString;
 	if (Common::String(from).hasPrefixIgnoreCase("utf-32")) {
 		Common::U32String UTF32Str((const uint32 *)string, length / 4);
-		string = Common::convertUtf32ToUtf8(UTF32Str).c_str();
+		tempString = Common::convertUtf32ToUtf8(UTF32Str);
+		string = tempString.c_str();
 		from = "utf-8";
 	}
 	if (Common::String(to).hasPrefixIgnoreCase("utf-32")) {
@@ -471,18 +475,12 @@ char *OSystem_Win32::convertEncoding(const char* to, const char *from, const cha
 		}
 		memcpy(tmpStr, string, length);
 	} else {
-		// Win32::ansiToUnicode uses new to allocate the memory. We need to copy it into an array
-		// allocated with malloc as it is going to be freed using free.
-		WCHAR *tmpStr2 = Win32::ansiToUnicode(string, Win32::getCodePageId(from));
-		if (!tmpStr2) {
+		tmpStr = Win32::ansiToUnicode(string, Win32::getCodePageId(from));
+		if (!tmpStr) {
 			if (newString != nullptr)
 				free(newString);
 			return nullptr;
 		}
-		size_t size = wcslen(tmpStr2) + 1; // +1 for the terminating null wchar
-		tmpStr = (WCHAR *) malloc(sizeof(WCHAR) * size);
-		memcpy(tmpStr, tmpStr2, sizeof(WCHAR) * size);
-		delete[] tmpStr2;
 	}
 
 	if (newString != nullptr)
@@ -498,15 +496,7 @@ char *OSystem_Win32::convertEncoding(const char* to, const char *from, const cha
 	} else {
 		result = Win32::unicodeToAnsi(tmpStr, Win32::getCodePageId(to));
 		free(tmpStr);
-		if (!result)
-			return nullptr;
-		// Win32::unicodeToAnsi uses new to allocate the memory. We need to copy it into an array
-		// allocated with malloc as it is going to be freed using free.
-		size_t size = strlen(result) + 1;
-		char *resultCopy = (char *) malloc(sizeof(char) * size);
-		memcpy(resultCopy, result, sizeof(char) * size);
-		delete[] result;
-		return resultCopy;
+		return result;
 	}
 }
 

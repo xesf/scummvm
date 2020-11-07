@@ -31,9 +31,6 @@
 namespace Ultima {
 namespace Ultima8 {
 
-DEFINE_RUNTIME_CLASSTYPE_CODE(JPRenderedText, RenderedText)
-
-
 JPRenderedText::JPRenderedText(Std::list<PositionedText> &lines, int width, int height,
 		int vLead, ShapeFont *font, unsigned int fontNum)
 		: _lines(lines), _font(font), _fontNum(fontNum) {
@@ -55,11 +52,11 @@ void JPRenderedText::draw(RenderSurface *surface, int x, int y, bool /*destmaske
 	const Palette *savepal = _font->getPalette();
 	_font->setPalette(pal);
 
-	Std::list<PositionedText>::iterator iter;
+	Std::list<PositionedText>::const_iterator iter;
 
 	for (iter = _lines.begin(); iter != _lines.end(); ++iter) {
-		int line_x = x + iter->_dims.x;
-		int line_y = y + iter->_dims.y;
+		int line_x = x + iter->_dims.left;
+		int line_y = y + iter->_dims.top;
 
 		size_t textsize = iter->_text.size();
 
@@ -74,7 +71,7 @@ void JPRenderedText::draw(RenderSurface *surface, int x, int y, bool /*destmaske
 
 			if (i == iter->_cursor) {
 				surface->Fill32(0xFF000000, line_x, line_y - _font->getBaseline(),
-				                1, iter->_dims.h);
+				                1, iter->_dims.height());
 			}
 
 			line_x += (_font->getFrame(u8char))->_width - _font->getHlead();
@@ -82,7 +79,7 @@ void JPRenderedText::draw(RenderSurface *surface, int x, int y, bool /*destmaske
 
 		if (iter->_cursor == textsize) {
 			surface->Fill32(0xFF000000, line_x, line_y - _font->getBaseline(),
-			                1, iter->_dims.h);
+			                1, iter->_dims.height());
 		}
 	}
 
@@ -100,11 +97,11 @@ void JPRenderedText::drawBlended(RenderSurface *surface, int x, int y,
 	const Palette *savepal = _font->getPalette();
 	_font->setPalette(pal);
 
-	Std::list<PositionedText>::iterator iter;
+	Std::list<PositionedText>::const_iterator iter;
 
 	for (iter = _lines.begin(); iter != _lines.end(); ++iter) {
-		int line_x = x + iter->_dims.x;
-		int line_y = y + iter->_dims.y;
+		int line_x = x + iter->_dims.left;
+		int line_y = y + iter->_dims.top;
 
 		size_t textsize = iter->_text.size();
 

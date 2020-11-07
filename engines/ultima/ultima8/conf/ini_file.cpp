@@ -93,12 +93,12 @@ string INIFile::Section::dump() {
 	return s;
 }
 
-bool INIFile::readConfigFile(string fname) {
+bool INIFile::readConfigFile(const string &fname) {
 	IDataSource *f = FileSystem::get_instance()->ReadFile(fname, true);
 	if (!f) return false;
 
 	string sbuf, line;
-	while (!f->eof()) {
+	while (!f->eos()) {
 		f->readline(line);
 		string::size_type pos = line.findFirstOf("\n\r");
 		if (pos != string::npos) {
@@ -183,7 +183,7 @@ bool INIFile::readConfigString(string config) {
 			// is, verify that it only consists of alphanumerics,
 			// dashes, underscores and colons).
 			while (p < line.size() && (Common::isAlnum(line[p]) || line[p] == '-' ||
-			                           line[p] == '_' || line[p] == ':'))
+			                           line[p] == '_' || line[p] == ':' || line[p] == ' '))
 				p++;
 
 			if (p >= line.size()) {
@@ -202,10 +202,8 @@ bool INIFile::readConfigString(string config) {
 				// save previous section
 				_sections.push_back(section);
 			}
-			section._name.clear();
-			section._comment.clear();
-			section._keys.clear();
 
+			section._keys.clear();
 			section._name = line.substr(1, p - 1);
 			section._comment = comment;
 			comment.clear();
@@ -267,9 +265,9 @@ bool INIFile::readConfigString(string config) {
 	return true;
 }
 
-void INIFile::clear(istring root_) {
+void INIFile::clear(istring root) {
 	_sections.clear();
-	_root = root_;
+	_root = root;
 	_isFile = false;
 	_readOnly = false;
 	_filename = "";
@@ -293,7 +291,7 @@ void INIFile::write() {
 	if (!_isFile || _readOnly)
 		return;
 
-	ODataSource *f = FileSystem::get_instance()->WriteFile(_filename, true);
+	Common::WriteStream *f = FileSystem::get_instance()->WriteFile(_filename, true);
 	if (!f) return;
 
 	Std::string s = dump();
@@ -440,14 +438,14 @@ void INIFile::unset(istring key) {
 	}
 }
 
-void INIFile::listKeys(Std::set<istring> &_keys, istring section_,
+void INIFile::listKeys(Std::set<istring> &_keys, istring sectionName,
                        bool longformat) {
-	if (!stripRoot(section_)) return;
+	if (!stripRoot(sectionName)) return;
 
-	Section *section = getSection(section_);
+	const Section *section = getSection(sectionName);
 	if (!section) return;
 
-	Std::list<KeyValue>::iterator i;
+	Std::list<KeyValue>::const_iterator i;
 	for (i = section->_keys.begin(); i != section->_keys.end(); ++i) {
 		istring k;
 		if (longformat)
@@ -459,8 +457,8 @@ void INIFile::listKeys(Std::set<istring> &_keys, istring section_,
 	}
 }
 
-void INIFile::listSections(Std::set<istring> &sections_, bool longformat) {
-	Std::list<Section>::iterator i;
+void INIFile::listSections(Std::set<istring> &sections, bool longformat) {
+	Std::list<Section>::const_iterator i;
 	for (i = _sections.begin(); i != _sections.end(); ++i) {
 		istring s;
 		if (longformat)
@@ -468,17 +466,17 @@ void INIFile::listSections(Std::set<istring> &sections_, bool longformat) {
 		else
 			s = i->_name;
 
-		sections_.insert(s);
+		sections.insert(s);
 	}
 }
 
-void INIFile::listKeyValues(KeyMap &keyvalues, istring section_, bool longformat) {
-	if (!stripRoot(section_)) return;
+void INIFile::listKeyValues(KeyMap &keyvalues, istring sectionName, bool longformat) {
+	if (!stripRoot(sectionName)) return;
 
-	Section *section = getSection(section_);
+	Section *section = getSection(sectionName);
 	if (!section) return;
 
-	Std::list<KeyValue>::iterator i;
+	Std::list<KeyValue>::const_iterator i;
 	for (i = section->_keys.begin(); i != section->_keys.end(); ++i) {
 		istring k;
 		if (longformat)

@@ -188,14 +188,6 @@ reg_t kDoAudio(EngineState *s, int argc, reg_t *argv) {
 			         ((argv[3].toUint16() & 0xff) << 16) |
 			         ((argv[4].toUint16() & 0xff) <<  8) |
 			          (argv[5].toUint16() & 0xff);
-			// Removed warning because of the high amount of console spam
-			/*if (argc == 8) {
-				// TODO: Handle the extra 2 SCI21 params
-				// argv[6] is always 1
-				// argv[7] is the contents of global 229 (0xE5)
-				warning("kDoAudio: Play called with SCI2.1 extra parameters: %04x:%04x and %04x:%04x",
-						PRINT_REG(argv[6]), PRINT_REG(argv[7]));
-			}*/
 		} else {
 			warning("kDoAudio: Play called with an unknown number of parameters (%d)", argc);
 			return NULL_REG;
@@ -293,7 +285,6 @@ reg_t kDoAudio(EngineState *s, int argc, reg_t *argv) {
 		// more explicit.
 
 		return make_reg(0, 1);
-		break;
 	case 13:
 		// SSCI returns a serial number for the played audio
 		// here, used in the PointsSound class. The reason is severalfold:
@@ -308,7 +299,6 @@ reg_t kDoAudio(EngineState *s, int argc, reg_t *argv) {
 		// return a constant here. This is equivalent to the
 		// old behavior, as above.
 		return make_reg(0, 1);
-		break;
 	case 17:
 		// Seems to be some sort of audio sync, used in SQ6. Silenced the
 		// warning due to the high level of spam it produces. (takes no params)
@@ -374,7 +364,7 @@ reg_t kDoAudioWaitForPlay(EngineState *s, int argc, reg_t *argv) {
 		}
 	}
 
-	return g_sci->_audio32->kernelPlay(false, argc, argv);
+	return g_sci->_audio32->kernelPlay(false, s, argc, argv);
 }
 
 reg_t kDoAudioPlay(EngineState *s, int argc, reg_t *argv) {
@@ -382,23 +372,23 @@ reg_t kDoAudioPlay(EngineState *s, int argc, reg_t *argv) {
 		return make_reg(0, g_sci->_audio32->getNumActiveChannels());
 	}
 
-	return g_sci->_audio32->kernelPlay(true, argc, argv);
+	return g_sci->_audio32->kernelPlay(true, s, argc, argv);
 }
 
 reg_t kDoAudioStop(EngineState *s, int argc, reg_t *argv) {
-	return g_sci->_audio32->kernelStop(argc, argv);
+	return g_sci->_audio32->kernelStop(s, argc, argv);
 }
 
 reg_t kDoAudioPause(EngineState *s, int argc, reg_t *argv) {
-	return g_sci->_audio32->kernelPause(argc, argv);
+	return g_sci->_audio32->kernelPause(s, argc, argv);
 }
 
 reg_t kDoAudioResume(EngineState *s, int argc, reg_t *argv) {
-	return g_sci->_audio32->kernelResume(argc, argv);
+	return g_sci->_audio32->kernelResume(s, argc, argv);
 }
 
 reg_t kDoAudioPosition(EngineState *s, int argc, reg_t *argv) {
-	return g_sci->_audio32->kernelPosition(argc, argv);
+	return g_sci->_audio32->kernelPosition(s, argc, argv);
 }
 
 reg_t kDoAudioRate(EngineState *s, int argc, reg_t *argv) {
@@ -413,7 +403,7 @@ reg_t kDoAudioRate(EngineState *s, int argc, reg_t *argv) {
 }
 
 reg_t kDoAudioVolume(EngineState *s, int argc, reg_t *argv) {
-	return g_sci->_audio32->kernelVolume(argc, argv);
+	return g_sci->_audio32->kernelVolume(s, argc, argv);
 }
 
 reg_t kDoAudioGetCapability(EngineState *s, int argc, reg_t *argv) {
@@ -455,7 +445,7 @@ reg_t kDoAudioPreload(EngineState *s, int argc, reg_t *argv) {
 }
 
 reg_t kDoAudioFade(EngineState *s, int argc, reg_t *argv) {
-	return g_sci->_audio32->kernelFade(argc, argv);
+	return g_sci->_audio32->kernelFade(s, argc, argv);
 }
 
 reg_t kDoAudioHasSignal(EngineState *s, int argc, reg_t *argv) {
@@ -463,25 +453,30 @@ reg_t kDoAudioHasSignal(EngineState *s, int argc, reg_t *argv) {
 }
 
 reg_t kDoAudioSetLoop(EngineState *s, int argc, reg_t *argv) {
-	g_sci->_audio32->kernelLoop(argc, argv);
+	g_sci->_audio32->kernelLoop(s, argc, argv);
 	return s->r_acc;
 }
 
 reg_t kDoAudioPan(EngineState *s, int argc, reg_t *argv) {
-	g_sci->_audio32->kernelPan(argc, argv);
+	g_sci->_audio32->kernelPan(s, argc, argv);
 	return s->r_acc;
 }
 
 reg_t kDoAudioPanOff(EngineState *s, int argc, reg_t *argv) {
-	g_sci->_audio32->kernelPanOff(argc, argv);
+	g_sci->_audio32->kernelPanOff(s, argc, argv);
 	return s->r_acc;
 }
 
 reg_t kSetLanguage(EngineState *s, int argc, reg_t *argv) {
 	// Used by script 90 of MUMG Deluxe from the main menu to toggle between
-	// English and Spanish.
+	// English and Spanish in some versions and English and Spanish and
+	// French and German in others.
 	const Common::String audioDirectory = s->_segMan->getString(argv[0]);
-	g_sci->getResMan()->changeAudioDirectory(audioDirectory);
+	if (g_sci->getPlatform() == Common::kPlatformMacintosh) {
+		g_sci->getResMan()->changeMacAudioDirectory(audioDirectory);
+	} else {
+		g_sci->getResMan()->changeAudioDirectory(audioDirectory);
+	}
 	return s->r_acc;
 }
 

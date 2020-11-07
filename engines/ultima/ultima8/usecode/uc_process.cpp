@@ -25,37 +25,32 @@
 #include "ultima/ultima8/usecode/uc_machine.h"
 #include "ultima/ultima8/usecode/usecode.h"
 #include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/filesys/idata_source.h"
-#include "ultima/ultima8/filesys/odata_source.h"
 
 namespace Ultima {
 namespace Ultima8 {
 
 // p_dynamic_cast stuff
-DEFINE_RUNTIME_CLASSTYPE_CODE(UCProcess, Process)
+DEFINE_RUNTIME_CLASSTYPE_CODE(UCProcess)
 
-UCProcess::UCProcess() : Process() { // !! fixme
+UCProcess::UCProcess() : Process(), _classId(0xFFFF), _ip(0xFFFF),
+		_bp(0x0000), _temp32(0) { // !! fixme
 	_usecode = GameData::get_instance()->getMainUsecode();
 }
 
-UCProcess::UCProcess(uint16 classid_, uint16 offset_, uint32 this_ptr,
+UCProcess::UCProcess(uint16 classid, uint16 offset, uint32 this_ptr,
                      int thissize, const uint8 *args, int argsize)
-	: Process() {
-	_classId = 0xFFFF;
-	_ip = 0xFFFF;
-	_bp = 0x0000;
+	: Process(), _classId(0xFFFF), _ip(0xFFFF), _bp(0x0000), _temp32(0) {
 	_usecode = GameData::get_instance()->getMainUsecode();
-	_temp32 = 0;
 
-	load(classid_, offset_, this_ptr, thissize, args, argsize);
+	load(classid, offset, this_ptr, thissize, args, argsize);
 }
 
 UCProcess::~UCProcess() {
 }
 
-void UCProcess::load(uint16 classid_, uint16 offset_, uint32 this_ptr,
+void UCProcess::load(uint16 classid, uint16 offset, uint32 this_ptr,
                      int thissize, const uint8 *args, int argsize) {
-	if (_usecode->get_class_size(classid_) == 0)
+	if (_usecode->get_class_size(classid) == 0)
 		perr << "Class is empty..." << Std::endl;
 
 	_classId = 0xFFFF;
@@ -79,7 +74,7 @@ void UCProcess::load(uint16 classid_, uint16 offset_, uint32 this_ptr,
 		_stack.push4(UCMachine::stackToPtr(_pid, thissp));
 
 	// finally, call the specified function
-	call(classid_, offset_);
+	call(classid, offset);
 }
 
 void UCProcess::run() {
@@ -90,13 +85,13 @@ void UCProcess::run() {
 	UCMachine::get_instance()->execProcess(this);
 }
 
-void UCProcess::call(uint16 classid_, uint16 offset_) {
+void UCProcess::call(uint16 classid, uint16 offset) {
 	_stack.push2(_classId); // BP+04 prev class
 	_stack.push2(_ip);      // BP+02 prev IP
 	_stack.push2(_bp);      // BP+00 prev BP
 
-	_classId = classid_;
-	_ip = offset_;
+	_classId = classid;
+	_ip = offset;
 	_bp = static_cast<uint16>(_stack.getSP()); // TRUNCATES!
 }
 
@@ -113,12 +108,12 @@ bool UCProcess::ret() {
 		return false;
 }
 
-void UCProcess::freeOnTerminate(uint16 index, int type_) {
-	assert(type_ >= 1 && type_ <= 3);
+void UCProcess::freeOnTerminate(uint16 index, int type) {
+	assert(type >= 1 && type <= 3);
 
 	Std::pair<uint16, int> p;
 	p.first = index;
-	p.second = type_;
+	p.second = type;
 
 	_freeOnTerminate.push_back(p);
 }
@@ -160,37 +155,37 @@ void UCProcess::dumpInfo() const {
 	}
 }
 
-void UCProcess::saveData(ODataSource *ods) {
-	Process::saveData(ods);
+void UCProcess::saveData(Common::WriteStream *ws) {
+	Process::saveData(ws);
 
-	ods->write2(_bp);
-	ods->write2(_classId);
-	ods->write2(_ip);
-	ods->write4(_temp32);
-	ods->write4(static_cast<uint32>(_freeOnTerminate.size()));
+	ws->writeUint16LE(_bp);
+	ws->writeUint16LE(_classId);
+	ws->writeUint16LE(_ip);
+	ws->writeUint32LE(_temp32);
+	ws->writeUint32LE(static_cast<uint32>(_freeOnTerminate.size()));
 	Std::list<Std::pair<uint16, int> >::iterator iter;
 	for (iter = _freeOnTerminate.begin(); iter != _freeOnTerminate.end(); ++iter) {
-		ods->write2(iter->first);
-		ods->write4(static_cast<uint32>(iter->second));
+		ws->writeUint16LE(iter->first);
+		ws->writeUint32LE(static_cast<uint32>(iter->second));
 	}
-	_stack.save(ods);
+	_stack.save(ws);
 }
 
-bool UCProcess::loadData(IDataSource *ids, uint32 version) {
-	if (!Process::loadData(ids, version)) return false;
+bool UCProcess::loadData(Common::ReadStream *rs, uint32 version) {
+	if (!Process::loadData(rs, version)) return false;
 
-	_bp = ids->read2();
-	_classId = ids->read2();
-	_ip = ids->read2();
-	_temp32 = ids->read4();
-	uint32 freecount = ids->read4();
+	_bp = rs->readUint16LE();
+	_classId = rs->readUint16LE();
+	_ip = rs->readUint16LE();
+	_temp32 = rs->readUint32LE();
+	uint32 freecount = rs->readUint32LE();
 	for (unsigned int i = 0; i < freecount; ++i) {
 		Std::pair<uint16, int> p;
-		p.first = ids->read2();
-		p.second = static_cast<int>(ids->read4());
+		p.first = rs->readUint16LE();
+		p.second = static_cast<int>(rs->readUint32LE());
 		_freeOnTerminate.push_back(p);
 	}
-	_stack.load(ids, version);
+	_stack.load(rs, version);
 
 	return true;
 }

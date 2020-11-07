@@ -6,10 +6,10 @@ MODULE_OBJS = \
 	cel_decoder.o \
 	console.o \
 	cursor_mgr.o \
-	detection.o \
 	director.o \
 	file.o \
 	gui.o \
+	metaengine.o \
 	pda_mgr.o \
 	pink.o \
 	resource_mgr.o \
@@ -38,7 +38,6 @@ MODULE_OBJS = \
 	objects/actors/supporting_actor.o \
 	objects/handlers/handler.o \
 	objects/handlers/handler_mgr.o \
-	objects/handlers/handler_timer.o \
 	objects/pages/game_page.o \
 	objects/pages/page.o \
 	objects/pages/pda_page.o \
@@ -58,3 +57,6 @@ endif
 
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

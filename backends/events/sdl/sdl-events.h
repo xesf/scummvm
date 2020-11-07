@@ -43,7 +43,7 @@ public:
 	SdlEventSource();
 	virtual ~SdlEventSource();
 
-	void setGraphicsManager(SdlGraphicsManager *gMan) { _graphicsManager = gMan; }
+	void setGraphicsManager(GraphicsManager *gMan) { _graphicsManager = gMan; }
 
 	/**
 	 * Gets and processes SDL events.
@@ -59,9 +59,14 @@ public:
 	/** Returns whether a joystick is currently connected */
 	bool isJoystickConnected() const;
 
+	/** Sets whether a game is currently running */
+	void setEngineRunning(bool value);
+
 protected:
 	/** Scroll lock state - since SDL doesn't track it */
 	bool _scrollLock;
+
+	bool _engineRunning;
 
 	int _mouseX;
 	int _mouseY;
@@ -80,7 +85,7 @@ protected:
 	/**
 	 * The associated graphics manager.
 	 */
-	SdlGraphicsManager *_graphicsManager;
+	GraphicsManager *_graphicsManager;
 
 	/**
 	 * Search for a game controller db file and load it.
@@ -146,8 +151,9 @@ protected:
 	/**
 	 * Assigns the mouse coords to the mouse event. Furthermore notify the
 	 * graphics manager about the position change.
+	 * The parameters relx and rely for relative mouse movement
 	 */
-	virtual bool processMouseEvent(Common::Event &event, int x, int y);
+	virtual bool processMouseEvent(Common::Event &event, int x, int y, int relx = 0, int rely = 0);
 
 	/**
 	 * Remaps key events. This allows platforms to configure

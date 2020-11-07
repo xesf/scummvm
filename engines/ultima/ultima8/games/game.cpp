@@ -45,11 +45,12 @@ Game::~Game() {
 
 
 // static
-Game *Game::createGame(GameInfo *info) {
+Game *Game::createGame(const GameInfo *info) {
 	switch (info->_type) {
 	case GameInfo::GAME_U8:
 		return new U8Game();
 	case GameInfo::GAME_REMORSE:
+	case GameInfo::GAME_REGRET:
 		return new RemorseGame();
 	default:
 		CANT_HAPPEN_MSG("createGame: invalid _game");
@@ -69,11 +70,22 @@ uint32 Game::I_playEndgame(const uint8 *args, unsigned int /*argsize*/) {
 	Process *menuproc = new MainMenuProcess();
 	Kernel::get_instance()->addProcess(menuproc);
 
-	ProcId moviepid = Game::get_instance()->playEndgameMovie();
+	ProcId moviepid = Game::get_instance()->playEndgameMovie(false);
 	Process *movieproc = Kernel::get_instance()->getProcess(moviepid);
 	if (movieproc) {
 		menuproc->waitFor(movieproc);
 	}
+
+	return 0;
+}
+
+uint32 Game::I_playCredits(const uint8 *args, unsigned int /*argsize*/) {
+	perr << "TODO: Implement I_playCredits";
+	// TODO: need a process to wait for here.
+	// Should fade out, credits, fade in.
+	// Double-check in the disasm that this should just play credits and
+	// not also endgame movie.
+	// Game::get_instance()->playCredits();
 
 	return 0;
 }

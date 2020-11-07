@@ -88,7 +88,7 @@ bool AIScriptLucy::Update() {
 	 && !Player_Query_Combat_Mode()
 	 &&  Actor_Query_Friendliness_To_Other(kActorLucy, kActorMcCoy) > 40
 	) {
-		Actor_Set_Goal_Number(kActorLucy, kGoalLucyHF04TalkToMcCoy); // how can this be triggered?
+		Actor_Set_Goal_Number(kActorLucy, kGoalLucyHF04TalkToMcCoy); // TODO how can this be triggered?
 	}
 
 	if (Actor_Query_Goal_Number(kActorLucy) == kGoalLucyHF04WaitForMcCoy1) {
@@ -890,7 +890,12 @@ void AIScriptLucy::voightKampffTest() {
 
 	Player_Loses_Control();
 	if (Actor_Clue_Query(kActorMcCoy, kClueVKLucyReplicant)) {
+#if BLADERUNNER_ORIGINAL_BUGS
 		Actor_Says(kActorMcCoy, 6865, 13);
+#else
+		// don't repeat the result, just delay
+		Delay(250);
+#endif // BLADERUNNER_ORIGINAL_BUGS
 		Actor_Says(kActorLucy, 1140, 14);
 		Actor_Says(kActorMcCoy, 6865, 14);
 		Actor_Says(kActorLucy, 1150, 16);

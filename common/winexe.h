@@ -28,6 +28,15 @@
 
 namespace Common {
 
+/**
+ * @defgroup common_winexe Windows resources
+ * @ingroup common
+ *
+ * @brief API for managing Windows resources.
+ *
+ * @{
+ */
+
 class SeekableReadStream;
 
 /** The default Windows resources. */
@@ -85,7 +94,7 @@ private:
 };
 
 struct WinResourceID_Hash {
-	uint operator()(const WinResourceID &id) const { return hashit(id.toString()); }
+	uint operator()(const WinResourceID &id) const { return id.toString().hash(); }
 };
 
 struct WinResourceID_EqualTo {
@@ -130,7 +139,13 @@ public:
 	}
 
 	static WinResources *createFromEXE(const String &fileName);
+
+	typedef Common::HashMap<Common::String, Common::U32String, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> VersionHash;
+
+	static VersionHash *parseVersionInfo(SeekableReadStream *stream);
 };
+
+/** @} */
 
 } // End of namespace Common
 

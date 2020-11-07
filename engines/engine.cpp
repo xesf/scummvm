@@ -38,6 +38,7 @@
 #include "common/file.h"
 #include "common/system.h"
 #include "common/str.h"
+#include "common/ustr.h"
 #include "common/error.h"
 #include "common/list.h"
 #include "common/memstream.h"
@@ -314,17 +315,17 @@ void initGraphics(int width, int height, const Graphics::PixelFormat *format) {
 
 	// Error out on size switch failure
 	if (gfxError & OSystem::kTransactionSizeChangeFailed) {
-		Common::String message;
-		message = Common::String::format(_("Could not switch to resolution '%dx%d'."), width, height);
+		Common::U32String message;
+		message = Common::U32String::format(_("Could not switch to resolution '%dx%d'."), width, height);
 
 		GUIErrorMessage(message);
-		error("%s", message.c_str());
+		error("Could not switch to resolution '%dx%d'.", width, height);
 	}
 
 	// Just show warnings then these occur:
 #ifdef USE_RGB_COLOR
 	if (gfxError & OSystem::kTransactionFormatNotSupported) {
-		Common::String message = _("Could not initialize color format.");
+		Common::U32String message = _("Could not initialize color format.");
 
 		GUI::MessageDialog dialog(message);
 		dialog.runModal();
@@ -332,16 +333,16 @@ void initGraphics(int width, int height, const Graphics::PixelFormat *format) {
 #endif
 
 	if (gfxError & OSystem::kTransactionModeSwitchFailed) {
-		Common::String message;
-		message = Common::String::format(_("Could not switch to video mode '%s'."), ConfMan.get("gfx_mode").c_str());
+		Common::U32String message;
+		message = Common::U32String::format(_("Could not switch to video mode '%s'."), ConfMan.get("gfx_mode").c_str());
 
 		GUI::MessageDialog dialog(message);
 		dialog.runModal();
 	}
 
 	if (gfxError & OSystem::kTransactionStretchModeSwitchFailed) {
-		Common::String message;
-		message = Common::String::format(_("Could not switch to stretch mode '%s'."), ConfMan.get("stretch_mode").c_str());
+		Common::U32String message;
+		message = Common::U32String::format(_("Could not switch to stretch mode '%s'."), ConfMan.get("stretch_mode").c_str());
 
 		GUI::MessageDialog dialog(message);
 		dialog.runModal();
@@ -394,16 +395,42 @@ void initGraphics(int width, int height) {
 	initGraphics(width, height, &format);
 }
 
-void GUIErrorMessage(const Common::String &msg) {
+void initGraphics3d(int width, int height) {
+	g_system->beginGFXTransaction();
+		g_system->setGraphicsMode(0, OSystem::kGfxModeRender3d);
+		g_system->initSize(width, height);
+		g_system->setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen")); // TODO: Replace this with initCommonGFX()
+		g_system->setFeatureState(OSystem::kFeatureAspectRatioCorrection, ConfMan.getBool("aspect_ratio")); // TODO: Replace this with initCommonGFX()
+	g_system->endGFXTransaction();
+}
+
+void GUIErrorMessageWithURL(const Common::U32String &msg, const char *url) {
+	GUIErrorMessage(msg, url);
+}
+
+void GUIErrorMessageWithURL(const Common::String &msg, const char *url) {
+	GUIErrorMessage(Common::U32String(msg), url);
+}
+
+void GUIErrorMessage(const Common::String &msg, const char *url) {
+	GUIErrorMessage(Common::U32String(msg), url);
+}
+
+void GUIErrorMessage(const Common::U32String &msg, const char *url) {
 	g_system->setWindowCaption("Error");
 	g_system->beginGFXTransaction();
 		initCommonGFX();
 		g_system->initSize(320, 200);
 	if (g_system->endGFXTransaction() == OSystem::kTransactionSuccess) {
-		GUI::MessageDialog dialog(msg);
-		dialog.runModal();
+		if (url) {
+			GUI::MessageDialogWithURL dialog(msg, url);
+			dialog.runModal();
+		} else {
+			GUI::MessageDialog dialog(msg);
+			dialog.runModal();
+		}
 	} else {
-		error("%s", msg.c_str());
+		error("%s", msg.encode().c_str());
 	}
 }
 
@@ -413,6 +440,17 @@ void GUIErrorMessageFormat(const char *fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
 	msg = Common::String::vformat(fmt, va);
+	va_end(va);
+
+	GUIErrorMessage(msg);
+}
+
+void GUIErrorMessageFormat(Common::U32String fmt, ...) {
+	Common::U32String msg("");
+
+	va_list va;
+	va_start(va, fmt);
+	Common::U32String::vformat(fmt.begin(), fmt.end(), msg, va);
 	va_end(va);
 
 	GUIErrorMessage(msg);
@@ -507,7 +545,7 @@ void Engine::saveAutosaveIfEnabled() {
 			saveFlag = desc.getSaveSlot() == -1 || desc.isAutosave();
 		}
 
-		if (saveFlag && saveGameState(getAutosaveSlot(), _("Autosave"), true).getCode() != Common::kNoError) {
+		if (saveFlag && saveGameState(getAutosaveSlot(), Common::convertFromU32String(_("Autosave")), true).getCode() != Common::kNoError) {
 			// Couldn't autosave at the designated time
 			g_system->displayMessageOnOSD(_("Error occurred making autosave"));
 			saveFlag = false;
@@ -529,18 +567,25 @@ void Engine::errorString(const char *buf1, char *buf2, int size) {
 	Common::strlcpy(buf2, buf1, size);
 }
 
-void Engine::pauseEngine(bool pause) {
-	assert((pause && _pauseLevel >= 0) || (!pause && _pauseLevel));
+PauseToken Engine::pauseEngine() {
+	assert(_pauseLevel >= 0);
 
-	if (pause)
-		_pauseLevel++;
-	else
-		_pauseLevel--;
+	_pauseLevel++;
 
-	if (_pauseLevel == 1 && pause) {
+	if (_pauseLevel == 1) {
 		_pauseStartTime = _system->getMillis();
 		pauseEngineIntern(true);
-	} else if (_pauseLevel == 0) {
+	}
+
+	return PauseToken(this);
+}
+
+void Engine::resumeEngine() {
+	assert(_pauseLevel > 0);
+
+	_pauseLevel--;
+
+	if (_pauseLevel == 0) {
 		pauseEngineIntern(false);
 		_engineStartTime += _system->getMillis() - _pauseStartTime;
 		_pauseStartTime = 0;
@@ -557,13 +602,22 @@ void Engine::openMainMenuDialog() {
 		_mainMenuDialog = new MainMenuDialog(this);
 #ifdef USE_TTS
 	Common::TextToSpeechManager *ttsMan = g_system->getTextToSpeechManager();
-	ttsMan->pushState();
-	g_gui.initTextToSpeech();
+	if (ttsMan != nullptr) {
+		ttsMan->pushState();
+		g_gui.initTextToSpeech();
+	}
 #endif
 
 	setGameToLoadSlot(-1);
 
+	bool hasVKeyb = g_system->getFeatureState(OSystem::kFeatureVirtualKeyboard);
+	if (hasVKeyb)
+		g_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, false);
+
 	runDialog(*_mainMenuDialog);
+
+	if (hasVKeyb)
+		g_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, true);
 
 	// Load savegame after main menu execution
 	// (not from inside the menu loop to avoid
@@ -572,7 +626,7 @@ void Engine::openMainMenuDialog() {
 	if (_saveSlotToLoad >= 0) {
 		Common::Error status = loadGameState(_saveSlotToLoad);
 		if (status.getCode() != Common::kNoError) {
-			Common::String failMessage = Common::String::format(_("Failed to load saved game (%s)! "
+			Common::U32String failMessage = Common::U32String::format(_("Failed to load saved game (%s)! "
 				  "Please consult the README for basic information, and for "
 				  "instructions on how to obtain further assistance."), status.getDesc().c_str());
 			GUI::MessageDialog dialog(failMessage);
@@ -580,10 +634,13 @@ void Engine::openMainMenuDialog() {
 		}
 	}
 
-	syncSoundSettings();
 #ifdef USE_TTS
-	ttsMan->popState();
+	if (ttsMan != nullptr)
+		ttsMan->popState();
 #endif
+
+	applyGameSettings();
+	syncSoundSettings();
 }
 
 bool Engine::warnUserAboutUnsupportedGame() {
@@ -616,9 +673,8 @@ void Engine::setTotalPlayTime(uint32 time) {
 }
 
 int Engine::runDialog(GUI::Dialog &dialog) {
-	pauseEngine(true);
+	PauseToken pt = pauseEngine();
 	int result = dialog.runModal();
-	pauseEngine(false);
 
 	return result;
 }
@@ -736,9 +792,13 @@ bool Engine::loadGameDialog() {
 	}
 
 	GUI::SaveLoadChooser *dialog = new GUI::SaveLoadChooser(_("Load game:"), _("Load"), false);
-	pauseEngine(true);
-	int slotNum = dialog->runModalWithCurrentTarget();
-	pauseEngine(false);
+
+	int slotNum;
+	{
+		PauseToken pt = pauseEngine();
+		slotNum = dialog->runModalWithCurrentTarget();
+	}
+
 	delete dialog;
 
 	if (slotNum < 0)
@@ -761,9 +821,11 @@ bool Engine::saveGameDialog() {
 	}
 
 	GUI::SaveLoadChooser *dialog = new GUI::SaveLoadChooser(_("Save game:"), _("Save"), true);
-	pauseEngine(true);
-	int slotNum = dialog->runModalWithCurrentTarget();
-	pauseEngine(false);
+	int slotNum;
+	{
+		PauseToken pt = pauseEngine();
+		slotNum = dialog->runModalWithCurrentTarget();
+	}
 
 	Common::String desc = dialog->getResultString();
 	if (desc.empty())
@@ -793,7 +855,7 @@ void Engine::quitGame() {
 
 bool Engine::shouldQuit() {
 	Common::EventManager *eventMan = g_system->getEventManager();
-	return (eventMan->shouldQuit() || eventMan->shouldRTL());
+	return (eventMan->shouldQuit() || eventMan->shouldReturnToLauncher());
 }
 
 GUI::Debugger *Engine::getOrCreateDebugger() {
@@ -812,8 +874,66 @@ EnginePlugin *Engine::getMetaEnginePlugin() const {
 
 */
 
-MetaEngine &Engine::getMetaEngine() {
+MetaEngineDetection &Engine::getMetaEngineDetection() {
 	const Plugin *plugin = EngineMan.findPlugin(ConfMan.get("engineid"));
 	assert(plugin);
-	return plugin->get<MetaEngine>();
+	return plugin->get<MetaEngineDetection>();
 }
+
+MetaEngine &Engine::getMetaEngine() {
+	const Plugin *metaEnginePlugin = EngineMan.findPlugin(ConfMan.get("engineid"));
+	assert(metaEnginePlugin);
+
+	const Plugin *enginePlugin = PluginMan.getEngineFromMetaEngine(metaEnginePlugin);
+	assert(enginePlugin);
+
+	return enginePlugin->get<MetaEngine>();
+}
+
+PauseToken::PauseToken() : _engine(nullptr) {}
+
+PauseToken::PauseToken(Engine *engine) : _engine(engine) {}
+
+void PauseToken::operator=(const PauseToken &t2) {
+	if (_engine) {
+		error("Tried to assign to an already busy PauseToken");
+	}
+	_engine = t2._engine;
+	if (_engine) {
+		_engine->_pauseLevel++;
+	}
+}
+
+PauseToken::PauseToken(const PauseToken &t2) : _engine(t2._engine) {
+	if (_engine) {
+		_engine->_pauseLevel++;
+	}
+}
+
+void PauseToken::clear() {
+	if (!_engine) {
+		error("Tried to clear an already cleared PauseToken");
+	}
+	_engine->resumeEngine();
+	_engine = nullptr;
+}
+
+PauseToken::~PauseToken() {
+	if (_engine) {
+		_engine->resumeEngine();
+	}
+}
+
+#if __cplusplus >= 201103L
+PauseToken::PauseToken(PauseToken &&t2) : _engine(t2._engine) {
+	t2._engine = nullptr;
+}
+
+void PauseToken::operator=(PauseToken &&t2) {
+	if (_engine) {
+		error("Tried to assign to an already busy PauseToken");
+	}
+	_engine = t2._engine;
+	t2._engine = nullptr;
+}
+#endif

@@ -29,14 +29,13 @@
 namespace Ultima {
 namespace Ultima8 {
 
-class IDataSource;
-
 class TypeFlags {
 public:
 	TypeFlags();
 	~TypeFlags();
 
-	void load(IDataSource *ds);
+	void load(Common::SeekableReadStream *rs);
+	void loadDamageDat(Common::SeekableReadStream *rs);
 	ShapeInfo *getShapeInfo(uint32 shape);
 
 private:

@@ -32,7 +32,7 @@
 #include "common/translation.h"
 #endif
 
-OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(uint desktopWidth, uint desktopHeight, SdlEventSource *eventSource, SdlWindow *window)
+OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(SdlEventSource *eventSource, SdlWindow *window)
     : SdlGraphicsManager(eventSource, window), _lastRequestedHeight(0),
 #if SDL_VERSION_ATLEAST(2, 0, 0)
       _glContext(),
@@ -175,10 +175,12 @@ OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(uint desktopWidth, uint deskt
 		}
 	}
 
+	Common::Rect desktopRes = _window->getDesktopResolution();
+
 	// In case SDL is fine with every mode we will force the desktop mode.
 	// TODO? We could also try to add some default resolutions here.
-	if (_fullscreenVideoModes.empty() && desktopWidth && desktopHeight) {
-		_fullscreenVideoModes.push_back(VideoMode(desktopWidth, desktopHeight));
+	if (_fullscreenVideoModes.empty() && !desktopRes.isEmpty()) {
+		_fullscreenVideoModes.push_back(VideoMode(desktopRes.width(), desktopRes.height()));
 	}
 
 	// Get information about display sizes from the previous runs.
@@ -187,8 +189,8 @@ OpenGLSdlGraphicsManager::OpenGLSdlGraphicsManager(uint desktopWidth, uint deskt
 		_desiredFullscreenHeight = ConfMan.getInt("last_fullscreen_mode_height", Common::ConfigManager::kApplicationDomain);
 	} else {
 		// Use the desktop resolutions when no previous default has been setup.
-		_desiredFullscreenWidth  = desktopWidth;
-		_desiredFullscreenHeight = desktopHeight;
+		_desiredFullscreenWidth  = desktopRes.width();
+		_desiredFullscreenHeight = desktopRes.height();
 	}
 }
 
@@ -199,26 +201,13 @@ OpenGLSdlGraphicsManager::~OpenGLSdlGraphicsManager() {
 #endif
 }
 
-void OpenGLSdlGraphicsManager::activateManager() {
-	SdlGraphicsManager::activateManager();
-
-	// Register the graphics manager as a event observer
-	g_system->getEventManager()->getEventDispatcher()->registerObserver(this, 10, false);
-}
-
-void OpenGLSdlGraphicsManager::deactivateManager() {
-	// Unregister the event observer
-	if (g_system->getEventManager()->getEventDispatcher()) {
-		g_system->getEventManager()->getEventDispatcher()->unregisterObserver(this);
-	}
-
-	SdlGraphicsManager::deactivateManager();
-}
-
 bool OpenGLSdlGraphicsManager::hasFeature(OSystem::Feature f) const {
 	switch (f) {
 	case OSystem::kFeatureFullscreenMode:
 	case OSystem::kFeatureIconifyWindow:
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	case OSystem::kFeatureFullscreenToggleKeepsContext:
+#endif
 		return true;
 
 	default:
@@ -248,7 +237,7 @@ bool OpenGLSdlGraphicsManager::getFeatureState(OSystem::Feature f) const {
 	switch (f) {
 	case OSystem::kFeatureFullscreenMode:
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-		if (_window) {
+		if (_window && _window->getSDLWindow()) {
 			return (SDL_GetWindowFlags(_window->getSDLWindow()) & SDL_WINDOW_FULLSCREEN) != 0;
 		} else {
 			return _wantsFullScreen;
@@ -597,8 +586,8 @@ bool OpenGLSdlGraphicsManager::notifyEvent(const Common::Event &event) {
 #ifdef USE_OSD
 		int windowWidth = 0, windowHeight = 0;
 		getWindowSizeFromSdl(&windowWidth, &windowHeight);
-		const Common::String osdMsg = Common::String::format(_("Resolution: %dx%d"), windowWidth, windowHeight);
-		displayMessageOnOSD(osdMsg.c_str());
+		const Common::U32String osdMsg = Common::U32String::format(_("Resolution: %dx%d"), windowWidth, windowHeight);
+		displayMessageOnOSD(osdMsg);
 #endif
 
 		return true;
@@ -673,11 +662,11 @@ bool OpenGLSdlGraphicsManager::notifyEvent(const Common::Event &event) {
 		endGFXTransaction();
 
 #ifdef USE_OSD
-		Common::String message = Common::String::format("%s: %s",
-			_("Stretch mode"),
-			_(stretchModes[index].description)
-			);
-		displayMessageOnOSD(message.c_str());
+		Common::U32String message = Common::U32String::format("%S: %S",
+			_("Stretch mode").c_str(),
+			_(stretchModes[index].description).c_str()
+		);
+		displayMessageOnOSD(message);
 #endif
 
 		return true;

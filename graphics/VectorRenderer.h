@@ -130,7 +130,7 @@ VectorRenderer *createRenderer(int mode);
 class VectorRenderer {
 public:
 	VectorRenderer() : _activeSurface(NULL), _fillMode(kFillDisabled), _shadowOffset(0), _shadowFillMode(kShadowExponential),
-		_disableShadows(false), _strokeWidth(1), _gradientFactor(1) {
+		_disableShadows(false), _strokeWidth(1), _gradientFactor(1), _bevel(0), _dynamicData(0) {
 
 	}
 
@@ -526,7 +526,7 @@ public:
 	 * Draws a string into the screen. Wrapper for the Graphics::Font string drawing
 	 * method.
 	 */
-	virtual void drawString(const Graphics::Font *font, const Common::String &text,
+	virtual void drawString(const Graphics::Font *font, const Common::U32String &text,
 	                        const Common::Rect &area, Graphics::TextAlign alignH,
 	                        GUI::ThemeEngine::TextAlignVertical alignV, int deltax, bool useEllipsis, const Common::Rect &textDrawableArea) = 0;
 

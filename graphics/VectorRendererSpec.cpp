@@ -27,7 +27,6 @@
 #include "graphics/surface.h"
 #include "graphics/transparent_surface.h"
 #include "graphics/nine_patch.h"
-#include "graphics/colormasks.h"
 
 #include "gui/ThemeEngine.h"
 #include "graphics/VectorRenderer.h"
@@ -543,6 +542,9 @@ VectorRendererSpec(PixelFormat format) :
 
 	_bitmapAlphaColor = _format.RGBToColor(255, 0, 255);
 	_clippingArea = Common::Rect(0, 0, 32767, 32767);
+
+	_fgColor = _bgColor = _bevelColor = 0;
+	_gradientStart = _gradientEnd = 0;
 }
 
 /****************************
@@ -1022,7 +1024,7 @@ darkenFillClip(PixelType *ptr, PixelType *end, int x, int y) {
  ********************************************************************/
 template<typename PixelType>
 void VectorRendererSpec<PixelType>::
-drawString(const Graphics::Font *font, const Common::String &text, const Common::Rect &area,
+drawString(const Graphics::Font *font, const Common::U32String &text, const Common::Rect &area,
 			Graphics::TextAlign alignH, GUI::ThemeEngine::TextAlignVertical alignV, int deltax, bool ellipsis, const Common::Rect &textDrawableArea) {
 
 	int offset = area.top;
@@ -1059,8 +1061,17 @@ drawString(const Graphics::Font *font, const Common::String &text, const Common:
 	drawArea = drawArea.findIntersectingRect(Common::Rect(0, 0, _activeSurface->w, _activeSurface->h));
 
 	if (!drawArea.isEmpty()) {
+		Common::Rect textArea(area);
+		textArea.right -= deltax;
+
 		Surface textAreaSurface = _activeSurface->getSubArea(drawArea);
-		font->drawString(&textAreaSurface, text, area.left - drawArea.left, offset - drawArea.top, area.width() - deltax, _fgColor, alignH, deltax, ellipsis);
+
+		if (deltax >= 0) {
+			textArea.left += deltax;
+			deltax = 0;
+		}
+
+		font->drawString(&textAreaSurface, text, textArea.left - drawArea.left, offset - drawArea.top, textArea.width(), _fgColor, alignH, deltax, ellipsis);
 	}
 }
 

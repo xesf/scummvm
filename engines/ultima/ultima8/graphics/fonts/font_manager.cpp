@@ -42,7 +42,7 @@ namespace Ultima8 {
 
 FontManager *FontManager::_fontManager = nullptr;
 
-FontManager::FontManager(bool ttf_antialiasing_) : _ttfAntialiasing(ttf_antialiasing_) {
+FontManager::FontManager(bool ttf_antialiasing) : _ttfAntialiasing(ttf_antialiasing) {
 	debugN(MM_INFO, "Creating Font Manager...\n");
 
 	_fontManager = this;
@@ -102,17 +102,17 @@ Graphics::Font *FontManager::getTTF_Font(const Std::string &filename, int points
 	if (iter != _ttfFonts.end())
 		return iter->_value;
 
-	IDataSource *fontids;
+	Common::SeekableReadStream *fontids;
 	fontids = FileSystem::get_instance()->ReadFile("@data/" + filename);
 	if (!fontids) {
 		perr << "Failed to open TTF: @data/" << filename << Std::endl;
 		return nullptr;
 	}
 
+#ifdef USE_FREETYPE2
 	// open font using ScummVM TTF API
-	// Note: The RWops and IDataSource will be deleted by the TTF_Font
-	Common::SeekableReadStream *rs = fontids->GetRawStream();
-	Graphics::Font *font = Graphics::loadTTFFont(*rs, pointsize);
+	// Note: The RWops and ReadStream will be deleted by the TTF_Font
+	Graphics::Font *font = Graphics::loadTTFFont(*fontids, pointsize);
 
 	if (!font) {
 		perr << "Failed to open TTF: @data/" << filename << Std::endl;
@@ -126,6 +126,9 @@ Graphics::Font *FontManager::getTTF_Font(const Std::string &filename, int points
 #endif
 
 	return font;
+#else // !USE_FREETYPE2
+	return nullptr;
+#endif
 }
 
 void FontManager::setOverride(unsigned int fontnum, Font *newFont) {
@@ -163,7 +166,7 @@ bool FontManager::addTTFOverride(unsigned int fontnum, const Std::string &filena
 
 bool FontManager::addJPOverride(unsigned int fontnum,
                                 unsigned int jpfont, uint32 rgb) {
-	ShapeFont *jf = p_dynamic_cast<ShapeFont *>(GameData::get_instance()->getFonts()->getFont(jpfont));
+	ShapeFont *jf = dynamic_cast<ShapeFont *>(GameData::get_instance()->getFonts()->getFont(jpfont));
 	if (!jf)
 		return false;
 
@@ -184,7 +187,7 @@ bool FontManager::addJPOverride(unsigned int fontnum,
 		pal->_palette[3 * i + 1] = (rgb >> 8) & 0xFF;
 		pal->_palette[3 * i + 2] = (rgb) & 0xFF;
 	}
-	palman->updatedFont(fontpal);
+	palman->updatedPalette(fontpal);
 
 #ifdef DEBUG
 	pout << "Added JP override for font " << fontnum << Std::endl;

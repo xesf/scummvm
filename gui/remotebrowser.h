@@ -38,7 +38,7 @@ class CommandSender;
 
 class RemoteBrowserDialog : public Dialog {
 public:
-	RemoteBrowserDialog(const char *title);
+	RemoteBrowserDialog(const Common::U32String &title);
 	~RemoteBrowserDialog() override;
 
 	void open() override;
@@ -64,7 +64,7 @@ protected:
 
 	void updateListing();
 	void goUp();
-	void listDirectory(Cloud::StorageFile node);
+	void listDirectory(const Cloud::StorageFile &node);
 	void directoryListedCallback(Cloud::Storage::ListDirectoryResponse response);
 	void directoryListedErrorCallback(Networking::ErrorResponse error);
 

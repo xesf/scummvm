@@ -30,10 +30,18 @@
 namespace Common {
 
 /**
+ * @defgroup common_memory_pool Memory stream
+ * @ingroup common_memory
+ *
+ * @brief API for managing the memory stream.
+ * @{
+ */
+
+/**
  * Simple memory based 'stream', which implements the ReadStream interface for
  * a plain memory block.
  */
-class MemoryReadStream : public SeekableReadStream {
+class MemoryReadStream : virtual public SeekableReadStream {
 private:
 	const byte * const _ptrOrig;
 	const byte *_ptr;
@@ -78,10 +86,17 @@ public:
  * This is a MemoryReadStream subclass which adds non-endian
  * read methods whose endianness is set on the stream creation.
  */
-class MemoryReadStreamEndian : public MemoryReadStream, public ReadStreamEndian {
+class MemoryReadStreamEndian : public MemoryReadStream, public SeekableReadStreamEndian {
 public:
-	MemoryReadStreamEndian(const byte *buf, uint32 len, bool bigEndian)
-		: MemoryReadStream(buf, len), ReadStreamEndian(bigEndian) {}
+	MemoryReadStreamEndian(const byte *buf, uint32 len, bool bigEndian, DisposeAfterUse::Flag disposeMemory = DisposeAfterUse::NO)
+		: MemoryReadStream(buf, len, disposeMemory), SeekableReadStreamEndian(bigEndian), ReadStreamEndian(bigEndian) {}
+
+	int32 pos() const { return MemoryReadStream::pos(); }
+	int32 size() const { return MemoryReadStream::size(); }
+
+	bool seek(int32 offs, int whence = SEEK_SET) { return MemoryReadStream::seek(offs, whence); }
+
+	bool skip(uint32 offset) { return MemoryReadStream::seek(offset, SEEK_CUR); }
 };
 
 /**
@@ -326,6 +341,107 @@ public:
 
 	byte *getData() { return _data; }
 };
+
+/**
+ * A seekable read and writeable memory stream that operates on an already existing memory buffer
+ */
+class MemorySeekableReadWriteStream : public SeekableReadStream, public SeekableWriteStream {
+private:
+	const uint32 _bufSize;
+	byte *_ptrOrig;
+	byte *_ptr;
+	uint32 _pos;
+	bool _err;
+	bool _eos;
+	DisposeAfterUse::Flag _disposeMemory;
+
+public:
+	MemorySeekableReadWriteStream(byte *buf, uint32 len, DisposeAfterUse::Flag disposeMemory = DisposeAfterUse::NO) :
+			_ptrOrig(buf), _ptr(buf), _bufSize(len), _pos(0), _err(false), _eos(false), _disposeMemory(disposeMemory) {}
+
+	~MemorySeekableReadWriteStream() {
+		if (_disposeMemory) {
+			free(_ptrOrig);
+		}
+	}
+
+	uint32 write(const void *dataPtr, uint32 dataSize) override {
+		// Write at most as many bytes as are still available...
+		if (dataSize > _bufSize - _pos) {
+			dataSize = _bufSize - _pos;
+			// We couldn't write all the data => set error indicator
+			_err = true;
+		}
+		memcpy(_ptr, dataPtr, dataSize);
+		_ptr += dataSize;
+		_pos += dataSize;
+		return dataSize;
+	}
+
+	int32 pos() const override { return _pos; }
+	int32 size() const override { return _bufSize; }
+
+	bool eos() const override { return _eos; }
+
+	bool err() const override { return _err; }
+	void clearErr() override { _err = false; }
+
+	inline void rewind(int32 bytes) {
+		seek(pos() - bytes);
+	}
+
+	byte peekByte() {
+		if (_bufSize - _pos <= 0) {
+			_eos = true;
+			return 0;
+		}
+		return *_ptr;
+	}
+
+	uint32 read(void *dataPtr, uint32 dataSize) override {
+		// Read at most as many bytes as are still available...
+		if (dataSize > _bufSize - _pos) {
+			dataSize = _bufSize - _pos;
+			_eos = true;
+		}
+		memcpy(dataPtr, _ptr, dataSize);
+
+		_ptr += dataSize;
+		_pos += dataSize;
+
+		return dataSize;
+	}
+
+	bool seek(int32 offset, int whence = SEEK_SET) override {
+		switch (whence) {
+		case SEEK_END:
+			// SEEK_END works just like SEEK_SET, only 'reversed',
+			// i.e. from the end.
+			offset = size() + offset;
+			// Fall through
+		case SEEK_SET:
+			// Fall through
+		default:
+			_ptr = _ptrOrig + offset;
+			_pos = offset;
+			break;
+		case SEEK_CUR:
+			_ptr += offset;
+			_pos += offset;
+			break;
+		}
+		// Post-Condition
+		if ((int32)_pos > size()) {
+			_pos = size();
+			_ptr = _ptrOrig + _pos;
+		}
+
+		_eos = false;
+		return true;
+	}
+};
+
+/** @} */
 
 } // End of namespace Common
 

@@ -25,8 +25,6 @@
 #include "common/util.h"
 #include "common/system.h"
 
-#include "graphics/palette.h"
-
 #include "sci/sci.h"
 #include "sci/engine/state.h"
 #include "sci/graphics/cache.h"
@@ -231,7 +229,7 @@ bool GfxPalette::setAmiga() {
 		}
 
 		// Directly set the palette, because setOnScreen() wont do a thing for amiga
-		copySysPaletteToScreen();
+		copySysPaletteToScreen(true);
 		return true;
 	}
 
@@ -257,7 +255,7 @@ void GfxPalette::modifyAmigaPalette(const SciSpan<const byte> &data) {
 		}
 	}
 
-	copySysPaletteToScreen();
+	copySysPaletteToScreen(true);
 }
 
 static byte blendColors(byte c1, byte c2) {
@@ -312,10 +310,16 @@ void GfxPalette::set(Palette *newPalette, bool force, bool forceRealMerge, bool 
 	if (force || newPalette->timestamp != systime) {
 		// SCI1.1+ doesn't do real merging anymore, but simply copying over the used colors from other palettes
 		//  There are some games with inbetween SCI1.1 interpreters, use real merging for them (e.g. laura bow 2 demo)
-		if ((forceRealMerge) || (_useMerging))
+		if (forceRealMerge || _useMerging) {
 			_sysPaletteChanged |= merge(newPalette, force, forceRealMerge);
-		else
-			_sysPaletteChanged |= insert(newPalette, &_sysPalette, includeFirstColor && (_palVaryResourceId == -1));
+		} else {
+			// SCI 1.1 has several functions which write to the system palette but
+			//  some include the first color and others don't. The first color is
+			//  always excluded when Pal-vary is active.
+			includeFirstColor &= (_palVaryResourceId == -1);
+
+			_sysPaletteChanged |= insert(newPalette, &_sysPalette, includeFirstColor);
+		}
 
 		// Adjust timestamp on newPalette, so it wont get merged/inserted w/o need
 		newPalette->timestamp = _sysPalette.timestamp;
@@ -487,20 +491,20 @@ void GfxPalette::getSys(Palette *pal) {
 		memcpy(pal, &_sysPalette,sizeof(Palette));
 }
 
-void GfxPalette::setOnScreen() {
-	copySysPaletteToScreen();
+void GfxPalette::setOnScreen(bool update) {
+	copySysPaletteToScreen(update);
 }
 
 static byte convertMacGammaToSCIGamma(int comp) {
 	return (byte)sqrt(comp * 255.0f);
 }
 
-void GfxPalette::copySysPaletteToScreen() {
+void GfxPalette::copySysPaletteToScreen(bool update) {
 	// just copy palette to system
 	byte bpal[3 * 256];
 
 	// Get current palette, update it and put back
-	g_system->getPaletteManager()->grabPalette(bpal, 0, 256);
+	_screen->grabPalette(bpal, 0, 256);
 
 	for (int16 i = 0; i < 256; i++) {
 		if (colorIsFromMacClut(i)) {
@@ -519,7 +523,7 @@ void GfxPalette::copySysPaletteToScreen() {
 	if (g_sci->_gfxRemap16)
 		g_sci->_gfxRemap16->updateRemapping();
 
-	g_system->getPaletteManager()->setPalette(bpal, 0, 256);
+	_screen->setPalette(bpal, 0, 256, update);
 }
 
 bool GfxPalette::kernelSetFromResource(GuiResourceId resourceId, bool force) {
@@ -658,7 +662,9 @@ void GfxPalette::kernelRestore(reg_t memoryHandle) {
 			restoredPalette.colors[colorNr].b = *memoryPtr++;
 		}
 
-		set(&restoredPalette, true);
+		// restoring excludes the first color, unlike most
+		//  operations on the system palette.
+		set(&restoredPalette, true, false, false);
 	}
 }
 
@@ -674,9 +680,8 @@ void GfxPalette::kernelAssertPalette(GuiResourceId resourceId) {
 void GfxPalette::kernelSyncScreenPalette() {
 	// just copy palette to system
 	byte bpal[3 * 256];
+	_screen->grabPalette(bpal, 0, 256);
 
-	// Get current palette, update it and put back
-	g_system->getPaletteManager()->grabPalette(bpal, 0, 256);
 	for (int16 i = 1; i < 255; i++) {
 		_sysPalette.colors[i].r = bpal[i * 3];
 		_sysPalette.colors[i].g = bpal[i * 3 + 1];
@@ -921,7 +926,7 @@ void GfxPalette::palVaryProcess(int signal, bool setPalette) {
 	// Calculate inbetween palette
 	Color inbetween;
 	int16 color;
-	for (int colorNr = 1; colorNr < 255; colorNr++) {
+	for (int colorNr = 0; colorNr < 256; colorNr++) {
 		inbetween.used = _sysPalette.colors[colorNr].used;
 		color = _palVaryTargetPalette.colors[colorNr].r - _palVaryOriginPalette.colors[colorNr].r;
 		inbetween.r = ((color * _palVaryStep) / 64) + _palVaryOriginPalette.colors[colorNr].r;

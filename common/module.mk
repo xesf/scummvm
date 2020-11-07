@@ -1,7 +1,9 @@
 MODULE := common
 
 MODULE_OBJS := \
+	achievements.o \
 	archive.o \
+	base-str.o \
 	config-manager.o \
 	coroutines.o \
 	dcl.o \
@@ -21,6 +23,7 @@ MODULE_OBJS := \
 	macresman.o \
 	memorypool.o \
 	md5.o \
+	mdct.o \
 	mutex.o \
 	osd_message_queue.o \
 	platform.o \
@@ -28,14 +31,18 @@ MODULE_OBJS := \
 	random.o \
 	rational.o \
 	rendermode.o \
+	sinewindows.o \
 	str.o \
 	str-enc.o \
 	stream.o \
+	streamdebug.o \
+	stuffit.o \
 	system.o \
 	textconsole.o \
 	tokenizer.o \
 	translation.o \
 	unarj.o \
+	unicode-bidi.o \
 	unzip.o \
 	ustr.o \
 	util.o \
@@ -102,6 +109,11 @@ endif
 ifdef USE_TTS
 MODULE_OBJS += \
 	text-to-speech.o
+endif
+
+ifdef USE_ICONV
+MODULE_OBJS += \
+	iconv.o
 endif
 
 # Include common rules

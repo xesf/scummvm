@@ -204,7 +204,7 @@ void SpecialOpcodes::initOpcodes() {
 	OPCODE(0x7f, spcFlickerPutOnStGeorgeArmor);
 	OPCODE(0x80, spcUnk80FlickerArmorOn);
 	OPCODE(0x81, spcShakeScreenSceneLogic);
-	OPCODE(0x82, spc82CallResetDataMaybe);
+	OPCODE(0x82, spcClearTextFromScreen);
 	OPCODE(0x83, spcStopScreenShakeUpdater);
 	OPCODE(0x84, spcInsideBlackDragonScreenShake);
 	OPCODE(0x85, spc85SetScene1To0x35);
@@ -255,14 +255,14 @@ void SpecialOpcodes::spcDancingMiniGame() {
 }
 
 void SpecialOpcodes::spcCastleGardenLogic() {
-	sceneUpdater.textTbl[0][0] = 0x22660;
-	sceneUpdater.textTbl[0][1] = 0x226CA;
-	sceneUpdater.textTbl[1][0] = 0x22738;
-	sceneUpdater.textTbl[1][1] = 0x22790;
-	sceneUpdater.textTbl[2][0] = 0x227E8;
-	sceneUpdater.textTbl[2][1] = 0x2283C;
-	sceneUpdater.textTbl[3][0] = 0x228A0;
-	sceneUpdater.textTbl[3][1] = 0x228EC;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x22660);
+	sceneUpdater.textTbl[0][1] = _vm->getDialogTextId(0x226CA);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x22738);
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x22790);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x227E8);
+	sceneUpdater.textTbl[2][1] = _vm->getDialogTextId(0x2283C);
+	sceneUpdater.textTbl[3][0] = _vm->getDialogTextId(0x228A0);
+	sceneUpdater.textTbl[3][1] = _vm->getDialogTextId(0x228EC);
 	if (_vm->getCurrentSceneId() == 0x1a) {
 		sceneUpdater.sequenceIDTbl[0][0] = 1;
 		sceneUpdater.sequenceIDTbl[1][0] = 1;
@@ -271,10 +271,10 @@ void SpecialOpcodes::spcCastleGardenLogic() {
 		sceneUpdater.iniIDTbl[3][0] = 0x145;
 		sceneUpdater.iniIDTbl[4][0] = 0x144;
 	} else {
-		sceneUpdater.sequenceIDTbl[0][0] = -1;
-		sceneUpdater.sequenceIDTbl[1][0] = -1;
-		sceneUpdater.sequenceIDTbl[2][0] = -1;
-		sceneUpdater.sequenceIDTbl[3][0] = -1;
+		sceneUpdater.sequenceIDTbl[0][0] = 0xffff;
+		sceneUpdater.sequenceIDTbl[1][0] = 0xffff;
+		sceneUpdater.sequenceIDTbl[2][0] = 0xffff;
+		sceneUpdater.sequenceIDTbl[3][0] = 0xffff;
 		sceneUpdater.iniIDTbl[3][0] = 0x83;
 		sceneUpdater.iniIDTbl[4][0] = 0x74;
 	}
@@ -315,11 +315,11 @@ void SpecialOpcodes::spcUnkA() {
 }
 
 void SpecialOpcodes::spcUnkC() {
-	//TODO fade_related_calls_with_1f();
+	_vm->fadeToBlack();
 }
 
 void SpecialOpcodes::spcFadeScreen() {
-	_vm->call_fade_related_1f();
+	_vm->fadeFromBlack();
 }
 
 void SpecialOpcodes::spcLadyOfTheLakeCapturedSceneLogic() {
@@ -330,7 +330,7 @@ void SpecialOpcodes::spcLadyOfTheLakeCapturedSceneLogic() {
 
 void SpecialOpcodes::spcStopLadyOfTheLakeCapturedSceneLogic() {
 	_vm->clearSceneUpdateFunction();
-	_vm->_sound->PauseCDMusic();
+	_vm->_sound->resumeMusic();
 	if ((_dat_80083148 != 0) || (_uint16_t_80083154 != 0)) {
 		//TODO FUN_8001ac5c((uint)_dat_80083148, (uint)DAT_80083150, (uint)_uint16_t_80083154, (uint)DAT_80083158);
 	}
@@ -374,28 +374,28 @@ void SpecialOpcodes::spcSetEngineFlag8() {
 }
 
 void SpecialOpcodes::spcKnightPoolReflectionLogic() {
-	sceneUpdater.textTbl[0][0] = 0x23E90;
-	sceneUpdater.textTbl[0][1] = 0x23EE6;
-	sceneUpdater.textTbl[0][2] = 0x23F0C;
-	sceneUpdater.textTbl[0][3] = 0x23F86;
-	sceneUpdater.textTbl[1][0] = 0x24000;
-	sceneUpdater.textTbl[1][1] = 0x2406A;
-	sceneUpdater.textTbl[2][0] = 0x240C2;
-	sceneUpdater.textTbl[2][1] = 0x2411E;
-	sceneUpdater.textTbl[2][2] = 0x24158;
-	sceneUpdater.textTbl[2][3] = 0x241BC;
-	sceneUpdater.textTbl[2][4] = 0x241EE;
-	sceneUpdater.textTbl[3][0] = 0x24240;
-	sceneUpdater.textTbl[3][1] = 0x24286;
-	sceneUpdater.textTbl[3][2] = 0x242B0;
-	sceneUpdater.textTbl[3][3] = 0x2431C;
-	sceneUpdater.textTbl[4][0] = 0x2437C;
-	sceneUpdater.textTbl[4][1] = 0x243B2;
-	sceneUpdater.textTbl[4][2] = 0x2440A;
-	sceneUpdater.textTbl[4][3] = 0x24432;
-	sceneUpdater.textTbl[5][0] = 0x24480;
-	sceneUpdater.textTbl[5][1] = 0x244EE;
-	sceneUpdater.textTbl[5][2] = 0x2453C;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x23E90);
+	sceneUpdater.textTbl[0][1] = _vm->getDialogTextId(0x23EE6);
+	sceneUpdater.textTbl[0][2] = _vm->getDialogTextId(0x23F0C);
+	sceneUpdater.textTbl[0][3] = _vm->getDialogTextId(0x23F86);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x24000);
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x2406A);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x240C2);
+	sceneUpdater.textTbl[2][1] = _vm->getDialogTextId(0x2411E);
+	sceneUpdater.textTbl[2][2] = _vm->getDialogTextId(0x24158);
+	sceneUpdater.textTbl[2][3] = _vm->getDialogTextId(0x241BC);
+	sceneUpdater.textTbl[2][4] = _vm->getDialogTextId(0x241EE);
+	sceneUpdater.textTbl[3][0] = _vm->getDialogTextId(0x24240);
+	sceneUpdater.textTbl[3][1] = _vm->getDialogTextId(0x24286);
+	sceneUpdater.textTbl[3][2] = _vm->getDialogTextId(0x242B0);
+	sceneUpdater.textTbl[3][3] = _vm->getDialogTextId(0x2431C);
+	sceneUpdater.textTbl[4][0] = _vm->getDialogTextId(0x2437C);
+	sceneUpdater.textTbl[4][1] = _vm->getDialogTextId(0x243B2);
+	sceneUpdater.textTbl[4][2] = _vm->getDialogTextId(0x2440A);
+	sceneUpdater.textTbl[4][3] = _vm->getDialogTextId(0x24432);
+	sceneUpdater.textTbl[5][0] = _vm->getDialogTextId(0x24480);
+	sceneUpdater.textTbl[5][1] = _vm->getDialogTextId(0x244EE);
+	sceneUpdater.textTbl[5][2] = _vm->getDialogTextId(0x2453C);
 
 	sceneUpdater.iniIDTbl[0][0] = 0x155;
 	sceneUpdater.iniIDTbl[0][1] = 0x14B;
@@ -635,16 +635,16 @@ void SpecialOpcodes::spcNoop1() {
 }
 
 void SpecialOpcodes::spcTownAngryVillagersSceneLogic() {
-	sceneUpdater.textTbl[0][0] = 0x35946;
-	sceneUpdater.textTbl[0][1] = 0x359BC;
-	sceneUpdater.textTbl[1][0] = 0x35A38;
-	sceneUpdater.textTbl[1][1] = 0x35ABC;
-	sceneUpdater.textTbl[2][0] = 0x35B28;
-	sceneUpdater.textTbl[2][1] = 0x35B9C;
-	sceneUpdater.textTbl[3][0] = 0x35C10;
-	sceneUpdater.textTbl[3][1] = 0x35C80;
-	sceneUpdater.textTbl[4][0] = 0x35CFA;
-	sceneUpdater.textTbl[4][1] = 0x35D64;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x35946);
+	sceneUpdater.textTbl[0][1] = _vm->getDialogTextId(0x359BC);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x35A38);
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x35ABC);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x35B28);
+	sceneUpdater.textTbl[2][1] = _vm->getDialogTextId(0x35B9C);
+	sceneUpdater.textTbl[3][0] = _vm->getDialogTextId(0x35C10);
+	sceneUpdater.textTbl[3][1] = _vm->getDialogTextId(0x35C80);
+	sceneUpdater.textTbl[4][0] = _vm->getDialogTextId(0x35CFA);
+	sceneUpdater.textTbl[4][1] = _vm->getDialogTextId(0x35D64);
 	sceneUpdater.iniIDTbl[0][0] = 0x1DC;
 	sceneUpdater.iniIDTbl[0][1] = 0x1DD;
 	sceneUpdater.iniIDTbl[1][0] = 0x1DC;
@@ -728,20 +728,20 @@ void SpecialOpcodes::spcZigmondFraudSceneLogic() {
 	sceneUpdater.sequenceIDTbl[7][0] = 2;
 	sceneUpdater.sequenceIDTbl[7][1] = 0xe;
 
-	sceneUpdater.textTbl[0][0] = 0x2D000;
-	sceneUpdater.textTbl[0][1] = 0x2D044;
-	sceneUpdater.textTbl[1][0] = 0x2D0B2;
-	sceneUpdater.textTbl[1][1] = 0x2D0D6;
-	sceneUpdater.textTbl[2][0] = 0x2D152;
-	sceneUpdater.textTbl[3][0] = 0x2D1A4;
-	sceneUpdater.textTbl[4][0] = 0x2D20A;
-	sceneUpdater.textTbl[4][1] = 0x2D27C;
-	sceneUpdater.textTbl[5][0] = 0x2D2EC;
-	sceneUpdater.textTbl[5][1] = 0x2D336;
-	sceneUpdater.textTbl[6][0] = 0x2D3E0;
-	sceneUpdater.textTbl[6][1] = 0x2D456;
-	sceneUpdater.textTbl[7][0] = 0x2D4A8;
-	sceneUpdater.textTbl[7][1] = 0x2D504;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x2D000);
+	sceneUpdater.textTbl[0][1] = _vm->getDialogTextId(0x2D044);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x2D0B2);
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x2D0D6);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x2D152);
+	sceneUpdater.textTbl[3][0] = _vm->getDialogTextId(0x2D1A4);
+	sceneUpdater.textTbl[4][0] = _vm->getDialogTextId(0x2D20A);
+	sceneUpdater.textTbl[4][1] = _vm->getDialogTextId(0x2D27C);
+	sceneUpdater.textTbl[5][0] = _vm->getDialogTextId(0x2D2EC);
+	sceneUpdater.textTbl[5][1] = _vm->getDialogTextId(0x2D336);
+	sceneUpdater.textTbl[6][0] = _vm->getDialogTextId(0x2D3E0);
+	sceneUpdater.textTbl[6][1] = _vm->getDialogTextId(0x2D456);
+	sceneUpdater.textTbl[7][0] = _vm->getDialogTextId(0x2D4A8);
+	sceneUpdater.textTbl[7][1] = _vm->getDialogTextId(0x2D504);
 
 	setupTableBasedSceneUpdateFunction(0x168, 8, 0xb4);
 }
@@ -750,7 +750,7 @@ void SpecialOpcodes::spcZigmondFraudSceneLogic1() {
 	sceneUpdater.numSteps[0] = 1;
 	sceneUpdater.iniIDTbl[0][0] = 0x197;
 	sceneUpdater.sequenceIDTbl[0][0] = 0x12;
-	sceneUpdater.textTbl[0][0] = 0x2F422; //TODO this might change between game versions
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x2F422);
 
 	setupTableBasedSceneUpdateFunction(300, 1, 0x708);
 }
@@ -764,11 +764,11 @@ void SpecialOpcodes::spcBrokenBlackDragonSceneLogic() {
 	sceneUpdater.sequenceIDTbl[2][1] = 2;
 	sceneUpdater.numSteps[1] = 2;
 	sceneUpdater.numSteps[2] = 2;
-	sceneUpdater.textTbl[0][0] = 0x40802;
-	sceneUpdater.textTbl[1][0] = 0x40852;
-	sceneUpdater.textTbl[1][1] = 0x40896;
-	sceneUpdater.textTbl[2][0] = 0x408C0;
-	sceneUpdater.textTbl[2][1] = 0x4092A;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x40802);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x40852);
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x40896);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x408C0);
+	sceneUpdater.textTbl[2][1] = _vm->getDialogTextId(0x4092A);
 	sceneUpdater.iniIDTbl[0][0] = 0x23B;
 	sceneUpdater.iniIDTbl[1][0] = 0x23B;
 	sceneUpdater.iniIDTbl[1][1] = 0x231;
@@ -786,17 +786,17 @@ void SpecialOpcodes::spcDodoUnderAttackSceneLogic() {
 	sceneUpdater.sequenceIDTbl[5][0] = 8;
 	sceneUpdater.numSteps[0] = 1;
 	sceneUpdater.numSteps[1] = 1;
-	sceneUpdater.textTbl[0][0] = 0x3353A;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x3353A);
 	sceneUpdater.iniIDTbl[0][0] = 0x1C4;
-	sceneUpdater.textTbl[1][0] = 0x335AC;
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x335AC);
 	sceneUpdater.iniIDTbl[1][0] = 0x1C4;
-	sceneUpdater.textTbl[2][0] = 0x335F8;
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x335F8);
 	sceneUpdater.iniIDTbl[2][0] = 0x1C4;
-	sceneUpdater.textTbl[3][0] = 0x33660;
+	sceneUpdater.textTbl[3][0] = _vm->getDialogTextId(0x33660);
 	sceneUpdater.iniIDTbl[3][0] = 0x1C4;
-	sceneUpdater.textTbl[4][0] = 0x336DE;
+	sceneUpdater.textTbl[4][0] = _vm->getDialogTextId(0x336DE);
 	sceneUpdater.iniIDTbl[4][0] = 0x1C4;
-	sceneUpdater.textTbl[5][0] = 0x3375C;
+	sceneUpdater.textTbl[5][0] = _vm->getDialogTextId(0x3375C);
 	sceneUpdater.iniIDTbl[5][0] = 0x1C4;
 	sceneUpdater.numSteps[2] = 1;
 	sceneUpdater.numSteps[3] = 1;
@@ -813,15 +813,15 @@ void SpecialOpcodes::spcForestWithoutDodoSceneLogic() {
 	sceneUpdater.numSteps[0] = 2;
 	sceneUpdater.numSteps[1] = 3;
 	sceneUpdater.sequenceIDTbl[1][1] = 5;
-	sceneUpdater.textTbl[0][0] = 0x33EA0;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x33EA0);
 	sceneUpdater.iniIDTbl[0][0] = 0x1C5;
-	sceneUpdater.textTbl[0][1] = 0x33EFC;
+	sceneUpdater.textTbl[0][1] = _vm->getDialogTextId(0x33EFC);
 	sceneUpdater.iniIDTbl[0][1] = 0x1C4;
-	sceneUpdater.textTbl[1][0] = 0x33F34;
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x33F34);
 	sceneUpdater.iniIDTbl[1][0] = 0x1C4;
-	sceneUpdater.textTbl[1][1] = 0x34000;
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x34000);
 	sceneUpdater.iniIDTbl[1][1] = 0x1C5;
-	sceneUpdater.textTbl[1][2] = 0x34074;
+	sceneUpdater.textTbl[1][2] = _vm->getDialogTextId(0x34074);
 	sceneUpdater.iniIDTbl[1][2] = 0x1C4;
 	setupTableBasedSceneUpdateFunction(300, 2, 600);
 }
@@ -835,13 +835,13 @@ void SpecialOpcodes::spcBlackDragonOnHillSceneLogic() {
 	sceneUpdater.sequenceIDTbl[2][1] = 7;
 	sceneUpdater.sequenceIDTbl[3][0] = 3;
 	sceneUpdater.numSteps[0] = 2;
-	sceneUpdater.textTbl[0][0] = 0x325EA;
-	sceneUpdater.textTbl[0][1] = 0x3262A;
-	sceneUpdater.textTbl[1][0] = 0x32686;
-	sceneUpdater.textTbl[1][1] = 0x326D8;
-	sceneUpdater.textTbl[2][0] = 0x3270E;
-	sceneUpdater.textTbl[2][1] = 0x32774;
-	sceneUpdater.textTbl[3][0] = 0x32D72;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x325EA);
+	sceneUpdater.textTbl[0][1] = _vm->getDialogTextId(0x3262A);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x32686);
+	sceneUpdater.textTbl[1][1] = _vm->getDialogTextId(0x326D8);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x3270E);
+	sceneUpdater.textTbl[2][1] = _vm->getDialogTextId(0x32774);
+	sceneUpdater.textTbl[3][0] = _vm->getDialogTextId(0x32D72);
 	sceneUpdater.iniIDTbl[0][0] = 0x1B6;
 	sceneUpdater.iniIDTbl[0][1] = 0x1B7;
 	sceneUpdater.iniIDTbl[1][0] = 0x1B6;
@@ -1009,8 +1009,9 @@ void SpecialOpcodes::panCamera(int16 mode) {
 
 void SpecialOpcodes::spcBlackDragonDialogForCamelhot() {
 	uint16 buffer[1024];
-	_vm->_talk->loadText(0x30DD8, buffer, 1024); //TODO might need to check dialog in other game versions
-	_vm->_talk->displayDialogAroundPoint(buffer, 0x27, 0xc, 0xc01, 0, 0x30DD8);
+	uint32 textId = _vm->getDialogTextId(0x30DD8);
+	_vm->_talk->loadText(textId, buffer, 1024);
+	_vm->_talk->displayDialogAroundPoint(buffer, 0x27, 0xc, 0xc01, 0, textId);
 	//TODO this isn't quite right. The audio isn't played and it's not waiting long enough.
 }
 
@@ -1038,8 +1039,8 @@ void SpecialOpcodes::spcFlickerPutOnStGeorgeArmor() {
 	actor->_priorityLayer = 1;
 }
 
-void SpecialOpcodes::spc82CallResetDataMaybe() {
-	//TODO callMaybeResetData(); LOOKS like it clears text from the screen.
+void SpecialOpcodes::spcClearTextFromScreen() {
+	_vm->clearAllText();
 }
 
 void SpecialOpcodes::spcStopScreenShakeUpdater() {
@@ -1118,17 +1119,19 @@ void SpecialOpcodes::spcKnightsSavedAgainCutScene() {
 }
 
 void SpecialOpcodes::spcTransitionToMap() {
-	//TODO map transition
-//	DAT_8006a422 = 0;
-//	DAT_8006a424 = 0;
-//	cursorSequenceId = 0;
-//	_vm->waitForFrames();
-//	engine_flags_maybe = engine_flags_maybe | 0x20000000;
-//	FUN_80023b34(0, 0, 1);
+	_vm->_scene->setMgLayerPriority(0);
+	_vm->_scene->setFgLayerPriority(0);
+	_vm->_cursor->updateSequenceID(0);
+	_vm->waitForFrames(1);
+	_vm->setFlags(ENGINE_FLAG_20000000);
+	mapTransition(1);
 }
 
 void SpecialOpcodes::spcTransitionFromMap() {
-	//TODO map transition
+	mapTransition(0);
+	_vm->_scene->setMgLayerPriority(2);
+	_vm->_scene->setFgLayerPriority(3);
+	_vm->clearFlags(ENGINE_FLAG_20000000);
 }
 
 void SpecialOpcodes::spcCaveOfDilemmaSceneLogic() {
@@ -1136,12 +1139,11 @@ void SpecialOpcodes::spcCaveOfDilemmaSceneLogic() {
 }
 
 void SpecialOpcodes::spcFadeCreditsToBackStageScene() {
-//	call_fade_related();
+	_vm->fadeToBlackExcludingFont();
 	_vm->_screen->loadPalette(0, _vm->_scene->getPalette());
 	_vm->_scene->_camera.x = 0x140;
 	_vm->waitForFrames(0x3c);
-//	Call_SomeShadeTexThingB1E();
-//TODO
+	_vm->fadeFromBlackExcludingFont();
 }
 
 void SpecialOpcodes::spcRunCredits() {
@@ -1170,7 +1172,7 @@ void SpecialOpcodes::spcRunCredits() {
 }
 
 void SpecialOpcodes::spcEndCreditsAndRestartGame() {
-//	call_fade_related();
+	_vm->fadeToBlackExcludingFont();
 //	_volumeSFX = 0;
 //	setCDAVolumes();
 	while (_vm->_credits->isRunning()) {
@@ -1178,7 +1180,10 @@ void SpecialOpcodes::spcEndCreditsAndRestartGame() {
 	}
 //	ReloadGameFlag = 2;
 //	Exec_FMV_RELOADTT();
-//TODO need to return to main menu here.
+
+	_vm->waitForFrames(100);
+
+	Dragons::DragonsEngine::quitGame();
 }
 
 void SpecialOpcodes::spcLoadLadyOfTheLakeActor() {
@@ -1216,9 +1221,9 @@ void SpecialOpcodes::spcJesterInLibrarySceneLogic() {
 	sceneUpdater.numSteps[0] = 1;
 	sceneUpdater.numSteps[1] = 1;
 	sceneUpdater.numSteps[2] = 1;
-	sceneUpdater.textTbl[0][0] = 0x18502;
-	sceneUpdater.textTbl[1][0] = 0x185E0;
-	sceneUpdater.textTbl[2][0] = 0x18596;
+	sceneUpdater.textTbl[0][0] = _vm->getDialogTextId(0x18502);
+	sceneUpdater.textTbl[1][0] = _vm->getDialogTextId(0x185E0);
+	sceneUpdater.textTbl[2][0] = _vm->getDialogTextId(0x18596);
 	sceneUpdater.iniIDTbl[0][0] = 0xD7;
 	sceneUpdater.iniIDTbl[1][0] = 0xD7;
 	sceneUpdater.iniIDTbl[2][0] = 0xD7;
@@ -1233,13 +1238,13 @@ void SpecialOpcodes::pizzaMakerStopWorking() {
 		if (actorf4->_sequenceID == 1) {
 			actorf4->waitUntilFlag8And4AreSet();
 			actorf4->updateSequence(2);
-			actorf5->_x_pos = 0x115;
-			actorf5->_y_pos = 0x5c;
+			actorf5->_x_pos = 277;
+			actorf5->_y_pos = 92;
 			actorf5->updateSequence(7);
 			_vm->waitForFrames(0x78);
 			actorf5->updateSequence(8);
 			actorf5->waitUntilFlag8And4AreSet();
-			actorf5->_x_pos = 0xff9c;
+			actorf5->_x_pos = -100;
 			actorf5->_y_pos = 100;
 			actorf4->updateSequence(3);
 		} else {
@@ -1247,7 +1252,7 @@ void SpecialOpcodes::pizzaMakerStopWorking() {
 				_vm->waitForFrames(0x78);
 				actorf5->updateSequence(8);
 				actorf5->waitUntilFlag8And4AreSet();
-				actorf5->_x_pos = 0xff9c;
+				actorf5->_x_pos = -100;
 				actorf5->_y_pos = 100;
 				actorf4->updateSequence(3);
 			} else {
@@ -1306,6 +1311,107 @@ int16 SpecialOpcodes::getSpecialOpCounter() {
 
 void SpecialOpcodes::setSpecialOpCounter(int16 newValue) {
 	_specialOpCounter = newValue;
+}
+
+void SpecialOpcodes::mapTransition(uint16 mode) {
+	const uint16 mapLookupTbl[26] = {
+			160,    100,     45,    100,
+			105,    170,     14,     87,
+			 83,     33,     86,    100,
+			 25,    180,    161,    156,
+			195,     47,    287,     35,
+			292,     80,    202,    182,
+			127,     78
+	};
+
+	const uint16 mapSceneIdTbl[13] = {
+			0,
+			0xa, 0x15, 0x1a,
+			0x1b, 0x1c, 0x1e,
+			0x20, 0x23, 0x25,
+			0x2d, 0x30, 0x31
+	};
+
+	uint16 targetLocation = _vm->getINI(0x1e)->objectState;
+	if (targetLocation == 0) {
+		targetLocation = 0xc;
+		for (int i = 1; i < 0xd; i++) {
+			if (_vm->_scene->_mapTransitionEffectSceneID < mapSceneIdTbl[i]) {
+				targetLocation = i - 1;
+				break;
+			}
+		}
+	}
+
+	_vm->_cursor->updatePosition(mapLookupTbl[targetLocation * 2], mapLookupTbl[targetLocation * 2 + 1]);
+	_vm->setFlags(ENGINE_FLAG_20);
+
+	int16 cursorX = _vm->_cursor->_x;
+	int16 cursorY = _vm->_cursor->_y;
+
+	int32 topIncrement = (cursorY << 0x10) >> 4;
+	int32 bottomIncrement = (DRAGONS_SCREEN_HEIGHT - cursorY) * 0x10000 >> 4;
+	int32 rightIncrement = (DRAGONS_SCREEN_WIDTH - cursorX) * 0x10000 >> 4;
+
+	if (mode == 0) { //Close map
+		FlatQuad *topQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0,0,0x140,0,0x140,0,0,0,1,4,0));
+		FlatQuad *bottomQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0,200,0x140,200,0x140,200,0,200,1,4,0));
+		FlatQuad *leftQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0,0,0,0,0,200,0,200,1,4,0));
+		FlatQuad *rightQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0x140,0,0x140,0,0x140,200,0x140,200,1,4,0));
+		int32 topY = topQuad->points[3].y << 0x10;
+		int32 bottomY = bottomQuad->points[0].y << 0x10;
+		int32 rightX = rightQuad->points[0].x << 0x10;
+		int32 leftX = leftQuad->points[1].x << 0x10;
+
+		while (topY < (cursorY << 0x10)) {
+			topY = topY + topIncrement;
+			bottomY = bottomY - bottomIncrement;
+			leftX = leftX + cursorX * 0x1000;
+			topQuad->points[3].y = topY >> 0x10;
+			topQuad->points[2].y = topY >> 0x10;
+			bottomQuad->points[0].y = bottomY >> 0x10;
+			bottomQuad->points[1].y = bottomY >> 0x10;
+			leftQuad->points[1].x = leftX >> 0x10;
+			leftQuad->points[3].x = leftX >> 0x10;
+			rightX = rightX - rightIncrement;
+			rightQuad->points[0].x = rightX >> 0x10;
+			rightQuad->points[2].x = rightX >> 0x10;
+			_vm->waitForFrames(1);
+		}
+
+		_vm->fadeToBlack();
+	} else if (mode == 1) { // Open map
+		FlatQuad *topQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0,0,0x140,0,0x140,cursorY,0,cursorY,1,4,0));
+		FlatQuad *bottomQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0, cursorY, 0x140, cursorY, 0x140, 200, 0, 200, 1, 4, 0));
+		FlatQuad *leftQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(0, 0, cursorX, 0, cursorX, 200, 0, 200, 1, 4, 0));
+		FlatQuad *rightQuad = _vm->_screen->getFlatQuad(_vm->_screen->addFlatQuad(cursorX,0,0x140,0,0x140,200,cursorX,200,1,4,0));
+		int32 topY = topQuad->points[3].y << 0x10;
+		int32 bottomY = bottomQuad->points[0].y << 0x10;
+		int32 leftX = leftQuad->points[1].x << 0x10;
+		int32 rightX = rightQuad->points[0].x << 0x10;
+		_vm->waitForFrames(2);
+		bool hasDoneFade = false;
+		while (0 < topY) {
+			topY = topY - topIncrement;
+			bottomY = bottomY + bottomIncrement;
+			leftX = leftX + cursorX * -0x1000;
+			topQuad->points[3].y = topY >> 0x10;
+			topQuad->points[2].y = topY >> 0x10;
+			bottomQuad->points[0].y = bottomY >> 0x10;
+			bottomQuad->points[1].y = bottomY >> 0x10;
+			leftQuad->points[1].x = leftX >> 0x10;
+			leftQuad->points[3].x = leftX >> 0x10;
+			rightX = rightX + rightIncrement;
+			rightQuad->points[0].x = rightX >> 0x10;
+			rightQuad->points[2].x = rightX >> 0x10;
+			_vm->waitForFrames(1);
+			if (!hasDoneFade) {
+				_vm->fadeFromBlack();
+				hasDoneFade = true;
+			}
+		}
+	}
+	_vm->_screen->clearAllFlatQuads();
 }
 
 void pizzaUpdateFunction() {
@@ -1401,8 +1507,8 @@ void castleBuildingBlackDragon2UpdateFunction() {
 			ini->counter = 0x68;
 			ini->objectState = 1;
 		} else if (ini->objectState == 1) {
-			ini->actor->updateSequence(4);
-			ini->counter = vm->getRand(0xb4);
+			vm->_dragonINIResource->getRecord(0x234)->actor->updateSequence(4);
+			ini->counter = vm->getRand(0xb4) + 900;
 			ini->objectState = 0;
 		}
 	}
@@ -1434,7 +1540,7 @@ void ladyOfTheLakeCapturedUpdateFunction() {
 	if (!vm->isFlagSet(ENGINE_FLAG_8000)) {
 		ladyofLakeCountdownTimer--;
 		if (ladyofLakeCountdownTimer == 0) {
-			vm->_talk->playDialogAudioDontWait(dialogTbl[ladyOfLakeDialogIndex]);
+			vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(dialogTbl[ladyOfLakeDialogIndex]));
 			if (ladyOfLakeDialogIndex == 2) {
 				ladyOfLakeDialogIndex = 0;
 			} else {
@@ -1484,7 +1590,7 @@ void menInMinesSceneUpdateFunction() {
 			return;
 		}
 		vm->_scriptOpcodes->_specialOpCodes->setSpecialOpCounter(vm->getRand(5) * 0x3c + 0x708);
-		vm->_talk->playDialogAudioDontWait(sceneUpdateFuncDialogTbl[vm->getRand(4)]);
+		vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(sceneUpdateFuncDialogTbl[vm->getRand(4)]));
 		sequenceId = 2;
 	} else {
 		if (!vm->_isLoadingDialogAudio) {
@@ -1550,7 +1656,7 @@ void monksAtBarSceneUpdateFunction() {
 				barKeeper->updateSequence(2);
 				textIndex = sceneUpdateFuncDialogTbl[vm->getRand(3)];
 			}
-			vm->_talk->playDialogAudioDontWait(textIndex);
+			vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(textIndex));
 			monksAtBarCurrentState = 1;
 			specialOpCounter = 0;
 			break;
@@ -1571,7 +1677,7 @@ void monksAtBarSceneUpdateFunction() {
 			} else {
 				monk2->updateSequence(10);
 			}
-			vm->_talk->playDialogAudioDontWait(barKeeperTextIdTbl[randTextId]);
+			vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(barKeeperTextIdTbl[randTextId]));
 			monksAtBarCurrentState = 3;
 			specialOpCounter = 0;
 			break;
@@ -1590,7 +1696,7 @@ void monksAtBarSceneUpdateFunction() {
 				barKeeper->updateSequence(2);
 				textIndex = DAT_800832f0[vm->getRand(4)];
 			}
-			vm->_talk->playDialogAudioDontWait(textIndex);
+			vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(textIndex));
 			monksAtBarCurrentState = 5;
 			specialOpCounter = 0;
 			break;
@@ -1686,7 +1792,7 @@ void monksAtBarSceneUpdateFunction() {
 
 void flameEscapeSceneUpdateFunction() {
 	static const uint32 dialogTbl[6] = {
-		0x10458, 0x104A0, 0x10500, 0x10500, 0x10550, 0x10578 //TODO support multiple languages
+		0x10458, 0x104A0, 0x10500, 0x10500, 0x10550, 0x10578
 	};
 	static bool DAT_800634c0 = false;
 	DragonsEngine *vm = getEngine();
@@ -1704,7 +1810,7 @@ void flameEscapeSceneUpdateFunction() {
 		if (specialOpCounter == 0) {
 			if (DAT_800634c0 == 0) {
 				flame->updateSequence(0x12);
-				vm->_talk->playDialogAudioDontWait(dialogTbl[vm->getRand(6)]);
+				vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(dialogTbl[vm->getRand(6)]));
 				specialOpCounter = 0;
 				DAT_800634c0 = 1;
 			} else {
@@ -1772,7 +1878,7 @@ void moatDrainedSceneUpdateFunction() {
 		}
 		if (moatDrainedUpdateCounter <= 0) {
 			if (!moatDrainedStatus) {
-				vm->_talk->playDialogAudioDontWait(moatDrainedTextIdTbl[vm->getRand(4)]);
+				vm->_talk->playDialogAudioDontWait(vm->getDialogTextId(moatDrainedTextIdTbl[vm->getRand(4)]));
 				moatDrainedStatus = true;
 				moatDrainedUpdateCounter = 0x1e;
 			} else {

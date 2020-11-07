@@ -30,25 +30,23 @@
 #include "common/system.h"
 #include "common/translation.h"
 
+#include "engines/dialogs.h"
+
 #include "graphics/palette.h"
 #include "graphics/scaler.h"
 #include "graphics/managed_surface.h"
 #include "graphics/thumbnail.h"
 
-const char *MetaEngine::getSavegameFile(int saveGameIdx, const char *target) const {
-	static char buffer[200];
-
-	snprintf(buffer, sizeof(buffer), "%s.s%02d", target == nullptr ? getEngineId() : target, saveGameIdx);
-
-	return buffer;
-}
-
-const char *MetaEngine::getSavegamePattern(const char *target) const {
-	static char buffer[200];
-
-	snprintf(buffer, sizeof(buffer), "%s.s##", target == nullptr ? getEngineId() : target);
-
-	return buffer;
+Common::String MetaEngine::getSavegameFile(int saveGameIdx, const char *target) const {
+	if (saveGameIdx == kSavegameFilePattern) {
+		// Pattern requested
+		const char *pattern = hasFeature(kSavesUseExtendedFormat) ? "%s.###" : "%s.s##";
+		return Common::String::format(pattern, target == nullptr ? getEngineId() : target);
+	} else {
+		// Specific filename requested
+		const char *pattern = hasFeature(kSavesUseExtendedFormat) ? "%s.%03d" : "%s.s%02d";
+		return Common::String::format(pattern, target == nullptr ? getEngineId() : target, saveGameIdx);
+	}
 }
 
 Common::KeymapArray MetaEngine::initKeymaps(const char *target) const {
@@ -262,9 +260,9 @@ WARN_UNUSED_RESULT bool MetaEngine::readSavegameHeader(Common::InSaveFile *in, E
 }
 
 
-///////////////////////////////////////
-// MetaEngine default implementations
-///////////////////////////////////////
+//////////////////////////////////////////////
+// MetaEngineConnect default implementations
+//////////////////////////////////////////////
 
 SaveStateList MetaEngine::listSaves(const char *target) const {
 	if (!hasFeature(kSavesUseExtendedFormat))
@@ -272,7 +270,7 @@ SaveStateList MetaEngine::listSaves(const char *target) const {
 
 	Common::SaveFileManager *saveFileMan = g_system->getSavefileManager();
 	Common::StringArray filenames;
-	Common::String pattern(getSavegamePattern(target));
+	Common::String pattern(getSavegameFilePattern(target));
 
 	filenames = saveFileMan->listSavefiles(pattern);
 
@@ -336,6 +334,34 @@ SaveStateList MetaEngine::listSaves(const char *target, bool saveMode) const {
 	return saveList;
 }
 
+void MetaEngineDetection::registerDefaultSettings(const Common::String &) const {
+	// Note that as we don't pass the target to getExtraGuiOptions
+	//  we get all the options, even those not relevant for the current
+	//  game. This is necessary because some engines unconditionally
+	//  access the configuration.
+	const ExtraGuiOptions engineOptions = getExtraGuiOptions("");
+	for (uint i = 0; i < engineOptions.size(); i++) {
+		ConfMan.registerDefault(engineOptions[i].configOption, engineOptions[i].defaultState);
+	}
+}
+
+GUI::OptionsContainerWidget *MetaEngineDetection::buildEngineOptionsWidgetStatic(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const {
+	const ExtraGuiOptions engineOptions = getExtraGuiOptions(target);
+	if (engineOptions.empty()) {
+		return nullptr;
+	}
+
+	return new GUI::ExtraGuiOptionsWidget(boss, name, target, engineOptions);
+}
+
+GUI::OptionsContainerWidget *MetaEngine::buildEngineOptionsWidgetDynamic(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const {
+	const ExtraGuiOptions engineOptions = getExtraGuiOptions(target);
+	if (engineOptions.empty()) {
+		return nullptr;
+	}
+
+	return new GUI::ExtraGuiOptionsWidget(boss, name, target, engineOptions);
+}
 
 void MetaEngine::removeSaveState(const char *target, int slot) const {
 	if (!hasFeature(kSavesUseExtendedFormat))

@@ -33,9 +33,6 @@
 namespace Ultima {
 namespace Ultima8 {
 
-class Ultima1Engine;
-
-
 class ConsoleStream : public Common::WriteStream {
 private:
 	Std::Precision _precision;
@@ -69,6 +66,11 @@ public:
 
 	ConsoleStream &operator<<(const Common::String &str) {
 		write(str.c_str(), str.size());
+		return *this;
+	}
+
+	ConsoleStream &operator<<(Std::Precision p) {
+		_precision = p;
 		return *this;
 	}
 
@@ -150,6 +152,34 @@ private:
 	bool cmdCloseItemGumps(int argc, const char **argv);
 	bool cmdMemberVar(int argc, const char **argv);
 
+	// Avatar mover
+	bool cmdStartJump(int argc, const char **argv);
+	bool cmdStopJump(int argc, const char **argv);
+	bool cmdStartTurnLeft(int argc, const char **argv);
+	bool cmdStartTurnRight(int argc, const char **argv);
+	bool cmdStartMoveForward(int argc, const char **argv);
+	bool cmdStartMoveBack(int argc, const char **argv);
+	bool cmdStopTurnLeft(int argc, const char **argv);
+	bool cmdStopTurnRight(int argc, const char **argv);
+	bool cmdStopMoveForward(int argc, const char **argv);
+	bool cmdStopMoveBack(int argc, const char **argv);
+	bool cmdStartMoveUp(int argc, const char **argv);
+	bool cmdStartMoveDown(int argc, const char **argv);
+	bool cmdStartMoveLeft(int argc, const char **argv);
+	bool cmdStartMoveRight(int argc, const char **argv);
+	bool cmdStopMoveUp(int argc, const char **argv);
+	bool cmdStopMoveDown(int argc, const char **argv);
+	bool cmdStopMoveLeft(int argc, const char **argv);
+	bool cmdStopMoveRight(int argc, const char **argv);
+
+	bool cmdStartMoveRun(int argc, const char **argv);
+	bool cmdStopMoveRun(int argc, const char **argv);
+	bool cmdStartMoveStep(int argc, const char **argv);
+	bool cmdStopMoveStep(int argc, const char **argv);
+	bool cmdAttack(int argc, const char **argv);
+
+	bool cmdCameraOnAvatar(int argc, const char **argv);
+
 	// Audio Process
 	bool cmdListSFX(int argc, const char **argv);
 	bool cmdStopSFX(int argc, const char **argv);
@@ -187,31 +217,31 @@ private:
 	bool cmdUseRecall(int argc, const char **argv);
 	bool cmdUseBedroll(int argc, const char **argv);
 	bool cmdUseKeyring(int argc, const char **argv);
+	bool cmdNextInventory(int argc, const char **argv);
+	bool cmdNextWeapon(int argc, const char **argv);
 	bool cmdToggleCombat(int argc, const char **argv);
-
-	// Memory Manager
-	bool cmdMemInfo(int argc, const char **argv);
-#ifdef DEBUG
-	bool cmdTestMemory(int argc, const char **argv);
-#endif
+	bool cmdUseInventoryItem(int argc, const char **argv);
+	bool cmdUseMedikit(int argc, const char **argv);
+	bool cmdStartSelection(int argc, const char **argv);
+	bool cmdUseSelection(int argc, const char **argv);
 
 	// Object Manager
 	bool cmdObjectTypes(int argc, const char **argv);
 	bool cmdObjectInfo(int argc, const char **argv);
 
 	// Quick Avatar Mover Process
-	bool cmdStartMoveUp(int argc, const char **argv);
-	bool cmdStartMoveDown(int argc, const char **argv);
-	bool cmdStartMoveLeft(int argc, const char **argv);
-	bool cmdStartMoveRight(int argc, const char **argv);
-	bool cmdStartAscend(int argc, const char **argv);
-	bool cmdStartDescend(int argc, const char **argv);
-	bool cmdStopMoveUp(int argc, const char **argv);
-	bool cmdStopMoveDown(int argc, const char **argv);
-	bool cmdStopMoveLeft(int argc, const char **argv);
-	bool cmdStopMoveRight(int argc, const char **argv);
-	bool cmdStopAscend(int argc, const char **argv);
-	bool cmdStopDescend(int argc, const char **argv);
+	bool cmdStartQuickMoveUp(int argc, const char **argv);
+	bool cmdStartQuickMoveDown(int argc, const char **argv);
+	bool cmdStartQuickMoveLeft(int argc, const char **argv);
+	bool cmdStartQuickMoveRight(int argc, const char **argv);
+	bool cmdStartQuickMoveAscend(int argc, const char **argv);
+	bool cmdStartQuickMoveDescend(int argc, const char **argv);
+	bool cmdStopQuickMoveUp(int argc, const char **argv);
+	bool cmdStopQuickMoveDown(int argc, const char **argv);
+	bool cmdStopQuickMoveLeft(int argc, const char **argv);
+	bool cmdStopQuickMoveRight(int argc, const char **argv);
+	bool cmdStopQuickMoveAscend(int argc, const char **argv);
+	bool cmdStopQuickMoveDescend(int argc, const char **argv);
 	bool cmdToggleQuarterSpeed(int argc, const char **argv);
 	bool cmdToggleClipping(int argc, const char **argv);
 

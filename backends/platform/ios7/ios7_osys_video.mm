@@ -36,7 +36,7 @@
 
 - (void)alertView:(UIAlertView *)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex {
 	OSystem_iOS7::sharedInstance()->quit();
-	exit(1);
+	abort();
 }
 
 @end
@@ -59,6 +59,24 @@ void OSystem_iOS7::fatalError() {
 	else {
 		OSystem::fatalError();
 	}
+}
+
+void OSystem_iOS7::logMessage(LogMessageType::Type type, const char *message) {
+	FILE *output = 0;
+
+	if (type == LogMessageType::kInfo || type == LogMessageType::kDebug)
+		output = stdout;
+	else
+		output = stderr;
+
+	if (type == LogMessageType::kError) {
+		_lastErrorMessage = message;
+		NSString *messageString = [NSString stringWithUTF8String:message];
+		NSLog(@"%@", messageString);
+	}
+
+	fputs(message, output);
+	fflush(output);
 }
 
 void OSystem_iOS7::engineInit() {
@@ -89,7 +107,7 @@ int OSystem_iOS7::getDefaultGraphicsMode() const {
 	return kGraphicsModeNone;
 }
 
-bool OSystem_iOS7::setGraphicsMode(int mode) {
+bool OSystem_iOS7::setGraphicsMode(int mode, uint /*flags*/) {
 	switch (mode) {
 	case kGraphicsModeNone:
 	case kGraphicsMode2xSaI:
@@ -390,7 +408,7 @@ void OSystem_iOS7::hideOverlay() {
 
 void OSystem_iOS7::clearOverlay() {
 	//printf("clearOverlay()\n");
-	bzero(_videoContext->overlayTexture.getPixels(), _videoContext->overlayTexture.h * _videoContext->overlayTexture.pitch);
+	memset(_videoContext->overlayTexture.getPixels(), 0, _videoContext->overlayTexture.h * _videoContext->overlayTexture.pitch);
 	dirtyFullOverlayScreen();
 }
 
@@ -559,19 +577,17 @@ void OSystem_iOS7::updateMouseTexture() {
 	} else {
 		if (crossBlit((byte *)mouseTexture.getPixels(), (const byte *)_mouseBuffer.getPixels(), mouseTexture.pitch,
 			          _mouseBuffer.pitch, _mouseBuffer.w, _mouseBuffer.h, mouseTexture.format, _mouseBuffer.format)) {
-			if (!_mouseBuffer.format.aBits()) {
-				// Apply color keying since the original cursor had no alpha channel.
-				const uint16 *src = (const uint16 *)_mouseBuffer.getPixels();
-				uint8 *dstRaw = (uint8 *)mouseTexture.getPixels();
+			// Apply color keying since the original cursor had no alpha channel.
+			const uint16 *src = (const uint16 *)_mouseBuffer.getPixels();
+			uint8 *dstRaw = (uint8 *)mouseTexture.getPixels();
 
-				for (uint y = 0; y < _mouseBuffer.h; ++y, dstRaw += mouseTexture.pitch) {
-					uint16 *dst = (uint16 *)dstRaw;
-					for (uint x = 0; x < _mouseBuffer.w; ++x, ++dst) {
-						if (*src++ == _mouseKeyColor)
-							*dst &= ~1;
-						else
-							*dst |= 1;
-					}
+			for (uint y = 0; y < _mouseBuffer.h; ++y, dstRaw += mouseTexture.pitch) {
+				uint16 *dst = (uint16 *)dstRaw;
+				for (uint x = 0; x < _mouseBuffer.w; ++x, ++dst) {
+					if (*src++ == _mouseKeyColor)
+						*dst &= ~1;
+					else
+						*dst |= 1;
 				}
 			}
 		} else {

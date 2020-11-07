@@ -25,6 +25,7 @@
 #define ULTIMA8_ULTIMA8
 
 #include "common/scummsys.h"
+#include "common/stream.h"
 #include "common/system.h"
 #include "common/archive.h"
 #include "common/error.h"
@@ -41,7 +42,6 @@
 #include "ultima/ultima8/misc/args.h"
 #include "ultima/ultima8/kernel/core_app.h"
 #include "ultima/ultima8/kernel/mouse.h"
-#include "ultima/ultima8/kernel/hid_keys.h"
 #include "ultima/ultima8/misc/p_dynamic_cast.h"
 #include "ultima/ultima8/graphics/point_scaler.h"
 #include "common/events.h"
@@ -49,12 +49,8 @@
 namespace Ultima {
 namespace Ultima8 {
 
-#define DEFAULT_SCREEN_WIDTH 640
-#define DEFAULT_SCREEN_HEIGHT 480
-
 class Debugger;
 class Kernel;
-class MemoryManager;
 class UCMachine;
 class Game;
 class Gump;
@@ -70,8 +66,6 @@ class ObjectManager;
 class FontManager;
 class Mouse;
 class AvatarMoverProcess;
-class IDataSource;
-class ODataSource;
 class Texture;
 class AudioMixer;
 
@@ -91,7 +85,6 @@ private:
 	Std::string _errorTitle;
 
 	Kernel *_kernel;
-	MemoryManager *_memoryManager;
 	ObjectManager *_objectManager;
 	UCMachine *_ucMachine;
 	RenderSurface *_screen;
@@ -127,9 +120,9 @@ private:
 	int32 _timeOffset;
 	bool _hasCheated;
 	bool _cheatsEnabled;
-	uint32 _lastDown[HID_LAST+1];
-	bool _down[HID_LAST+1];
 	unsigned int _inversion;
+	bool _unkCrusaderFlag; //!< not sure what this is but it's only used in usecode for crusader, so just keep track of it..
+	uint32 _moveKeyFrame; //!< An imperfect way for the Crusader usecode to stop remote camera viewing.
 private:
 	/**
 	 * Does engine deinitialization
@@ -143,13 +136,13 @@ private:
 
 private:
 	//! write savegame info (time, ..., game-specifics)
-	void writeSaveInfo(ODataSource *ods);
+	void writeSaveInfo(Common::WriteStream *ws);
 
 	//! save CoreApp/Ultima8Engine data
-	void save(ODataSource *ods);
+	void save(Common::WriteStream *ws);
 
 	//! load CoreApp/Ultima8Engine data
-	bool load(IDataSource *ids, uint32 version);
+	bool load(Common::ReadStream *rs, uint32 version);
 
 	//! reset engine (including World, UCMachine, a.o.)
 	void resetEngine();
@@ -178,20 +171,18 @@ protected:
 public:
 	PointScaler point_scaler;
 public:
-	ENABLE_RUNTIME_CLASSTYPE()
-
 	Ultima8Engine(OSystem *syst, const Ultima::UltimaGameDescription *gameDesc);
 	~Ultima8Engine() override;
 	void GUIError(const Common::String &msg);
 
 	static Ultima8Engine *get_instance() {
-		return p_dynamic_cast<Ultima8Engine *>(_application);
+		return dynamic_cast<Ultima8Engine *>(_application);
 	}
 
-	void startup();
+	bool startup();
 	void shutdown();
 
-	void startupGame();
+	bool startupGame();
 	void startupPentagramMenu();
 	void shutdownGame(bool reloading = true);
 	void changeGame(istring newgame);
@@ -208,7 +199,7 @@ public:
 
 	Graphics::Screen *getScreen() const override;
 
-	void runGame() override;
+	bool runGame() override;
 	virtual void handleEvent(const Common::Event &event);
 
 	void paint() override;
@@ -216,6 +207,10 @@ public:
 		return _painting;
 	}
 
+	static const int U8_DEFAULT_SCREEN_WIDTH = 320;
+	static const int U8_DEFAULT_SCREEN_HEIGHT = 200;
+	static const int CRUSADER_DEFAULT_SCREEN_WIDTH = 640;
+	static const int CRUSADER_DEFAULT_SCREEN_HEIGHT = 480;
 
 	INTRINSIC(I_getCurrentTimerTick);
 	INTRINSIC(I_setAvatarInStasis);
@@ -225,8 +220,14 @@ public:
 	INTRINSIC(I_getTimeInSeconds);
 	INTRINSIC(I_setTimeInGameHours);
 	INTRINSIC(I_avatarCanCheat);
+	INTRINSIC(I_getUnkCrusaderFlag);
+	INTRINSIC(I_setUnkCrusaderFlag);
+	INTRINSIC(I_clrUnkCrusaderFlag);
 	INTRINSIC(I_makeAvatarACheater);
 	INTRINSIC(I_closeItemGumps);
+	INTRINSIC(I_setCruStasis);
+	INTRINSIC(I_clrCruStasis);
+	INTRINSIC(I_moveKeyDownRecently);
 
 	void setAvatarInStasis(bool stat) {
 		_avatarInStasis = stat;
@@ -249,6 +250,16 @@ public:
 	void toggleShowTouchingItems() {
 		_showTouching = !_showTouching;
 	}
+
+	bool isUnkCrusaderFlag() const {
+		return _unkCrusaderFlag;
+	}
+	void setUnkCrusaderFlag(bool flag) {
+		_unkCrusaderFlag = flag;
+	}
+
+	void moveKeyEvent();
+	bool moveKeyDownRecently();
 
 	uint32 getGameTimeInSeconds();
 

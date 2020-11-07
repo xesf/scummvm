@@ -29,6 +29,7 @@
 
 #include "common/frac.h"
 #include "common/mutex.h"
+#include "common/ustr.h"
 
 #include "graphics/surface.h"
 
@@ -65,7 +66,7 @@ public:
 
 	virtual const OSystem::GraphicsMode *getSupportedGraphicsModes() const override;
 	virtual int getDefaultGraphicsMode() const override;
-	virtual bool setGraphicsMode(int mode) override;
+	virtual bool setGraphicsMode(int mode, uint flags = OSystem::kGfxModeNoFlags) override;
 	virtual int getGraphicsMode() const override;
 
 #ifdef USE_RGB_COLOR
@@ -111,7 +112,7 @@ public:
 	virtual void setMouseCursor(const void *buf, uint w, uint h, int hotspotX, int hotspotY, uint32 keycolor, bool dontScale, const Graphics::PixelFormat *format) override;
 	virtual void setCursorPalette(const byte *colors, uint start, uint num) override;
 
-	virtual void displayMessageOnOSD(const char *msg) override;
+	virtual void displayMessageOnOSD(const Common::U32String &msg) override;
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) override;
 
 	// PaletteManager interface
@@ -432,7 +433,7 @@ private:
 	 * If this value is not empty, the OSD message will be set
 	 * to it on the next frame.
 	 */
-	Common::String _osdMessageNextData;
+	Common::U32String _osdMessageNextData;
 
 	/**
 	 * Set the OSD message surface with the value of the next OSD message.

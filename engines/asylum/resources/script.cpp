@@ -752,9 +752,10 @@ IMPLEMENT_OPCODE(JumpIfActorCoordinates)
 			(actor->getPoint1()->x + actor->getPoint2()->x), 
 			(actor->getPoint1()->y + actor->getPoint2()->y));
 
-	/*if ((actor->getPoint1()->x + actor->getPoint2()->x) != cmd->param2 ||
+	// adding small threshold to avoid being pixel perfect
+	if (!((actor->getPoint1()->x + actor->getPoint2()->x) >= cmd->param2 && (actor->getPoint1()->x + actor->getPoint2()->x) <= cmd->param2 + 5) ||
 		(actor->getPoint1()->y + actor->getPoint2()->y) != cmd->param3)
-		_currentQueueEntry->currentLine = cmd->param4;*/
+		_currentQueueEntry->currentLine = cmd->param4;
 END_OPCODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -1145,7 +1146,7 @@ IMPLEMENT_OPCODE(SetVolume)
 
 	int32 volume = -((Config.sfxVolume + var) * (Config.ambientVolume + var));
 
-	if (volume < 0) {
+	if (volume <= 0) {
 		if (volume < -10000)
 			volume = -10000;
 	} else {

@@ -47,6 +47,8 @@ enum TwinEActionType {
 	DebugGridCameraPressDown,
 	DebugGridCameraPressLeft,
 	DebugGridCameraPressRight,
+	DebugMenu,
+	DebugMenuActivate,
 	QuickBehaviourNormal,
 	QuickBehaviourAthletic,
 	QuickBehaviourAggressive,
@@ -81,8 +83,6 @@ enum TwinEActionType {
 };
 
 struct MouseStatusStruct {
-	int32 left = 0;
-	int32 right = 0;
 	int32 x = 0;
 	int32 y = 0;
 };
@@ -105,14 +105,12 @@ private:
 	Common::String _currentKeyMap;
 
 	uint8 actionStates[TwinEActionType::Max]{false};
-	int16 currentKey = 0;
+	//int16 currentKey = 0;
 public:
 	Input(TwinEEngine *engine);
 
 	int16 cursorKeys = 0;
 	int16 pressedKey = 0;
-	int16 leftMouse = 0;
-	int16 rightMouse = 0;
 
 	/**
 	 * @brief Dependent on the context we are currently in the game, we might want to disable certain keymaps.

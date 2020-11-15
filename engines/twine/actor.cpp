@@ -118,30 +118,30 @@ void Actor::loadHeroEntities() {
 	_engine->_scene->sceneHero->animExtraPtr = _engine->_animations->currentActorAnimExtraPtr;
 }
 
-void Actor::setBehaviour(int32 behaviour) {
+void Actor::setBehaviour(HeroBehaviourType behaviour) {
 	switch (behaviour) {
-	case kNormal:
-		heroBehaviour = kNormal;
+	case HeroBehaviourType::kNormal:
+		heroBehaviour = behaviour;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityNORMAL;
 		_engine->_scene->sceneHero->entityDataSize = heroEntityNORMALSize;
 		break;
-	case kAthletic:
-		heroBehaviour = kAthletic;
+	case HeroBehaviourType::kAthletic:
+		heroBehaviour = behaviour;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityATHLETIC;
 		_engine->_scene->sceneHero->entityDataSize = heroEntityATHLETICSize;
 		break;
-	case kAggressive:
-		heroBehaviour = kAggressive;
+	case HeroBehaviourType::kAggressive:
+		heroBehaviour = behaviour;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityAGGRESSIVE;
 		_engine->_scene->sceneHero->entityDataSize = heroEntityAGGRESSIVESize;
 		break;
-	case kDiscrete:
-		heroBehaviour = kDiscrete;
+	case HeroBehaviourType::kDiscrete:
+		heroBehaviour = behaviour;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityDISCRETE;
 		_engine->_scene->sceneHero->entityDataSize = heroEntityDISCRETESize;
 		break;
-	case kProtoPack:
-		heroBehaviour = kProtoPack;
+	case HeroBehaviourType::kProtoPack:
+		heroBehaviour = behaviour;
 		_engine->_scene->sceneHero->entityDataPtr = heroEntityPROTOPACK;
 		_engine->_scene->sceneHero->entityDataSize = heroEntityPROTOPACKSize;
 		break;
@@ -154,10 +154,10 @@ void Actor::setBehaviour(int32 behaviour) {
 
 	initModelActor(bodyIdx, 0);
 
-	_engine->_scene->sceneHero->anim = kAnimNone;
+	_engine->_scene->sceneHero->anim = AnimationTypes::kAnimNone;
 	_engine->_scene->sceneHero->animType = 0;
 
-	_engine->_animations->initAnim(kStanding, 0, 255, 0);
+	_engine->_animations->initAnim(AnimationTypes::kStanding, 0, AnimationTypes::kAnimInvalid, 0);
 }
 
 void Actor::initSpriteActor(int32 actorIdx) {
@@ -179,11 +179,11 @@ void Actor::initSpriteActor(int32 actorIdx) {
 }
 
 int32 Actor::getTextIdForBehaviour() const {
-	if (_engine->_actor->heroBehaviour == kAggressive && _engine->_actor->autoAgressive) {
+	if (_engine->_actor->heroBehaviour == HeroBehaviourType::kAggressive && _engine->_actor->autoAgressive) {
 		return TextId::kBehaviourAgressiveAuto;
 	}
 	// the other values are matching the text ids
-	return _engine->_actor->heroBehaviour;
+	return (int32)_engine->_actor->heroBehaviour;
 }
 
 int32 Actor::initBody(int32 bodyIdx, int32 actorIdx, ActorBoundingBox &actorBoundingBox) {
@@ -205,6 +205,7 @@ int32 Actor::initBody(int32 bodyIdx, int32 actorIdx, ActorBoundingBox &actorBoun
 			if (idx == bodyIdx) {
 				const int16 bodyIndex = stream.readUint16LE();
 
+				// TODO: move into resources class
 				int32 index;
 				if (!(bodyIndex & 0x8000)) {
 					index = currentPositionInBodyPtrTab;
@@ -253,8 +254,8 @@ void Actor::initModelActor(int32 bodyIdx, int16 actorIdx) {
 		return;
 	}
 
-	if (IS_HERO(actorIdx) && heroBehaviour == kProtoPack && localActor->armor != 0 && localActor->armor != 1) {
-		setBehaviour(kNormal);
+	if (IS_HERO(actorIdx) && heroBehaviour == HeroBehaviourType::kProtoPack && localActor->armor != 0 && localActor->armor != 1) {
+		setBehaviour(HeroBehaviourType::kNormal);
 	}
 
 	ActorBoundingBox actorBoundingBox;
@@ -290,26 +291,24 @@ void Actor::initModelActor(int32 bodyIdx, int16 actorIdx) {
 	} else {
 		Common::MemoryReadStream stream(bodyTable[localActor->entity], bodyTableSize[localActor->entity]);
 		stream.skip(2);
-		int16 var1 = stream.readSint16LE();
-		int16 var2 = stream.readSint16LE();
+		const int16 var1 = stream.readSint16LE();
+		const int16 var2 = stream.readSint16LE();
 		localActor->boudingBox.y.bottomLeft = stream.readSint16LE();
 		localActor->boudingBox.y.topRight = stream.readSint16LE();
-		int16 var3 = stream.readSint16LE();
-		int16 var4 = stream.readSint16LE();
+		const int16 var3 = stream.readSint16LE();
+		const int16 var4 = stream.readSint16LE();
 
 		int32 result = 0;
+		const int32 result1 = var2 - var1;
+		const int32 result2 = var4 - var3;
 		if (localActor->staticFlags.bUseMiniZv) {
-			int32 result1 = var2 - var1; // take smaller for bound
-			int32 result2 = var4 - var3;
-
+			// take smaller for bound
 			result = MIN(result1, result2);
 
 			result = ABS(result);
 			result >>= 1;
 		} else {
-			int32 result1 = var2 - var1; // take average for bound
-			int32 result2 = var4 - var3;
-
+			// take average for bound
 			result = result2 + result1;
 			result = ABS(result);
 			result >>= 2;
@@ -321,11 +320,13 @@ void Actor::initModelActor(int32 bodyIdx, int16 actorIdx) {
 		localActor->boudingBox.z.topRight = result;
 	}
 
-	if (currentIndex == -1)
+	if (currentIndex == -1) {
 		return;
+	}
 
-	if (localActor->previousAnimIdx == -1)
+	if (localActor->previousAnimIdx == -1) {
 		return;
+	}
 
 	_engine->_renderer->copyActorInternAnim(bodyTable[currentIndex], bodyTable[localActor->entity]);
 }
@@ -333,7 +334,7 @@ void Actor::initModelActor(int32 bodyIdx, int16 actorIdx) {
 void Actor::initActor(int16 actorIdx) {
 	ActorStruct *actor = _engine->_scene->getActor(actorIdx);
 
-	if (actor->staticFlags.bIsSpriteActor) { // if sprite actor
+	if (actor->staticFlags.bIsSpriteActor) {
 		if (actor->strengthOfHit != 0) {
 			actor->dynamicFlags.bIsHitting = 1;
 		}
@@ -358,7 +359,7 @@ void Actor::initActor(int16 actorIdx) {
 		actor->animType = 0;
 
 		if (actor->entity != -1) {
-			_engine->_animations->initAnim(actor->anim, 0, 255, actorIdx);
+			_engine->_animations->initAnim(actor->anim, 0, AnimationTypes::kAnimInvalid, actorIdx);
 		}
 
 		_engine->_movements->setActorAngleSafe(actor->angle, actor->angle, 0, &actor->move);
@@ -373,7 +374,7 @@ void Actor::resetActor(int16 actorIdx) {
 	ActorStruct *actor = _engine->_scene->getActor(actorIdx);
 
 	actor->body = 0;
-	actor->anim = kStanding;
+	actor->anim = AnimationTypes::kStanding;
 	actor->x = 0;
 	actor->y = -1;
 	actor->z = 0;
@@ -394,7 +395,7 @@ void Actor::resetActor(int16 actorIdx) {
 	actor->info2 = 0;
 	actor->info3 = 0;
 
-	actor->brickShape = 0;
+	actor->setBrickShape(ShapeType::kNone);
 	actor->collision = -1;
 	actor->standOn = -1;
 	actor->zone = -1;
@@ -429,9 +430,9 @@ void Actor::hitActor(int32 actorIdx, int32 actorIdxAttacked, int32 strengthOfHit
 	actor->hitBy = actorIdx;
 
 	if (actor->armor <= strengthOfHit) {
-		if (actor->anim == kBigHit || actor->anim == kHit2) {
+		if (actor->anim == AnimationTypes::kBigHit || actor->anim == AnimationTypes::kHit2) {
 			const int32 tmpAnimPos = actor->animPosition;
-			if (actor->animExtra) {
+			if (actor->animExtra != AnimationTypes::kStanding) {
 				_engine->_animations->processAnimActions(actorIdxAttacked);
 			}
 
@@ -442,13 +443,13 @@ void Actor::hitActor(int32 actorIdx, int32 actorIdxAttacked, int32 strengthOfHit
 			}
 
 			if (_engine->getRandomNumber() & 1) {
-				_engine->_animations->initAnim(kHit2, 3, 255, actorIdxAttacked);
+				_engine->_animations->initAnim(AnimationTypes::kHit2, 3, AnimationTypes::kAnimInvalid, actorIdxAttacked);
 			} else {
-				_engine->_animations->initAnim(kBigHit, 3, 255, actorIdxAttacked);
+				_engine->_animations->initAnim(AnimationTypes::kBigHit, 3, AnimationTypes::kAnimInvalid, actorIdxAttacked);
 			}
 		}
 
-		_engine->_extra->addExtraSpecial(actor->x, actor->y + 1000, actor->z, kHitStars);
+		_engine->_extra->addExtraSpecial(actor->x, actor->y + 1000, actor->z, ExtraSpecialType::kHitStars);
 
 		if (!actorIdxAttacked) {
 			_engine->_movements->heroMoved = true;
@@ -460,7 +461,7 @@ void Actor::hitActor(int32 actorIdx, int32 actorIdxAttacked, int32 strengthOfHit
 			actor->life = 0;
 		}
 	} else {
-		_engine->_animations->initAnim(kHit, 3, 255, actorIdxAttacked);
+		_engine->_animations->initAnim(AnimationTypes::kHit, 3, AnimationTypes::kAnimInvalid, actorIdxAttacked);
 	}
 }
 

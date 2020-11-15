@@ -107,7 +107,7 @@ enum {
 
 #ifdef USE_FLUIDSYNTH
 enum {
-	kFluidSynthSettingsCmd		= 'flst'
+	kFluidSynthSettingsCmd  = 'flst'
 };
 #endif
 
@@ -2112,7 +2112,6 @@ void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String 
 	if (ConfMan.hasKey("gui_use_game_language")) {
 		_guiLanguageUseGameLanguageCheckbox->setState(ConfMan.getBool("gui_use_game_language", _domain));
 	}
-
 #endif // USE_TRANSLATION
 
 	if (g_system->hasFeature(OSystem::kFeatureSystemBrowserDialog)) {
@@ -2129,7 +2128,6 @@ void GlobalOptionsDialog::addMiscControls(GuiObject *boss, const Common::String 
 	_updatesPopUp = new PopUpWidget(boss, prefix + "UpdatesPopup");
 
 	const int *vals = Common::UpdateManager::getUpdateIntervals();
-
 	while (*vals != -1) {
 		_updatesPopUp->appendEntry(Common::UpdateManager::updateIntervalToString(*vals), *vals);
 		vals++;

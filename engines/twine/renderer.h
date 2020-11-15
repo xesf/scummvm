@@ -25,8 +25,20 @@
 
 #include "common/scummsys.h"
 
+#define POLYGONTYPE_FLAT 0
+#define POLYGONTYPE_COPPER 1
+#define POLYGONTYPE_BOPPER 2
+#define POLYGONTYPE_MARBLE 3
+#define POLYGONTYPE_TELE 4
+#define POLYGONTYPE_TRAS 5
+#define POLYGONTYPE_TRAME 6
+#define POLYGONTYPE_GOURAUD 7
+#define POLYGONTYPE_DITHER 8
+
 namespace TwinE {
+
 class TwinEEngine;
+
 class Renderer {
 private:
 	TwinEEngine *_engine;
@@ -37,12 +49,16 @@ private:
 		uint8 *dataPtr = nullptr;
 	};
 
+	#include "common/pack-start.h"
 	struct pointTab {
 		int16 x = 0;
 		int16 y = 0;
 		int16 z = 0;
 	};
+	#include "common/pack-end.h"
+	static_assert(sizeof(pointTab) == 6, "Unexpected pointTab size");
 
+	#include "common/pack-start.h"
 	struct elementEntry {
 		int16 firstPoint = 0;  // data1
 		int16 numOfPoints = 0; // data2
@@ -59,6 +75,8 @@ private:
 		int32 field_20 = 0;
 		int16 field_24 = 0;
 	};
+	#include "common/pack-end.h"
+	static_assert(sizeof(elementEntry) == 38, "Unexpected elementEntry size");
 
 	struct lineCoordinates {
 		int32 data = 0;
@@ -95,8 +113,8 @@ private:
 		int16 bodyFlag = 0;
 		int16 unk0 = 0;
 		int16 unk1 = 0;
-		int16 unk2 = 0;
-		int16 unk3 = 0;
+		int16 bottomleft = 0;
+		int16 topright = 0;
 		int16 unk4 = 0;
 		int16 unk5 = 0;
 		int16 offsetToData = 0;
@@ -118,16 +136,16 @@ private:
 		uint16 temp = 0;
 	};
 
-	int32 renderAnimatedModel(uint8 *bodyPtr);
+	int32 renderAnimatedModel(uint8 *bodyPtr, renderTabEntry *renderTabEntryPtr);
 	void circleFill(int32 x, int32 y, int32 radius, int8 color);
-	int32 renderModelElements(int32 numOfPrimitives, uint8 *pointer);
+	int32 renderModelElements(int32 numOfPrimitives, uint8 *pointer, renderTabEntry** renderTabEntryPtr);
 	void getBaseRotationPosition(int32 x, int32 y, int32 z);
 	void getCameraAnglePositions(int32 x, int32 y, int32 z);
-	void applyRotation(int32 *tempMatrix, const int32 *currentMatrix);
-	void applyPointsRotation(const uint8 *firstPointsPtr, int32 numPoints, pointTab *destPoints, const int32 *rotationMatrix);
-	void processRotatedElement(const uint8 *pointsPtr, int32 rotZ, int32 rotY, int32 rotX, const elementEntry *elemPtr);
-	void applyPointsTranslation(const uint8 *firstPointsPtr, int32 numPoints, pointTab *destPoints, const int32 *translationMatrix);
-	void processTranslatedElement(const uint8 *pointsPtr, int32 rotX, int32 rotY, int32 rotZ, const elementEntry *elemPtr);
+	void applyRotation(int32 *targetMatrix, const int32 *currentMatrix);
+	void applyPointsRotation(const pointTab *pointsPtr, int32 numPoints, pointTab *destPoints, const int32 *rotationMatrix);
+	void processRotatedElement(int32 *targetMatrix, const uint8 *pointsPtr, int32 rotZ, int32 rotY, int32 rotX, const elementEntry *elemPtr);
+	void applyPointsTranslation(const pointTab *pointsPtr, int32 numPoints, pointTab *destPoints, const int32 *translationMatrix);
+	void processTranslatedElement(int32 *targetMatrix, const uint8 *pointsPtr, int32 rotX, int32 rotY, int32 rotZ, const elementEntry *elemPtr);
 	void translateGroup(int16 ax, int16 bx, int16 cx);
 
 	// ---- variables ----
@@ -158,11 +176,9 @@ private:
 
 	int32 baseMatrix[3 * 3] {0};
 
-	int32 matricesTable[271] {0};
-	uint8 *currentMatrixTableEntry = nullptr;
+	int32 matricesTable[30 * 3 * 3 + 1] {0};
 
-	int32 *shadePtr = nullptr;
-	int32 shadeMatrix[9] {0};
+	int32 shadeMatrix[3 * 3] {0};
 	int32 lightX = 0;
 	int32 lightY = 0;
 	int32 lightZ = 0;
@@ -171,29 +187,18 @@ private:
 	pointTab flattenPoints[800];  // _flattenPointTable
 	int16 shadeTable[500] {0};
 
-	renderTabEntry *renderTabEntryPtr = nullptr;
-	renderTabEntry *renderTabSortedPtr = nullptr;
-
 	renderTabEntry renderTab[1000];
 	renderTabEntry renderTabSorted[1000];
 	uint8 renderTab7[10000] {0};
-
-	uint8 *renderV19 = nullptr; // RECHECK THIS
-
-	int16 vleft = 0;
-	int16 vtop = 0;
-	int16 vright = 0;
-	int16 vbottom = 0;
-
-	uint8 oldVertexParam = 0;
-	uint8 vertexParam1 = 0;
-	uint8 vertexParam2 = 0;
 
 	int16 polyTab[960] {0};
 	int16 polyTab2[960] {0};
 	// end render polygon vars
 
 	bool isUsingOrhoProjection = false;
+
+	void computePolygons(int16 polyRenderType, vertexData *vertices, int32 numVertices, int &vleft, int &vright, int &vtop, int &vbottom);
+	void renderPolygons(int32 renderType, vertexData *vertices, int32 numVertices, int32 color, int vleft, int vright, int vtop, int vbottom);
 
 public:
 	Renderer(TwinEEngine *engine) : _engine(engine) {}
@@ -220,10 +225,8 @@ public:
 
 	void setLightVector(int32 angleX, int32 angleY, int32 angleZ);
 
-	int32 computePolygons(int16 polyRenderType);
-	void renderPolygons(int32 ecx, int32 edi);
-
 	void prepareIsoModel(uint8 *bodyPtr); // loadGfxSub
+	void renderPolygons(int32 polyRenderType, int32 color);
 
 	int32 projectPositionOnScreen(int32 cX, int32 cY, int32 cZ);
 	void setCameraPosition(int32 x, int32 y, int32 cX, int32 cY, int32 cZ);

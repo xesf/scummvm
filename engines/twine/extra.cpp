@@ -179,7 +179,7 @@ void Extra::throwExtra(ExtraListStruct *extra, int32 var1, int32 var2, int32 var
 }
 
 void Extra::addExtraSpecial(int32 x, int32 y, int32 z, ExtraSpecialType type) { // InitSpecial
-	const int16 flag = 0x8000 + type;
+	const int16 flag = 0x8000 + (int16)type;
 
 	for (int32 i = 0; i < EXTRA_MAX_ENTRIES; i++) {
 		ExtraListStruct *extra = &extraList[i];
@@ -189,7 +189,7 @@ void Extra::addExtraSpecial(int32 x, int32 y, int32 z, ExtraSpecialType type) { 
 		extra->info0 = flag;
 		extra->info1 = 0;
 
-		if (type == kHitStars) {
+		if (type == ExtraSpecialType::kHitStars) {
 			extra->type = 9;
 
 			extra->x = x;
@@ -203,7 +203,7 @@ void Extra::addExtraSpecial(int32 x, int32 y, int32 z, ExtraSpecialType type) { 
 			extra->lifeTime = _engine->lbaTime;
 			extra->actorIdx = 100;
 		}
-		if (type == kExplodeCloud) {
+		if (type == ExtraSpecialType::kExplodeCloud) {
 			extra->type = 1;
 
 			extra->x = x;
@@ -352,6 +352,7 @@ void Extra::addExtraThrowMagicball(int32 x, int32 y, int32 z, int32 param1, int3
 	int32 ballStrength = 0;
 	int32 extraIdx = -1;
 
+	// TODO: check against MagicballStrengthType
 	switch (_engine->_gameState->magicLevelIdx) {
 	case 0:
 	case 1:
@@ -492,16 +493,14 @@ void Extra::drawSpecialShape(const int16 *shapeTable, int32 x, int32 y, int32 co
 }
 
 void Extra::drawExtraSpecial(int32 extraIdx, int32 x, int32 y) {
-	int32 specialType;
 	ExtraListStruct *extra = &extraList[extraIdx];
-
-	specialType = extra->info0 & 0x7FFF;
+	ExtraSpecialType specialType = (ExtraSpecialType)(extra->info0 & 0x7FFF);
 
 	switch (specialType) {
-	case kHitStars:
+	case ExtraSpecialType::kHitStars:
 		drawSpecialShape(hitStarsShapeTable, x, y, 15, (_engine->lbaTime << 5) & 0x300, 4);
 		break;
-	case kExplodeCloud: {
+	case ExtraSpecialType::kExplodeCloud: {
 		int32 cloudTime = 1 + _engine->lbaTime - extra->lifeTime;
 
 		if (cloudTime > 32) {
@@ -515,13 +514,13 @@ void Extra::drawExtraSpecial(int32 extraIdx, int32 x, int32 y) {
 }
 
 void Extra::processMagicballBounce(ExtraListStruct *extra, int32 x, int32 y, int32 z) {
-	if (_engine->_grid->getBrickShape(x, extra->y, z)) {
+	if (_engine->_grid->getBrickShape(x, extra->y, z) != ShapeType::kNone) {
 		extra->destY = -extra->destY;
 	}
-	if (_engine->_grid->getBrickShape(extra->x, y, z)) {
+	if (_engine->_grid->getBrickShape(extra->x, y, z) != ShapeType::kNone) {
 		extra->destX = -extra->destX;
 	}
-	if (_engine->_grid->getBrickShape(x, y, extra->z)) {
+	if (_engine->_grid->getBrickShape(x, y, extra->z) != ShapeType::kNone) {
 		extra->destZ = -extra->destZ;
 	}
 
@@ -539,8 +538,6 @@ void Extra::processExtras() {
 	int32 currentExtraX = 0;
 	int32 currentExtraY = 0;
 	int32 currentExtraZ = 0;
-	int32 currentExtraSpeedX = 0;
-	int32 currentExtraSpeedY = 0;
 
 	for (int32 i = 0; i < EXTRA_MAX_ENTRIES; i++) {
 		ExtraListStruct *extra = &extraList[i];
@@ -570,10 +567,10 @@ void Extra::processExtras() {
 			currentExtraY = extra->y;
 			currentExtraZ = extra->z;
 
-			currentExtraSpeedX = extra->destX * (_engine->lbaTime - extra->lifeTime);
+			int32 currentExtraSpeedX = extra->destX * (_engine->lbaTime - extra->lifeTime);
 			extra->x = currentExtraSpeedX + extra->lastX;
 
-			currentExtraSpeedY = extra->destY * (_engine->lbaTime - extra->lifeTime);
+			int32 currentExtraSpeedY = extra->destY * (_engine->lbaTime - extra->lifeTime);
 			currentExtraSpeedY += extra->lastY;
 			extra->y = currentExtraSpeedY - ABS(((extra->angle * (_engine->lbaTime - extra->lifeTime)) * (_engine->lbaTime - extra->lifeTime)) >> 4);
 
@@ -776,7 +773,7 @@ void Extra::processExtras() {
 			if (process) {
 				// show explode cloud
 				if (extra->type & 0x100) {
-					addExtraSpecial(currentExtraX, currentExtraY, currentExtraZ, kExplodeCloud);
+					addExtraSpecial(currentExtraX, currentExtraY, currentExtraZ, ExtraSpecialType::kExplodeCloud);
 				}
 				// if extra is magic ball
 				if (i == _engine->_gameState->magicBallIdx) {

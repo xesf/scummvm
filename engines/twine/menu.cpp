@@ -227,11 +227,11 @@ void Menu::processPlasmaEffect(int32 left, int32 top, int32 color) {
 		for (int32 x = 0; x < PLASMA_WIDTH; x++) {
 			const uint8 c = MIN(in[y * PLASMA_WIDTH + x] / 2 + color, max_value);
 			/* 2x2 squares sharing the same pixel color: */
-			const int32 target = 2 * (y * DEFAULT_SCREEN_WIDTH + x);
+			const int32 target = 2 * (y * SCREEN_WIDTH + x);
 			out[target + 0] = c;
 			out[target + 1] = c;
-			out[target + DEFAULT_SCREEN_WIDTH + 0] = c;
-			out[target + DEFAULT_SCREEN_WIDTH + 1] = c;
+			out[target + SCREEN_WIDTH + 0] = c;
+			out[target + SCREEN_WIDTH + 1] = c;
 		}
 	}
 }
@@ -243,7 +243,7 @@ void Menu::drawBox(int32 left, int32 top, int32 right, int32 bottom) {
 	_engine->_interface->drawLine(left + 1, bottom, right, bottom, 73); // bottom line
 }
 
-void Menu::drawButtonGfx(int32 width, int32 topheight, int32 buttonId, const char *dialText, bool hover) {
+void Menu::drawButtonGfx(const MenuSettings *menuSettings, int32 width, int32 topheight, int32 buttonId, const char *dialText, bool hover) {
 	const int32 left = width - kMainMenuButtonSpan / 2;
 	const int32 right = width + kMainMenuButtonSpan / 2;
 
@@ -252,7 +252,7 @@ void Menu::drawButtonGfx(int32 width, int32 topheight, int32 buttonId, const cha
 	const int32 bottom = topheight + 25;
 
 	if (hover) {
-		if (buttonId <= MenuButtonTypes::kMasterVolume && buttonId >= MenuButtonTypes::kMusicVolume) {
+		if (menuSettings == &volumeMenuState && buttonId <= MenuButtonTypes::kMasterVolume && buttonId >= MenuButtonTypes::kMusicVolume) {
 			int32 newWidth = 0;
 			switch (buttonId) {
 			case MenuButtonTypes::kMusicVolume: {
@@ -324,17 +324,56 @@ void Menu::drawButtons(MenuSettings *menuSettings, bool hover) {
 	}
 
 	for (int16 i = 0; i < maxButton; ++i) {
+		if (menuSettings == &advOptionsMenuState) {
+			int16 id = menuSettings->getButtonState(i);
+			switch (id) {
+			case MenuButtonTypes::kAgressiveMode:
+				if (_engine->_actor->autoAgressive) {
+					menuSettings->setButtonTextId(i, TextId::kBehaviourAgressiveAuto);
+				} else {
+					menuSettings->setButtonTextId(i, TextId::kBehaviourAgressiveManual);
+				}
+				break;
+			case MenuButtonTypes::kPolygonDetails:
+				if (_engine->cfgfile.PolygonDetails == 0) {
+					menuSettings->setButtonTextId(i, TextId::kDetailsPolygonsLow);
+				} else if (_engine->cfgfile.PolygonDetails == 1) {
+					menuSettings->setButtonTextId(i, TextId::kDetailsPolygonsMiddle);
+				} else {
+					menuSettings->setButtonTextId(i, TextId::kDetailsPolygonsHigh);
+				}
+				break;
+			case MenuButtonTypes::kShadowSettings:
+				if (_engine->cfgfile.ShadowMode == 0) {
+					menuSettings->setButtonTextId(i, TextId::kShadowsDisabled);
+				} else if (_engine->cfgfile.ShadowMode == 1) {
+					menuSettings->setButtonTextId(i, TextId::kShadowsFigures);
+				} else {
+					menuSettings->setButtonTextId(i, TextId::kDetailsShadowHigh);
+				}
+				break;
+			case MenuButtonTypes::kSceneryZoom:
+				if (_engine->cfgfile.SceZoom) {
+					menuSettings->setButtonTextId(i, TextId::kScenaryZoomOn);
+				} else {
+					menuSettings->setButtonTextId(i, TextId::kNoScenaryZoom);
+				}
+				break;
+			default:
+				break;
+			}
+		}
 		const int32 menuItemId = menuSettings->getButtonState(i);
 		const char *text = menuSettings->getButtonText(_engine->_text, i);
 		if (hover) {
 			if (i == buttonNumber) {
-				drawButtonGfx(kMainMenuButtonWidth, topHeight, menuItemId, text, hover);
+				drawButtonGfx(menuSettings, kMainMenuButtonWidth, topHeight, menuItemId, text, hover);
 			}
 		} else {
 			if (i == buttonNumber) {
-				drawButtonGfx(kMainMenuButtonWidth, topHeight, menuItemId, text, true);
+				drawButtonGfx(menuSettings, kMainMenuButtonWidth, topHeight, menuItemId, text, true);
 			} else {
-				drawButtonGfx(kMainMenuButtonWidth, topHeight, menuItemId, text, false);
+				drawButtonGfx(menuSettings, kMainMenuButtonWidth, topHeight, menuItemId, text, false);
 			}
 		}
 
@@ -350,7 +389,13 @@ int32 Menu::processMenu(MenuSettings *menuSettings) {
 
 	_engine->_input->enableKeyMap(uiKeyMapId);
 
-	_engine->_screens->loadMenuImage(false);
+	// if we are running the game already, the buttons are just rendered on top of the scene
+	if (!_engine->_scene->isGameRunning()) {
+		_engine->_screens->loadMenuImage(false);
+	} else {
+		_engine->_screens->copyScreen(_engine->workVideoBuffer, _engine->frontVideoBuffer);
+		_engine->flip();
+	}
 	do {
 		_engine->readKeys();
 
@@ -375,11 +420,6 @@ int32 Menu::processMenu(MenuSettings *menuSettings) {
 				if (_engine->_input->toggleActionIfActive(TwinEActionType::UILeft) || _engine->_input->toggleActionIfActive(TwinEActionType::UIRight)) {
 					_engine->_actor->autoAgressive = !_engine->_actor->autoAgressive;
 				}
-				if (_engine->_actor->autoAgressive) {
-					menuSettings->setActiveButtonTextId(TextId::kBehaviourAgressiveAuto);
-				} else {
-					menuSettings->setActiveButtonTextId(TextId::kBehaviourAgressiveManual);
-				}
 				break;
 			case MenuButtonTypes::kPolygonDetails:
 				if (_engine->_input->toggleActionIfActive(TwinEActionType::UILeft)) {
@@ -388,13 +428,6 @@ int32 Menu::processMenu(MenuSettings *menuSettings) {
 				} else if (_engine->_input->toggleActionIfActive(TwinEActionType::UIRight)) {
 					_engine->cfgfile.PolygonDetails++;
 					_engine->cfgfile.PolygonDetails %= 3;
-				}
-				if (_engine->cfgfile.PolygonDetails == 0) {
-					menuSettings->setActiveButtonTextId(TextId::kDetailsPolygonsLow);
-				} else if (_engine->cfgfile.PolygonDetails == 1) {
-					menuSettings->setActiveButtonTextId(TextId::kDetailsPolygonsMiddle);
-				} else {
-					menuSettings->setActiveButtonTextId(TextId::kDetailsPolygonsHigh);
 				}
 				break;
 			case MenuButtonTypes::kShadowSettings:
@@ -405,22 +438,10 @@ int32 Menu::processMenu(MenuSettings *menuSettings) {
 					_engine->cfgfile.ShadowMode++;
 					_engine->cfgfile.ShadowMode %= 3;
 				}
-				if (_engine->cfgfile.ShadowMode == 0) {
-					menuSettings->setActiveButtonTextId(TextId::kShadowsDisabled);
-				} else if (_engine->cfgfile.ShadowMode == 1) {
-					menuSettings->setActiveButtonTextId(TextId::kShadowsFigures);
-				} else {
-					menuSettings->setActiveButtonTextId(TextId::kDetailsShadowHigh);
-				}
 				break;
 			case MenuButtonTypes::kSceneryZoom:
 				if (_engine->_input->toggleActionIfActive(TwinEActionType::UILeft) || _engine->_input->toggleActionIfActive(TwinEActionType::UIRight)) {
 					_engine->cfgfile.SceZoom = !_engine->cfgfile.SceZoom;
-				}
-				if (_engine->cfgfile.SceZoom) {
-					menuSettings->setActiveButtonTextId(TextId::kNoScenaryZoom);
-				} else {
-					menuSettings->setActiveButtonTextId(TextId::kScenaryZoomOn);
 				}
 				break;
 			default:
@@ -582,6 +603,7 @@ int32 Menu::volumeMenu() {
 void Menu::inGameOptionsMenu() {
 	_engine->_text->initTextBank(TextBankId::Options_and_menus);
 	_engine->_menu->optionsMenuState.setButtonTextId(0, TextId::kReturnGame);
+	_engine->_screens->copyScreen(_engine->frontVideoBuffer, _engine->workVideoBuffer);
 	_engine->_menu->optionsMenu();
 	_engine->_text->initTextBank(_engine->_scene->sceneTextBank + 3);
 	optionsMenuState.setButtonTextId(0, TextId::kReturnMenu);
@@ -629,6 +651,7 @@ bool Menu::init() {
 	return HQR::getEntry(plasmaEffectPtr, Resources::HQR_RESS_FILE, RESSHQR_PLASMAEFFECT) > 0;
 }
 
+// TODO: if you stay long enough in the main menu without actions, the credits-scene is started
 EngineState Menu::run() {
 	_engine->_text->initTextBank(TextBankId::Options_and_menus);
 
@@ -670,7 +693,7 @@ int32 Menu::giveupMenu() {
 	_engine->_sound->pauseSamples();
 
 	MenuSettings *localMenu;
-	if (_engine->cfgfile.UseAutoSaving == 1) {
+	if (_engine->cfgfile.UseAutoSaving) {
 		localMenu = &giveUpMenuState;
 	} else {
 		localMenu = &giveUpMenuWithSaveState;
@@ -685,7 +708,7 @@ int32 Menu::giveupMenu() {
 			_engine->_sound->resumeSamples();
 			break;
 		case TextId::kGiveUp:
-			_engine->_sound->stopSamples();
+			_engine->_gameState->giveUp();
 			return 1;
 		case TextId::kCreateSaveGame:
 			_engine->_menuOptions->saveGameMenu();
@@ -762,20 +785,20 @@ void Menu::drawInfoMenu(int16 left, int16 top) {
 
 // TODO: convert cantDrawBox to bool
 void Menu::drawBehaviour(HeroBehaviourType behaviour, int32 angle, int16 cantDrawBox) {
-	int32 boxLeft = behaviour * 110 + 110;
+	int32 boxLeft = (int32)behaviour * 110 + 110;
 	int32 boxRight = boxLeft + 99;
 	int32 boxTop = 110;
 	int32 boxBottom = 229;
 
-	uint8 *currentAnim = _engine->_resources->animTable[_engine->_actor->heroAnimIdx[behaviour]];
-	int32 currentAnimState = behaviourAnimState[behaviour];
+	uint8 *currentAnim = _engine->_resources->animTable[_engine->_actor->heroAnimIdx[(byte)behaviour]];
+	int16 currentAnimState = behaviourAnimState[(byte)behaviour];
 
-	if (_engine->_animations->setModelAnimation(currentAnimState, currentAnim, behaviourEntity, &behaviourAnimData[behaviour])) {
+	if (_engine->_animations->setModelAnimation(currentAnimState, currentAnim, behaviourEntity, &behaviourAnimData[(byte)behaviour])) {
 		currentAnimState++; // keyframe
 		if (currentAnimState >= _engine->_animations->getNumKeyframes(currentAnim)) {
 			currentAnimState = _engine->_animations->getStartKeyframe(currentAnim);
 		}
-		behaviourAnimState[behaviour] = currentAnimState;
+		behaviourAnimState[(byte)behaviour] = currentAnimState;
 	}
 
 	if (cantDrawBox == 0) {
@@ -810,21 +833,19 @@ void Menu::drawBehaviour(HeroBehaviourType behaviour, int32 angle, int16 cantDra
 	_engine->_interface->loadClip();
 }
 
+void Menu::prepareAndDrawBehaviour(int32 angle, HeroBehaviourType behaviour) {
+	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[(byte)behaviour], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[(byte)behaviour]], behaviourEntity, &behaviourAnimData[(byte)behaviour]);
+	drawBehaviour(behaviour, angle, 0);
+}
+
 void Menu::drawBehaviourMenu(int32 angle) {
 	drawBox(100, 100, 550, 290);
 	_engine->_interface->drawTransparentBox(101, 101, 549, 289, 2);
 
-	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[kNormal], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[kNormal]], behaviourEntity, &behaviourAnimData[kNormal]);
-	drawBehaviour(kNormal, angle, 0);
-
-	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[kAthletic], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[kAthletic]], behaviourEntity, &behaviourAnimData[kAthletic]);
-	drawBehaviour(kAthletic, angle, 0);
-
-	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[kAggressive], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[kAggressive]], behaviourEntity, &behaviourAnimData[kAggressive]);
-	drawBehaviour(kAggressive, angle, 0);
-
-	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[kDiscrete], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[kDiscrete]], behaviourEntity, &behaviourAnimData[kDiscrete]);
-	drawBehaviour(kDiscrete, angle, 0);
+	prepareAndDrawBehaviour(angle, HeroBehaviourType::kNormal);
+	prepareAndDrawBehaviour(angle, HeroBehaviourType::kAthletic);
+	prepareAndDrawBehaviour(angle, HeroBehaviourType::kAggressive);
+	prepareAndDrawBehaviour(angle, HeroBehaviourType::kDiscrete);
 
 	drawInfoMenu(100, 300);
 
@@ -832,17 +853,17 @@ void Menu::drawBehaviourMenu(int32 angle) {
 }
 
 void Menu::processBehaviourMenu() {
-	if (_engine->_actor->heroBehaviour == kProtoPack) {
+	if (_engine->_actor->heroBehaviour == HeroBehaviourType::kProtoPack) {
 		_engine->_sound->stopSamples();
-		_engine->_actor->setBehaviour(kNormal);
+		_engine->_actor->setBehaviour(HeroBehaviourType::kNormal);
 	}
 
 	behaviourEntity = _engine->_actor->bodyTable[_engine->_scene->sceneHero->entity];
 
-	_engine->_actor->heroAnimIdx[kNormal] = _engine->_actor->heroAnimIdxNORMAL;
-	_engine->_actor->heroAnimIdx[kAthletic] = _engine->_actor->heroAnimIdxATHLETIC;
-	_engine->_actor->heroAnimIdx[kAggressive] = _engine->_actor->heroAnimIdxAGGRESSIVE;
-	_engine->_actor->heroAnimIdx[kDiscrete] = _engine->_actor->heroAnimIdxDISCRETE;
+	_engine->_actor->heroAnimIdx[(byte)HeroBehaviourType::kNormal] = _engine->_actor->heroAnimIdxNORMAL;
+	_engine->_actor->heroAnimIdx[(byte)HeroBehaviourType::kAthletic] = _engine->_actor->heroAnimIdxATHLETIC;
+	_engine->_actor->heroAnimIdx[(byte)HeroBehaviourType::kAggressive] = _engine->_actor->heroAnimIdxAGGRESSIVE;
+	_engine->_actor->heroAnimIdx[(byte)HeroBehaviourType::kDiscrete] = _engine->_actor->heroAnimIdxDISCRETE;
 
 	_engine->_movements->setActorAngleSafe(_engine->_scene->sceneHero->angle, _engine->_scene->sceneHero->angle - 256, 50, &moveMenu);
 
@@ -857,7 +878,7 @@ void Menu::processBehaviourMenu() {
 
 	HeroBehaviourType tmpHeroBehaviour = _engine->_actor->heroBehaviour;
 
-	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[_engine->_actor->heroBehaviour], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[_engine->_actor->heroBehaviour]], behaviourEntity, &behaviourAnimData[_engine->_actor->heroBehaviour]);
+	_engine->_animations->setAnimAtKeyframe(behaviourAnimState[(byte)_engine->_actor->heroBehaviour], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[(byte)_engine->_actor->heroBehaviour]], behaviourEntity, &behaviourAnimData[(byte)_engine->_actor->heroBehaviour]);
 
 	int32 tmpTime = _engine->lbaTime;
 
@@ -871,10 +892,10 @@ void Menu::processBehaviourMenu() {
 			heroBehaviour++;
 		}
 
-		if (heroBehaviour < kNormal) {
-			heroBehaviour = kDiscrete;
-		} else if (heroBehaviour >= kProtoPack) {
-			heroBehaviour = kNormal;
+		if (heroBehaviour < (int)HeroBehaviourType::kNormal) {
+			heroBehaviour = (int)HeroBehaviourType::kDiscrete;
+		} else if (heroBehaviour >= (int)HeroBehaviourType::kProtoPack) {
+			heroBehaviour = (int)HeroBehaviourType::kNormal;
 		}
 
 		_engine->_actor->heroBehaviour = (HeroBehaviourType)heroBehaviour;
@@ -883,7 +904,7 @@ void Menu::processBehaviourMenu() {
 			drawBehaviour(tmpHeroBehaviour, _engine->_scene->sceneHero->angle, 1);
 			tmpHeroBehaviour = _engine->_actor->heroBehaviour;
 			_engine->_movements->setActorAngleSafe(_engine->_scene->sceneHero->angle, _engine->_scene->sceneHero->angle - 256, 50, &moveMenu);
-			_engine->_animations->setAnimAtKeyframe(behaviourAnimState[_engine->_actor->heroBehaviour], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[_engine->_actor->heroBehaviour]], behaviourEntity, &behaviourAnimData[_engine->_actor->heroBehaviour]);
+			_engine->_animations->setAnimAtKeyframe(behaviourAnimState[(byte)_engine->_actor->heroBehaviour], _engine->_resources->animTable[_engine->_actor->heroAnimIdx[(byte)_engine->_actor->heroBehaviour]], behaviourEntity, &behaviourAnimData[(byte)_engine->_actor->heroBehaviour]);
 		}
 
 		drawBehaviour(_engine->_actor->heroBehaviour, -1, 1);

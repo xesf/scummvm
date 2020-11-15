@@ -191,11 +191,11 @@ static int32 processLifeConditions(TwinEEngine *engine, LifeScriptContext &ctx) 
 		break;
 	}
 	case kcANIM:
-		engine->_scene->currentScriptValue = ctx.actor->anim;
+		engine->_scene->currentScriptValue = (int16)ctx.actor->anim;
 		break;
 	case kcANIM_OBJ: {
 		int32 actorIdx = ctx.stream.readByte();
-		engine->_scene->currentScriptValue = engine->_scene->getActor(actorIdx)->anim;
+		engine->_scene->currentScriptValue = (int16)engine->_scene->getActor(actorIdx)->anim;
 		break;
 	}
 	case kcL_TRACK:
@@ -240,7 +240,7 @@ static int32 processLifeConditions(TwinEEngine *engine, LifeScriptContext &ctx) 
 					engine->_scene->currentScriptValue = engine->_movements->targetActorDistance;
 				}
 			} else {
-				if (engine->_actor->heroBehaviour == kDiscrete) {
+				if (engine->_actor->heroBehaviour == HeroBehaviourType::kDiscrete) {
 					int32 heroAngle;
 
 					heroAngle = ctx.actor->angle + 0x480 - newAngle + 0x400;
@@ -296,7 +296,7 @@ static int32 processLifeConditions(TwinEEngine *engine, LifeScriptContext &ctx) 
 		engine->_scene->currentScriptValue = engine->_gameState->inventoryNumKashes;
 		break;
 	case kcBEHAVIOUR:
-		engine->_scene->currentScriptValue = engine->_actor->heroBehaviour;
+		engine->_scene->currentScriptValue = (int16)engine->_actor->heroBehaviour;
 		break;
 	case kcCHAPTER:
 		engine->_scene->currentScriptValue = engine->_gameState->gameChapter;
@@ -545,7 +545,7 @@ static int32 lBODY_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
 /*0x13*/
 static int32 lANIM(TwinEEngine *engine, LifeScriptContext &ctx) {
 	AnimationTypes animIdx = (AnimationTypes)ctx.stream.readByte();
-	engine->_animations->initAnim(animIdx, 0, 0, ctx.actorIdx);
+	engine->_animations->initAnim(animIdx, 0, AnimationTypes::kStanding, ctx.actorIdx);
 	return 0;
 }
 
@@ -553,7 +553,7 @@ static int32 lANIM(TwinEEngine *engine, LifeScriptContext &ctx) {
 static int32 lANIM_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
 	int32 otherActorIdx = ctx.stream.readByte();
 	AnimationTypes otherAnimIdx = (AnimationTypes)ctx.stream.readByte();
-	engine->_animations->initAnim(otherAnimIdx, 0, 0, otherActorIdx);
+	engine->_animations->initAnim(otherAnimIdx, 0, AnimationTypes::kStanding, otherActorIdx);
 	return 0;
 }
 
@@ -652,9 +652,9 @@ static int32 lCAM_FOLLOW(TwinEEngine *engine, LifeScriptContext &ctx) {
 
 /*0x1E*/
 static int32 lSET_BEHAVIOUR(TwinEEngine *engine, LifeScriptContext &ctx) {
-	const int32 behavior = ctx.stream.readByte();
+	const HeroBehaviourType behavior = (HeroBehaviourType)ctx.stream.readByte();
 
-	engine->_animations->initAnim(kStanding, 0, 255, 0);
+	engine->_animations->initAnim(AnimationTypes::kStanding, 0, AnimationTypes::kAnimInvalid, 0);
 	engine->_actor->setBehaviour(behavior);
 
 	return 0;
@@ -1371,9 +1371,9 @@ static int32 lMESSAGE_SENDELL(TwinEEngine *engine, LifeScriptContext &ctx) {
 static int32 lANIM_SET(TwinEEngine *engine, LifeScriptContext &ctx) {
 	AnimationTypes animIdx = (AnimationTypes)ctx.stream.readByte();
 
-	ctx.actor->anim = kAnimNone;
+	ctx.actor->anim = AnimationTypes::kAnimNone;
 	ctx.actor->previousAnimIdx = -1;
-	engine->_animations->initAnim(animIdx, 0, 0, ctx.actorIdx);
+	engine->_animations->initAnim(animIdx, 0, AnimationTypes::kStanding, ctx.actorIdx);
 
 	return 0;
 }
@@ -1460,8 +1460,8 @@ static int32 lTEXT(TwinEEngine *engine, LifeScriptContext &ctx) {
 		int32 textBoxRight = textSize;
 		engine->_text->setFontColor(15);
 		engine->_text->drawText(0, drawVar1, textStr);
-		if (textSize > DEFAULT_SCREEN_WIDTH - 1) {
-			textBoxRight = DEFAULT_SCREEN_WIDTH - 1;
+		if (textSize > SCREEN_WIDTH - 1) {
+			textBoxRight = SCREEN_WIDTH - 1;
 		}
 
 		drawVar1 += 40;

@@ -45,15 +45,9 @@ namespace TwinE {
 #define MODIFICATION_VERSION 2
 
 /** Original screen width */
-#define DEFAULT_SCREEN_WIDTH 640
+#define SCREEN_WIDTH 640
 /** Original screen height */
-#define DEFAULT_SCREEN_HEIGHT 480
-/** Scale screen to double size */
-#define SCALE 1 // TODO: remove me or support me
-/** Original screen width */
-#define SCREEN_WIDTH DEFAULT_SCREEN_WIDTH *SCALE
-/** Original screen height */
-#define SCREEN_HEIGHT DEFAULT_SCREEN_HEIGHT *SCALE
+#define SCREEN_HEIGHT 480
 /** Default frames per second */
 #define DEFAULT_FRAMES_PER_SECOND 19
 
@@ -112,11 +106,11 @@ struct ConfigFile {
 
 	// these settings are not available in the original version
 	/** Use cross fade effect while changing images, or be as the original */
-	int32 CrossFade = 0;
+	bool CrossFade = false;
 	/** Flag to toggle Wall Collision */
-	int32 WallCollision = 0;
+	bool WallCollision = false;
 	/** Use original autosaving system or save when you want */
-	int32 UseAutoSaving = 0;
+	bool UseAutoSaving = false;
 
 	// these settings can be changed in-game - and must be persisted
 	/** Shadow mode type, value: all, character only, none */

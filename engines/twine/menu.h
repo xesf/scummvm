@@ -152,7 +152,7 @@ private:
 	 * @param dialText
 	 * @param hover flag to know if should draw as a hover button or not
 	 */
-	void drawButtonGfx(int32 width, int32 topheight, int32 buttonId, const char *dialText, bool hover);
+	void drawButtonGfx(const MenuSettings *menuSettings, int32 width, int32 topheight, int32 buttonId, const char *dialText, bool hover);
 	void plasmaEffectRenderFrame();
 	/**
 	 * Process the menu button draw
@@ -169,6 +169,7 @@ private:
 	void drawInfoMenu(int16 left, int16 top);
 	void drawBehaviour(HeroBehaviourType behaviour, int32 angle, int16 cantDrawBox);
 	void drawInventoryItems();
+	void prepareAndDrawBehaviour(int32 angle, HeroBehaviourType behaviour);
 	void drawBehaviourMenu(int32 angle);
 	void drawItem(int32 item);
 	/**

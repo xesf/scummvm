@@ -29,10 +29,6 @@ Programmcodes finden Sie auf Englisch unter:
    - Unterstützung für die Version in brasilianischem Portugiesisch von Grim Fandango hinzugefügt.
    - Unterstützung für die russische Version von Escape from Monkey Island hinzugefügt.
 
- Kyra:
-   - Unterstützung für die russische Version Version vom The Legend of Kyrandia (von Siberian GRemlin) hinzugefügt.
-   - Russische Fan-Übersetzung von The Legend of Kyrandia 2 - Hand of Fate korrigiert (Untertitel im Into und in den Credits hinzugefügt).
-
  Lure:
    - Die Feuer-Animation im ersten Raum wird nun auch nach dem Laden eines Spielstands abgespielt.
 
@@ -44,6 +40,8 @@ Programmcodes finden Sie auf Englisch unter:
      mit der Farbpalette während Bildschirmübergängen und Probleme bei der Darstellung von Mac-QuickTime-Videos korrigiert.
    - Unterstützung für benutzerdefinierte Farbpaletten in SQ3 und LSL2 des FreeSCI-Projekts hinzugefügt.
      Wenn diese Mods aktiviert werden, wird die grafische Darstellung in diesen beiden Spielen verbessert.
+   - Unterstützung für die koreanischen Fan-Übersetzungen von Castle of Dr. Brain, Eco Quest, Gabriel Knight,
+     King's Quest 1, 5 und 6, Laura Bow 2: Dagger of Amon Ra und Space Quest 4 hinzugefügt.
 
  SCUMM:
    - Textdarstellung in der chinesischen, japanischen und koreanischen Version von The Dig und
@@ -52,7 +50,7 @@ Programmcodes finden Sie auf Englisch unter:
    - Darstellung des Pause- und Neustart-Dialogs in der chinesischen, japanischen und koreanischen Version
      der Benutzeroberfläche korrigiert.
 
-   Tinsel:
+ Tinsel:
    - Unterstützung für die Rückkehr zur ScummVM-Benutzeroberfläche hinzugefügt.
 
  Stark:

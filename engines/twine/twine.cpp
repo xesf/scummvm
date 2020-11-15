@@ -32,7 +32,6 @@
 #include "common/stream.h"
 #include "common/system.h"
 #include "common/textconsole.h"
-#include "common/translation.h"
 #include "engines/metaengine.h"
 #include "engines/util.h"
 #include "graphics/colormasks.h"
@@ -306,9 +305,9 @@ void TwinEEngine::initConfigurations() {
 
 	const char *lng = Common::getLanguageDescription(_gameLang);
 	cfgfile.LanguageId = getLanguageTypeIndex(lng);
-	cfgfile.Voice = ConfGetOrDefault("Voice", "ON") == "ON";
-	cfgfile.FlagDisplayText = ConfGetOrDefault("FlagDisplayText", "ON") == "ON";
-	const Common::String midiType = ConfGetOrDefault("MidiType", "auto");
+	cfgfile.Voice = ConfGetIntOrDefault("voice", 1) == 1;
+	cfgfile.FlagDisplayText = ConfGetIntOrDefault("displaytext", 1) == 1;
+	const Common::String midiType = ConfGetOrDefault("miditype", "auto");
 	if (midiType == "None") {
 		cfgfile.MidiType = MIDIFILE_NONE;
 	} else {
@@ -324,21 +323,21 @@ void TwinEEngine::initConfigurations() {
 			debug("Could not find midi hqr file");
 		}
 	}
-	cfgfile.Version = ConfGetIntOrDefault("Version", EUROPE_VERSION);
-	cfgfile.UseCD = ConfGetIntOrDefault("UseCD", 0);
-	cfgfile.Sound = ConfGetIntOrDefault("Sound", 1);
-	cfgfile.Movie = ConfGetIntOrDefault("Movie", CONF_MOVIE_FLA);
-	cfgfile.Fps = ConfGetIntOrDefault("Fps", DEFAULT_FRAMES_PER_SECOND);
-	cfgfile.Debug = ConfGetIntOrDefault("Debug", 0) == 1;
+	cfgfile.Version = ConfGetIntOrDefault("version", EUROPE_VERSION);
+	cfgfile.UseCD = ConfGetIntOrDefault("usecd", 0) == 1;
+	cfgfile.Sound = ConfGetIntOrDefault("sound", 1) == 1;
+	cfgfile.Movie = ConfGetIntOrDefault("movie", CONF_MOVIE_FLA);
+	cfgfile.Fps = ConfGetIntOrDefault("fps", DEFAULT_FRAMES_PER_SECOND);
+	cfgfile.Debug = ConfGetIntOrDefault("debug", 0) == 1;
 
-	cfgfile.UseAutoSaving = ConfGetIntOrDefault("UseAutoSaving", 0);
-	cfgfile.CrossFade = ConfGetIntOrDefault("CrossFade", 0);
-	cfgfile.WallCollision = ConfGetIntOrDefault("WallCollision", 0);
+	cfgfile.UseAutoSaving = ConfGetIntOrDefault("useautosaving", 0);
+	cfgfile.CrossFade = ConfGetIntOrDefault("crossfade", 0);
+	cfgfile.WallCollision = ConfGetIntOrDefault("wallcollision", 0);
 
-	_actor->autoAgressive = ConfGetIntOrDefault("CombatAuto", 1) == 1;
-	cfgfile.ShadowMode = ConfGetIntOrDefault("Shadow", 2);
-	cfgfile.SceZoom = ConfGetIntOrDefault("SceZoom", 0) == 0;
-	cfgfile.PolygonDetails = ConfGetIntOrDefault("PolygonDetails", 2);
+	_actor->autoAgressive = ConfGetIntOrDefault("combatauto", 1) == 1;
+	cfgfile.ShadowMode = ConfGetIntOrDefault("shadow", 2);
+	cfgfile.SceZoom = ConfGetIntOrDefault("scezoom", 0) == 0;
+	cfgfile.PolygonDetails = ConfGetIntOrDefault("polygondetails", 2);
 }
 
 void TwinEEngine::initEngine() {
@@ -495,7 +494,7 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 			case kiHolomap:
 				_holomap->processHolomap();
 				_screens->lockPalette = true;
-				warning("Use inventory [kiHolomap] not implemented!\n");
+				warning("Use inventory [kiHolomap] not implemented!");
 				break;
 			case kiMagicBall:
 				if (_gameState->usingSabre) {
@@ -505,11 +504,11 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 				break;
 			case kiUseSabre:
 				if (_scene->sceneHero->body != InventoryItems::kiUseSabre) {
-					if (_actor->heroBehaviour == kProtoPack) {
-						_actor->setBehaviour(kNormal);
+					if (_actor->heroBehaviour == HeroBehaviourType::kProtoPack) {
+						_actor->setBehaviour(HeroBehaviourType::kNormal);
 					}
 					_actor->initModelActor(InventoryItems::kiUseSabre, 0);
-					_animations->initAnim(kSabreUnknown, 1, 0, 0);
+					_animations->initAnim(AnimationTypes::kSabreUnknown, 1, AnimationTypes::kStanding, 0);
 
 					_gameState->usingSabre = true;
 				}
@@ -541,10 +540,10 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 					_scene->sceneHero->body = 1;
 				}
 
-				if (_actor->heroBehaviour == kProtoPack) {
-					_actor->setBehaviour(kNormal);
+				if (_actor->heroBehaviour == HeroBehaviourType::kProtoPack) {
+					_actor->setBehaviour(HeroBehaviourType::kNormal);
 				} else {
-					_actor->setBehaviour(kProtoPack);
+					_actor->setBehaviour(HeroBehaviourType::kProtoPack);
 				}
 				break;
 			case kiPinguin: {
@@ -562,7 +561,7 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 					pinguin->body = -1;
 					_actor->initModelActor(0, _scene->mecaPinguinIdx);
 					pinguin->dynamicFlags.bIsDead = 0; // &= 0xDF
-					pinguin->brickShape = 0;
+					pinguin->setBrickShape(ShapeType::kNone);
 					_movements->moveActor(pinguin->angle, pinguin->angle, pinguin->speed, &pinguin->move);
 					_gameState->gameFlags[InventoryItems::kiPinguin] = 0; // byte_50D89 = 0;
 					pinguin->info0 = lbaTime + 1500;
@@ -620,17 +619,17 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 		}
 
 		// use Proto-Pack
-		if (_input->isActionActive(TwinEActionType::UseProtoPack, false) && _gameState->gameFlags[InventoryItems::kiProtoPack] == 1) {
+		if (_input->toggleActionIfActive(TwinEActionType::UseProtoPack) && _gameState->gameFlags[InventoryItems::kiProtoPack] == 1) {
 			if (_gameState->gameFlags[InventoryItems::kiBookOfBu]) {
 				_scene->sceneHero->body = 0;
 			} else {
 				_scene->sceneHero->body = 1;
 			}
 
-			if (_actor->heroBehaviour == kProtoPack) {
-				_actor->setBehaviour(kNormal);
+			if (_actor->heroBehaviour == HeroBehaviourType::kProtoPack) {
+				_actor->setBehaviour(HeroBehaviourType::kNormal);
 			} else {
-				_actor->setBehaviour(kProtoPack);
+				_actor->setBehaviour(HeroBehaviourType::kProtoPack);
 			}
 		}
 
@@ -693,8 +692,8 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 
 		if (!actor->dynamicFlags.bIsDead) {
 			if (actor->life == 0) {
-				if (a == 0) { // if its hero who died
-					_animations->initAnim(kLandDeath, 4, 0, 0);
+				if (IS_HERO(a)) {
+					_animations->initAnim(AnimationTypes::kLandDeath, 4, AnimationTypes::kStanding, 0);
 					actor->controlMode = ControlMode::kNoMove;
 				} else {
 					_sound->playSample(Samples::Explode, getRandomNumber(2000) + 3096, 1, actor->x, actor->y, actor->z, a);
@@ -736,25 +735,15 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 			}
 
 			if (actor->staticFlags.bCanDrown) {
-				int32 brickSound;
-				brickSound = _grid->getBrickSoundType(actor->x, actor->y - 1, actor->z);
+				int32 brickSound = _grid->getBrickSoundType(actor->x, actor->y - 1, actor->z);
 				actor->brickSound = brickSound;
 
 				if ((brickSound & 0xF0) == 0xF0) {
-					if ((brickSound & 0xF) == 1) {
-						if (a) { // all other actors
-							int32 rnd = getRandomNumber(2000) + 3096;
-							_sound->playSample(Samples::Explode, rnd, 1, actor->x, actor->y, actor->z, a);
-							if (actor->bonusParameter & 0x1F0) {
-								if (!(actor->bonusParameter & 1)) {
-									_actor->processActorExtraBonus(a);
-								}
-								actor->life = 0;
-							}
-						} else { // if Hero
-							if (_actor->heroBehaviour != 4 || (brickSound & 0x0F) != actor->anim) {
+					if ((brickSound & 0x0F) == 1) {
+						if (IS_HERO(a)) {
+							if (_actor->heroBehaviour != HeroBehaviourType::kProtoPack || actor->anim != AnimationTypes::kForward) {
 								if (!_actor->cropBottomScreen) {
-									_animations->initAnim(kDrawn, 4, 0, 0);
+									_animations->initAnim(AnimationTypes::kDrawn, 4, AnimationTypes::kStanding, 0);
 									_renderer->projectPositionOnScreen(actor->x - _grid->cameraX, actor->y - _grid->cameraY, actor->z - _grid->cameraZ);
 									_actor->cropBottomScreen = _renderer->projPosY;
 								}
@@ -764,13 +753,22 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 								_actor->cropBottomScreen = _renderer->projPosY;
 								actor->staticFlags.bCanDrown |= 0x10;
 							}
+						} else {
+							const int32 rnd = getRandomNumber(2000) + 3096;
+							_sound->playSample(Samples::Explode, rnd, 1, actor->x, actor->y, actor->z, a);
+							if (actor->bonusParameter & 0x1F0) {
+								if (!(actor->bonusParameter & 1)) {
+									_actor->processActorExtraBonus(a);
+								}
+								actor->life = 0;
+							}
 						}
 					}
 				}
 			}
 
 			if (actor->life <= 0) {
-				if (!a) { // if its Hero
+				if (IS_HERO(a)) {
 					if (actor->dynamicFlags.bAnimEnded) {
 						if (_gameState->inventoryNumLeafs > 0) { // use clover leaf automaticaly
 							_scene->sceneHero->x = _scene->newHeroX;
@@ -852,14 +850,14 @@ int32 TwinEEngine::runGameEngine() { // mainLoopInteration
 	_redraw->redrawEngineActions(_redraw->reqBgRedraw);
 
 	// workaround to fix hero redraw after drowning
-	if (_actor->cropBottomScreen && _redraw->reqBgRedraw == 1) {
+	if (_actor->cropBottomScreen && _redraw->reqBgRedraw) {
 		_scene->sceneHero->staticFlags.bIsHidden = 1;
 		_redraw->redrawEngineActions(1);
 		_scene->sceneHero->staticFlags.bIsHidden = 0;
 	}
 
 	_scene->needChangeScene = -1;
-	_redraw->reqBgRedraw = 0;
+	_redraw->reqBgRedraw = false;
 
 	return 0;
 }

@@ -24,6 +24,7 @@
 #define TWINE_ACTOR_H
 
 #include "common/scummsys.h"
+#include "twine/shared.h"
 
 namespace TwinE {
 
@@ -32,26 +33,6 @@ namespace TwinE {
 
 /** Total number of bodies allowed in the game */
 #define NUM_BODIES 200
-
-/** Hero behaviour
- * <li> NORMAL: Talk / Read / Search / Use
- * <li> ATHLETIC: Jump
- * <li> AGGRESSIVE:
- * Auto mode   : Fight
- * Manual mode : While holding the spacebar down
- * 			UP / RIGHT / LEFT will manually select
- * 			different punch/kick options
- * <li> DISCREET: Kneel down to hide
- *
- * @note The values must match the @c TextId indices
- */
-enum HeroBehaviourType {
-	kNormal = 0,
-	kAthletic = 1,
-	kAggressive = 2,
-	kDiscrete = 3,
-	kProtoPack = 4
-};
 
 /** Actors move structure */
 struct ActorMoveStruct {
@@ -76,37 +57,8 @@ struct ZVBox {
 
 /** Actors animation timer structure */
 struct AnimTimerDataStruct {
-	uint8 *ptr = nullptr;
+	const uint8 *ptr = nullptr;
 	int32 time = 0;
-};
-
-enum AnimationTypes {
-	kAnimNone = -1,
-	kStanding = 0,
-	kForward = 1,
-	kBackward = 2,
-	kTurnLeft = 3,
-	kTurnRight = 4,
-	kHit = 5,
-	kBigHit = 6,
-	kFall = 7,
-	kLanding = 8,
-	kLandingHit = 9,
-	kLandDeath = 10,
-	kAction = 11,
-	kClimbLadder = 12,
-	kTopLadder = 13,
-	kJump = 14,
-	kThrowBall = 15,
-	kHide = 16,
-	kKick = 17,
-	kRightPunch = 18,
-	kLeftPunch = 19,
-	kFoundItem = 20,
-	kDrawn = 21,
-	kHit2 = 22,
-	kSabreAttack = 23,
-	kSabreUnknown = 24,
 };
 
 /** Actors static flags structure */
@@ -126,6 +78,7 @@ struct StaticFlagsStruct {
 	uint16 bDoesntCastShadow : 1;           // 0x1000
 	uint16 bIsBackgrounded : 1;             // 0x2000
 	uint16 bIsCarrierActor : 1;             // 0x4000
+	// take smaller value for bound, or if not set take average for bound
 	uint16 bUseMiniZv : 1;                  // 0x8000
 };
 
@@ -149,28 +102,24 @@ struct DynamicFlagsStruct {
 	uint16 bUnk8000 : 1;          // 0x8000 unused
 };
 
-/** Control mode types */
-enum ControlMode {
-	kNoMove = 0,
-	kManual = 1,
-	kFollow = 2,
-	kTrack = 3,
-	kFollow2 = 4,
-	kTrackAttack = 5,
-	kSameXZ = 6,
-	kRandom = 7
-};
-
 /** Actors structure */
-struct ActorStruct {
+class ActorStruct {
+private:
+	ShapeType _brickShape = ShapeType::kNone; // field_3
+	bool _brickCausesDamage = false;
+public:
 	StaticFlagsStruct staticFlags;
 	DynamicFlagsStruct dynamicFlags;
 
+	inline ShapeType brickShape() const { return _brickShape; }
+	inline void setBrickShape(ShapeType shapeType) { _brickShape = shapeType; _brickCausesDamage = false; }
+	inline void setBrickCausesDamage() { _brickCausesDamage = true; }
+	inline bool brickCausesDamage() { return _brickCausesDamage; }
+
 	int32 entity = 0; // costumeIndex
 	int32 body = 0;
-	AnimationTypes anim = kAnimNone;
-	int32 animExtra = 0;  //field_2
-	int32 brickShape = 0; // field_3
+	AnimationTypes anim = AnimationTypes::kAnimNone;
+	AnimationTypes animExtra = AnimationTypes::kStanding;  //field_2
 	const uint8 *animExtraPtr = nullptr;
 	int32 sprite = 0; // field_8
 	uint8 *entityDataPtr = nullptr;
@@ -292,13 +241,13 @@ public:
 	/** Actor shadow Z coordinate */
 	int32 shadowZ = 0;
 	/** Actor shadow collition type - brick shape */
-	int8 shadowCollisionType = 0; // shadowVar
+	ShapeType shadowCollisionType = ShapeType::kNone; // shadowVar
 
-	HeroBehaviourType heroBehaviour = kNormal;
+	HeroBehaviourType heroBehaviour = HeroBehaviourType::kNormal;
 	/** Hero auto agressive mode */
 	bool autoAgressive = true;
 	/** Previous Hero behaviour */
-	HeroBehaviourType previousHeroBehaviour = kNormal;
+	HeroBehaviourType previousHeroBehaviour = HeroBehaviourType::kNormal;
 	/** Previous Hero angle */
 	int16 previousHeroAngle = 0;
 
@@ -337,7 +286,7 @@ public:
 	 * Set hero behaviour
 	 * @param behaviour behaviour value to set
 	 */
-	void setBehaviour(int32 behaviour);
+	void setBehaviour(HeroBehaviourType behaviour);
 
 	/** Preload all sprites */
 	void preloadSprites();

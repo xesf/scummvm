@@ -2906,24 +2906,18 @@ case $_host_os in
 		# A workaround is to set the LC_VERSION_MIN_MACOSX load command's sdk value
 		# to n/a (i.e. 0.0). See bug #11430 for details.
 		echocheck "macOS deployement target"
-		_macos_min_version=undefined
-		for _macos_min_version_check in 1030 1040 1050 1060 1070 1080 1090 101000 101100 101200 101300 101400 101500 101600; do
-			cat > $TMPC << EOF
+		cat > $TMPC << EOF
 #include "AvailabilityMacros.h"
-#if MAC_OS_X_VERSION_MIN_REQUIRED > ${_macos_min_version_check}
-error
-#endif
-int main(int argc, char *argv[]) { return 0; }
+#include <stdio.h>
+int main(int argc, char *argv[]) { printf("%d\n", MAC_OS_X_VERSION_MIN_REQUIRED); return 0; }
 EOF
-			cc_check
-			if test "$TMPR" -eq 0; then
-				_macos_min_version=$_macos_min_version_check
-				break
-			fi
-		done
+		cc_check_no_clean
+		_macos_min_version=`$TMPO$HOSTEXEEXT 2>/dev/null`
+		cc_check_clean
+
 		# Also get a dot version of the min version
 		_macos_min_version_dot=undefined
-		if test "$_macos_min_version" != undefined ; then
+		if test -n "$_macos_min_version" ; then
 			if test "$_macos_min_version" -lt 101000; then
 				_macos_min_ver_major=$((${_macos_min_version}/100))
 				_macos_min_ver_minor=$((${_macos_min_version}/10 - 10*${_macos_min_ver_major}))
@@ -2953,15 +2947,18 @@ EOF
 			append_var LDFLAGS "$_macos_ldflags_platform_version"
 		fi
 
-		# When building for MacOS X 10.5 or below we need to use the legacy icon
-		if test "$_macos_min_version" != undefined -a "$_macos_min_version" -lt 1060 ; then
-			add_line_to_config_mk 'MACOSX_USE_LEGACY_ICONS = 1'
-		fi
+		# Version-specific quirks
+		if test -n "$_macos_min_version" ; then
+			# When building for MacOS X 10.5 or below we need to use the legacy icon
+			if test "$_macos_min_version" -lt 1060 ; then
+				add_line_to_config_mk 'MACOSX_USE_LEGACY_ICONS = 1'
+			fi
 
-		# When building with SDK 10.14 or above, we cannot compile the 32 bits dock plugin
-		# Assume the SDK version is the same as the min version.
-		if test "$_macos_min_version" != undefined -a "$_macos_min_version" -gt 101399 ; then
-			add_line_to_config_mk 'MACOSX_64_BITS_ONLY = 1'
+			# When building with SDK 10.14 or above, we cannot compile the 32 bits dock plugin
+			# Assume the SDK version is the same as the min version.
+			if test "$_macos_min_version" -gt 101399 ; then
+				add_line_to_config_mk 'MACOSX_64_BITS_ONLY = 1'
+			fi
 		fi
 
 		# Use pandoc to generate README and NEWS file for the bundle
@@ -3473,6 +3470,7 @@ if test -n "$_host"; then
 			_port_mk="backends/platform/gph/gp2xwiz-bundle.mk"
 			;;
 		iphone)
+			add_line_to_config_mk 'IPHONE = 1'
 			append_var DEFINES "-DIPHONE"
 			append_var ASFLAGS "-arch armv6"
 			_backend="iphone"
@@ -3482,6 +3480,7 @@ if test -n "$_host"; then
 			_timidity=no
 			;;
 		ios7)
+			add_line_to_config_mk 'IPHONE = 1'
 			append_var DEFINES "-DIPHONE -DIPHONE_IOS7 -DIPHONE_SANDBOXED"
 			_backend="ios7"
 			_seq_midi=no
@@ -4345,7 +4344,7 @@ if test "$_tts" = auto ; then
 		mingw*)
 			cat > $TMPC << EOF
 #include <windows.h>
-#include <Servprov.h>
+#include <servprov.h>
 #include <sapi.h>
 int main(void) { return 0; }
 EOF

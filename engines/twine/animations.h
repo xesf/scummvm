@@ -34,9 +34,9 @@ class TwinEEngine;
 class Animations {
 private:
 	TwinEEngine *_engine;
-	void applyAnimStepRotation(uint8 **ptr, int32 bp, int32 bx);
-	int32 getAnimMode(uint8 **ptr);
-	void applyAnimStep(uint8 **ptr, int32 bp, int32 bx);
+	void applyAnimStepRotation(uint8 **ptr, int32 bp, int32 bx, const uint8 **keyFramePtr, const uint8 **lastKeyFramePtr);
+	int32 getAnimMode(uint8 **ptr, const uint8 **keyFramePtr, const uint8 **lastKeyFramePtr);
+	void applyAnimStep(uint8 **ptr, int32 bp, int32 bx, const uint8 **keyFramePtr, const uint8 **lastKeyFramePtr);
 
 	/**
 	 * Verify animation at keyframe
@@ -61,11 +61,6 @@ private:
 	int16 currentStepY = 0;
 	/** Current step Z coornidate */
 	int16 currentStepZ = 0;
-
-	/** Pointer to current animation keyframe */
-	uint8 *keyFramePtr = nullptr;
-	/** Pointer to last animation keyframe */
-	const uint8 *lastKeyFramePtr = nullptr;
 
 public:
 	Animations(TwinEEngine *engine);
@@ -104,7 +99,7 @@ public:
 	 * @param bodyPtr Body model poitner
 	 * @param animTimerDataPtr Animation time data
 	 */
-	int32 setModelAnimation(int32 animIdx, uint8 *animPtr, uint8 *bodyPtr, AnimTimerDataStruct *animTimerDataPtr);
+	bool setModelAnimation(int32 animIdx, const uint8 *animPtr, uint8 *bodyPtr, AnimTimerDataStruct *animTimerDataPtr);
 
 	/**
 	 * Get entity anim index (This is taken from File3D entities)
@@ -127,7 +122,7 @@ public:
 	 * @param animExtra animation actions extra data
 	 * @param actorIdx actor index
 	 */
-	int32 initAnim(AnimationTypes newAnim, int16 animType, uint8 animExtra, int32 actorIdx);
+	bool initAnim(AnimationTypes newAnim, int16 animType, AnimationTypes animExtra, int32 actorIdx);
 
 	/**
 	 * Process acotr animation actions

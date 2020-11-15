@@ -20,31 +20,22 @@
  *
  */
 
-#include "dgds/detection.h"
-#include "dgds/detection_tables.h"
+#ifndef DGDS_METAENGINE_H
+#define DGDS_METAENGINE_H
 
-#include "base/plugins.h"
-#include "common/system.h"
-#include "common/config-manager.h"
-#include "base/plugins.h"
 #include "engines/advancedDetector.h"
+#include "common/system.h"
 
+class DgdsMetaEngine : public AdvancedMetaEngine {
+private:
+	/**
+	 * Gets the game Id given a target string
+	 */
+	static Common::String getGameId(const char *target);
+public:
+	const char *getName() const override;
 
-namespace Dgds {
-
-static const PlainGameDescriptor DGDS_GAMES[] = {
-    { "castaway", "Johnny Castaway Screen Saver" },
-    { "dragon", "Rise of the Dragron" },
-    { "hoc", "Heart of China" },
-    { "turbosci", "Quarky & Quaysoo's Turbo Science" },
-    { "willy", "The Adventures of Willy Beamish" },
-    { 0, 0 }
+	bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 };
 
-} // End of namespace Dgds
-
-DgdsMetaEngineDetection::DgdsMetaEngineDetection() : AdvancedMetaEngineDetection(Dgds::GAME_DESCRIPTIONS,
-	        sizeof(Dgds::DgdsGameDescription), Dgds::DGDS_GAMES) {
-}
-
-REGISTER_PLUGIN_STATIC(DGDS_DETECTION, PLUGIN_TYPE_ENGINE_DETECTION, DgdsMetaEngineDetection);
+#endif

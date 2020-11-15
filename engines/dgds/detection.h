@@ -26,8 +26,6 @@
 #include "engines/advancedDetector.h"
 #include "backends/keymapper/keymapper.h"
 
-#define MAX_SAVES 99
-
 namespace Dgds {
 
 enum GameId {
@@ -50,15 +48,10 @@ struct DgdsGameDescription {
 
 } // End of namespace Dgds
 
-class DgdsMetaEngine : public AdvancedMetaEngine {
-private:
-    /**
-     * Gets the game Id given a target string
-     */
-    static Common::String getGameId(const char *target);
+class DgdsMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
-    DgdsMetaEngine();
-    ~DgdsMetaEngine() override {}
+    DgdsMetaEngineDetection();
+    ~DgdsMetaEngineDetection() override {}
 
     const char *getEngineId() const override {
         return "dgds";
@@ -71,22 +64,6 @@ public:
     const char *getOriginalCopyright() const override {
         return "Dynamix, Inc. A Sierra Company (C) 1984-2001";
     }
-
-    const char *getSavegamePattern(const char *target = nullptr) const override;
-    const char *getSavegameFile(int saveGameIdx, const char *target = nullptr) const override;
-
-    bool createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
-    int getMaximumSaveSlot() const override;
-
-    /**
-     * Return a list of all save states associated with the given target.
-     */
-    SaveStateList listSaves(const char *target) const override;
-
-    /**
-     * Initialize keymaps
-     */
-    Common::KeymapArray initKeymaps(const char *target) const override;
 };
 
 #endif

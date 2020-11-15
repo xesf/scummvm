@@ -2,7 +2,8 @@ MODULE := engines/dgds
  
 MODULE_OBJS := \
     dgds.o \
-    detection.o
+    detection.o \
+    metaengine.o
  
 MODULE_DIRS += \
     engines/dgds
@@ -14,3 +15,6 @@ endif
  
 # Include common rules
 include $(srcdir)/rules.mk
+
+# Detection objects
+DETECT_OBJS += $(MODULE)/detection.o

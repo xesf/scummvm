@@ -20,40 +20,33 @@
  *
  */
 
-#ifndef DGDS_H
-#define DGDS_H
- 
-#include "common/random.h"
-#include "engines/engine.h"
-#include "gui/debugger.h"
+#ifndef DGDS_GAME_H
+#define DGDS_GAME_H
 
-#include "console.h"
- 
+#include "eventHandler.h"
+#include "castaway.h"
+
 namespace Dgds {
- 
-class Console;
 
-enum {
-    kDebugLevelMain = 1 << 0,
-    kDebugLevelResources = 1 << 1,
-    kDebugLevelBackgroundImages = 1 << 2,
-    kDebugLevelBitmapImages = 1 << 3,
-    kDebugLevelSceneScripts = 1 << 4,
-    kDebugLevelScenes = 1 << 5
-};
+class CastawayEngine;
 
-class DgdsEngine : public Engine {
-    public:
-        DgdsEngine(OSystem *syst);
-        ~DgdsEngine();
-     
-        virtual Common::Error run();
-     
-    private:
-        Console *_console;
-     
-        // We need random numbers
-        Common::RandomSource *_rnd;
+class Game : public EventHandler {
+public:
+    Game(CastawayEngine *vm);
+    ~Game();
+    
+    bool handleEvent(const CastawayEvent &evt);
+
+protected:
+    bool mountEvent(const CastawayEvent &evt);
+    bool unmountEvent(const CastawayEvent &evt);
+    bool updateEvent(const CastawayEvent &evt);
+    bool keyEvent(const CastawayEvent &evt);
+    bool mouseEvent(const CastawayEvent &evt);
+    bool cursorEvent(const CastawayEvent &evt) { return true; };
+    
+private:
+    CastawayEngine *_vm;
 };
 
 } // End of namespace Dgds

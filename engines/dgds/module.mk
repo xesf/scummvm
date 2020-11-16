@@ -1,9 +1,10 @@
 MODULE := engines/dgds
  
 MODULE_OBJS := \
-    dgds.o \
     detection.o \
-    metaengine.o
+    metaengine.o \
+    castaway/castaway.o \
+    castaway/game.o
  
 MODULE_DIRS += \
     engines/dgds

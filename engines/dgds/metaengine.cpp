@@ -23,6 +23,8 @@
 #include "dgds/metaengine.h"
 #include "dgds/detection.h"
 
+#include "dgds/castaway/castaway.h"
+
 #include "base/plugins.h"
 #include "common/system.h"
 #include "common/config-manager.h"
@@ -41,7 +43,7 @@ bool DgdsMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGame
 		switch (gd->gameId) {
 
 		case Dgds::GAME_CASTAWAY:
-			// *engine = new Dgds::Castaway::CastawayEngine(syst, gd);
+			*engine = new Dgds::CastawayEngine(syst);
 			break;
 
 		default:

@@ -20,56 +20,42 @@
  *
  */
 
-#ifndef DGDS_CASTAWAY_H
-#define DGDS_CASTAWAY_H
- 
-#include "common/random.h"
-#include "engines/engine.h"
-#include "gui/debugger.h"
+#ifndef DGDS_RESOURCE_MANAGER_H
+#define DGDS_RESOURCE_MANAGER_H
 
+#include "common/file.h"
+#include "common/hashmap.h"
+#include "common/platform.h"
 
-#include "console.h"
-#include "eventHandler.h"
-#include "game.h"
-#include "../shared/resourceman.h"
- 
+namespace Common {
+    class SeekableReadStream;
+}
+
 namespace Dgds {
- 
-class Console;
-class Game;
-class ResourceManager;
 
-enum {
-    kDebugLevelMain = 1 << 0,
-    kDebugLevelResources = 1 << 1,
+struct ResourceEntry {
+	Common::String name;
+	Common::String type;
+	uint32 size;
+	uint32 offset;
+	uint32 compressedSize;
+	byte* buffer;
 };
 
-class CastawayEngine : public Engine {
+typedef Common::HashMap<Common::String, ResourceEntry> ResourceList;
+
+class ResourceManager {
 public:
-    CastawayEngine(OSystem *syst);
-    ~CastawayEngine();
+	ResourceManager();
+	virtual ~ResourceManager();
 
-    virtual Common::Error run();
-    virtual Common::Error handleEvents();
-    
-    void switchEventHandler(EventHandler *handler);
-    void notifyEvent(CastawayEventType type, int32 param1, int32 param2);
-    
-    Game* getGame() { return _game; };
-    ResourceManager* getResourceManager() { return _resourceman; }
-    
-    void fillScreen(uint32 col);
- 
-private:
-    Common::RandomSource *_rnd;
-    Console *_console;
+	void load(Common::String name);
 
-    EventHandler *_handler;
-
-    Game *_game;
-    ResourceManager *_resourceman;
+	// Common::SeekableReadStream *getResource(Common::String name);
+	ResourceEntry getResourceInfo(Common::String name);
+	ResourceList _resources;
 };
 
 } // End of namespace Dgds
- 
-#endif
+
+#endif // DGDS_RESOURCE_MANAGER_H

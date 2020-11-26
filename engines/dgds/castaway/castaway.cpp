@@ -66,6 +66,9 @@ Common::Error CastawayEngine::run() {
  
     _console = new Console(this);
     
+    _resourceman = new ResourceManager();
+    _resourceman->load("RESOURCE.MAP");
+
     _game = new Game(this);
     
     CursorMan.showMouse(false);

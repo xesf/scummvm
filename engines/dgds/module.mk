@@ -4,7 +4,8 @@ MODULE_OBJS := \
     detection.o \
     metaengine.o \
     castaway/castaway.o \
-    castaway/game.o
+    castaway/game.o \
+    shared/resourceman.o
  
 MODULE_DIRS += \
     engines/dgds

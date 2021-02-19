@@ -386,10 +386,6 @@ ifdef USE_FRIBIDI
 OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libfribidi.a
 endif
 
-ifdef USE_ICONV
-OSX_STATIC_LIBS += -liconv
-endif
-
 ifdef USE_VORBIS
 OSX_STATIC_LIBS += \
 		$(STATICLIBPATH)/lib/libvorbisfile.a \
@@ -409,11 +405,7 @@ OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libogg.a
 endif
 
 ifdef USE_FLUIDSYNTH
-# If iconv was not yet added, add it now as we need it for libfluidsynth
-ifndef USE_ICONV
-OSX_STATIC_LIBS += -liconv
-endif
-OSX_STATIC_LIBS += \
+OSX_STATIC_LIBS += -liconv \
                 -framework CoreMIDI -framework CoreAudio\
                 $(STATICLIBPATH)/lib/libfluidsynth.a \
                 $(STATICLIBPATH)/lib/libglib-2.0.a \
@@ -478,14 +470,14 @@ endif
 # We use -force_cpusubtype_ALL to ensure the binary runs on every
 # PowerPC machine.
 scummvm-static: $(DETECT_OBJS) $(OBJS)
-	$(CXX) $(LDFLAGS) -force_cpusubtype_ALL -o scummvm-static $(DETECT_OBJS) $(OBJS) \
+	+$(LD) $(LDFLAGS) -force_cpusubtype_ALL -o scummvm-static $(DETECT_OBJS) $(OBJS) \
 		-framework CoreMIDI \
 		$(OSX_STATIC_LIBS) \
 		$(OSX_ZLIB)
 
 # Special target to create a static linked binary for the iPhone (legacy, and iOS 7+)
 iphone: $(DETECT_OBJS) $(OBJS)
-	$(CXX) $(LDFLAGS) -o scummvm $(DETECT_OBJS) $(OBJS) \
+	+$(LD) $(LDFLAGS) -o scummvm $(DETECT_OBJS) $(OBJS) \
 		$(OSX_STATIC_LIBS) \
 		-framework UIKit -framework CoreGraphics -framework OpenGLES \
 		-framework CoreFoundation -framework QuartzCore -framework Foundation \

@@ -30,7 +30,7 @@
 #include "common/fs.h"
 #endif
 
-#include "engines/detection.h"
+#include "base/detection/detection.h"
 
 // Plugin versioning
 
@@ -344,12 +344,14 @@ void PluginManagerUncached::init() {
 
 	unloadPluginsExcept(PLUGIN_TYPE_ENGINE, NULL, false); // empty the engine plugins
 
+#ifndef DETECTION_STATIC
 	Common::String detectPluginName = "detection";
 #ifdef PLUGIN_SUFFIX
 	detectPluginName += PLUGIN_SUFFIX;
 #endif
 
 	bool foundDetectPlugin = false;
+#endif
 
 	for (ProviderList::iterator pp = _providers.begin();
 	                            pp != _providers.end();
@@ -361,6 +363,7 @@ void PluginManagerUncached::init() {
 			// file plugins. Currently this is the case. If it changes, we
 			// should find a fast way of detecting whether a plugin is a
 			// music or an engine plugin.
+#ifndef DETECTION_STATIC
 			if (!foundDetectPlugin && (*pp)->isFilePluginProvider()) {
 				Common::String pName = (*p)->getFileName();
 				if (pName.hasSuffix(detectPluginName)) {
@@ -370,6 +373,7 @@ void PluginManagerUncached::init() {
 					continue;
 				}
 			}
+#endif
 
 			if ((*pp)->isFilePluginProvider()) {
 				_allEnginePlugins.push_back(*p);
@@ -437,12 +441,13 @@ void PluginManagerUncached::updateConfigWithFileName(const Common::String &engin
 
 		Common::ConfigManager::Domain *domain = ConfMan.getDomain("engine_plugin_files");
 		assert(domain);
-		(*domain)[engineId] = (*_currentPlugin)->getFileName();
+		(*domain).setVal(engineId, (*_currentPlugin)->getFileName());
 
 		ConfMan.flushToDisk();
 	}
 }
 
+#ifndef DETECTION_STATIC
 void PluginManagerUncached::loadDetectionPlugin() {
 	bool linkMetaEngines = false;
 
@@ -484,6 +489,7 @@ void PluginManagerUncached::unloadDetectionPlugin() {
 		debug(9, "Detection plugin is already unloaded.");
 	}
 }
+#endif
 
 void PluginManagerUncached::loadFirstPlugin() {
 	unloadPluginsExcept(PLUGIN_TYPE_ENGINE, NULL, false);

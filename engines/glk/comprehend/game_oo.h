@@ -30,10 +30,12 @@ namespace Comprehend {
 
 enum RestartMode { RESTART_IMMEDIATE, RESTART_WITH_MSG, RESTART_WITHOUT_MSG };
 
+enum YesNo { NO, YES, UNSET };
+
 class OOToposGame : public ComprehendGameV2 {
 private:
 	RestartMode _restartMode;
-	bool _wearingGoggles, _lightOn;
+	YesNo _noFloodfill, _lightOn;
 	int _stringVal1, _stringVal2;
 	bool _printComputerMsg, _shipNotWorking;
 
@@ -48,7 +50,7 @@ private:
 	void computerConsole();
 
 	/**
-	 * Handles displaying a cmputer response
+	 * Handles displaying a computer response
 	 */
 	void computerResponse();
 
@@ -78,10 +80,12 @@ public:
 
 	void beforeGame() override;
 	void beforeTurn() override;
-	bool afterTurn() override;
+	void beforePrompt() override;
+	void afterPrompt() override;
 	int roomIsSpecial(unsigned room_index, unsigned *room_desc_string) override;
-	void handleSpecialOpcode(uint8 operand) override;
+	void handleSpecialOpcode() override;
 	bool handle_restart() override;
+	void synchronizeSave(Common::Serializer &s) override;
 };
 
 } // namespace Comprehend

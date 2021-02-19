@@ -20,27 +20,19 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
+#include "common/config-manager.h"
 
 #include "ultima/ultima8/world/actors/actor_anim_process.h"
-#include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/world/actors/animation.h"
-#include "ultima/ultima8/graphics/anim_dat.h"
 #include "ultima/ultima8/world/actors/anim_action.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
-#include "ultima/ultima8/misc/direction.h"
 #include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/world/world.h"
-#include "ultima/ultima8/world/gravity_process.h"
 #include "ultima/ultima8/kernel/kernel.h"
-#include "ultima/ultima8/kernel/core_app.h"
 #include "ultima/ultima8/usecode/uc_list.h"
 #include "ultima/ultima8/world/loop_script.h"
 #include "ultima/ultima8/world/current_map.h"
-#include "ultima/ultima8/graphics/shape_info.h"
 #include "ultima/ultima8/world/actors/animation_tracker.h"
 #include "ultima/ultima8/audio/audio_process.h"
-#include "ultima/ultima8/conf/setting_manager.h"
 #include "ultima/ultima8/world/actors/combat_process.h"
 #include "ultima/ultima8/world/sprite_process.h"
 #include "ultima/ultima8/graphics/palette_fader_process.h"
@@ -221,10 +213,9 @@ void ActorAnimProcess::run() {
 				return;
 			}
 
-
 			if (_tracker->isBlocked() &&
-			        !(_tracker->getAnimAction()->hasFlags(AnimAction::AAF_UNSTOPPABLE))) {
-				// FIXME: For blocked large _steps we may still want to do
+				!_tracker->getAnimAction()->hasFlags(AnimAction::AAF_UNSTOPPABLE)) {
+				// FIXME: For blocked large steps we may still want to do
 				//        a partial move. (But how would that work with
 				//        repeated frames?)
 
@@ -255,16 +246,22 @@ void ActorAnimProcess::run() {
 		}
 
 		const AnimFrame *curframe = _tracker->getAnimFrame();
-		if (curframe && curframe->_sfx) {
-			AudioProcess *audioproc = AudioProcess::get_instance();
-			if (audioproc) audioproc->playSFX(curframe->_sfx, 0x60, _itemNum, 0);
-		}
+		if (curframe) {
+			if (curframe->_sfx) {
+				AudioProcess *audioproc = AudioProcess::get_instance();
+				if (audioproc) audioproc->playSFX(curframe->_sfx, 0x60, _itemNum, 0);
+			}
 
-		if (curframe && (curframe->_flags & AnimFrame::AFF_SPECIAL)) {
-			// Flag to trigger a special _action
-			// E.g.: play draw/sheathe SFX for avatar when weapon equipped,
-			// throw skull-fireball when ghost attacks, ...
-			doSpecial();
+			if (curframe->_flags & AnimFrame::AFF_SPECIAL) {
+				// Flag to trigger a special action
+				// E.g.: play draw/sheathe SFX for avatar when weapon equipped,
+				// throw skull-fireball when ghost attacks, ...
+				doSpecial();
+			} else if (curframe->_flags & AnimFrame::AFF_HURTY && GAME_IS_CRUSADER) {
+				a->tookHitCru();
+			} else if (curframe->is_cruattack() && GAME_IS_CRUSADER) {
+				doFireWeaponCru(a, curframe);
+			}
 		}
 
 
@@ -435,9 +432,7 @@ void ActorAnimProcess::doSpecial() {
 	}
 
 	// play PC/NPC footsteps
-	SettingManager *settingman = SettingManager::get_instance();
-	bool playavfootsteps;
-	settingman->get("footsteps", playavfootsteps);
+	bool playavfootsteps = ConfMan.getBool("footsteps");
 	if (_itemNum != 1 || playavfootsteps) {
 		UCList itemlist(2);
 		LOOPSCRIPT(script, LS_TOKEN_TRUE);
@@ -493,6 +488,30 @@ void ActorAnimProcess::doSpecial() {
 	}
 
 }
+
+void ActorAnimProcess::doFireWeaponCru(Actor *a, const AnimFrame *f) {
+	assert(a);
+	assert(f);
+	if (!f->is_cruattack())
+		return;
+
+	// TODO: there is some special casing in the game for larger weapons here..
+	const Item *wpn = getItem(a->getActiveWeapon());
+	if (!wpn)
+		return;
+	const ShapeInfo *wpninfo = wpn->getShapeInfo();
+	if (!wpninfo || !wpninfo->_weaponInfo)
+		return;
+
+	a->fireWeapon(f->cru_attackx(), f->cru_attacky(), f->cru_attackz(),
+				  a->getDir(), wpninfo->_weaponInfo->_damageType, 1);
+
+	AudioProcess *audioproc = AudioProcess::get_instance();
+	if (audioproc)
+		audioproc->playSFX(wpninfo->_weaponInfo->_sound, 0x80, a->getObjId(), 0, false);
+
+}
+
 
 
 void ActorAnimProcess::doHitSpecial(Item *hit) {

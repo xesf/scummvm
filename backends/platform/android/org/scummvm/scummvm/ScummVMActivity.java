@@ -142,6 +142,10 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		return getResources().getConfiguration().keyboard == KEYBOARD_QWERTY;
 	}
 
+	public boolean isKeyboardOverlayShown() {
+		return keyboardWithoutTextInputShown;
+	}
+
 	public void showScreenKeyboardWithoutTextInputField(final int keyboard) {
 		if (_main_surface != null) {
 			_inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -149,7 +153,9 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 				keyboardWithoutTextInputShown = true;
 				runOnUiThread(new Runnable() {
 					public void run() {
+						//Log.d(ScummVM.LOG_TAG, "showScreenKeyboardWithoutTextInputField - captureMouse(false)");
 						_main_surface.captureMouse(false);
+						//_main_surface.showSystemMouseCursor(true);
 						if (keyboard == 0) {
 							// TODO do we need SHOW_FORCED HERE?
 							//_inputManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
@@ -439,7 +445,6 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 										key -= 100000;
 										compiledMetaState |= KeyEvent.META_SHIFT_LEFT_ON;
 									}
-
 									// update the eventTime after the above check for first time "hit"
 									KeyEvent compiledKeyEvent = new KeyEvent(builtinKeyboard.mEventPressTime,
 										SystemClock.uptimeMillis(),
@@ -477,7 +482,9 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 						DimSystemStatusBar.get().dim(_videoLayout);
 						//DimSystemStatusBar.get().dim(_main_surface);
+						//Log.d(ScummVM.LOG_TAG, "showScreenKeyboardWithoutTextInputField - captureMouse(true)");
 						_main_surface.captureMouse(true);
+						//_main_surface.showSystemMouseCursor(false);
 					}
 				});
 			}
@@ -498,8 +505,9 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 			if (bGlobalsCompatibilityHacksTextInputEmulatesHwKeyboard) {
 				showScreenKeyboardWithoutTextInputField(dGlobalsTextInputKeyboard);
-				//Log.d(ScummVM.LOG_TAG, "showScreenKeyboard - showScreenKeyboardWithoutTextInputField()");
+				//Log.d(ScummVM.LOG_TAG, "showScreenKeyboard - captureMouse(false)");
 				_main_surface.captureMouse(false);
+				//_main_surface.showSystemMouseCursor(true);
 				return;
 			}
 			//Log.d(ScummVM.LOG_TAG, "showScreenKeyboard: YOU SHOULD NOT SEE ME!!!");
@@ -518,7 +526,9 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		if (_main_surface != null) {
 			if (keyboardWithoutTextInputShown) {
 				showScreenKeyboardWithoutTextInputField(dGlobalsTextInputKeyboard);
+				//Log.d(ScummVM.LOG_TAG, "hideScreenKeyboard - captureMouse(true)");
 				_main_surface.captureMouse(true);
+				//_main_surface.showSystemMouseCursor(false);
 			}
 		}
 	}
@@ -671,12 +681,6 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 				Log.d(ScummVM.LOG_TAG, "Adding to Search Archive: " + _possibleExternalScummVMDir.getPath());
 				return new String[]{_actualScummVMDataDir.getPath(), _possibleExternalScummVMDir.getPath()};
 			} else return new String[]{_actualScummVMDataDir.getPath()};
-		}
-
-		@Override
-		protected byte[] convertEncoding(String to, String from, byte[] string) throws UnsupportedEncodingException {
-			String str = new String(string, from);
-			return str.getBytes(to);
 		}
 
 		@Override
@@ -884,11 +888,13 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		_videoLayout.addView(_toggleKeyboardBtnIcon, keybrdBtnlayout);
 		_videoLayout.bringChildToFront(_toggleKeyboardBtnIcon);
 
-		_main_surface.captureMouse(true);
-		// REDUNDANT?
-		if ( android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N ) {
-			_main_surface.setPointerIcon(android.view.PointerIcon.getSystemIcon(this, android.view.PointerIcon.TYPE_NULL));
-		}
+		_main_surface.setFocusable(true);
+		_main_surface.setFocusableInTouchMode(true);
+		_main_surface.requestFocus();
+
+		//Log.d(ScummVM.LOG_TAG, "onCreate - captureMouse(true)");
+		//_main_surface.captureMouse(true, true);
+		//_main_surface.showSystemMouseCursor(false);
 
 		// TODO is this redundant since we call hideSystemUI() ?
 		DimSystemStatusBar.get().dim(_videoLayout);
@@ -899,8 +905,6 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		takeKeyEvents(true);
 
 		_clipboardManager = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-		_currentScummVMVersion = new Version(BuildConfig.VERSION_NAME);
-		Log.d(ScummVM.LOG_TAG, "Current ScummVM version running is: " + _currentScummVMVersion.getDescription() + " (" + _currentScummVMVersion.get() + ")");
 
 		// REMOVED: Since getFilesDir() is guaranteed to exist, getFilesDir().mkdirs() might be related to crashes in Android version 9+ (Pie or above, API 28+)!
 
@@ -924,6 +928,10 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		                                                        }
 		                                                    });
 
+		// Currently in release builds version string does not contain the revision info
+		// but in debug builds (daily builds) this should be there (see base/internal_version_h)
+		_currentScummVMVersion = new Version(_scummvm.getInstallingScummVMVersionInfo());
+		Log.d(ScummVM.LOG_TAG, "Current ScummVM version launching is: " + _currentScummVMVersion.getDescription() + " (" + _currentScummVMVersion.get() + ")");
 		//
 		// seekAndInitScummvmConfiguration() returns false if something went wrong
 		// when initializing configuration (or when seeking and trying to use an existing ini file) for ScummVM
@@ -949,9 +957,10 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 			});
 
 			Log.d(ScummVM.LOG_TAG, "Hover available: " + _hoverAvailable);
+			_mouseHelper = null;
 			if (_hoverAvailable) {
 				_mouseHelper = new MouseHelper(_scummvm);
-				_mouseHelper.attach(_main_surface);
+//				_mouseHelper.attach(_main_surface);
 			}
 
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
@@ -969,6 +978,9 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 			_main_surface.setOnKeyListener(_events);
 			_main_surface.setOnTouchListener(_events);
+			if (_mouseHelper != null) {
+				_main_surface.setOnHoverListener(_mouseHelper);
+			}
 
 			_scummvm_thread = new Thread(_scummvm, "ScummVM");
 			_scummvm_thread.start();
@@ -977,14 +989,14 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 	@Override
 	public void onStart() {
-		Log.d(ScummVM.LOG_TAG, "onStart");
+//		Log.d(ScummVM.LOG_TAG, "onStart");
 
 		super.onStart();
 	}
 
 	@Override
 	public void onResume() {
-		Log.d(ScummVM.LOG_TAG, "onResume");
+//		Log.d(ScummVM.LOG_TAG, "onResume");
 
 //		_isPaused = false;
 
@@ -992,12 +1004,14 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 		if (_scummvm != null)
 			_scummvm.setPause(false);
-		showMouseCursor(false);
+		//_main_surface.showSystemMouseCursor(false);
+		//Log.d(ScummVM.LOG_TAG, "onResume - captureMouse(true)");
+		_main_surface.captureMouse(true);
 	}
 
 	@Override
 	public void onPause() {
-		Log.d(ScummVM.LOG_TAG, "onPause");
+//		Log.d(ScummVM.LOG_TAG, "onPause");
 
 //		_isPaused = true;
 
@@ -1005,19 +1019,22 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 		if (_scummvm != null)
 			_scummvm.setPause(true);
-		showMouseCursor(true);
+		//_main_surface.showSystemMouseCursor(true);
+		//Log.d(ScummVM.LOG_TAG, "onPause - captureMouse(false)");
+		_main_surface.captureMouse(false);
+
 	}
 
 	@Override
 	public void onStop() {
-		Log.d(ScummVM.LOG_TAG, "onStop");
+//		Log.d(ScummVM.LOG_TAG, "onStop");
 
 		super.onStop();
 	}
 
 	@Override
 	public void onDestroy() {
-		Log.d(ScummVM.LOG_TAG, "onDestroy");
+//		Log.d(ScummVM.LOG_TAG, "onDestroy");
 
 		super.onDestroy();
 
@@ -1122,13 +1139,16 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		return false;
 	}
 
-
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
 		if (hasFocus) {
 			hideSystemUI();
 		}
+//			showSystemMouseCursor(false);
+//		} else {
+//			showSystemMouseCursor(true);
+//		}
 	}
 
 	// TODO setSystemUiVisibility is introduced in API 11 and deprecated in API 30 - When we move to API 30 we will have to replace this code
@@ -1209,27 +1229,6 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 			} else {
 				_toggleKeyboardBtnIcon.setVisibility(View.GONE);
 			}
-		}
-	}
-
-	private void showMouseCursor(boolean show) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-			// Android N (Nougat) is Android 7.0
-			//SurfaceView main_surface = findViewById(R.id.main_surface);
-			if (_main_surface != null) {
-				int type = show ? PointerIcon.TYPE_DEFAULT : PointerIcon.TYPE_NULL;
-				// https://stackoverflow.com/a/55482761
-				_main_surface.setPointerIcon(PointerIcon.getSystemIcon(this, type));
-			}
-		} else {
-			/* Currently hiding the system mouse cursor is only
-			   supported on OUYA.  If other systems provide similar
-			   intents, please add them here as well */
-			Intent intent =
-				new Intent(show?
-					"tv.ouya.controller.action.SHOW_CURSOR" :
-					"tv.ouya.controller.action.HIDE_CURSOR");
-			sendBroadcast(intent);
 		}
 	}
 
@@ -1564,6 +1563,14 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		final Version version2_2_1_forPatch = new Version("2.2.1"); // patch for 2.2.1 Beta1 purposes
 		boolean existingConfigInScummVMDataDirReplacedOnce = false; // patch for 2.2.1 Beta1 purposes
 
+		// NOTE: our config file scummvm.ini is created directly inside the ScummVM internal app path
+		//       this is probably due to a mistake (?), since we do create a config path for it above
+		//       ( in File internalScummVMConfigDir , the sub-path ".config/scummvm")
+		//       However, this is harmless, so we can keep it this way.
+		//       Or we could change it in a future version.
+		//       Keep in mind that changing the scummvm.ini config file location would require at the very least:
+		//       - Moving the old scummvm.ini (if upgrading) to the new location and deleting it from the old one
+		//       - Updating the ScummVM documentation about the new location
 		_configScummvmFile = new File(_actualScummVMDataDir, "scummvm.ini");
 
 		try {
@@ -1677,7 +1684,19 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		//      A more efficient way would be to compare hash (when we deem that an upgrade is happening, so we will also still have to compare versions)
 		// Note that isSideUpgrading is also true each time we re-launch the app
 		// Also even during a side-upgrade we cleanup any redundant files (no longer part of our assets)
-		boolean isSideUpgrading = (maxOldVersionFound.compareTo(_currentScummVMVersion) == 0);
+
+		// By first checking for isDirty() and then comparing the Version objects,
+		// we don't need to also compare the Version descriptions (full version text) for a match too,
+		// since, if the full versions text do not match, it's because at least one of them is dirty.
+		// TODO: This does mean that "pre" (or similar) versions (eg. 2.2.1pre) will always be considered non-side-upgrades
+		//        and will re-copy the assets upon each launch
+		//       This should have a slight performance impact (for launch time) for those intermediate version releases,
+		//       but it's better than the alternative (comparing MD5 hashes for all files), and it should go away with the next proper release.
+		//       This solution should cover "git" versions properly
+		//       (ie. developer builds, built with release configuration (eg 2.3.0git) or debug configuration (eg. 2.3.0git9272-gc71ac4748b))
+		boolean isSideUpgrading = (!_currentScummVMVersion.isDirty()
+		                           && !maxOldVersionFound.isDirty()
+		                           && maxOldVersionFound.compareTo(_currentScummVMVersion) == 0);
 		copyAssetsToInternalMemory(isSideUpgrading);
 
 		//

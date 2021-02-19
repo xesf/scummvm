@@ -70,8 +70,8 @@ void FontManager::loadFonts(const Common::Array<Common::String> &fontFiles,
 
 	for (Common::Array<Common::String>::const_iterator it = fontFiles.begin(); it != fontFiles.end();
 	        it++) {
-		Graphics::Font *fontEntry = fontsCache.getVal(*it, nullptr);
-		if (fontEntry) {
+		Graphics::Font *fontEntry = nullptr;
+		if (fontsCache.tryGetVal(*it, fontEntry)) {
 			_fonts.push_back(fontEntry);
 			continue;
 		}
@@ -162,6 +162,7 @@ Common::U32String FontManager::toU32(const Common::String &str) const {
 		return str.decode(_codepage);
 	}
 
+	// Beware: when not using Unicode, U32String will contain codepoints not corresponding to Unicode
 	switch (_codepage) {
 	case Common::kUtf8:
 		error("UTF-8 not supported");
@@ -184,7 +185,8 @@ Common::U32String FontManager::toU32(const Common::String &str) const {
 	}
 	default:
 		// All other codepages are SBCS: one byte is one character
-		return str;
+		// We use kISO8859_1 as it's the identity function [0-255] to [0-255]
+		return str.decode(Common::kISO8859_1);
 	}
 }
 

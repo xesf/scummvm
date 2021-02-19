@@ -24,8 +24,6 @@
 #define ULTIMA8_AUDIO_U8MUSICPROCESS_H
 
 #include "ultima/ultima8/audio/music_process.h"
-#include "ultima/ultima8/kernel/process.h"
-#include "ultima/ultima8/usecode/intrinsics.h"
 #include "ultima/ultima8/misc/p_dynamic_cast.h"
 #include "audio/mididrv.h"
 
@@ -112,6 +110,14 @@ public:
 	void getTrackState(TrackState &trackState) const;
 
 	void setTrackState(const TrackState &state);
+
+	//! Is a track currently playing?
+	bool isPlaying() override;
+
+	//! Pause the currently playing track
+	void pauseMusic() override;
+	//! Resume the current track after pausing
+	void unpauseMusic() override;
 
 	void run() override;
 

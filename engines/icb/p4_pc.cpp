@@ -137,11 +137,6 @@ void ReadConfigFromIniFile() {
 	// Control device
 	temp = config.readIntSetting("Controller Settings", "Device", 0);
 
-	if (temp == 0)
-		currentJoystick = NO_JOYSTICK;
-	else
-		currentJoystick = ANALOGUE_JOYSTICK;
-
 	// A call to this will validate the above setting
 	Poll_direct_input();
 
@@ -197,51 +192,6 @@ void ReadConfigFromIniFile() {
 	if (GetKeyName((uint8)temp))
 		pause_key = (uint8)temp;
 
-	// Unset all joystick
-	UnsetJoystickConfig();
-
-	// Joystick mappings
-	temp = config.readIntSetting("Joystick Mappings", "Up", 0);
-	if (GetAxisName((uint8)temp))
-		up_joy = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Down", 0);
-	if (GetAxisName((uint8)temp))
-		down_joy = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Left", 0);
-	if (GetAxisName((uint8)temp))
-		left_joy = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Right", 0);
-	if (GetAxisName((uint8)temp))
-		right_joy = (uint8)temp;
-
-	temp = config.readIntSetting("Joystick Mappings", "Sidestep", 0);
-	if (GetButtonName((uint8)temp))
-		sidestep_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Run", 0);
-	if (GetButtonName((uint8)temp))
-		run_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Crouch", 0);
-	if (GetButtonName((uint8)temp))
-		crouch_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Interact", 0);
-	if (GetButtonName((uint8)temp))
-		interact_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Arm", 0);
-	if (GetButtonName((uint8)temp))
-		arm_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Attack", 0);
-	if (GetButtonName((uint8)temp))
-		fire_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Inventory", 0);
-	if (GetButtonName((uint8)temp))
-		inventory_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Remora", 0);
-	if (GetButtonName((uint8)temp))
-		remora_button = (uint8)temp;
-	temp = config.readIntSetting("Joystick Mappings", "Pause", 0);
-	if (GetButtonName((uint8)temp))
-		pause_button = (uint8)temp;
-
 	// Read the movie library settings
 	for (uint32 i = 0; i < TOTAL_NUMBER_OF_MOVIES; i++) {
 		temp = config.readIntSetting("Movie Library", pxVString("%X", HashString(g_movieLibrary[i].filename)), 0);
@@ -278,8 +228,6 @@ void Save_config_file() {
 	config.writeSetting("Video Settings", "Semitransparency", tempBuff);
 	sprintf(tempBuff, "%d", px.actorShadows);
 
-	sprintf(tempBuff, "%d", currentJoystick);
-	config.writeSetting("Controller Settings", "Device", pxVString("%d", currentJoystick));
 	sprintf(tempBuff, "%d", g_icb_session->player.Get_control_mode());
 	config.writeSetting("Controller Settings", "Method", pxVString("%d", g_icb_session->player.Get_control_mode()));
 
@@ -309,33 +257,6 @@ void Save_config_file() {
 	config.writeSetting("Keyboard Mappings", "Remora", tempBuff);
 	sprintf(tempBuff, "%d", pause_key);
 	config.writeSetting("Keyboard Mappings", "Pause", tempBuff);
-
-	sprintf(tempBuff, "%d", up_joy);
-	config.writeSetting("Joystick Mappings", "Up", tempBuff);
-	sprintf(tempBuff, "%d", down_joy);
-	config.writeSetting("Joystick Mappings", "Down", tempBuff);
-	sprintf(tempBuff, "%d", left_joy);
-	config.writeSetting("Joystick Mappings", "Left", tempBuff);
-	sprintf(tempBuff, "%d", right_joy);
-	config.writeSetting("Joystick Mappings", "Right", tempBuff);
-	sprintf(tempBuff, "%d", sidestep_button);
-	config.writeSetting("Joystick Mappings", "Sidestep", tempBuff);
-	sprintf(tempBuff, "%d", run_button);
-	config.writeSetting("Joystick Mappings", "Run", tempBuff);
-	sprintf(tempBuff, "%d", crouch_button);
-	config.writeSetting("Joystick Mappings", "Crouch", tempBuff);
-	sprintf(tempBuff, "%d", interact_button);
-	config.writeSetting("Joystick Mappings", "Interact", tempBuff);
-	sprintf(tempBuff, "%d", arm_button);
-	config.writeSetting("Joystick Mappings", "Arm", tempBuff);
-	sprintf(tempBuff, "%d", fire_button);
-	config.writeSetting("Joystick Mappings", "Attack", tempBuff);
-	sprintf(tempBuff, "%d", inventory_button);
-	config.writeSetting("Joystick Mappings", "Inventory", tempBuff);
-	sprintf(tempBuff, "%d", remora_button);
-	config.writeSetting("Joystick Mappings", "Remora", tempBuff);
-	sprintf(tempBuff, "%d", pause_button);
-	config.writeSetting("Joystick Mappings", "Pause", tempBuff);
 
 	char temp[1024];
 
@@ -367,9 +288,6 @@ void InitEngine(const char *lpCmdLine) {
 	// Set the character root directory to be the same as the normal root directory
 	camera_hack = false; // defaults to off
 
-#ifdef USE_SDL_DIRECTLY
-	sdl_window = SDL_CreateWindow("In Cold Blood (C)2000 Revolution Software Ltd", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, sdl_flags);
-#endif
 	// create the surface manaager
 	surface_manager = new _surface_manager;
 
@@ -455,14 +373,6 @@ bool mainLoopIteration() {
 
 	while (g_system->getEventManager()->pollEvent(event)) {
 		switch (event.type) {
-		/*
-		case SDL_TEXTINPUT:
-			if (event.text.text[0] && event.text.text[1] == 0) {
-				uint8 key = event.text.text[0];
-					WriteKey(key);
-			}
-			break;
-		*/
 		case Common::EVENT_KEYDOWN: {
 			// Pass ENTER and BACKSPACE KEYDOWN events to WriteKey() so the save menu in options_manager_pc.cpp can see them.
 			if (event.kbd.keycode == Common::KEYCODE_RETURN) {
@@ -473,7 +383,8 @@ bool mainLoopIteration() {
 				WriteKey(event.kbd.keycode);
 			}
 			setKeyState(event.kbd.keycode, true);
-		} break;
+			break;
+		}
 		case Common::EVENT_KEYUP: {
 			setKeyState(event.kbd.keycode, false);
 			break;
@@ -502,33 +413,6 @@ bool mainLoopIteration() {
 			mousex = event.mouse.x;
 			mousey = event.mouse.y;
 			break;
-		/*case SDL_WINDOWEVENT:
-			switch (event.window.event) {
-			case SDL_WINDOWEVENT_FOCUS_GAINED:
-				SDL_ShowCursor(SDL_FALSE);
-				gRegainedFocus = TRUE8;
-				gotTheFocus = TRUE8;
-				break;
-			case SDL_WINDOWEVENT_FOCUS_LOST:
-				SDL_ShowCursor(SDL_TRUE);
-				gRegainedFocus = FALSE8;
-				gotTheFocus = FALSE8;
-				break;
-			case SDL_WINDOWEVENT_EXPOSED:
-				stub.Process_stub();
-				break;
-			case SDL_WINDOWEVENT_CLOSE:
-				break;
-			}
-			break;*/
-
-		// TODO: Fix sound
-		/*case SDL_USEREVENT:
-			if (g_TimerOn) {
-				UpdateSounds10Hz();
-				Poll_Sound_Engine();
-			}
-			break;*/
 
 		case Common::EVENT_QUIT:
 			Zdebug("\nap closed");

@@ -33,27 +33,6 @@
 #undef INCLUDED_FROM_BASE_PLUGINS_H
 
 
-/**
- * @page pagePlugins An overview of the ScummVM plugin system
- * This is a brief overview of how plugins (dynamically loadable code modules)
- * work in ScummVM. We will explain how to write plugins, how they work internally,
- * and sketch how porters can add support for them in their ports.
- *
- * \section secPluginImpl Implementing a plugin
- * TODO
- *
- * \section secPluginUse Using plugins
- * TODO
- *
- * \section secPluginInternals How plugins work internally
- * TODO
- *
- * \section secPluginBackend How to add support for dynamic plugins to a port
- * TODO
- */
-
-
-
 // Plugin versioning
 
 /** Global Plugin API version */
@@ -393,7 +372,7 @@ protected:
 
 	bool _isDetectionLoaded;
 
-	PluginManagerUncached() : _isDetectionLoaded(false) {}
+	PluginManagerUncached() : _isDetectionLoaded(false), _detectionPlugin(nullptr) {}
 	bool loadPluginByFileName(const Common::String &filename);
 
 public:
@@ -402,8 +381,10 @@ public:
 	virtual bool loadNextPlugin() override;
 	virtual bool loadPluginFromEngineId(const Common::String &engineId) override;
 	virtual void updateConfigWithFileName(const Common::String &engineId) override;
+#ifndef DETECTION_STATIC
 	virtual void loadDetectionPlugin() override;
 	virtual void unloadDetectionPlugin() override;
+#endif
 
 	virtual void loadAllPlugins() override {} 	// we don't allow these
 	virtual void loadAllPluginsOfType(PluginType type) override {}

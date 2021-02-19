@@ -20,23 +20,20 @@
  *
  */
 
+#include "common/config-manager.h"
+
 #include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/games/remorse_game.h"
 #include "ultima/ultima8/games/start_crusader_process.h"
-#include "ultima/ultima8/conf/setting_manager.h"
 #include "ultima/ultima8/filesys/file_system.h"
-#include "ultima/ultima8/filesys/idata_source.h"
 #include "ultima/ultima8/graphics/palette_manager.h"
 #include "ultima/ultima8/gumps/movie_gump.h"
-#include "ultima/ultima8/gumps/cru_status_gump.h"
 #include "ultima/ultima8/kernel/object_manager.h"
-#include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/graphics/xform_blend.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/ultima8.h"
-#include "ultima/ultima8/filesys/raw_archive.h"
 #include "ultima/ultima8/world/item_factory.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "common/memstream.h"
@@ -46,11 +43,11 @@ namespace Ultima8 {
 
 RemorseGame::RemorseGame() : Game() {
 	// Set some defaults for gameplay-related settings
-	SettingManager *settingman = SettingManager::get_instance();
-	settingman->setDefault("skipstart", false);
-	settingman->setDefault("endgame", false);
-	settingman->setDefault("footsteps", true);
-	settingman->setDefault("textdelay", 5);
+	ConfMan.registerDefault("endgame", true);
+	ConfMan.registerDefault("footsteps", true);
+	ConfMan.registerDefault("talkspeed", 96);
+	ConfMan.registerDefault("subtitles", true);
+	ConfMan.registerDefault("speech_mute", false);
 }
 
 RemorseGame::~RemorseGame() {

@@ -20,6 +20,7 @@
  *
  */
 
+#if 0
 #include "startrek/room.h"
 
 #define OBJECT_KLINGON_1 8
@@ -89,10 +90,24 @@ extern const RoomAction trial3ActionList[] = {
 	{ {ACTION_USE, OBJECT_REDSHIRT, HOTSPOT_WALL, 0},     &Room::trial3UseRedshirtOnWall },
 	{ {ACTION_WALK, HOTSPOT_EXIT, 0, 0},                  &Room::trial3WalkToExit },
 	{ {ACTION_USE, OBJECT_IMEDKIT, 0xff, 0},              &Room::trial3UseMedkitAnywhere },
+	{ {ACTION_LIST_END, 0, 0, 0}, nullptr }
 };
 
-extern const int trial3NumActions = ARRAYSIZE(trial3ActionList);
+enum trial3TextIds {
+	TX_SPEAKER_KIRK, TX_SPEAKER_MCCOY, TX_SPEAKER_SPOCK
+};
 
+// TODO: Finish floppy offsets
+extern const RoomTextOffsets trial3TextOffsets[] = {
+	//{ TX_SPEAKER_KIRK, 1064, 0 },
+	//{ TX_SPEAKER_MCCOY, 1075, 0 },
+	//{ TX_SPEAKER_SPOCK, 1085, 0 },
+	{          -1, 0,    0 }
+};
+
+extern const RoomText trial3Texts[] = {
+    { -1, Common::UNK_LANG, "" }
+};
 
 void Room::trial3Tick1() {
 	playVoc("TRI3LOOP");
@@ -109,12 +124,12 @@ void Room::trial3Tick30() {
 		_awayMission->disableInput = false;
 		_awayMission->trial.enteredTrial3FirstTime = true;
 
-		showText(TX_SPEAKER_BENNIE, 30, true);
-		showText(TX_SPEAKER_KIRK,    5, true);
-		showText(TX_SPEAKER_MCCOY,  19, true);
-		showText(TX_SPEAKER_SPOCK,  25, true);
-		showText(TX_SPEAKER_MCCOY,  20, true);
-		showText(TX_SPEAKER_KIRK,    4, true);
+		showText(TX_SPEAKER_BENNIE, 30);
+		showText(TX_SPEAKER_KIRK,    5);
+		showText(TX_SPEAKER_MCCOY,  19);
+		showText(TX_SPEAKER_SPOCK,  25);
+		showText(TX_SPEAKER_MCCOY,  20);
+		showText(TX_SPEAKER_KIRK,    4);
 	}
 }
 
@@ -136,12 +151,12 @@ void Room::trial3Klingon3BeamedIn() {
 void Room::trial3KlingonShootsSomeone1() {
 	_awayMission->trial.klingonShootIndex++;
 	if (_awayMission->trial.klingonShootIndex == 1) {
-		playSoundEffectIndex(SND_PHASSHOT);
+		playSoundEffectIndex(kSfxPhaser);
 		showBitmapFor5Ticks("t3phas04", 5);
 		loadActorAnimC(OBJECT_REDSHIRT, "rkillw", -1, -1, &Room::trial3RedshirtDoneDying);
 		_awayMission->redshirtDead = true;
 	} else if (_awayMission->trial.klingonShootIndex == 2) {
-		playSoundEffectIndex(SND_PHASSHOT);
+		playSoundEffectIndex(kSfxPhaser);
 		showBitmapFor5Ticks("t3phas05", 5);
 		playMidiMusicTracks(MIDITRACK_2, -1);
 		loadActorAnimC(OBJECT_KIRK, "kkillw", -1, -1, &Room::trial3KirkDoneDying);
@@ -168,12 +183,12 @@ void Room::trial3KlingonShootsSomeone2() {
 	// one line differs...
 	_awayMission->trial.klingonShootIndex++;
 	if (_awayMission->trial.klingonShootIndex == 1) {
-		playSoundEffectIndex(SND_PHASSHOT);
+		playSoundEffectIndex(kSfxPhaser);
 		showBitmapFor5Ticks("t3phas04", 5);
 		loadActorAnimC(OBJECT_REDSHIRT, "rkillw", -1, -1, &Room::trial3RedshirtDoneDying);
 		_awayMission->redshirtDead = true;
 	} else if (_awayMission->trial.klingonShootIndex == 2) {
-		playSoundEffectIndex(SND_PHASSHOT);
+		playSoundEffectIndex(kSfxPhaser);
 		showBitmapFor5Ticks("t3phas05", 5);
 		// NOTE: Only difference to "trial3KlingonShootsSomeone1" is this doesn't play a midi track?
 		loadActorAnimC(OBJECT_KIRK, "kkillw", -1, -1, &Room::trial3KirkDoneDying);
@@ -209,9 +224,9 @@ void Room::trial3CheckShowUhuraText() {
 		_awayMission->disableWalking = false;
 		loadActorStandAnim(OBJECT_KIRK);
 
-		showText(TX_SPEAKER_UHURA, 84, true);
-		showText(TX_SPEAKER_KIRK,   7, true);
-		showText(TX_SPEAKER_UHURA, 99, true);
+		showText(TX_SPEAKER_UHURA_GLOBAL, 84);
+		showText(TX_SPEAKER_KIRK,   7);
+		showText(TX_SPEAKER_UHURA_GLOBAL, 99);
 
 		_awayMission->trial.forceFieldDown = true;
 
@@ -220,7 +235,7 @@ void Room::trial3CheckShowUhuraText() {
 			6, 2, 3,
 			TX_BLANK
 		};
-		int choice = showMultipleTexts(choices, true);
+		int choice = showMultipleTexts(choices);
 
 		if (choice == 0) { // Don't beam out
 		} else if (choice == 1) { // Beam to enterprise
@@ -241,7 +256,7 @@ void Room::trial3CrewmanBeamedOut() {
 
 void Room::trial3Tick90() {
 	if ((!(_awayMission->trial.shotKlingons & 8) && _awayMission->trial.shotKlingonState != 20)) {
-		playSoundEffectIndex(SND_TRANSMAT);
+		playSoundEffectIndex(kSfxTransporterMaterialize);
 		playMidiMusicTracks(MIDITRACK_32, -1);
 		loadActorAnimC(OBJECT_KLINGON_1, "t3ktel", 0x57, 0xb1, &Room::trial3Klingon1BeamedIn);
 		_awayMission->trial.shotKlingonState = 21;
@@ -249,7 +264,6 @@ void Room::trial3Tick90() {
 }
 
 void Room::trial3TouchedHotspot3() { // Activated the explosive
-	playSoundEffectIndex(SND_BLANK_14);
 	playMidiMusicTracks(MIDITRACK_2, -1);
 	playVoc("BITOKIRK");
 	loadActorAnimC(OBJECT_EXPLOSION, "t3expl", 0, 0xc7, &Room::trial3KirkExploded);
@@ -260,47 +274,47 @@ void Room::trial3KirkExploded() {
 }
 
 void Room::trial3LookAtKirk() {
-	showDescription(0, true);
+	showDescription(0);
 }
 
 void Room::trial3LookAtSpock() {
-	showDescription(4, true);
+	showDescription(4);
 }
 
 void Room::trial3LookAtMccoy() {
-	showDescription(1, true);
+	showDescription(1);
 }
 
 void Room::trial3LookAtRedshirt() {
-	showDescription(2, true);
+	showDescription(2);
 }
 
 void Room::trial3LookAtExit() {
-	showDescription(5, true);
+	showDescription(5);
 }
 
 void Room::trial3LookAtWall() {
-	showDescription(7, true);
+	showDescription(7);
 }
 
 void Room::trial3TalkToKirk() {
-	showText(TX_SPEAKER_KIRK, 1, true);
+	showText(TX_SPEAKER_KIRK, 1);
 }
 
 void Room::trial3TalkToSpock() {
-	showText(TX_SPEAKER_SPOCK, 22, true);
+	showText(TX_SPEAKER_SPOCK, 22);
 }
 
 void Room::trial3TalkToMccoy() {
-	showText(TX_SPEAKER_MCCOY, 18, true);
+	showText(TX_SPEAKER_MCCOY, 18);
 }
 
 void Room::trial3TalkToRedshirt() {
-	showText(TX_SPEAKER_BENNIE, 29, true);
+	showText(TX_SPEAKER_BENNIE, 29);
 }
 
 void Room::trial3UsePhaserOnWall() {
-	showDescription(6, true);
+	showDescription(6);
 }
 
 void Room::trial3UseStunPhaserOnKlingon1() {
@@ -316,7 +330,7 @@ void Room::trial3UseStunPhaserOnKlingon1() {
 
 void Room::trial3ReadyToShootKlingon1OnStun() {
 	if (_awayMission->trial.shotKlingonState == 21) {
-		playSoundEffectIndex(SND_PHASSHOT);
+		playSoundEffectIndex(kSfxPhaser);
 		showBitmapFor5Ticks("t3phas00", 5);
 		loadActorAnimC(OBJECT_KLINGON_1, "t3kstn", -1, -1, &Room::trial3Klingon1Shot);
 		_awayMission->disableInput = false;
@@ -336,7 +350,7 @@ void Room::trial3UseKillPhaserOnKlingon1() {
 
 void Room::trial3ReadyToShootKlingon1OnKill() {
 	if (_awayMission->trial.shotKlingonState == 21) {
-		playSoundEffectIndex(SND_PHASSHOT);
+		playSoundEffectIndex(kSfxPhaser);
 		showBitmapFor5Ticks("t3phas02", 5);
 		loadActorAnimC(OBJECT_KLINGON_1, "t3kdie", -1, -1, &Room::trial3Klingon1Shot);
 		_awayMission->disableInput = false;
@@ -346,56 +360,56 @@ void Room::trial3ReadyToShootKlingon1OnKill() {
 }
 
 void Room::trial3UsePhaserAnywhere() {
-	showDescription(3, true);
+	showDescription(3);
 }
 
 void Room::trial3UseMTricorderOnKirk() {
 	// BUGFIX: Original animated Spock instead of Mccoy (same for below mccoy-scan functions)
-	mccoyScan(DIR_S, 15, true, true);
+	mccoyScan(DIR_S, 15, true);
 }
 
 void Room::trial3UseMTricorderOnSpock() {
-	mccoyScan(DIR_S, 16, true, true);
+	mccoyScan(DIR_S, 16, true);
 }
 
 void Room::trial3UseMTricorderOnMccoy() {
-	mccoyScan(DIR_S, 13, true, true);
+	mccoyScan(DIR_S, 13, true);
 }
 
 void Room::trial3UseMTricorderOnRedshirt() {
-	mccoyScan(DIR_S, 14, true, true);
+	mccoyScan(DIR_S, 14, true);
 }
 
 void Room::trial3UseMTricorderOnExit() {
-	mccoyScan(DIR_S, 9, true, true);
+	mccoyScan(DIR_S, 9, true);
 }
 
 void Room::trial3UseSTricorderOnWall() {
-	spockScan(DIR_S, 24, true, true);
+	spockScan(DIR_S, 24, true);
 }
 
 void Room::trial3UseSTricorderOnExit() {
-	spockScan(DIR_S, 23, true, true);
+	spockScan(DIR_S, 23, true);
 }
 
 void Room::trial3UseMTricorderOnKlingon() {
 	if (_awayMission->trial.shotKlingonState == 22) { // Unconscious
-		mccoyScan(DIR_S, 11, false, true);
+		mccoyScan(DIR_S, 11, false);
 		if (!_awayMission->redshirtDead) // BUGFIX: Check if redshirt is dead
-			showText(TX_SPEAKER_BENNIE, 28, true);
+			showText(TX_SPEAKER_BENNIE, 28);
 	}
 }
 
 void Room::trial3UseCommunicator() {
 	if (_awayMission->trial.forceFieldDown) {
-		showText(TX_SPEAKER_UHURA, 89, true);
+		showText(TX_SPEAKER_UHURA_GLOBAL, 89);
 
 		const TextRef choices[] = {
 			TX_SPEAKER_KIRK,
 			103, 104, 107,
 			TX_BLANK
 		};
-		int choice = showMultipleTexts(choices, true);
+		int choice = showMultipleTexts(choices);
 
 		if (choice == 0) { // "Beam us back to the enterprise"
 			_awayMission->trial.missionEndMethod = 1;
@@ -404,7 +418,7 @@ void Room::trial3UseCommunicator() {
 			trial3BeamToVlict();
 		} // Else don't transport anywhere
 	} else { // Force field still up
-		showText(TX_SPEAKER_UHURA, 67, true);
+		showText(TX_SPEAKER_UHURA_GLOBAL, 67);
 	}
 }
 
@@ -412,10 +426,10 @@ void Room::trial3BeamToVlict() {
 	// ENHANCEMENT: The audio that should play here (TX_TRI3U080) doesn't seem to have the
 	// normal "filter" applied over it, making it sound jarring. So, use the equivalent
 	// text from TRIAL1 instead.
-	showText(TX_SPEAKER_UHURA, TX_TRI1U080);
+	showText(TX_SPEAKER_UHURA_GLOBAL, TX_TRI1U080);
 
 	_awayMission->disableInput = true;
-	playSoundEffectIndex(SND_TRANSDEM);
+	playSoundEffectIndex(kSfxTransporterDematerialize);
 
 	loadActorAnimC(OBJECT_KIRK,  "kteled", -1, -1, &Room::trial3CrewmanBeamedOut);
 	loadActorAnimC(OBJECT_SPOCK, "steled", -1, -1, &Room::trial3CrewmanBeamedOut);
@@ -425,27 +439,27 @@ void Room::trial3BeamToVlict() {
 }
 
 void Room::trial3UseMccoyOnWall() {
-	showText(TX_SPEAKER_MCCOY, 10, true);
+	showText(TX_SPEAKER_MCCOY, 10);
 }
 
 void Room::trial3UseMccoyOnExit() {
-	showText(TX_SPEAKER_MCCOY, 12, true);
+	showText(TX_SPEAKER_MCCOY, 12);
 }
 
 void Room::trial3UseSpockOnWall() {
-	showText(TX_SPEAKER_SPOCK, 21, true);
+	showText(TX_SPEAKER_SPOCK, 21);
 }
 
 void Room::trial3UseSpockOnExit() {
-	showText(TX_SPEAKER_SPOCK, 8, true);
+	showText(TX_SPEAKER_SPOCK, 8);
 }
 
 void Room::trial3UseRedshirtOnExit() {
-	showText(TX_SPEAKER_BENNIE, 27, true);
+	showText(TX_SPEAKER_BENNIE, 27);
 }
 
 void Room::trial3UseRedshirtOnWall() {
-	showText(TX_SPEAKER_BENNIE, 26, true);
+	showText(TX_SPEAKER_BENNIE, 26);
 }
 
 void Room::trial3WalkToExit() {
@@ -453,7 +467,8 @@ void Room::trial3WalkToExit() {
 }
 
 void Room::trial3UseMedkitAnywhere() {
-	showText(TX_SPEAKER_MCCOY, 17, true);
+	showText(TX_SPEAKER_MCCOY, 17);
 }
 
 }
+#endif

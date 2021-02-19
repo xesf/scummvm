@@ -31,6 +31,7 @@ lib*.a
 /map.txt
 *.elf
 /*.nds
+/romfs
 /.project
 /.cproject
 /.settings
@@ -39,6 +40,7 @@ lib*.a
 /scummvm-conf.cpp
 /tmp_*.cpp
 /*.apk
+/CMakeLists.txt
 
 /README
 /README.html*
@@ -48,6 +50,7 @@ lib*.a
 /CONTRIBUTING.html
 /doc/de/NEUES
 /doc/de/NEUES.html
+/doc/docportal/_build
 
 /build*
 /staging
@@ -67,12 +70,7 @@ lib*.a
 /backends/platform/dc/SCUMMVM.BIN
 /backends/platform/dc/*.PLG
 
-/backends/platform/ds/arm7/arm7.bin
-/backends/platform/ds/arm7/build
-/backends/platform/ds/arm7/source/libcartreset/*.bak
-/backends/platform/ds/arm7/source/libcartreset/*.d
 /backends/platform/ds/arm9/data/*.h
-/backends/platform/ds/arm9/scummvm-?
 
 /backends/platform/maemo/scummvm
 
@@ -272,3 +270,4 @@ android_project
 
 #Ignore snapcraft build artifacts
 .snap
+.github

@@ -10,12 +10,29 @@ Programmcodes finden Sie auf Englisch unter:
    - Unterstützung für The Longest Journey hinzugefügt.
    - Unterstützung für Myst 3: Exile hinzugefügt.
    - Unterstützung für Hades' Challenge hinzugefügt.
+   - Unterstützung für Little Big Adventure hinzugefügt.
+   - Unterstützung für Red Comrades 1: Save the Galaxy hinzugefügt.
+   - Unterstützung für Red Comrades 2: For the Great Justice hinzugefügt.
+   - Unterstützung für Transylvania hinzugefügt.
+   - Unterstützung für Crimson Crown hinzugefügt.
+   - Unterstützung für OO-Topos hinzugefügt.
+   - Unterstützung für die Glulx interactive fiction-Spiele hinzugefügt.
+
+ Neue Portierungen:
+   - Die Version für den Nintendo DS wurde zu großen Teilen neu geschrieben.
 
  Allgemein:
    - Die ScummVM-Benutzeroberfläche unterstützt nun UTF-32.
-   - Code der Roland MT-32-Emulation auf Munt 2.4.1 aktualisiert.
+   - Code der Roland MT-32-Emulation auf mt32emu 2.4.2 des Munt-Projekts aktualisiert.
+   - Unterstützung für die neue OAuth-Implementierung von Dropbox hinzugefügt.
 
- GLK:
+ AGOS:
+   - Unterstützung für die japanische PC-98-Version von Elvira 1 hinzugefügt.
+
+ Dreamweb:
+   - Darstellungsfehler in der russischen Fan-Übersetzung behoben.
+
+ Glk:
    - Probleme mit Spielständen in mehreren Sub-Engines behoben.
    - Speicherüberlauf im Erkennungsmechanismus für Level9-Spiele behoben.
    - Unterstützung für die Spiele der IF Comp 2020 hinzugefügt.
@@ -25,25 +42,35 @@ Programmcodes finden Sie auf Englisch unter:
    - Unterstützung für die russische Fan-Übersetzung von Bargon Attack hinzugefügt.
    - Unterstützung für die russische Übersetzung von Woodruff hinzugefügt.
 
+ Griffon:
+   - Fehler korrigiert, der die Rückkehr zur Spiele-Liste/zum Launcher in The Griffon Legend verhindert hat.
+
  Grim:
    - Unterstützung für die Version in brasilianischem Portugiesisch von Grim Fandango hinzugefügt.
    - Unterstützung für die russische Version von Escape from Monkey Island hinzugefügt.
 
  Kyra:
-   - Unterstützung für die russische Version Version vom The Legend of Kyrandia (von Siberian GRemlin) hinzugefügt.
-   - Russische Fan-Übersetzung von The Legend of Kyrandia 2 - Hand of Fate korrigiert (Untertitel im Into und in den Credits hinzugefügt).
+   - Unterstützung für die japanische Sega-CD-Version von Eye of the Beholder hinzugefügt.
+   - Unterstützung für die hebräische Fan-Übersetzung von Legend of Kyrandia hinzugefügt.
 
  Lure:
-   - Die Feuer-Animation im ersten Raum wird nun auch nach dem Laden eines Spielstands abgespielt.
+   - Die Feuer-Animation im ersten Raum wird nun auch nach dem Laden eines korrekt Spielstands abgespielt.
+   - Unterstützung für MT-32 korrigiert.
 
  SAGA:
    - Unterstützung für ITE GOG Mac CD v1.1 hinzugefügt.
+   - Unterstützung für die japanische Version von ITE PC-98 hinzugefügt.
 
  SCI:
    - Unterstützung für RGB-Rendering (16/32bpp) für SCI0 - SCI1.1-Spiele hinzugefügt. Dadurch werden Probleme
      mit der Farbpalette während Bildschirmübergängen und Probleme bei der Darstellung von Mac-QuickTime-Videos korrigiert.
    - Unterstützung für benutzerdefinierte Farbpaletten in SQ3 und LSL2 des FreeSCI-Projekts hinzugefügt.
      Wenn diese Mods aktiviert werden, wird die grafische Darstellung in diesen beiden Spielen verbessert.
+   - Unterstützung für die koreanischen Fan-Übersetzungen von Castle of Dr. Brain, Eco Quest, Gabriel Knight,
+     King's Quest 1, 5 und 6, Laura Bow 2: Dagger of Amon Ra und Space Quest 4 hinzugefügt.
+   - Unterstützung für zahlreiche koreanische Übersetzungen des scummkor-Projektes hinzugefügt.
+   - Unterstützung für die russische Version von LSL6 hinzugefügt.
+   - Unterstützung für eine alternative russische Version von LSL7 hinzugefügt.
 
  SCUMM:
    - Textdarstellung in der chinesischen, japanischen und koreanischen Version von The Dig und
@@ -51,9 +78,16 @@ Programmcodes finden Sie auf Englisch unter:
      Verbesserungen an der Textdarstellung (hauptsächlich bezüglich der Formatierung von Text-Umbrüchen).
    - Darstellung des Pause- und Neustart-Dialogs in der chinesischen, japanischen und koreanischen Version
      der Benutzeroberfläche korrigiert.
+   - Unterstützung für zahlreiche koreanische Übersetzungen des scummkor-Projektes hinzugefügt.
+   - Unterstützung für die Russobit-M-Versionen von Pajama2 und SpyOzone hinzugefügt.
+   - Sprachausgabe in der Akella-Version von COMI korrigiert.
+   - Unterstützung für die Discord- und Humble Bundle-Versionen von Indiana Jones and the Fate of Atlantis hinzugefügt
 
-   Tinsel:
+ Tinsel:
    - Unterstützung für die Rückkehr zur ScummVM-Benutzeroberfläche hinzugefügt.
+
+ TsAGE:
+   - Unterstützung für eine weitere Disketten-Version hinzugefügt.
 
  Stark:
    - Unterstützung für die ungarische Übersetzung hinzugefügt.
@@ -72,6 +106,15 @@ Programmcodes finden Sie auf Englisch unter:
  Xeen:
    - Gelegentliche Grafikfehler in Kampf-Szenen korrigiert.
    - Verbesserte Unterstützung für Zwischensequenzen, die nun dem Original genauer entsprechen.
+
+ AmigaOS-Portierung:
+   - Unterstützung für native Dateisystem-Dialoge hinzugefügt.
+   - Der nuked OPL Adlib-Treiber ist wieder aktiviert.
+
+ MorphOS-Portierung:
+   - Unterstützung für native Dateisystem-Dialoge hinzugefügt.
+   - Unterstützung für die Cloud-Anbindung hinzugefügt.
+   - Der nuked OPL Adlib-Treiber ist wieder aktiviert.
 
 #### 2.2.0 "Interactive Fantasy" (27.09.2020)
 
@@ -103,6 +146,7 @@ Programmcodes finden Sie auf Englisch unter:
    - Die Standard-Stimme der Sprachausgabe kann auf unterstützten Plattformen nun angepasst werden.
    - Unterstützung für Discord-Integration auf unterstützten Plattformen (Windows Vista+, macOS 10.9+ 64 Bit) hinzugefügt.
    - Die Unterstützung für Tastenkürzel über den Keymapper wurde erheblich verbessert.
+   - Spiele werden nun im Format engineid:gameid erkannt.
 
  BBVS:
    - Unterstützung für die Demo-Version hinzugefügt. Die Demo-Version ist auf unserer Website verfügbar.

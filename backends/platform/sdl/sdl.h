@@ -36,9 +36,6 @@
 #ifdef USE_DISCORD
 class DiscordPresence;
 #endif
-#if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS) || defined(USE_GLES2)
-#include "backends/graphics3d/openglsdl/openglsdl-graphics3d.h"
-#endif
 
 /**
  * Base OSystem class for all SDL ports.
@@ -78,7 +75,7 @@ public:
 	virtual bool setTextInClipboard(const Common::U32String &text) override;
 #endif
 
-	virtual void setWindowCaption(const char *caption) override;
+	virtual void setWindowCaption(const Common::U32String &caption) override;
 	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority = 0) override;
 	virtual uint32 getMillis(bool skipRecord = false) override;
 	virtual void delayMillis(uint msecs) override;
@@ -132,7 +129,9 @@ protected:
 	// Graphics capabilities
 	void detectFramebufferSupport();
 	void detectAntiAliasingSupport();
-	OpenGLSdlGraphics3dManager::Capabilities _capabilities;
+
+	bool _supportsFrameBuffer;
+	Common::Array<uint> _antiAliasLevels;
 #endif
 
 	/**
@@ -169,8 +168,6 @@ protected:
 	virtual bool setGraphicsMode(int mode, uint flags) override;
 	virtual int getGraphicsMode() const override;
 #endif
-protected:
-	virtual char *convertEncoding(const char *to, const char *from, const char *string, size_t length) override;
 };
 
 #endif

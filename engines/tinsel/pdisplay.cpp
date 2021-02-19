@@ -152,12 +152,12 @@ void CursorPositionProcess(CORO_PARAM, const void *) {
 	PMOVER pActor;		// Lead actor
 
 	while (1) {
-		PlayfieldGetPos(FIELD_WORLD, &Loffset, &Toffset);
+		_vm->_bg->PlayfieldGetPos(FIELD_WORLD, &Loffset, &Toffset);
 
 		/*-----------------------------------*\
 		| Cursor's position and path display. |
 		\*-----------------------------------*/
-		GetCursorXY(&aniX, &aniY, false);
+		_vm->_cursor->GetCursorXY(&aniX, &aniY, false);
 
 		// Change in cursor position?
 		if (aniX != _ctx->prevcX || aniY != _ctx->prevcY ||
@@ -174,7 +174,7 @@ void CursorPositionProcess(CORO_PARAM, const void *) {
 			// New text objects
 			sprintf(PositionString, "%d %d", aniX + Loffset, aniY + Toffset);
 			_ctx->cpText = ObjectTextOut(_vm->_bg->GetPlayfieldList(FIELD_STATUS), PositionString,
-						0, CPOSX, POSY, GetTagFontHandle(), TXT_CENTER);
+						0, CPOSX, POSY, _vm->_font->GetTagFontHandle(), TXT_CENTER);
 			if (g_DispPath) {
 				HPOLYGON hp = InPolygon(aniX + Loffset, aniY + Toffset, PATH);
 				if (hp == NOPOLY)
@@ -186,7 +186,7 @@ void CursorPositionProcess(CORO_PARAM, const void *) {
 						PolyCornerX(hp, 2), PolyCornerY(hp, 2),
 						PolyCornerX(hp, 3), PolyCornerY(hp, 3));
 				_ctx->cpathText = ObjectTextOut(_vm->_bg->GetPlayfieldList(FIELD_STATUS), PositionString,
-							0, 4, POSY+ 10, GetTagFontHandle(), 0);
+							0, 4, POSY+ 10, _vm->_font->GetTagFontHandle(), 0);
 			}
 
 			// update previous position
@@ -219,7 +219,7 @@ void CursorPositionProcess(CORO_PARAM, const void *) {
 		pActor = GetMover(LEAD_ACTOR);
 		if (pActor && getMActorState(pActor)) {
 			// get lead's animation position
-			GetActorPos(LEAD_ACTOR, &aniX, &aniY);
+			_vm->_actor->GetActorPos(LEAD_ACTOR, &aniX, &aniY);
 
 			// Change in position?
 			if (aniX != _ctx->prevlX || aniY != _ctx->prevlY ||
@@ -232,7 +232,7 @@ void CursorPositionProcess(CORO_PARAM, const void *) {
 				// create new text object list
 				sprintf(PositionString, "%d %d", aniX, aniY);
 				_ctx->rpText = ObjectTextOut(_vm->_bg->GetPlayfieldList(FIELD_STATUS), PositionString,
-								0, LPOSX, POSY,	GetTagFontHandle(), TXT_CENTER);
+								0, LPOSX, POSY,	_vm->_font->GetTagFontHandle(), TXT_CENTER);
 
 				// update previous position
 				_ctx->prevlX = aniX;
@@ -251,7 +251,7 @@ void CursorPositionProcess(CORO_PARAM, const void *) {
 
 			sprintf(PositionString, "String: %d", g_newestString);
 			_ctx->spText = ObjectTextOut(_vm->_bg->GetPlayfieldList(FIELD_STATUS), PositionString,
-						0, SPOSX, POSY+10, GetTalkFontHandle(), TXT_CENTER);
+						0, SPOSX, POSY+10, _vm->_font->GetTalkFontHandle(), TXT_CENTER);
 
 			// update previous value
 			_ctx->prevString = g_newestString;
@@ -392,7 +392,7 @@ static bool InHotSpot(int ano, int aniX, int aniY, int *pxtext, int *pytext) {
  * the tag or, if tag already displayed, maintain the tag's position on
  * the screen.
  */
-static bool ActorTag(int curX, int curY, HotSpotTag *pTag, OBJECT **ppText) {
+static bool ActorTag(int curX_, int curY_, HotSpotTag *pTag, OBJECT **ppText) {
 	int	newX, newY;		// new values, to keep tag in place
 	int	ano;
 	int	xtext, ytext;
@@ -449,7 +449,7 @@ static bool ActorTag(int curX, int curY, HotSpotTag *pTag, OBJECT **ppText) {
 	// For each actor with a tag....
 	_vm->_actor->FirstTaggedActor();
 	while ((ano = _vm->_actor->NextTaggedActor()) != 0) {
-		if (InHotSpot(ano, curX, curY, &xtext, &ytext)) {
+		if (InHotSpot(ano, curX_, curY_, &xtext, &ytext)) {
 			// Put up or maintain actor tag
 			if (*pTag != ACTOR_HOTSPOT_TAG)
 				newActor = true;
@@ -667,11 +667,11 @@ void TagProcess(CORO_PARAM, const void *) {
 
 	while (1) {
 		if (g_bTagsActive) {
-			int	curX, curY;	// cursor position
-			while (!_vm->_cursor->GetCursorXYNoWait(&curX, &curY, true))
+			int	curX_, curY_;	// cursor position
+			while (!_vm->_cursor->GetCursorXYNoWait(&curX_, &curY_, true))
 				CORO_SLEEP(1);
 
-			if (!ActorTag(curX, curY, &_ctx->Tag, &_ctx->pText)
+			if (!ActorTag(curX_, curY_, &_ctx->Tag, &_ctx->pText)
 					&& !PolyTag(&_ctx->Tag, &_ctx->pText)) {
 				// Nothing tagged. Remove tag, if there is one
 				if (_ctx->pText) {

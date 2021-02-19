@@ -42,6 +42,8 @@
 
 #include "common/func.h"
 
+#include "common/str.h"
+
 #ifdef DEBUG_HASH_COLLISIONS
 #include "common/debug.h"
 #endif
@@ -244,9 +246,11 @@ public:
 	Val &operator[](const Key &key);
 	const Val &operator[](const Key &key) const;
 
+	Val &getOrCreateVal(const Key &key);
 	Val &getVal(const Key &key);
 	const Val &getVal(const Key &key) const;
-	const Val &getVal(const Key &key, const Val &defaultVal) const;
+	const Val &getValOrDefault(const Key &key) const;
+	const Val &getValOrDefault(const Key &key, const Val &defaultVal) const;
 	bool tryGetVal(const Key &key, Val &out) const;
 	void setVal(const Key &key, const Val &val);
 
@@ -301,6 +305,32 @@ public:
 		return (_size == 0);
 	}
 };
+
+template <class Key>
+void NORETURN_PRE unknownKeyError(Key k) NORETURN_POST {
+	error("Unknown key");
+}
+
+template<>
+void NORETURN_PRE unknownKeyError(::Common::String key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(signed char key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(unsigned char key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(short signed key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(short unsigned key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(long signed key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(long unsigned key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(long long signed key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(long long unsigned key) NORETURN_POST;
+template<>
+void NORETURN_PRE unknownKeyError(void *key) NORETURN_POST;
 
 //-------------------------------------------------------
 // HashMap functions
@@ -569,7 +599,7 @@ bool HashMap<Key, Val, HashFunc, EqualFunc>::contains(const Key &key) const {
 
 template<class Key, class Val, class HashFunc, class EqualFunc>
 Val &HashMap<Key, Val, HashFunc, EqualFunc>::operator[](const Key &key) {
-	return getVal(key);
+	return getOrCreateVal(key);
 }
 
 /**
@@ -586,7 +616,7 @@ const Val &HashMap<Key, Val, HashFunc, EqualFunc>::operator[](const Key &key) co
  */
 
 template<class Key, class Val, class HashFunc, class EqualFunc>
-Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key) {
+Val &HashMap<Key, Val, HashFunc, EqualFunc>::getOrCreateVal(const Key &key) {
 	size_type ctr = lookupAndCreateIfMissing(key);
 	assert(_storage[ctr] != nullptr);
 	return _storage[ctr]->_value;
@@ -597,8 +627,26 @@ Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key) {
  */
 
 template<class Key, class Val, class HashFunc, class EqualFunc>
+Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key) {
+	size_type ctr = lookup(key);
+	if (_storage[ctr] != nullptr)
+		return _storage[ctr]->_value;
+	else
+		unknownKeyError(key);
+}
+
+template<class Key, class Val, class HashFunc, class EqualFunc>
 const Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key) const {
-	return getVal(key, _defaultVal);
+	size_type ctr = lookup(key);
+	if (_storage[ctr] != nullptr)
+		return _storage[ctr]->_value;
+	else
+		unknownKeyError(key);
+}
+
+template<class Key, class Val, class HashFunc, class EqualFunc>
+const Val &HashMap<Key, Val, HashFunc, EqualFunc>::getValOrDefault(const Key &key) const {
+	return getValOrDefault(key, _defaultVal);
 }
 
 /**
@@ -606,7 +654,7 @@ const Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key) const 
  */
 
 template<class Key, class Val, class HashFunc, class EqualFunc>
-const Val &HashMap<Key, Val, HashFunc, EqualFunc>::getVal(const Key &key, const Val &defaultVal) const {
+const Val &HashMap<Key, Val, HashFunc, EqualFunc>::getValOrDefault(const Key &key, const Val &defaultVal) const {
 	size_type ctr = lookup(key);
 	if (_storage[ctr] != nullptr)
 		return _storage[ctr]->_value;

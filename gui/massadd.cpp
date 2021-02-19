@@ -86,24 +86,15 @@ MassAddDialog::MassAddDialog(const Common::FSNode &startDir)
 	_list->setNumberingMode(kListNumberingOff);
 	_list->setList(l);
 
-	_okButton = new ButtonWidget(this, "MassAdd.Ok", _("OK"), Common::U32String(""), kOkCmd, Common::ASCII_RETURN);
+	_okButton = new ButtonWidget(this, "MassAdd.Ok", _("OK"), Common::U32String(), kOkCmd, Common::ASCII_RETURN);
 	_okButton->setEnabled(false);
 
-	new ButtonWidget(this, "MassAdd.Cancel", _("Cancel"), Common::U32String(""), kCancelCmd, Common::ASCII_ESCAPE);
+	new ButtonWidget(this, "MassAdd.Cancel", _("Cancel"), Common::U32String(), kCancelCmd, Common::ASCII_ESCAPE);
 
 	// Build a map from all configured game paths to the targets using them
 	const Common::ConfigManager::DomainMap &domains = ConfMan.getGameDomains();
 	Common::ConfigManager::DomainMap::const_iterator iter;
 	for (iter = domains.begin(); iter != domains.end(); ++iter) {
-
-#ifdef __DS__
-		// DS port uses an extra section called 'ds'.  This prevents the section from being
-		// detected as a game.
-		if (iter->_key == "ds") {
-			continue;
-		}
-#endif
-
 		Common::String path(iter->_value.getVal("path"));
 		// Remove trailing slash, so that "/foo" and "/foo/" match.
 		// This works around a bug in the POSIX FS code (and others?)

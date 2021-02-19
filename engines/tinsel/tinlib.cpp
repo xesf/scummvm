@@ -152,8 +152,8 @@ enum MASTER_LIB_CODES {
 	THISOBJECT, THISTAG, TIMER, TOPIC, TOPPLAY, TOPWINDOW, TRANSLUCENTINDEX,
 	TRYPLAYSAMPLE, UNDIMMUSIC, UNHOOKSCENE, UNTAGACTOR, VIBRATE, WAITFRAME, WAITKEY,
 	WAITSCROLL, WAITTIME, WALK, WALKED, WALKEDPOLY, WALKEDTAG, WALKINGACTOR, WALKPOLY,
-	WALKTAG, WALKXPOS, WALKYPOS, WHICHCD, WHICHINVENTORY, ZZZZZZ,
-	HIGHEST_LIBCODE
+	WALKTAG, WALKXPOS, WALKYPOS, WHICHCD, WHICHINVENTORY, ZZZZZZ, DEC3D, DECINVMAIN,
+	ADDNOTEBOOK, ADDINV3, ADDCONV, SET3DTEXTURE, HIGHEST_LIBCODE
 };
 
 static const MASTER_LIB_CODES DW1DEMO_CODES[] = {
@@ -331,7 +331,7 @@ void ResetVarsTinlib() {
 }
 
 /**
- * For Scroll() and Offset(), work out top left for a
+ * For ScrollScreen() and Offset(), work out top left for a
  * given screen position.
  */
 static void DecodeExtreme(EXTREME extreme, int *px, int *py) {
@@ -884,9 +884,9 @@ static void ConvTopic(int icon) {
 }
 
 /**
- * Cursor(on/off)
+ * ToggleCursor(on/off)
  */
-void Cursor(int onoff) {
+void ToggleCursor(int onoff) {
 	if (onoff) {
 		// Re-instate cursor
 		_vm->_cursor->UnHideCursor();
@@ -1661,6 +1661,10 @@ static void PlayMovie(CORO_PARAM, SCNHANDLE hFileStem, int myEscape) {
  * Play some music
  */
 static void PlayMusic(int tune) {
+	if (TinselV3) {
+		warning("TODO: Implement PLAYMUSIC(%d) for Noir", tune);
+		return;
+	}
 	_vm->_pcmMusic->startPlay(tune);
 }
 
@@ -2514,7 +2518,7 @@ static int ScanIcon() {
 /**
  * Scroll the screen to target co-ordinates.
  */
-static void Scroll(CORO_PARAM, EXTREME extreme, int xp, int yp, int xIter, int yIter, bool bComp, bool escOn, int myEscape) {
+static void ScrollScreen(CORO_PARAM, EXTREME extreme, int xp, int yp, int xIter, int yIter, bool bComp, bool escOn, int myEscape) {
 	CORO_BEGIN_CONTEXT;
 		int	thisScroll;
 		int x, y;
@@ -2692,6 +2696,20 @@ static void SetPalette(SCNHANDLE hPal, bool escOn, int myEscape) {
 		return;
 
 	_vm->_bg->ChangePalette(hPal);
+}
+
+/**
+ * Set system reel
+ */
+static void SetSystemReel(int index, SCNHANDLE reel) {
+	switch (index) {
+		case 11:
+			DecCursor(reel);
+			break;
+		default:
+			warning("SetSystemReel(%d, %08X), STUBBED", index, reel);
+			break;
+	}
 }
 
 /**
@@ -4167,6 +4185,192 @@ int WhichInventory() {
 }
 
 
+struct NoirMapping {
+	const char *name;
+	int libCode;
+	int numArgs;
+};
+
+NoirMapping translateNoirLibCode(int libCode, int32 *pp) {
+	// This function allows us to both log the called library functions, as well
+	// as to stub the ones we haven't yet implemented. Eventually this might
+	// get rolled up into a lookup table similar to DW1 and DW2, but for now
+	// this is convenient for debug.
+	NoirMapping mapping;
+	switch (libCode) {
+	case 5:
+		mapping = NoirMapping{"ACTORRGB", ACTORRGB, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, 0x%08X)", mapping.name, pp[0], pp[1]);
+		break;
+	case 8:
+		mapping = NoirMapping{"ADDNOTEBOOK", ADDNOTEBOOK, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 9:
+		mapping = NoirMapping{"ADDCONV", ADDCONV, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 12:
+		mapping = NoirMapping{"ADDINV1", ADDINV1, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 16:
+		mapping = NoirMapping{"ADDINV3", ADDINV3, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%08X)", mapping.name, pp[0]);
+		break;
+	case 18:
+		mapping = NoirMapping{"BACKGROUND", BACKGROUND, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 37:
+		mapping = NoirMapping{"CONTROL", CONTROL, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%08X)", mapping.name, pp[0]);
+		break;
+	case 28:
+		mapping = NoirMapping{"CDCHANGESCENE", CDCHANGESCENE, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 41:
+		mapping = NoirMapping{"CURSORXPOS", CURSORXPOS, 0};
+		debug(7, "%s()", mapping.name);
+		break;
+	case 42:
+		mapping = NoirMapping{"CURSORYPOS", CURSORYPOS, 0};
+		debug(7, "%s()", mapping.name);
+		break;
+	case 43:
+		mapping = NoirMapping{"DECINVMAIN", DECINVMAIN, 8};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7]);
+		break;
+	case 44: // Changed in Noir
+		mapping = NoirMapping{"DECINV2", DECINV2, 8};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7]);
+		break;
+	case 45:
+		mapping = NoirMapping{"DECLARELANGUAGE", DECLARELANGUAGE, 3};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2]);
+		break;
+	case 46:
+		mapping = NoirMapping{"DECLEAD", DECLEAD, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d)", mapping.name, pp[0]);
+		break;
+	case 47:
+		mapping = NoirMapping{"DEC3D", DEC3D, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 48:
+		mapping = NoirMapping{"DECTAGFONT", DECTAGFONT, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 49:
+		mapping = NoirMapping{"DECTALKFONT", DECTALKFONT, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 61:
+		mapping = NoirMapping{"EVENT", EVENT, 0};
+		debug(7, "%s()", mapping.name);
+		break;
+	case 86:
+		mapping = NoirMapping{"OP86", ZZZZZZ, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X)", mapping.name, pp[0], pp[1]);
+		break;
+	case 96:
+		mapping = NoirMapping{"MOVECURSOR", MOVECURSOR, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, %d)", mapping.name, pp[0], pp[1]);
+		break;
+	case 99:
+		mapping = NoirMapping{"NEWSCENE", NEWSCENE, 3};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2]);
+		break;
+	case 110:
+		mapping = NoirMapping{"PLAY", PLAY, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X)", mapping.name, pp[0], pp[1]);
+		break;
+	case 112:
+		mapping = NoirMapping{"PLAYMUSIC", PLAYMUSIC, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 151:
+		mapping = NoirMapping{"SETSYSTEMREEL", SETSYSTEMREEL, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, 0x%08X)", mapping.name, pp[0], pp[1]);
+		break;
+	case 152:
+		mapping = NoirMapping{"SETSYSTEMSTRING", SETSYSTEMSTRING, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, %08X)", mapping.name, pp[0], pp[1]);
+		break;
+	case 153:
+		mapping = NoirMapping{"SETSYSTEMVAR", SETSYSTEMVAR, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, 0x%08X)", mapping.name, pp[0], pp[1]);
+		break;
+	case 167:
+		mapping = NoirMapping{"STARTPROCESS", STARTPROCESS, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	case 175:
+		mapping = NoirMapping{"SYSTEMVAR", SYSTEMVAR, 0};
+		debug(7, "%s(%d)", mapping.name, pp[0]);
+		break;
+	case 197:
+		mapping = NoirMapping{"WAITTIME", WAITTIME, 2};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(%d, %d)", mapping.name, pp[0], pp[1]);
+		break;
+	case 208:
+		mapping = NoirMapping{"WHICHINVENTORY", WHICHINVENTORY, 0};
+		debug(7, "%s()", mapping.name);
+		break;
+	case 210: // STUBBED
+		mapping = NoirMapping{"OP210", ZZZZZZ, 8};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7]);
+		break;
+	case 212: // STUBBED
+		mapping = NoirMapping{"OP212", ZZZZZZ, 8};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7]);
+		break;
+	case 213: // STUBBED
+		mapping = NoirMapping{"OP213", ZZZZZZ, 8};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X)", mapping.name, pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7]);
+		break;
+	case 214:
+		mapping = NoirMapping{"SET3DTEXTURE", SET3DTEXTURE, 1};
+		pp -= mapping.numArgs - 1;
+		debug(7, "%s(0x%08X)", mapping.name, pp[0]);
+		break;
+	default:
+		error("Unmapped libCode %d", libCode);
+	}
+
+	return mapping;
+}
+
+
 /**
  * Subtract one less that the number of parameters from pp
  * pp then points to the first parameter.
@@ -4185,6 +4389,14 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 	if (TinselV0) libCode = DW1DEMO_CODES[operand];
 	else if (!TinselV2) libCode = DW1_CODES[operand];
 	else if (TinselV2Demo) libCode = DW2DEMO_CODES[operand];
+	else if (TinselV3) {
+		NoirMapping mapping = translateNoirLibCode(operand, pp);
+		libCode = mapping.libCode;
+		if (libCode == ZZZZZZ) {
+			debug(7, "%08X CallLibraryRoutine op %d (escOn %d, myEscape %d)", pic->hCode, operand, pic->escOn, pic->myEscape);
+			return -mapping.numArgs;
+		}
+	}
 	else libCode = DW2_CODES[operand];
 
 	debug(7, "CallLibraryRoutine op %d (escOn %d, myEscape %d)", operand, pic->escOn, pic->myEscape);
@@ -4225,7 +4437,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return 0;
 
 	case ACTORRGB:
-		// DW2 only
+		// Common to DW2 / Noir
 		pp -= 1;			// 2 parameters
 		ActorRGB(pp[0], pp[1]);
 		return -2;
@@ -4250,6 +4462,11 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		pp[0] = ActorPos(ACTORYPOS, pp[0]);
 		return 0;
 
+	case ADDCONV:
+		// Noir only
+		warning("TODO: Implement ADDCONV");
+		return -1;
+
 	case ADDHIGHLIGHT:
 		// DW2 only
 		// Command doesn't actually do anything
@@ -4262,13 +4479,23 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -1;
 
 	case ADDINV1:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		AddInv(INV_1, pp[0]);
 		return -1;
 
 	case ADDINV2:
 		// Common to both DW1 & DW2
 		AddInv(INV_2, pp[0]);
+		return -1;
+
+	case ADDINV3:
+		// Noir only
+		warning("TODO: Implement ADDINV3");
+		return -1;
+
+	case ADDNOTEBOOK:
+		// Noir Only
+		warning("TODO: Implement ADDNOTEBOOK");
 		return -1;
 
 	case ADDOPENINV:
@@ -4288,7 +4515,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -14;
 
 	case BACKGROUND:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		startBackground(coroParam, pp[0]);
 		return -1;
 
@@ -4388,7 +4615,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -1;
 
 	case CDCHANGESCENE:
-		// DW2 only
+		// DW2 / Noir
 		CdChangeScene(pp[0]);
 		return -1;
 
@@ -4423,7 +4650,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return 0;
 
 	case CONTROL:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		Control(pp[0]);
 		return -1;
 
@@ -4439,22 +4666,27 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 
 	case CURSOR:
 		// DW2 only
-		Cursor(pp[0]);
+		ToggleCursor(pp[0]);
 		return -1;
 
 	case CURSORXPOS:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp[0] = CursorPos(CURSORXPOS);
 		return 0;
 
 	case CURSORYPOS:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp[0] = CursorPos(CURSORYPOS);
 		return 0;
 
 	case CUTSCENE:
 		// DW1 only
 		error("cutscene isn't a real function");
+
+	case DEC3D:
+		// Noir only
+		warning("TODO: Implement DEC3D");
+		return -3;
 
 	case DECCONVW:
 		// Common to both DW1 & DW2
@@ -4490,10 +4722,14 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -8;
 
 	case DECINV2:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp -= 7;			// 8 parameters
 		DecInv2(pp[0], pp[1], pp[2], pp[3],
 			 pp[4], pp[5], pp[6], pp[7]);
+		return -8;
+
+	case DECINVMAIN:
+		warning("TODO: Implement DECINVMAIN");
 		return -8;
 
 	case DECINVW:
@@ -4502,13 +4738,13 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -1;
 
 	case DECLARELANGUAGE:
-		// DW2 only
+		// Common to DW2 & Noir
 		pp -= 2;			// 3 parameters
 		DeclareLanguage(pp[0], pp[1], pp[2]);
 		return -3;
 
 	case DECLEAD:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		if (TinselV2) {
 			DecLead(pp[0]);
 			return -1;
@@ -4527,12 +4763,12 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -14;
 
 	case DECTAGFONT:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		_vm->_font->SetTagFontHandle(pp[0]);
 		return -1;
 
 	case DECTALKFONT:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		_vm->_font->SetTalkFontHandle(pp[0]);
 		return -1;
 
@@ -4594,8 +4830,8 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		error("Escape isn't a real function");
 
 	case EVENT:
-		// Common to both DW1 & DW2
-		if (TinselVersion == TINSEL_V2)
+		// Common to DW1 / DW2 / Noir
+		if (TinselVersion == TINSEL_V2 || TinselVersion == TINSEL_V3)
 			pp[0] = pic->event;
 		else
 			pp[0] = TINSEL1_EVENT_MAP[pic->event];
@@ -4806,7 +5042,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		error("LocalVar isn't a real function");
 
 	case MOVECURSOR:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp -= 1;			// 2 parameters
 		MoveCursor(pp[0], pp[1]);
 		return -2;
@@ -4824,7 +5060,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -3;
 
 	case NEWSCENE:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp -= 2;			// 3 parameters
 		if (*pResumeState == RES_2)
 			*pResumeState = RES_NOT;
@@ -4876,8 +5112,11 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return 0;
 
 	case PLAY:
-		// Common to both DW1 & DW2
-		if (TinselV2) {
+		// Common to DW1 / DW2 / Noir
+		if (TinselV3) {
+			warning("TODO: Implement PLAY");
+			return -2;
+		} if (TinselV2) {
 			pp -= 3;			// 4 parameters
 			if (*pResumeState == RES_1 && _vm->_handle->IsCdPlayHandle(pp[0]))
 				*pResumeState = RES_NOT;
@@ -4909,7 +5148,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -1;
 
 	case PLAYMUSIC:
-		// DW2 only
+		// DW2 / Noir only
 		PlayMusic(pp[0]);
 		return -1;
 
@@ -5099,11 +5338,11 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		// Common to both DW1 & DW2
 		if (TinselV2) {
 			pp -= 5;			// 6 parameters
-			Scroll(coroParam, (EXTREME)pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pic->escOn, pic->myEscape);
+			ScrollScreen(coroParam, (EXTREME)pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pic->escOn, pic->myEscape);
 			return -6;
 		} else {
 			pp -= 3;			// 4 parameters
-			Scroll(coroParam, EX_USEXY, pp[0], pp[1], pp[2], pp[2], pp[3], pic->escOn, pic->myEscape);
+			ScrollScreen(coroParam, EX_USEXY, pp[0], pp[1], pp[2], pp[2], pp[3], pic->escOn, pic->myEscape);
 			return -4;
 		}
 
@@ -5135,6 +5374,10 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		}
 		return -1;
 
+	case SET3DTEXTURE:
+		// Noir only
+		warning("TODO: Implement SET3DTEXTURE(0x%08X)", pp[0]);
+		return -1;
 
 	case SETACTOR:
 		// DW1 only
@@ -5180,14 +5423,24 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 			return -1;
 		}
 
+	case SETSYSTEMREEL:
+		// Noir only
+		if (TinselV3) {
+			pp -= 1;
+			SetSystemReel(pp[0], pp[1]);
+			return -2;
+		} else {
+			error("SETSYSTEMREEL is only used in Noir");
+		}
+
 	case SETSYSTEMSTRING:
-		// DW2 only
+		// DW2 & Noir
 		pp -= 1;				// 2 parameters
 		SetSystemString(pp[0], pp[1]);
 		return -2;
 
 	case SETSYSTEMVAR:
-		// DW1 only
+		// DW1 & Noir
 		pp -= 1;				// 2 parameters
 		SetSystemVar(pp[0], pp[1]);
 		return -2;
@@ -5301,7 +5554,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -1;
 
 	case STARTPROCESS:
-		// DW2 only
+		// DW2 / Noir
 		StartProcess(coroParam, pp[0]);
 		return -1;
 
@@ -5349,7 +5602,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return -7;
 
 	case SYSTEMVAR:
-		// DW2 only
+		// DW2 / Noir
 		pp[0] = SystemVar(pp[0]);
 		return 0;
 
@@ -5512,7 +5765,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return 0;
 
 	case WAITTIME:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp -= 1;			// 2 parameters
 		WaitTime(coroParam, pp[0], pp[1], pic->escOn, pic->myEscape);
 		if (!coroParam && (pic->hCode == 0x3007540) && (pic->resumeState == RES_2))
@@ -5592,7 +5845,7 @@ int CallLibraryRoutine(CORO_PARAM, int operand, int32 *pp, const INT_CONTEXT *pi
 		return 0;
 
 	case WHICHINVENTORY:
-		// Common to both DW1 & DW2
+		// Common to DW1 / DW2 / Noir
 		pp[0] = WhichInventory();
 		return 0;
 

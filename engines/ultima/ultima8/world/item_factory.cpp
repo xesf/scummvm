@@ -25,17 +25,11 @@
 #include "ultima/ultima8/world/item_factory.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/graphics/main_shape_archive.h"
-#include "ultima/ultima8/graphics/shape_info.h"
-#include "ultima/ultima8/world/item.h"
-#include "ultima/ultima8/world/container.h"
-#include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/world/glob_egg.h"
-#include "ultima/ultima8/world/egg.h"
 #include "ultima/ultima8/world/monster_egg.h"
 #include "ultima/ultima8/world/teleport_egg.h"
-#include "ultima/ultima8/kernel/core_app.h"
-#include "ultima/ultima8/filesys/idata_source.h"
+#include "ultima/ultima8/ultima8.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -106,6 +100,14 @@ Item *ItemFactory::createItem(uint32 shape, uint32 frame, uint16 quality,
 		if (GAME_IS_CRUSADER) {
 			if (info->_damageInfo && info->_damageInfo->takesDamage()) {
 				item->setDamagePoints(info->_damageInfo->damagePoints());
+			}
+			if (info->_family == ShapeInfo::SF_CRUWEAPON && info->_weaponInfo &&
+				info->_weaponInfo->_defaultAmmo) {
+				item->setQuality(info->_weaponInfo->_defaultAmmo);
+			}
+			if (info->_family == ShapeInfo::SF_CRUAMMO ||
+					 info->_family == ShapeInfo::SF_CRUBOMB) {
+				item->setQuality(1);
 			}
 		}
 	}

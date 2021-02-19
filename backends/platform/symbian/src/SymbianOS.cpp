@@ -31,7 +31,7 @@
 #include <eikenv.h> // for CEikonEnv::Static()
 
 #if (__GNUC__ && __cplusplus)
-//If a pop has no matching push, the command-line options are restored. 
+//If a pop has no matching push, the command-line options are restored.
 #pragma GCC diagnostic pop
 #endif
 
@@ -41,13 +41,15 @@
 #include "backends/platform/symbian/src/SymbianOS.h"
 #include "common/config-manager.h"
 #include "common/scummsys.h"
-#include "common/translation.h"
 
 #include "gui/message.h"
 
 #include "backends/fs/symbian/symbian-fs-factory.h"
 #include "backends/saves/default/default-saves.h"
 #include "backends/mixer/symbiansdl/symbiansdl-mixer.h"
+
+#include "backends/keymapper/keymapper.h"
+#include "backends/keymapper/keymapper-defaults.h"
 
 #ifdef GUI_ENABLE_KEYSDIALOG
 #include "backends/platform/symbian/src/SymbianActions.h"
@@ -210,6 +212,14 @@ bool OSystem_SDL_Symbian::hasFeature(Feature f) {
 RFs& OSystem_SDL_Symbian::FsSession() {
 	return *_RFs;
 }
+
+
+Common::KeymapperDefaultBindings *OSystem_SDL_Symbian::getKeymapperDefaultBindings(){
+	Common::KeymapperDefaultBindings *keymapperDefaultBindings = new Common::KeymapperDefaultBindings();
+	keymapperDefaultBindings->setDefaultBinding(Common::kGlobalKeymapName, "MENU", "ASTERISK");
+	return keymapperDefaultBindings;
+}
+
 
 // Symbian bsearch implementation is flawed
 void* scumm_bsearch(const void *key, const void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {

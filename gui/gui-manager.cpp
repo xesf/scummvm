@@ -93,14 +93,6 @@ GuiManager::GuiManager() : _redrawStatus(kRedrawDisabled), _stateIsSaved(false),
 	ConfMan.registerDefault("gui_renderer", ThemeEngine::findModeConfigName(ThemeEngine::_defaultRendererMode));
 	ThemeEngine::GraphicsMode gfxMode = (ThemeEngine::GraphicsMode)ThemeEngine::findMode(ConfMan.get("gui_renderer"));
 
-#ifdef __DS__
-	// Searching for the theme file takes ~10 seconds on the DS.
-	// Disable this search here because external themes are not supported.
-	if (!loadNewTheme("builtin", gfxMode)) {
-		// Loading the built-in theme failed as well. Bail out
-		error("Failed to load any GUI theme, aborting");
-	}
-#else
 	// Try to load the theme
 	if (!loadNewTheme(themefile, gfxMode)) {
 		// Loading the theme failed, try to load the built-in theme
@@ -109,7 +101,6 @@ GuiManager::GuiManager() : _redrawStatus(kRedrawDisabled), _stateIsSaved(false),
 			error("Failed to load any GUI theme, aborting");
 		}
 	}
-#endif
 }
 
 GuiManager::~GuiManager() {
@@ -191,8 +182,10 @@ bool GuiManager::loadNewTheme(Common::String id, ThemeEngine::GraphicsMode gfx, 
 	newTheme = new ThemeEngine(id, gfx);
 	assert(newTheme);
 
-	if (!newTheme->init())
+	if (!newTheme->init()) {
+		delete newTheme;
 		return false;
+	}
 
 	//
 	// Disable and delete the old theme
@@ -354,7 +347,7 @@ void GuiManager::runLoop() {
 	Common::EventManager *eventMan = _system->getEventManager();
 	const uint32 targetFrameDuration = 1000 / 60;
 
-	while (!_dialogStack.empty() && activeDialog == getTopDialog() && !eventMan->shouldQuit()) {
+	while (!_dialogStack.empty() && activeDialog == getTopDialog() && !eventMan->shouldQuit() && (!g_engine || !eventMan->shouldReturnToLauncher())) {
 		uint32 frameStartTime = _system->getMillis(true);
 
 		// Don't "tickle" the dialog until the theme has had a chance
@@ -434,7 +427,7 @@ void GuiManager::runLoop() {
 	// it will never be removed. Since we can have multiple run loops being
 	// called we cannot rely on catching EVENT_QUIT in the event loop above,
 	// since it would only catch it for the top run loop.
-	if (eventMan->shouldQuit() && activeDialog == getTopDialog())
+	if ((eventMan->shouldQuit() || (g_engine && eventMan->shouldReturnToLauncher())) && activeDialog == getTopDialog())
 		getTopDialog()->close();
 
 	if (didSaveState) {

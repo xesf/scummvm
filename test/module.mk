@@ -6,7 +6,28 @@
 ######################################################################
 
 TESTS        := $(srcdir)/test/common/*.h $(srcdir)/test/audio/*.h $(srcdir)/test/math/*.h
-TEST_LIBS    := audio/libaudio.a math/libmath.a common/libcommon.a
+TEST_LIBS    :=
+
+ifdef POSIX
+TEST_LIBS += test/null_osystem.o \
+	backends/fs/posix/posix-fs-factory.o \
+	backends/fs/posix/posix-fs.o \
+	backends/fs/posix/posix-iostream.o \
+	backends/fs/abstract-fs.o \
+	backends/fs/stdiostream.o \
+	backends/modular-backend.o
+endif
+
+ifdef WIN32
+TEST_LIBS += test/null_osystem.o \
+	backends/fs/windows/windows-fs-factory.o \
+	backends/fs/windows/windows-fs.o \
+	backends/fs/abstract-fs.o \
+	backends/fs/stdiostream.o \
+	backends/modular-backend.o
+endif
+
+TEST_LIBS +=	audio/libaudio.a math/libmath.a common/libcommon.a
 
 ifeq ($(ENABLE_WINTERMUTE), STATIC_PLUGIN)
 	TESTS += $(srcdir)/test/engines/wintermute/*.h
@@ -45,14 +66,19 @@ endif
 
 test: test/runner
 	./test/runner
-test/runner: test/runner.cpp $(TEST_LIBS)
-	$(QUIET_CXX)$(CXX) $(TEST_CXXFLAGS) $(CPPFLAGS) $(TEST_CFLAGS) -o $@ $+ $(TEST_LDFLAGS)
+test/runner: test/runner.cpp $(TEST_LIBS) copy-dat
+	+$(QUIET_CXX)$(LD) $(TEST_CXXFLAGS) $(CPPFLAGS) $(TEST_CFLAGS) -o $@ test/runner.cpp $(TEST_LIBS) $(TEST_LDFLAGS)
 test/runner.cpp: $(TESTS)
 	@mkdir -p test
 	$(srcdir)/test/cxxtest/cxxtestgen.py $(TEST_FLAGS) -o $@ $+
 
 clean: clean-test
 clean-test:
-	-$(RM) test/runner.cpp test/runner
+	-$(RM) test/runner.cpp test/runner test/engine-data/encoding.dat
+	-rmdir test/engine-data
 
-.PHONY: test clean-test
+copy-dat:
+	$(MKDIR) test/engine-data
+	$(CP) $(srcdir)/dists/engine-data/encoding.dat test/engine-data/encoding.dat
+
+.PHONY: test clean-test copy-dat

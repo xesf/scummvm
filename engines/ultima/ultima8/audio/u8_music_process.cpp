@@ -20,7 +20,6 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/audio/u8_music_process.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/audio/music_flex.h"
@@ -36,13 +35,13 @@ DEFINE_RUNTIME_CLASSTYPE_CODE(U8MusicProcess)
 U8MusicProcess::U8MusicProcess() : _midiPlayer(nullptr), _state(PLAYBACK_NORMAL),
 		_currentTrack(0), _combatMusicActive(false),
 		_savedTrackState(nullptr) {
-	Std::memset(_songBranches, (byte)-1, 128 * sizeof(int));
+	memset(_songBranches, (byte)-1, 128 * sizeof(int));
 }
 
 U8MusicProcess::U8MusicProcess(MidiPlayer *player) : _midiPlayer(player),
 		_state(PLAYBACK_NORMAL), _currentTrack(0), _combatMusicActive(false),
 		_savedTrackState(nullptr) {
-	Std::memset(_songBranches, (byte)-1, 128 * sizeof(int));
+	memset(_songBranches, (byte)-1, 128 * sizeof(int));
 
 	_theMusicProcess = this;
 	_type = 1; // persistent
@@ -284,6 +283,21 @@ bool U8MusicProcess::loadData(Common::ReadStream *rs, uint32 version) {
 
 	return true;
 }
+
+bool U8MusicProcess::isPlaying() {
+	return _currentTrack != 0;
+}
+
+void U8MusicProcess::pauseMusic() {
+	// probably no real use for this?
+	warning("TODO: U8MusicProcess::pauseMusic Implement me.");
+}
+
+void U8MusicProcess::unpauseMusic() {
+	// probably no real use for this?
+	warning("TODO: U8MusicProcess::unpauseMusic Implement me.");
+}
+
 
 } // End of namespace Ultima8
 } // End of namespace Ultima

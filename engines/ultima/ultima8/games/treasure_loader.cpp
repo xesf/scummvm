@@ -40,7 +40,7 @@ void TreasureLoader::loadDefaults() {
 	KeyMap lootkeyvals;
 
 	// load default treasure types
-	lootkeyvals = config->listKeyValues("game/treasure");
+	lootkeyvals = config->listKeyValues("game", "treasure");
 	KeyMap::const_iterator defaultiter;
 	for (defaultiter = lootkeyvals.begin();
 	        defaultiter != lootkeyvals.end(); ++defaultiter) {
@@ -196,13 +196,13 @@ bool TreasureLoader::parseUIntRange(const Std::string &val,
 
 bool TreasureLoader::parseDouble(const Std::string &val, double &d) {
 	// TODO: error checking
-	d = Std::atof(val.c_str());
+	d = atof(val.c_str());
 	return true;
 }
 
 bool TreasureLoader::parseInt(const Std::string &val, int &i) {
 	// TODO: error checking
-	i = Std::strtol(val.c_str(), 0, 0);
+	i = strtol(val.c_str(), 0, 0);
 	return true;
 }
 

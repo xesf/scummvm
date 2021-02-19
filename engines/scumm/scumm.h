@@ -90,6 +90,7 @@ class Player_Towns;
 class ScummEngine;
 class ScummDebugger;
 class Sound;
+class Localizer;
 
 struct Box;
 struct BoxCoords;
@@ -356,7 +357,7 @@ protected:
 	void setupCharsetRenderer();
 	void setupCostumeRenderer();
 
-	virtual void loadLanguageBundle() {}
+	virtual void loadLanguageBundle();
 	void loadCJKFont();
 	void loadKorFont();
 	void setupMusic(int midi);
@@ -1108,6 +1109,8 @@ protected:
 
 	int _nextLeft, _nextTop;
 
+	Localizer *_localizer;
+
 	void restoreCharsetBg();
 	void clearCharsetMask();
 	void clearTextSurface();
@@ -1149,12 +1152,41 @@ public:
 	byte _newLineCharacter;
 	byte *get2byteCharPtr(int idx);
 
+	bool isScummvmKorTarget();
+
 //protected:
 	byte *_2byteFontPtr;
 	byte *_2byteMultiFontPtr[20];
 	int _2byteMultiHeight[20];
 	int _2byteMultiWidth[20];
 	int _2byteMultiShadow[20];
+
+private:
+	struct TranslatedLine {
+		uint32 originalTextOffset;
+		uint32 translatedTextOffset;
+	};
+
+	struct TranslationRange {
+		uint32 left;
+		uint32 right;
+
+		TranslationRange(uint32 left_, uint32 right_) : left(left_), right(right_) {}
+		TranslationRange() : left(0), right(0) {}
+	};
+
+	struct TranslationRoom {
+		Common::HashMap<uint32, TranslationRange> scriptRanges;
+	};
+
+	bool _existLanguageFile;
+	byte *_languageBuffer;
+	int _numTranslatedLines;
+	TranslatedLine *_translatedLines;
+	uint16 *_languageLineIndex;
+	Common::HashMap<byte, TranslationRoom> _roomIndex;
+
+	const byte *searchTranslatedLine(const byte *text, const TranslationRange &range, bool useIndex);
 
 public:
 
@@ -1316,6 +1348,7 @@ public:
 
 protected:
 	void towns_drawStripToScreen(VirtScreen *vs, int dstX, int dstY, int srcX, int srcY, int w, int h);
+	void towns_clearStrip(int strip);
 #ifdef USE_RGB_COLOR
 	void towns_setPaletteFromPtr(const byte *ptr, int numcolor = -1);
 	void towns_setTextPaletteFromPtr(const byte *ptr);
@@ -1324,9 +1357,21 @@ protected:
 	void towns_processPalCycleField();
 	void towns_resetPalCycleFields();
 	void towns_restoreCharsetBg();
+	void towns_scriptScrollEffect(int dir);
+
+	void requestScroll(int dir);
+	void scrollLeft() {	requestScroll(-1); }
+	void scrollRight() { requestScroll(1); }
+	void towns_waitForScroll(int waitForDirection, int threshold = 0);
+	void towns_updateGfx();
 
 	Common::Rect _cyclRects[16];
 	int _numCyclRects;
+	int _scrollRequest;
+	int _scrollDeltaAdjust;
+	uint32 _scrollTimer;
+	uint32 _scrollDestOffset;
+	uint16 _scrollFeedStrips[3];
 
 	Common::Rect _curStringRect;
 
@@ -1337,6 +1382,11 @@ protected:
 	static const uint8 _townsLayer2Mask[];
 
 	TownsScreen *_townsScreen;
+#else
+	void scrollLeft() { redrawBGStrip(_gdi->_numStrips - 1, 1); }
+	void scrollRight() { redrawBGStrip(0, 1); }
+	void towns_updateGfx() {}
+	void towns_waitForScroll(int waitForDirection, int threshold = 0) {}
 #endif // DISABLE_TOWNS_DUAL_LAYER_MODE
 };
 

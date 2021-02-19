@@ -181,17 +181,17 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 		err = Common::kPathNotDirectory;
 	}
 
-	// Create the game's MetaEngine.
-	const MetaEngineDetection &metaEngine = plugin->get<MetaEngineDetection>();
+	// Create the game's MetaEngineDetection.
+	const MetaEngineDetection &metaEngineDetection = plugin->get<MetaEngineDetection>();
 	if (err.getCode() == Common::kNoError) {
 		// Set default values for all of the custom engine options
 		// Apparently some engines query them in their constructor, thus we
 		// need to set this up before instance creation.
-		metaEngine.registerDefaultSettings(target);
+		metaEngineDetection.registerDefaultSettings(target);
 	}
 
-	// Right now we have a MetaEngine plugin. We must find the matching engine plugin to
-	// call createInstance and other connecting functions.
+	// Right now we have a MetaEngineDetection plugin. We must find the matching
+	// engine plugin to call createInstance and other connecting functions.
 	Plugin *enginePluginToLaunchGame = PluginMan.getEngineFromMetaEngine(plugin);
 
 	if (!enginePluginToLaunchGame) {
@@ -199,9 +199,9 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 		return err;
 	}
 
-	// Create the game's MetaEngineConnect.
-	const MetaEngine &metaEngineConnect = enginePluginToLaunchGame->get<MetaEngine>();
-	err = metaEngineConnect.createInstance(&system, &engine);
+	// Create the game's MetaEngine.
+	const MetaEngine &metaEngine = enginePluginToLaunchGame->get<MetaEngine>();
+	err = metaEngine.createInstance(&system, &engine);
 
 	// Check for errors
 	if (!engine || err.getCode() != Common::kNoError) {
@@ -229,7 +229,7 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 	Common::String caption(ConfMan.get("description"));
 
 	if (caption.empty()) {
-		PlainGameDescriptor game = metaEngine.findGame(ConfMan.get("gameid").c_str());
+		PlainGameDescriptor game = metaEngineDetection.findGame(ConfMan.get("gameid").c_str());
 		if (game.description) {
 			caption = game.description;
 		}
@@ -237,7 +237,7 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 	if (caption.empty())
 		caption = target;
 	if (!caption.empty())	{
-		system.setWindowCaption(caption.c_str());
+		system.setWindowCaption(caption.decode());
 	}
 
 	//
@@ -292,17 +292,23 @@ static Common::Error runGame(const Plugin *plugin, OSystem &system, const Common
 #endif // USE_TRANSLATION
 
 	// Initialize any game-specific keymaps
-	Common::KeymapArray gameKeymaps = metaEngineConnect.initKeymaps(target.c_str());
+	Common::KeymapArray gameKeymaps = metaEngine.initKeymaps(target.c_str());
 	Common::Keymapper *keymapper = system.getEventManager()->getKeymapper();
 	for (uint i = 0; i < gameKeymaps.size(); i++) {
 		keymapper->addGameKeymap(gameKeymaps[i]);
 	}
+
+	system.applyBackendSettings();
 
 	// Inform backend that the engine is about to be run
 	system.engineInit();
 
 	// Run the engine
 	Common::Error result = engine->run();
+
+	// Make sure we do not return to the launcher if this is not possible.
+	if (!engine->hasFeature(Engine::kSupportsReturnToLauncher))
+		ConfMan.setBool("gui_return_to_launcher_at_exit", false, Common::ConfigManager::kTransientDomain);
 
 	// Inform backend that the engine finished
 	system.engineDone();
@@ -338,6 +344,8 @@ static void setupGraphics(OSystem &system) {
 	system.beginGFXTransaction();
 		// Set the user specified graphics mode (if any).
 		system.setGraphicsMode(ConfMan.get("gfx_mode").c_str());
+		system.setStretchMode(ConfMan.get("stretch_mode").c_str());
+		system.setShader(ConfMan.get("shader").c_str());
 
 		system.initSize(320, 200);
 
@@ -347,11 +355,9 @@ static void setupGraphics(OSystem &system) {
 			system.setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen"));
 		if (ConfMan.hasKey("filtering"))
 			system.setFeatureState(OSystem::kFeatureFilteringMode, ConfMan.getBool("filtering"));
-		if (ConfMan.hasKey("stretch_mode"))
-			system.setStretchMode(ConfMan.get("stretch_mode").c_str());
-		if (ConfMan.hasKey("shader"))
-			system.setShader(ConfMan.get("shader").c_str());
 	system.endGFXTransaction();
+
+	system.applyBackendSettings();
 
 	// When starting up launcher for the first time, the user might have specified
 	// a --gui-theme option, to allow that option to be working, we need to initialize
@@ -360,7 +366,7 @@ static void setupGraphics(OSystem &system) {
 	GUI::GuiManager::instance();
 
 	// Set initial window caption
-	system.setWindowCaption(gScummVMFullVersion);
+	system.setWindowCaption(Common::U32String(gScummVMFullVersion));
 
 	// Clear the main screen
 	system.fillScreen(0);
@@ -400,6 +406,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 
 	// Register config manager defaults
 	Base::registerDefaults();
+	system.registerDefaultSettings(Common::ConfigManager::kApplicationDomain);
 
 	// Parse the command line
 	Common::StringMap settings;
@@ -615,15 +622,14 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 			}
 
 			// Quit unless an error occurred, or Return to launcher was requested
-#ifndef FORCE_RETURN_TO_LAUNCHER
-			if (result.getCode() == Common::kNoError && !g_system->getEventManager()->shouldReturnToLauncher())
+			if (result.getCode() == Common::kNoError && !g_system->getEventManager()->shouldReturnToLauncher() &&
+			    !g_system->hasFeature(OSystem::kFeatureNoQuit) && !ConfMan.getBool("gui_return_to_launcher_at_exit"))
 				break;
-#endif
-			// Reset the return to launcher flag in case we want to load another engine
+
+			// Reset the return to launcher and quit flags in case we want to load another engine
 			g_system->getEventManager()->resetReturnToLauncher();
-#ifdef FORCE_RETURN_TO_LAUNCHER
 			g_system->getEventManager()->resetQuit();
-#endif
+
 #ifdef ENABLE_EVENTRECORDER
 			if (g_eventRec.checkForContinueGame()) {
 				continue;
@@ -693,7 +699,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 #endif
 	Common::SearchManager::destroy();
 #ifdef USE_TRANSLATION
-	Common::TranslationManager::destroy();
+	Common::MainTranslationManager::destroy();
 #endif
 	MusicManager::destroy();
 	Graphics::CursorManager::destroy();

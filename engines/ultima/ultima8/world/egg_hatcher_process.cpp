@@ -20,10 +20,8 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 
 #include "ultima/ultima8/world/egg_hatcher_process.h"
-#include "ultima/ultima8/world/egg.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/world/teleport_egg.h"
 #include "ultima/ultima8/world/get_object.h"
@@ -76,15 +74,17 @@ void EggHatcherProcess::run() {
 
 		// 'justTeleported':
 		// if the avatar teleports, set the 'justTeleported' flag.
-		// if this is set, don't hatch any teleport _eggs
-		// unset it when you're out of range of any teleport _eggs
+		// if this is set, don't hatch any teleport eggs
+		// unset it when you're out of range of any teleport eggs
 		TeleportEgg *tegg = dynamic_cast<TeleportEgg *>(egg);
 
 		if (x1 <= ax && ax - axs < x2 && y1 <= ay && ay - ays < y2 &&
 		        z - 48 < az && az <= z + 48) { // CONSTANTS!
-			if (tegg && tegg->isTeleporter()) nearteleporter = true;
+			if (tegg && tegg->isTeleporter())
+				nearteleporter = true;
 
-			if (tegg && av->hasJustTeleported()) continue;
+			if (tegg && av->hasJustTeleported())
+				continue;
 
 			egg->hatch();
 		} else {
@@ -92,7 +92,8 @@ void EggHatcherProcess::run() {
 		}
 	}
 
-	if (!nearteleporter) av->setJustTeleported(false); // clear flag
+	if (!nearteleporter)
+		av->setJustTeleported(false); // clear flag
 }
 
 void EggHatcherProcess::saveData(Common::WriteStream *ws) {
@@ -103,7 +104,7 @@ void EggHatcherProcess::saveData(Common::WriteStream *ws) {
 bool EggHatcherProcess::loadData(Common::ReadStream *rs, uint32 version) {
 	if (!Process::loadData(rs, version)) return false;
 
-	// the _eggs will be re-added to the EggHatcherProcess when they're
+	// the eggs will be re-added to the EggHatcherProcess when they're
 	// re-added to the CurrentMap
 
 	return true;

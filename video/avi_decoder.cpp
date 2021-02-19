@@ -30,6 +30,7 @@
 #include "video/avi_decoder.h"
 
 // Audio Codecs
+#include "audio/decoders/wave_types.h"
 #include "audio/decoders/adpcm.h"
 #include "audio/decoders/mp3.h"
 #include "audio/decoders/raw.h"
@@ -68,6 +69,7 @@ namespace Video {
 #define ID_DISP MKTAG('D','I','S','P')
 #define ID_PRMI MKTAG('P','R','M','I')
 #define ID_STRN MKTAG('s','t','r','n')
+#define ID_INDX MKTAG('i','n','d','x')
 
 // Stream Types
 enum {
@@ -209,6 +211,7 @@ bool AVIDecoder::parseNextChunk() {
 	case ID_ISFT: // Metadata, safe to ignore
 	case ID_DISP: // Metadata, should be safe to ignore
 	case ID_DMLH: // OpenDML extension, contains an extra total frames field, safe to ignore
+	case ID_INDX: // OpenDML extension, contains another type of index
 		skipChunk(size);
 		break;
 	case ID_STRN: // Metadata, safe to ignore
@@ -1096,7 +1099,7 @@ void AVIDecoder::AVIAudioTrack::createAudioStream() {
 	_packetStream = 0;
 
 	switch (_wvInfo.tag) {
-	case kWaveFormatPCM: {
+	case Audio::kWaveFormatPCM: {
 		byte flags = 0;
 		if (_audsHeader.sampleSize == 2)
 			flags |= Audio::FLAG_16BITS | Audio::FLAG_LITTLE_ENDIAN;
@@ -1109,23 +1112,23 @@ void AVIDecoder::AVIAudioTrack::createAudioStream() {
 		_packetStream = Audio::makePacketizedRawStream(_wvInfo.samplesPerSec, flags);
 		break;
 	}
-	case kWaveFormatMSADPCM:
+	case Audio::kWaveFormatMSADPCM:
 		_packetStream = Audio::makePacketizedADPCMStream(Audio::kADPCMMS, _wvInfo.samplesPerSec, _wvInfo.channels, _wvInfo.blockAlign);
 		break;
-	case kWaveFormatMSIMAADPCM:
+	case Audio::kWaveFormatMSIMAADPCM:
 		_packetStream = Audio::makePacketizedADPCMStream(Audio::kADPCMMSIma, _wvInfo.samplesPerSec, _wvInfo.channels, _wvInfo.blockAlign);
 		break;
-	case kWaveFormatDK3:
+	case Audio::kWaveFormatDK3:
 		_packetStream = Audio::makePacketizedADPCMStream(Audio::kADPCMDK3, _wvInfo.samplesPerSec, _wvInfo.channels, _wvInfo.blockAlign);
 		break;
-	case kWaveFormatMP3:
+	case Audio::kWaveFormatMP3:
 #ifdef USE_MAD
 		_packetStream = Audio::makePacketizedMP3Stream(_wvInfo.channels, _wvInfo.samplesPerSec);
 #else
 		warning("AVI MP3 stream found, but no libmad support compiled in");
 #endif
 		break;
-	case kWaveFormatNone:
+	case Audio::kWaveFormatNone:
 		break;
 	default:
 		warning("Unsupported AVI audio format %d", _wvInfo.tag);

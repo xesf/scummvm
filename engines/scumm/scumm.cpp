@@ -72,6 +72,7 @@
 #include "scumm/scumm_v8.h"
 #include "scumm/sound.h"
 #include "scumm/imuse/sysex.h"
+#include "scumm/he/localizer.h"
 #include "scumm/he/sprite_he.h"
 #include "scumm/he/cup_player_he.h"
 #include "scumm/util.h"
@@ -123,6 +124,8 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	  _messageDialog(0), _pauseDialog(0), _versionDialog(0),
 	  _rnd("scumm")
 	  {
+
+	_localizer = nullptr;
 
 #ifdef USE_RGB_COLOR
 	if (_game.features & GF_16BIT_COLOR) {
@@ -289,6 +292,8 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	_16BitPalette = NULL;
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 	_townsScreen = 0;
+	_scrollRequest = _scrollDeltaAdjust = 0;
+	_scrollDestOffset = _scrollTimer = 0;
 #ifdef USE_RGB_COLOR
 	_cjkFont = 0;
 #endif
@@ -329,6 +334,9 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	_translatedLines = 0;
 	_languageLineIndex = 0;
 	_2byteFontPtr = 0;
+	_2byteWidth = 0;
+	_2byteHeight = 0;
+	_2byteShadow = 0;
 	_krStrPost = 0;
 	_V1TalkingActor = 0;
 	for (int i = 0; i < 20; i++)
@@ -354,6 +362,7 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	}
 
 	_numCyclRects = 0;
+	memset(_scrollFeedStrips, 0, sizeof(_scrollFeedStrips));
 #endif
 
 	//
@@ -1334,6 +1343,14 @@ Common::Error ScummEngine::init() {
 			}
 	}
 
+#ifdef ENABLE_HE
+	Localizer *loc = new Localizer();
+	if (!loc->isValid())
+		delete loc;
+	else
+		_localizer = loc;
+#endif
+
 	_outputPixelFormat = _system->getScreenFormat();
 
 	setupScumm();
@@ -1555,9 +1572,11 @@ void ScummEngine::resetScumm() {
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 	if (_game.platform == Common::kPlatformFMTowns) {
 		delete _townsScreen;
+		_scrollRequest = _scrollDeltaAdjust = 0;
+		_scrollDestOffset = _scrollTimer = 0;
 		_townsScreen = new TownsScreen(_system, _screenWidth * _textSurfaceMultiplier, _screenHeight * _textSurfaceMultiplier, _outputPixelFormat);
-		_townsScreen->setupLayer(0, _screenWidth, _screenHeight, (_outputPixelFormat.bytesPerPixel == 2) ? 32767 : 256);
-		_townsScreen->setupLayer(1, _screenWidth * _textSurfaceMultiplier, _screenHeight * _textSurfaceMultiplier, 16, _textPalette);
+		_townsScreen->setupLayer(0, 512, _screenHeight, _textSurfaceMultiplier, _textSurfaceMultiplier, (_outputPixelFormat.bytesPerPixel == 2) ? 32767 : 256);
+		_townsScreen->setupLayer(1, _screenWidth * _textSurfaceMultiplier, _screenHeight * _textSurfaceMultiplier, 1, 1, 16, _textPalette);
 	}
 #endif
 
@@ -2150,6 +2169,12 @@ Common::Error ScummEngine::go() {
 
 		// Determine how long to wait before the next loop iteration should start
 		int delta = (VAR_TIMER_NEXT != 0xFF) ? VAR(VAR_TIMER_NEXT) : 4;
+#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
+		// FM-Towns only. The original does this to make the engine wait for the scrolling to catch up.
+		if (_scrollDeltaAdjust)
+			delta = delta * 4 / (4 - _scrollDeltaAdjust);
+		_scrollDeltaAdjust = 0;
+#endif
 		if (delta < 1)	// Ensure we don't get into an endless loop
 			delta = 1;  // by not decreasing sleepers.
 
@@ -2208,12 +2233,9 @@ void ScummEngine::waitForTimer(int msec_delay) {
 		_sound->updateCD(); // Loop CD Audio if needed
 		parseEvents();
 
-#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
-		if (_townsScreen)
-			_townsScreen->update();
-#endif
-
+		towns_updateGfx();
 		_system->updateScreen();
+
 		if (_system->getMillis() >= start_time + msec_delay)
 			break;
 		_system->delayMillis(10);
@@ -2792,22 +2814,23 @@ bool ScummEngine::startManiac() {
 void ScummEngine::pauseEngineIntern(bool pause) {
 	if (pause) {
 		// Pause sound & video
-		_oldSoundsPaused = _sound->_soundsPaused;
-		_sound->pauseSounds(true);
-
+		if (_sound) {
+			_oldSoundsPaused = _sound->_soundsPaused;
+			_sound->pauseSounds(true);
+		}
 	} else {
+#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
+		// Restore FM-Towns graphics
+		_scrollTimer = 0;
+		towns_updateGfx();
+#endif
 		// Update the screen to make it less likely that the player will see a
 		// brief cursor palette glitch when the GUI is disabled.
-
-#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
-		if (_townsScreen)
-			_townsScreen->update();
-#endif
-
 		_system->updateScreen();
 
 		// Resume sound & video
-		_sound->pauseSounds(_oldSoundsPaused);
+		if (_sound)
+			_sound->pauseSounds(_oldSoundsPaused);
 	}
 }
 

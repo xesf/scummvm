@@ -20,13 +20,14 @@
  *
  */
 
+#include "common/config-manager.h"
+
 #include "ultima/ultima8/misc/pent_include.h"
 
 #include "ultima/ultima8/games/u8_game.h"
 
 #include "ultima/ultima8/graphics/palette_manager.h"
 #include "ultima/ultima8/graphics/fade_to_modal_process.h"
-#include "ultima/ultima8/filesys/idata_source.h"
 #include "ultima/ultima8/filesys/file_system.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/graphics/xform_blend.h"
@@ -36,9 +37,7 @@
 #include "ultima/ultima8/world/item_factory.h"
 #include "ultima/ultima8/kernel/object_manager.h"
 #include "ultima/ultima8/ultima8.h"
-#include "ultima/ultima8/conf/setting_manager.h"
 #include "ultima/ultima8/gumps/movie_gump.h"
-#include "ultima/ultima8/filesys/raw_archive.h"
 #include "ultima/ultima8/gumps/credits_gump.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/audio/music_process.h"
@@ -51,18 +50,18 @@ namespace Ultima8 {
 
 U8Game::U8Game() : Game() {
 	// Set some defaults for gameplay-related settings
-	SettingManager *settingman = SettingManager::get_instance();
-	settingman->setDefault("skipstart", false);
-	settingman->setDefault("endgame", false);
-	settingman->setDefault("quotes", false);
-	settingman->setDefault("footsteps", true);
-	settingman->setDefault("targetedjump", true);
+	ConfMan.registerDefault("endgame", false);
+	ConfMan.registerDefault("quotes", false);
+	ConfMan.registerDefault("footsteps", true);
+	ConfMan.registerDefault("targetedjump", true);
+	ConfMan.registerDefault("subtitles", true);
+	ConfMan.registerDefault("speech_mute", false);
 
 	const GameInfo *info = Ultima8Engine::get_instance()->getGameInfo();
 	if (info->_language == GameInfo::GAMELANG_JAPANESE) {
-		settingman->setDefault("textdelay", 20);
+		ConfMan.registerDefault("talkspeed", 24);
 	} else {
-		settingman->setDefault("textdelay", 8);
+		ConfMan.registerDefault("talkspeed", 60);
 	}
 }
 
@@ -157,7 +156,7 @@ bool U8Game::startInitialUsecode(int saveSlot) {
 
 
 ProcId U8Game::playIntroMovie(bool fade) {
-	const GameInfo *gameinfo = CoreApp::get_instance()->getGameInfo();
+	const GameInfo *gameinfo = Ultima8Engine::get_instance()->getGameInfo();
 	char langletter = gameinfo->getLanguageFileLetter();
 	if (!langletter) {
 		perr << "U8Game::playIntro: Unknown language." << Std::endl;
@@ -191,7 +190,7 @@ ProcId U8Game::playEndgameMovie(bool fade) {
 }
 
 void U8Game::playCredits() {
-	const GameInfo *gameinfo = CoreApp::get_instance()->getGameInfo();
+	const GameInfo *gameinfo = Ultima8Engine::get_instance()->getGameInfo();
 	char langletter = gameinfo->getLanguageFileLetter();
 	if (!langletter) {
 		perr << "U8Game::playCredits: Unknown language." << Std::endl;

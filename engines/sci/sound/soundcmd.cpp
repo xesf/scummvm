@@ -23,7 +23,7 @@
 #include "common/config-manager.h"
 #include "audio/audiostream.h"
 #include "audio/mixer.h"
-#include "sci/resource.h"
+#include "sci/resource/resource.h"
 #include "sci/sound/audio.h"
 #include "sci/sound/music.h"
 #include "sci/sound/soundcmd.h"
@@ -238,7 +238,7 @@ void SoundCommandParser::processPlaySound(reg_t obj, bool playBed, bool restorin
 	debugC(kDebugLevelSound, "kDoSound(play): %04x:%04x number %d, loop %d, prio %d, vol %d, bed %d", PRINT_REG(obj),
 			resourceId, musicSlot->loop, musicSlot->priority, musicSlot->volume, playBed ? 1 : 0);
 
-	_music->soundPlay(musicSlot);
+	_music->soundPlay(musicSlot, restoring);
 
 	// Reset any left-over signals
 	musicSlot->signal = 0;

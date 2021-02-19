@@ -29,7 +29,7 @@
 #include "audio/mixer.h"
 
 #include "sci/sci.h"
-#include "sci/resource.h"
+#include "sci/resource/resource.h"
 #include "sci/sound/drivers/mididriver.h"
 #ifdef ENABLE_SCI32
 #include "sci/sound/audio32.h"
@@ -185,7 +185,7 @@ public:
 
 	// sound and midi functions
 	void soundInitSnd(MusicEntry *pSnd);
-	void soundPlay(MusicEntry *pSnd);
+	void soundPlay(MusicEntry *pSnd, bool restoring = false);
 	void soundStop(MusicEntry *pSnd);
 	void soundKill(MusicEntry *pSnd);
 	void soundPause(MusicEntry *pSnd);

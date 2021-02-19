@@ -247,7 +247,7 @@ public:
 	const ShapeInfo *getShapeInfoFromGameInstance() const;
 
 	//! Get the Shape object for this Item. (The pointer will be cached.)
-	Shape *getShapeObject() const;
+	const Shape *getShapeObject() const;
 
 	//! Get the family of the shape number of this Item. (This is a
 	//! member of the ShapeInfo object.)
@@ -285,8 +285,11 @@ public:
 	//! Check if the centre of this item is on top of another item
 	bool isCentreOn(const Item &item2) const;
 
-	//! Check if the item is currently visible on screen
+	//! Check if the item is currently entirely visible on screen
 	bool isOnScreen() const;
+
+	//! Check if the item is currently partly visible on screen
+	bool isPartlyOnScreen() const;
 
 	//! Check if this item can exist at the given coordinates
 	bool canExistAt(int32 x, int32 y, int32 z, bool needsupport = false) const;
@@ -388,9 +391,10 @@ public:
 	virtual void receiveHit(ObjId other, Direction dir, int damage, uint16 type);
 
 	//! fire the given weapon type in the given direction from location x, y, z.
-	uint16 fireWeapon(int32 x, int32 y, int32 z, Direction dir, int firetype, char someflag);
+	uint16 fireWeapon(int32 x, int32 y, int32 z, Direction dir, int firetype, char findtarget);
 
-	//! get the distance (in map tiles) if we were to fire in this direction
+	//! get the distance (in map tiles) if we were to fire in this direction to "other"
+	//! and could hit, otherwise return 0.
 	uint16 fireDistance(Item *other, Direction dir, int16 xoff, int16 yoff, int16 zoff);
 
 	//! get damage points, used in Crusader for item damage.
@@ -613,7 +617,7 @@ protected:
 
 	ObjId _parent; // objid container this item is in (or 0 for top-level items)
 
-	mutable Shape *_cachedShape;
+	mutable const Shape *_cachedShape;
 	mutable const ShapeInfo *_cachedShapeInfo;
 
 	// This is stuff that is used for displaying and interpolation
@@ -655,6 +659,10 @@ private:
 
 	//! The Crusader version of receiveHit
 	void receiveHitCru(ObjId other, Direction dir, int damage, uint16 type);
+
+	//! Get the right Z which an attacker should aim for, given the attacker's z.
+	//! (Crusader only)
+	int32 getTargetZRelativeToAttackerZ(int32 attackerz);
 
 public:
 	enum statusflags {

@@ -40,6 +40,11 @@ namespace Graphics {
 struct Surface;
 }
 
+namespace GUI {
+class GuiObject;
+class OptionsContainerWidget;
+}
+
 namespace Common {
 class EventManager;
 struct Rect;
@@ -107,7 +112,7 @@ namespace LogMessageType {
 /**
  * Enumeration for log message types.
  * @ingroup common_system
- * 
+ *
  */
 enum Type {
 	kInfo,    /**< Info logs. */
@@ -249,7 +254,7 @@ protected:
 
 	/** Workaround for a bug in the osx_intel toolchain introduced by
 	 * 014bef9eab9fb409cfb3ec66830e033e4aaa29a9. Adding this variable fixes it.
-	 */ 
+	 */
 	bool _dummyUnused;
 	 /** @} */
 private:
@@ -304,10 +309,10 @@ public:
 	 */
 	virtual void engineDone() { }
 
-	/** 
+	/**
 	 * @defgroup common_system_flags Feature flags
-	 * @ingroup common_system 
-	 * @{ 
+	 * @ingroup common_system
+	 * @{
 	 */
 
 	/**
@@ -646,7 +651,7 @@ public:
 	 * Switch to the specified graphics mode.
 	 *
 	 * If switching to the new mode fails, this method returns false.
-	 * 
+	 *
 	 * The flag 'kGfxModeRender3d' is optional. It allows to switch to 3D-only rendering mode.
 	 * In this mode, the game engine is allowed to use OpenGL(ES) directly.
 	 *
@@ -661,7 +666,7 @@ public:
 	 * Switch to the graphics mode with the given name.
 	 *
 	 * If @p name is unknown, or if switching to the new mode fails, this method returns false.
-	 * 
+	 *
 	 * @param name Name of the new graphics mode.
 	 *
 	 * @return True if the switch was successful, false otherwise.
@@ -716,13 +721,13 @@ public:
 #else
 	inline Graphics::PixelFormat getScreenFormat() const {
 		return Graphics::PixelFormat::createFormatCLUT8();
-	};
+	}
 
 	inline Common::List<Graphics::PixelFormat> getSupportedFormats() const {
 		Common::List<Graphics::PixelFormat> list;
 		list.push_back(Graphics::PixelFormat::createFormatCLUT8());
 		return list;
-	};
+	}
 #endif
 
 	/**
@@ -777,7 +782,7 @@ public:
 	 * Switch to the shader mode with the given name.
 	 *
 	 * If @p name is unknown, or if switching to the new mode fails,
-	 * this method returns false. 
+	 * this method returns false.
 	 *
 	 * @param name Name of the new shader mode.
 	 *
@@ -995,7 +1000,7 @@ public:
 	 * The real screen will not immediately be updated to reflect the changes.
 	 * Client code must call updateScreen to ensure any changes are visible
 	 * to the user. This can be used to optimize drawing and reduce flicker.
-	 * 
+	 *
 	 * If the current pixel format has one byte per pixel, the graphics data
 	 * uses 8 bits per pixel, using the palette specified via setPalette.
 	 * If more than one byte per pixel is in use, the graphics data uses the
@@ -1085,7 +1090,7 @@ public:
 	 * For example, when a character is speaking, they will have the focus.
 	 * This allows for pan-and-scan style views where the backend
 	 * can follow the speaking character or area of interest on the screen.
-	 * 
+	 *
 	 * The backend is responsible for clipping the rectangle and deciding how best to
 	 * zoom the screen to show any shape and size rectangle the engine provides.
 	 *
@@ -1467,21 +1472,17 @@ public:
 	 * Set a window caption or any other comparable status display to the
 	 * given value.
 	 *
-	 * The caption must be a pure ISO LATIN 1 string. Passing a string
-	 * with a different encoding may lead to unexpected behavior,
-	 * even crashes.
-	 *
-	 * @param caption The window caption to use, as an ISO LATIN 1 string.
+	 * @param caption The window caption to use.
 	 */
-	virtual void setWindowCaption(const char *caption) {}
+	virtual void setWindowCaption(const Common::U32String &caption) {}
 
 	/**
 	 * Display a message in an 'on-screen display'.
 	 *
-	 * Displays a message in such a way that it is visible on or near the screen, 
+	 * Displays a message in such a way that it is visible on or near the screen,
 	 * for example in a transparent rectangle over the regular screen content,
 	 * or in a message box beneath it.
-	 * 
+	 *
 	 * The message is expected to be provided in the current TranslationManager
 	 * charset.
 	 *
@@ -1512,12 +1513,12 @@ public:
 	 */
 	virtual void displayActivityIconOnOSD(const Graphics::Surface *icon) = 0;
     /** @} */
-	
+
 	/**
 	 * @addtogroup common_system_module
-	 * @{ 
+	 * @{
 	 */
-	 
+
 	 /**
 	 * Return the SaveFileManager, which is used to store and load savestates
 	 * and other modifiable persistent game data.
@@ -1537,7 +1538,7 @@ public:
 		return _taskbarManager;
 	}
 #endif
-	 
+
 #if defined(USE_UPDATES)
 	/**
 	 * Return the UpdateManager, which is used to handle auto-updating
@@ -1579,12 +1580,12 @@ public:
 	 */
 	virtual FilesystemFactory *getFilesystemFactory();
     /** @} */
-	
+
 	/**
 	 * @addtogroup common_system_misc
 	 * @{
 	 */
-	 
+
 	/** Add system-specific Common::Archive objects to the given SearchSet.
 	 * For example, on Unix, the directory corresponding to DATA_PATH (if set), or, on
 	 * Mac OS X, the 'Resource' dir in the app bundle.
@@ -1621,6 +1622,36 @@ public:
 	 * Note that not all ports can use this.
 	 */
 	virtual Common::String getDefaultConfigFileName();
+
+	/**
+	 * Register the default values for the settings the backend uses into the
+	 * configuration manager.
+	 *
+	 * @param target    name of a config manager target
+	 */
+	virtual void registerDefaultSettings(const Common::String &target) const {}
+
+	/**
+	 * Return a GUI widget container for configuring the specified target options.
+	 *
+	 * The returned widget is shown in the Backend tab in the options dialog.
+	 * Backends can build custom options dialogs.
+	 *
+	 * Backends that don't want to have a Backend tab in the options dialog
+	 * can return nullptr.
+	 *
+	 * @param boss     the widget / dialog the returned widget is a child of
+	 * @param name     the name the returned widget must use
+	 * @param target   name of a config manager target
+	 */
+	virtual GUI::OptionsContainerWidget *buildBackendOptionsWidget(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const { return nullptr; }
+
+	/**
+	 * Notify the backend that the settings editable from the game tab in the
+	 * options dialog may have changed and that they need to be applied if
+	 * necessary.
+	 */
+	virtual void applyBackendSettings() {}
 
 	/**
 	 * Log the given message.
@@ -1735,24 +1766,7 @@ public:
 	 */
 	virtual bool isConnectionLimited();
 
-
-protected:
-
-	/**
-	 * This allows derived classes to implement encoding conversion using platform
-	 * specific API.
-	 * This method shouldn't be called directly. Use Common::Encoding instead.
-	 *
-	 * @param to Encoding to convert the string to
-	 * @param from Encoding to convert the string from
-	 * @param string The string that should be converted
-	 * @param length Size of the string in bytes
-	 *
-	 * @return Converted string, which must be freed by the caller (using free()
-	 * and not delete[]), or nullptr if the conversion isn't possible.
-	 */
-	virtual char *convertEncoding(const char *to, const char *from, const char *string, size_t length) { return nullptr; }
-	/** @} */
+	//@}
 };
 
 

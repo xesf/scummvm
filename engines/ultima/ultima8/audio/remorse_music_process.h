@@ -24,8 +24,6 @@
 #define ULTIMA8_AUDIO_REMORSEMUSICPROCESS_H
 
 #include "ultima/ultima8/audio/music_process.h"
-#include "ultima/ultima8/kernel/process.h"
-#include "ultima/ultima8/usecode/intrinsics.h"
 #include "ultima/ultima8/misc/p_dynamic_cast.h"
 #include "audio/audiostream.h"
 #include "audio/mixer.h"
@@ -81,6 +79,14 @@ public:
 	void saveTrackState() override;
 	//! Bring back the track state from before it was put on hold
 	void restoreTrackState() override;
+
+	//! Is a track currently playing?
+	bool isPlaying() override;
+
+	//! Pause the currently playing track
+	void pauseMusic() override;
+	//! Resume the current track after pausing
+	void unpauseMusic() override;
 
 	void run() override;
 

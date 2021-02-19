@@ -23,12 +23,9 @@
 #include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/map.h"
 #include "ultima/ultima8/world/item_factory.h"
-#include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/world/container.h"
 #include "ultima/ultima8/kernel/object_manager.h"
-#include "ultima/ultima8/kernel/core_app.h"
-#include "ultima/ultima8/games/game_info.h"
-#include "ultima/ultima8/graphics/shape_info.h" // debugging only
+#include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/graphics/main_shape_archive.h"
 
@@ -99,6 +96,13 @@ void Map::loadFixed(Common::SeekableReadStream *rs) {
 		addMapFix(301, 1, 2815, 25727, 8);
 		addMapFix(301, 1, 9983, 21157, 8);
 		addMapFix(301, 1, 13183, 16511, 8);
+	}
+
+	// Upper Catacombs after using the skull (ScummVM bug #12097)
+	// Not a perfect fix (still a few pixels off) but reduces chance
+	// of bug happening
+	if (GAME_IS_U8 && _mapNum == 50) {
+		addMapFix(34, 7, 16127, 6143, 0);
 	}
 
 	// U8 hack for missing ground/wall tiles on map 62. See docs/u8bugs.txt
@@ -242,13 +246,13 @@ void Map::loadFixedFormatObjects(Std::list<Item *> &itemlist,
 		}
 
 #ifdef DUMP_ITEMS
-		pout << shape << "," << frame << ":\t(" << x << "," << y << "," << z << "),\t" << Std::hex << flags << Std::dec << ", " << quality << ", " << npcNum << ", " << mapNum << ", " << next << Std::endl;
+		pout << shape << "," << frame << ":\t(" << x << "," << y << "," << z << "),\t" << ConsoleStream::hex << flags << ConsoleStream::dec << ", " << quality << ", " << npcNum << ", " << mapNum << ", " << next << Std::endl;
 #endif
 
 		Item *item = ItemFactory::createItem(shape, frame, quality, flags, npcNum,
 		                                     mapNum, extendedflags, false);
 		if (!item) {
-			pout << shape << "," << frame << ":\t(" << x << "," << y << "," << z << "),\t" << Std::hex << flags << Std::dec << ", " << quality << ", " << npcNum << ", " << mapNum << ", " << next;
+			pout << shape << "," << frame << ":\t(" << x << "," << y << "," << z << "),\t" << ConsoleStream::hex << flags << ConsoleStream::dec << ", " << quality << ", " << npcNum << ", " << mapNum << ", " << next;
 
 			const ShapeInfo *info = GameData::get_instance()->getMainShapes()->
 			                  getShapeInfo(shape);

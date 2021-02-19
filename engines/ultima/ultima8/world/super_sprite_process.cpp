@@ -20,15 +20,11 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/world/super_sprite_process.h"
 
 #include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/graphics/shape.h"
 #include "ultima/ultima8/kernel/kernel.h"
-#include "ultima/ultima8/kernel/core_app.h"
 #include "ultima/ultima8/kernel/delay_process.h"
-#include "ultima/ultima8/misc/direction.h"
 #include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/usecode/uc_list.h"
 #include "ultima/ultima8/world/loop_script.h"
@@ -36,7 +32,6 @@
 #include "ultima/ultima8/world/fire_type.h"
 #include "ultima/ultima8/world/get_object.h"
 #include "ultima/ultima8/world/item_factory.h"
-#include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/world/actors/actor.h"
 #include "ultima/ultima8/world/sprite_process.h"
@@ -57,7 +52,7 @@ SuperSpriteProcess::SuperSpriteProcess() : Process(),
 SuperSpriteProcess::SuperSpriteProcess(int shape, int frame, int sx, int sy, int sz,
 									   int dx, int dy, int dz,
 									   uint16 firetype, uint16 damage, uint16 source,
-									   uint16 target, uint8 spread) :
+									   uint16 target, bool inexact) :
 		_shape(shape), _frame(frame), _startpt(sx, sy, sz), _destpt(dx, dy, dz),
 		_nextpt(sx, sy, sz), _fireType(firetype), _damage(damage), _source(source),
 		_target(target), _counter(1), _item0x77(0), _spriteNo(0),
@@ -67,9 +62,9 @@ SuperSpriteProcess::SuperSpriteProcess(int shape, int frame, int sx, int sy, int
 	const FireType *firetypedat = GameData::get_instance()->getFireType(firetype);
 	assert(firetypedat);
 	if (firetypedat->getAccurate()) {
-		spread = 0;
+		inexact = false;
 	}
-	if (spread) {
+	if (inexact) {
 		int rng = _startpt.maxDistXYZ(_destpt);
 		Item *srcitem = getItem(source);
 		if (srcitem == getControlledActor()) {

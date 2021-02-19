@@ -66,6 +66,7 @@ void SceneScriptMA06::SceneLoaded() {
 		} else if (Actor_Query_Goal_Number(kActorRachael) == kGoalRachaelAtEndOfAct3IfMetWithMcCoy
 			&& Game_Flag_Query(kFlagMA02RajifTalk)) {
 			// Put Rachael in set for her second cut scene (Act 4)
+			AI_Movement_Track_Pause(kActorRachael); // don't allow her to "travel" anywhere
 			Actor_Put_In_Set(kActorRachael, kSetMA06);
 			Actor_Set_At_XYZ(kActorRachael, 30.15f, 0.0f, 50.16f, 170); // different rotation and slightly different placement
 			Actor_Set_Goal_Number(kActorRachael, kGoalRachaelIsInsideMcCoysElevatorAct4);
@@ -261,7 +262,7 @@ void SceneScriptMA06::activateElevator() {
 #if BLADERUNNER_ORIGINAL_BUGS
 #else
 		// Fix for a crash/ freeze bug;
-		//  To reproduce original issue: in Act 4, visit Rajiff, then exit to ground floor. Re-enter elevator and press Alt+F4
+		//  To reproduce original issue: in Act 4, visit Rajif, then exit to ground floor. Re-enter elevator and press Alt+F4
 		if (floorLevel < 0) {
 			break;
 		}

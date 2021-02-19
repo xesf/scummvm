@@ -20,12 +20,7 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/audio/music_process.h"
-#include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/audio/music_flex.h"
-#include "ultima/ultima8/audio/midi_player.h"
-#include "ultima/ultima8/audio/audio_mixer.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -62,14 +57,14 @@ uint32 MusicProcess::I_playMusic(const uint8 *args,
 uint32 MusicProcess::I_pauseMusic(const uint8 *args,
 								 unsigned int /*argsize*/) {
 	// This is only used in Crusader: No Regret.
-	warning("TODO: MusicProcess::I_pauseMusic Implement me");
+	if (_theMusicProcess) _theMusicProcess->pauseMusic();
 	return 0;
 }
 
 uint32 MusicProcess::I_unpauseMusic(const uint8 *args,
 								 unsigned int /*argsize*/) {
 	// This is only used in Crusader: No Regret.
-	warning("TODO: MusicProcess::I_unpauseMusic Implement me");
+	if (_theMusicProcess) _theMusicProcess->unpauseMusic();
 	return 0;
 }
 

@@ -162,7 +162,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("RELENT.EXE", "c1a887e38283d43f271249ad9f2a73ef", 258513),
 		Common::EN_ANY,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_VERSION_USA,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -171,7 +171,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("RELENT.EXE", "c1a887e38283d43f271249ad9f2a73ef", 258513),
 		Common::FR_FRA,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_VERSION_USA,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -180,7 +180,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("RELENT.EXE", "c1a887e38283d43f271249ad9f2a73ef", 258513),
 		Common::DE_DEU,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_VERSION_USA,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -189,7 +189,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("RELENT.EXE", "c1a887e38283d43f271249ad9f2a73ef", 258513),
 		Common::IT_ITA,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_VERSION_USA,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -198,7 +198,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("RELENT.EXE", "c1a887e38283d43f271249ad9f2a73ef", 258513),
 		Common::ES_ESP,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_VERSION_USA,
 		GUIO1(GUIO_NONE)
 	},
 
@@ -211,7 +211,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("FLA_GIF.HQR", "3f7383f65afa212e3eec430627828b64", 1784466),
 		Common::EN_ANY,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_USE_GIF,
 		GUIO1(GUIO_NONE)
 	},
 
@@ -286,7 +286,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("LBA.exe", "1f176b4329fbc7efc8f9f30f97013c5f", 1165728),
 		Common::EN_ANY,
 		Common::kPlatformWindows,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_DOTEMU_ENHANCED,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -295,7 +295,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("LBA.exe", "1f176b4329fbc7efc8f9f30f97013c5f", 1165728),
 		Common::FR_FRA,
 		Common::kPlatformWindows,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_DOTEMU_ENHANCED,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -304,7 +304,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("LBA.exe", "1f176b4329fbc7efc8f9f30f97013c5f", 1165728),
 		Common::DE_DEU,
 		Common::kPlatformWindows,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_DOTEMU_ENHANCED,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -313,7 +313,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("LBA.exe", "1f176b4329fbc7efc8f9f30f97013c5f", 1165728),
 		Common::IT_ITA,
 		Common::kPlatformWindows,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_DOTEMU_ENHANCED,
 		GUIO1(GUIO_NONE)
 	},
 	{
@@ -322,7 +322,7 @@ static const ADGameDescription twineGameDescriptions[] = {
 		AD_ENTRY1s("LBA.exe", "1f176b4329fbc7efc8f9f30f97013c5f", 1165728),
 		Common::ES_ESP,
 		Common::kPlatformWindows,
-		ADGF_TESTING,
+		ADGF_TESTING | TwinE::TF_DOTEMU_ENHANCED,
 		GUIO1(GUIO_NONE)
 	},
 
@@ -467,6 +467,58 @@ static const ADGameDescription twineGameDescriptions[] = {
 		Common::RU_RUS,
 		Common::kPlatformDOS,
 		ADGF_TESTING,
+		GUIO1(GUIO_NONE)
+	},
+
+	// Little Big Adventure 2
+
+	// Little Big Adventure 2 - Original European Version (EN, FR, DE, IT, ES)
+	// LBA2.EXE
+	// 4 Sep 2004 at 18:44
+	{
+		"lba2",
+		"CD Original European Version",
+
+		AD_ENTRY1s("LBA2.EXE", "ba915d65b3c7a743a87804f73f29675b", 616448),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NONE)
+	},
+	{
+		"lba2",
+		"CD Original European Version",
+		AD_ENTRY1s("LBA2.EXE", "ba915d65b3c7a743a87804f73f29675b", 616448),
+		Common::FR_FRA,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NONE)
+	},
+	{
+		"lba2",
+		"CD Original European Version",
+		AD_ENTRY1s("LBA2.EXE", "ba915d65b3c7a743a87804f73f29675b", 616448),
+		Common::DE_DEU,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NONE)
+	},
+	{
+		"lba2",
+		"CD Original European Version",
+		AD_ENTRY1s("LBA2.EXE", "ba915d65b3c7a743a87804f73f29675b", 616448),
+		Common::IT_ITA,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NONE)
+	},
+	{
+		"lba2",
+		"CD Original European Version",
+		AD_ENTRY1s("LBA2.EXE", "ba915d65b3c7a743a87804f73f29675b", 616448),
+		Common::ES_ESP,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
 		GUIO1(GUIO_NONE)
 	},
 

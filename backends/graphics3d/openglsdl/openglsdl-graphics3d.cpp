@@ -44,12 +44,12 @@
 #include "image/bmp.h"
 #endif
 
-OpenGLSdlGraphics3dManager::OpenGLSdlGraphics3dManager(SdlEventSource *eventSource, SdlWindow *window, const Capabilities &capabilities)
+OpenGLSdlGraphics3dManager::OpenGLSdlGraphics3dManager(SdlEventSource *eventSource, SdlWindow *window, bool supportsFrameBuffer)
 	: SdlGraphics3dManager(eventSource, window),
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	_glContext(nullptr),
 #endif
-	_capabilities(capabilities),
+	_supportsFrameBuffer(supportsFrameBuffer),
 	_overlayVisible(false),
 	_overlayScreen(nullptr),
 	_overlayBackground(nullptr),
@@ -421,10 +421,10 @@ bool OpenGLSdlGraphics3dManager::createOrUpdateGLContext(uint gameWidth, uint ga
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #else
-		// AmigaOS4's OpenGL implementation is close to 1.3. Until that changes we need
+		// The OpenGL implementation on AmigaOS4 is close to 1.3. Until that changes we need
 		// to use 1.3 as version or ScummVM will cease working at all on that platform.
 		// Profile Mask has to be 0 as well.
-		// This will be revised and removed once AmigaOS4 supports 2.x or OpenGLES2.
+		// This will be revised and removed once AmigaOS4 supports OpenGL 2.x or OpenGLES2.
 		#ifdef __amigaos4__
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -504,7 +504,7 @@ bool OpenGLSdlGraphics3dManager::createOrUpdateGLContext(uint gameWidth, uint ga
 
 bool OpenGLSdlGraphics3dManager::shouldRenderToFramebuffer() const {
 	bool engineSupportsArbitraryResolutions = !g_engine || g_engine->hasFeature(Engine::kSupportsArbitraryResolutions);
-	return !engineSupportsArbitraryResolutions && _capabilities.openGLFrameBuffer;
+	return !engineSupportsArbitraryResolutions && _supportsFrameBuffer;
 }
 
 bool OpenGLSdlGraphics3dManager::isVSyncEnabled() const {

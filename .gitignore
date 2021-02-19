@@ -270,3 +270,4 @@ android_project
 
 #Ignore snapcraft build artifacts
 .snap
+.github

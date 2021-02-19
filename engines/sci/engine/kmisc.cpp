@@ -115,15 +115,6 @@ reg_t kGameIsRestarting(EngineState *s, int argc, reg_t *argv) {
 		}
 		break;
 	}
-	case GID_LSL3:
-		// LSL3 calculates a machinespeed variable during game startup
-		// (right after the filthy questions). This one would go through w/o
-		// throttling resulting in having to do 1000 pushups or something. Another
-		// way of handling this would be delaying incrementing of "machineSpeed"
-		// selector.
-		if (s->currentRoomNumber() == 290)
-			s->_throttleTrigger = true;
-		break;
 	case GID_SQ4:
 		// In SQ4 (floppy and CD) the sequel police appear way too quickly in
 		// the Skate-o-rama rooms, resulting in all sorts of timer issues, like
@@ -252,7 +243,7 @@ enum {
 
 reg_t kGetTime(EngineState *s, int argc, reg_t *argv) {
 	TimeDate loc_time;
-	int retval = 0; // Avoid spurious warning
+	uint16 retval = 0; // Avoid spurious warning
 
 	g_system->getTimeAndDate(loc_time);
 
@@ -269,7 +260,11 @@ reg_t kGetTime(EngineState *s, int argc, reg_t *argv) {
 		debugC(kDebugLevelTime, "GetTime(elapsed) returns %d", retval);
 		break;
 	case KGETTIME_TIME_12HOUR :
-		retval = ((loc_time.tm_hour % 12) << 12) | (loc_time.tm_min << 6) | (loc_time.tm_sec);
+		loc_time.tm_hour %= 12;
+		if (loc_time.tm_hour == 0) {
+			loc_time.tm_hour = 12;
+		}
+		retval = (loc_time.tm_hour << 12) | (loc_time.tm_min << 6) | (loc_time.tm_sec);
 		debugC(kDebugLevelTime, "GetTime(12h) returns %d", retval);
 		break;
 	case KGETTIME_TIME_24HOUR :
@@ -796,7 +791,7 @@ reg_t kPlatform(EngineState *s, int argc, reg_t *argv) {
 	return NULL_REG;
 }
 
-extern int showScummVMDialog(const Common::U32String &message, const Common::U32String &altButton = Common::U32String(""), bool alignCenter = true);
+extern int showScummVMDialog(const Common::U32String &message, const Common::U32String &altButton = Common::U32String(), bool alignCenter = true);
 
 #ifdef ENABLE_SCI32
 reg_t kPlatform32(EngineState *s, int argc, reg_t *argv) {

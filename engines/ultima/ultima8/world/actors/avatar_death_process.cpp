@@ -20,19 +20,17 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 
 #include "ultima/ultima8/world/actors/avatar_death_process.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/gumps/readable_gump.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/kernel/kernel.h"
-#include "ultima/ultima8/kernel/core_app.h"
+#include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/kernel/delay_process.h"
 #include "ultima/ultima8/gumps/main_menu_process.h"
 #include "ultima/ultima8/gumps/gump_notify_process.h"
 #include "ultima/ultima8/graphics/palette_manager.h"
-#include "ultima/ultima8/audio/music_process.h"
 #include "ultima/ultima8/audio/audio_process.h"
 #include "ultima/ultima8/world/get_object.h"
 

@@ -25,6 +25,14 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <signal.h>
+// sighandler_t is a GNU extension exposed when _GNU_SOURCE is defined
+#ifndef _GNU_SOURCE
+typedef void (*sighandler_t)(int);
+#endif
+#elif defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef main
 #endif
 
 // We use some stdio.h functionality here thus we need to allow some
@@ -37,25 +45,27 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_exit
 #define FORBIDDEN_SYMBOL_EXCEPTION_time_h
 
+#include "common/scummsys.h"
+
+#if defined(USE_NULL_DRIVER)
 #include "backends/modular-backend.h"
 #include "base/main.h"
 
-#if defined(USE_NULL_DRIVER)
+#ifndef NULL_DRIVER_USE_FOR_TEST
 #include "backends/saves/default/default-saves.h"
 #include "backends/timer/default/default-timer.h"
 #include "backends/events/default/default-events.h"
 #include "backends/mixer/null/null-mixer.h"
 #include "backends/mutex/null/null-mutex.h"
 #include "backends/graphics/null/null-graphics.h"
-#include "audio/mixer_intern.h"
-#include "common/scummsys.h"
 #include "gui/debugger.h"
+#endif
 
 /*
  * Include header files needed for the getFilesystemFactory() method.
  */
 #if defined(__amigaos4__)
-	#include "backends/fs/amigaos4/amigaos4-fs-factory.h"
+	#include "backends/fs/amigaos/amigaos-fs-factory.h"
 #elif defined(__MORPHOS__)
 	#include "backends/fs/morphos/morphos-fs-factory.h"
 #elif defined(POSIX)
@@ -83,9 +93,13 @@ public:
 
 	virtual void logMessage(LogMessageType::Type type, const char *message);
 
+	virtual void addSysArchivesToSearchSet(Common::SearchSet &s, int priority);
+
 private:
 #ifdef POSIX
 	timeval _startTime;
+#elif defined(WIN32)
+	DWORD _startTime;
 #endif
 };
 
@@ -108,7 +122,7 @@ OSystem_NULL::OSystem_NULL() {
 OSystem_NULL::~OSystem_NULL() {
 }
 
-#ifdef POSIX
+#if defined(POSIX) && !defined(NULL_DRIVER_USE_FOR_TEST)
 static volatile bool intReceived = false;
 
 static sighandler_t last_handler;
@@ -122,7 +136,12 @@ void intHandler(int dummy) {
 void OSystem_NULL::initBackend() {
 #ifdef POSIX
 	gettimeofday(&_startTime, 0);
+#elif defined(WIN32)
+	_startTime = GetTickCount();
+#endif
 
+#ifndef NULL_DRIVER_USE_FOR_TEST
+#ifdef POSIX
 	last_handler = signal(SIGINT, intHandler);
 #endif
 
@@ -134,11 +153,13 @@ void OSystem_NULL::initBackend() {
 	_mixerManager = new NullMixerManager();
 	// Setup and start mixer
 	_mixerManager->init();
+#endif
 
 	BaseBackend::initBackend();
 }
 
 bool OSystem_NULL::pollEvent(Common::Event &event) {
+#ifndef NULL_DRIVER_USE_FOR_TEST
 	((DefaultTimerManager *)getTimerManager())->checkTimers();
 	((NullMixerManager *)_mixerManager)->update(1);
 
@@ -159,6 +180,7 @@ bool OSystem_NULL::pollEvent(Common::Event &event) {
 		return true;
 	}
 #endif
+#endif
 
 	return false;
 }
@@ -171,6 +193,8 @@ uint32 OSystem_NULL::getMillis(bool skipRecord) {
 
 	return (uint32)(((curTime.tv_sec - _startTime.tv_sec) * 1000) +
 			((curTime.tv_usec - _startTime.tv_usec) / 1000));
+#elif defined(WIN32)
+	return GetTickCount() - _startTime;
 #else
 	return 0;
 #endif
@@ -179,6 +203,8 @@ uint32 OSystem_NULL::getMillis(bool skipRecord) {
 void OSystem_NULL::delayMillis(uint msecs) {
 #ifdef POSIX
 	usleep(msecs * 1000);
+#elif defined(WIN32)
+	Sleep(msecs);
 #endif
 }
 
@@ -210,10 +236,16 @@ void OSystem_NULL::logMessage(LogMessageType::Type type, const char *message) {
 	fflush(output);
 }
 
+void OSystem_NULL::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) {
+	s.add("test/engine-data", new Common::FSDirectory("test/engine-data", 4), priority);
+	s.add("gui/themes", new Common::FSDirectory("gui/themes", 4), priority);
+}
+
 OSystem *OSystem_NULL_create() {
 	return new OSystem_NULL();
 }
 
+#ifndef NULL_DRIVER_USE_FOR_TEST
 int main(int argc, char *argv[]) {
 	g_system = OSystem_NULL_create();
 	assert(g_system);
@@ -223,6 +255,7 @@ int main(int argc, char *argv[]) {
 	g_system->destroy();
 	return res;
 }
+#endif
 
 #else /* USE_NULL_DRIVER */
 

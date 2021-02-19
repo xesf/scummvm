@@ -24,12 +24,13 @@
 #include "glk/comprehend/comprehend.h"
 #include "glk/comprehend/draw_surface.h"
 #include "glk/comprehend/pics.h"
+#include "common/md5.h"
 
 namespace Glk {
 namespace Comprehend {
 
 enum OOToposRoomFlag {
-	OO_ROOM_FLAG_FUEL = 1,
+	OO_ROOM_IN_SHIP = 1,
 	OO_ROOM_FLAG_DARK = 2
 };
 
@@ -38,14 +39,14 @@ enum OOToposFlag {
 	OO_FLAG_13 = 13,
 	OO_FLAG_22 = 22,
 	OO_BRIGHT_ROOM = 25,
-	OO_FLAG_WEARING_GOGGLES = 27,	// ?
+	OO_FLAG_WEARING_GOGGLES = 27,
 	OO_FLAG_FLASHLIGHT_ON = 39,
 	OO_FLAG_43 = 43,
 	OO_FLAG_44 = 44,
 	OO_FLAG_SUFFICIENT_FUEL = 51,
-	OO_FLAG_53 = 53,
-	OO_FLAG_55 = 55,
-	OO_FLAG_56 = 56,
+	OO_FLAG_REVERSE_VIDEO = 53,	// Effect of wearing goggles
+	OO_FLAG_TOO_DARK = 55,
+	OO_FLAG_TOO_BRIGHT = 56,
 	OO_FLAG_58 = 58,
 	OO_FLAG_59 = 59,
 	OO_FLAG_READY_TO_DEPART = 60,
@@ -66,11 +67,31 @@ OOToposGame::OOToposGame() : ComprehendGameV2(), _restartMode(RESTART_IMMEDIATE)
 	_gameDataFile = "g0";
 
 	// Extra strings are (annoyingly) stored in the game binary
-	_stringFiles.push_back(StringFile("NOVEL.EXE", 0x16564, 0x17640));
-	_stringFiles.push_back(StringFile("NOVEL.EXE", 0x17702, 0x18600));
-	_stringFiles.push_back(StringFile("NOVEL.EXE", 0x186b2, 0x19b80));
-	_stringFiles.push_back(StringFile("NOVEL.EXE", 0x19c62, 0x1a590));
-	_stringFiles.push_back(StringFile("NOVEL.EXE", 0x1a634, 0x1b080));
+	Common::File f;
+	if (!f.open("novel.exe"))
+		error("novel.exe is a required file");
+
+	Common::String md5 = Common::computeStreamMD5AsString(f, 1024);
+	f.close();
+
+	if (md5 == "3fc2072f6996b17d2f21f0a92e53cdcc") {
+		// DOS version from if-archive
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x16564, 0x17640));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x17702, 0x18600));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x186b2, 0x19b80));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x19c62, 0x1a590));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x1a634, 0x1b080));
+	} else if (md5 == "e26858f2aaa9dcc28f468b07902813c5") {
+		// DOS version from graphicsmagician.com
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x164c4, 0x175a0));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x17662, 0x18560));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x18612, 0x19ae0));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x19bc2, 0x1a4f0));
+		_stringFiles.push_back(StringFile("NOVEL.EXE", 0x1a594, 0x1afe0));
+	} else {
+		error("Unrecognised novel.exe encountered");
+	}
+
 	_locationGraphicFiles.push_back("RA");
 	_locationGraphicFiles.push_back("RB");
 	_locationGraphicFiles.push_back("RC");
@@ -121,37 +142,18 @@ int OOToposGame::roomIsSpecial(unsigned room_index, unsigned *roomDescString) {
 }
 
 void OOToposGame::beforeTurn() {
-#if 0
-	Room *room = &_rooms[_currentRoom];
-
-	/*
-	 * Check if the room needs to be redrawn because the flashlight
-	 * was switch off or on.
-	 */
-	if (_flags[OO_FLAG_FLASHLIGHT_ON] != _lightOn &&
-	        (room->_flags & OO_ROOM_FLAG_DARK)) {
-		_lightOn = _flags[OO_FLAG_FLASHLIGHT_ON];
-		_updateFlags |= UPDATE_GRAPHICS | UPDATE_ROOM_DESC;
-	}
-
-	/*
-	 * Check if the room needs to be redrawn because the goggles were
-	 * put on or removed.
-	 */
-	if (_flags[OO_FLAG_WEARING_GOGGLES] != _wearingGoggles &&
-	        _currentRoom == OO_BRIGHT_ROOM) {
-		_wearingGoggles = _flags[OO_FLAG_WEARING_GOGGLES];
-		_updateFlags |= UPDATE_GRAPHICS | UPDATE_ROOM_DESC;
-	}
-#endif
 	ComprehendGameV2::beforeTurn();
 
-	if (_flags[OO_FLAG_55]) {
+	if (_flags[OO_FLAG_TOO_DARK]) {
+		// Show placeholder room if room is too dark
 		_currentRoom = 55;
-	} else if (_flags[OO_FLAG_56]) {
+		_updateFlags |= UPDATE_GRAPHICS;
+	} else if (_flags[OO_FLAG_TOO_BRIGHT]) {
+		// Show placeholder room if room is too bright
 		_currentRoom = 54;
+		_updateFlags |= UPDATE_GRAPHICS;
 	} else {
-		YesNo nff = _flags[OO_FLAG_53] ? YES : NO;
+		YesNo nff = _flags[OO_FLAG_REVERSE_VIDEO] ? YES : NO;
 
 		if (_noFloodfill != nff) {
 			_noFloodfill = nff;
@@ -163,17 +165,27 @@ void OOToposGame::beforeTurn() {
 				g_comprehend->_drawFlags &= ~IMAGEF_REVERSE;
 		}
 	}
+}
 
+void OOToposGame::beforePrompt() {
 	// Handle the computer console if in front of it
 	computerConsole();
 }
 
-void OOToposGame::afterTurn() {
-	ComprehendGameV2::afterTurn();
+void OOToposGame::afterPrompt() {
+	ComprehendGameV2::afterPrompt();
+
+	// WORKAROUND: Allow for the Apple 2 password in the DOS version
+	if (!scumm_stricmp(_inputLine, "vug957a"))
+		strcpy(_inputLine, "tse957x");
+
+	if (_currentRoom != _currentRoomCopy)
+		_updateFlags |= UPDATE_GRAPHICS;
+	_currentRoom = _currentRoomCopy;
 }
 
-void OOToposGame::handleSpecialOpcode(uint8 operand) {
-	switch (operand) {
+void OOToposGame::handleSpecialOpcode() {
+	switch (_specialOpcode) {
 	case 1:
 		// Update guard location
 		randomizeGuardLocation();
@@ -195,8 +207,8 @@ void OOToposGame::handleSpecialOpcode(uint8 operand) {
 		break;
 
 	case 5:
-		// Won the game, or fall-through from case 3
-		game_restart();
+		// Won the game
+		g_comprehend->quitGame();
 		break;
 
 	case 6:
@@ -250,10 +262,16 @@ bool OOToposGame::handle_restart() {
 }
 
 void OOToposGame::synchronizeSave(Common::Serializer &s) {
+	if (s.isSaving())
+		_currentRoom = _currentRoomCopy;
+
 	ComprehendGameV2::synchronizeSave(s);
 
 	if (s.isLoading()) {
 		_noFloodfill = UNSET;
+		_currentRoomCopy = _currentRoom;
+
+		beforeTurn();
 	}
 }
 
@@ -334,7 +352,7 @@ void OOToposGame::checkShipFuel() {
 	for (int idx = 168; idx < 175; ++idx, ++_stringVal1, ++_stringVal2) {
 		if (_flags[idx]) {
 			Item *item = get_item(ITEMS[_stringVal2] - 1);
-			if (item->_room == ROOM_INVENTORY || (get_room(item->_room)->_flags & OO_ROOM_FLAG_FUEL) != 0) {
+			if (item->_room == ROOM_INVENTORY || (get_room(item->_room)->_flags & OO_ROOM_IN_SHIP) != 0) {
 				Instruction varAdd(0x86, 0x4B, _stringVal1);
 				execute_opcode(&varAdd, nullptr, nullptr);
 			}
@@ -367,7 +385,7 @@ void OOToposGame::checkShipDepart() {
 
 	if (!_shipNotWorking && _flags[OO_FLAG_SUFFICIENT_FUEL]) {
 		Item *item = get_item(ITEM_SERUM_VIAL - 1);
-		if (item->_room == ROOM_INVENTORY || (get_room(item->_room)->_flags & OO_ROOM_FLAG_FUEL) != 0) {
+		if (item->_room == ROOM_INVENTORY || (get_room(item->_room)->_flags & OO_ROOM_IN_SHIP) != 0) {
 			if (!_flags[OO_TRACTOR_BEAM]) {
 				// I detect a tractor beam
 				console_println(_strings2[77].c_str());

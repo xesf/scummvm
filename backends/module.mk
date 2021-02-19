@@ -48,6 +48,7 @@ MODULE_OBJS += \
 	cloud/dropbox/dropboxcreatedirectoryrequest.o \
 	cloud/dropbox/dropboxinforequest.o \
 	cloud/dropbox/dropboxlistdirectoryrequest.o \
+	cloud/dropbox/dropboxtokenrefresher.o \
 	cloud/dropbox/dropboxuploadrequest.o \
 	cloud/googledrive/googledrivelistdirectorybyidrequest.o \
 	cloud/googledrive/googledrivestorage.o \
@@ -241,8 +242,9 @@ endif
 
 ifdef AMIGAOS
 MODULE_OBJS += \
-	fs/amigaos4/amigaos4-fs.o \
-	fs/amigaos4/amigaos4-fs-factory.o \
+	dialogs/amigaos/amigaos-dialogs.o \
+	fs/amigaos/amigaos-fs.o \
+	fs/amigaos/amigaos-fs-factory.o \
 	midi/camd.o
 endif
 
@@ -282,8 +284,14 @@ endif
 
 ifeq ($(BACKEND),ds)
 MODULE_OBJS += \
-	fs/ds/ds-fs.o \
-	fs/ds/ds-fs-factory.o \
+	events/ds/ds-events.o \
+	fs/posix/posix-fs.o \
+	fs/posix/posix-fs-factory.o \
+	fs/posix/posix-iostream.o \
+	fs/posix-drives/posix-drives-fs.o \
+	fs/posix-drives/posix-drives-fs-factory.o \
+	fs/devoptab/devoptab-fs-factory.o \
+	mixer/maxmod/maxmod-mixer.o \
 	plugins/ds/ds-provider.o
 endif
 

@@ -184,11 +184,11 @@ void LauncherDialog::build() {
 #endif
 		_searchDesc = new StaticTextWidget(this, "Launcher.SearchDesc", _("Search:"));
 
-	_searchWidget = new EditTextWidget(this, "Launcher.Search", _search, Common::U32String(""), kSearchCmd);
+	_searchWidget = new EditTextWidget(this, "Launcher.Search", _search, Common::U32String(), kSearchCmd);
 	_searchClearButton = addClearButton(this, "Launcher.SearchClearButton", kSearchClearCmd);
 
 	// Add list with game titles
-	_list = new ListWidget(this, "Launcher.GameList", Common::U32String(""), kListSearchCmd);
+	_list = new ListWidget(this, "Launcher.GameList", Common::U32String(), kListSearchCmd);
 	_list->setEditable(false);
 	_list->enableDictionarySelect(true);
 	_list->setNumberingMode(kListNumberingOff);
@@ -283,17 +283,9 @@ void LauncherDialog::updateListing() {
 	// Turn it into a list of pointers
 	Common::List<LauncherEntry> domainList;
 	for (ConfigManager::DomainMap::const_iterator iter = domains.begin(); iter != domains.end(); ++iter) {
-#ifdef __DS__
-		// DS port uses an extra section called 'ds'.  This prevents the section from being
-		// detected as a game.
-		if (iter->_key == "ds") {
-			continue;
-		}
-#endif
+		String description;
 
-		String description(iter->_value.getVal("description"));
-
-		if (description.empty()) {
+		if (!iter->_value.tryGetVal("description", description)) {
 			QualifiedGameDescriptor g = EngineMan.findTarget(iter->_key);
 			if (!g.description.empty())
 				description = g.description;
@@ -503,9 +495,9 @@ void LauncherDialog::loadGame(int item) {
 	}
 
 	if (enginePlugin) {
-		const MetaEngine &metaEngineConnect = enginePlugin->get<MetaEngine>();
-		if (metaEngineConnect.hasFeature(MetaEngine::kSupportsListSaves) &&
-			metaEngineConnect.hasFeature(MetaEngine::kSupportsLoadingDuringStartup)) {
+		const MetaEngine &metaEngine = enginePlugin->get<MetaEngine>();
+		if (metaEngine.hasFeature(MetaEngine::kSupportsListSaves) &&
+			metaEngine.hasFeature(MetaEngine::kSupportsLoadingDuringStartup)) {
 			int slot = _loadDialog->runModalWithPluginAndTarget(enginePlugin, target);
 			if (slot >= 0) {
 				ConfMan.setActiveDomain(_domains[item]);
@@ -707,8 +699,8 @@ void LauncherDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 dat
 		break;
 	case kSearchClearCmd:
 		// Reset the active search filter, thus showing all games again
-		_searchWidget->setEditString(Common::U32String(""));
-		_list->setFilter(Common::U32String(""));
+		_searchWidget->setEditString(Common::U32String());
+		_list->setFilter(Common::U32String());
 		break;
 	default:
 		Dialog::handleCommand(sender, cmd, data);

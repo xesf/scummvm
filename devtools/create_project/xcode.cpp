@@ -23,18 +23,16 @@
 #include "config.h"
 #include "xcode.h"
 
+#include <limits.h>
+#include <stdlib.h>
+
 #include <fstream>
 #include <algorithm>
 
 #ifdef MACOSX
 #include <sstream>
 #include <iomanip>
-#include <CommonCrypto/CommonCrypto.h>
-
-// If we want to unset the sdk version in the executable to work around bug #11430
-// (blury display on retina screens when building with SDK 10.14+).
-// This workaround only works with Xcode 11+.
-//#define MACOSX_NO_SDKVERSION
+#include <CommonCrypto/CommonDigest.h>
 #endif
 
 namespace CreateProjectTool {
@@ -822,7 +820,9 @@ XcodeProvider::ValueList& XcodeProvider::getResourceFiles() const {
 		files.push_back("dists/engine-data/cryo.dat");
 		files.push_back("dists/engine-data/cryomni3d.dat");
 		files.push_back("dists/engine-data/drascula.dat");
+		files.push_back("dists/engine-data/encoding.dat");
 		files.push_back("dists/engine-data/fonts.dat");
+		files.push_back("dists/engine-data/hadesch_translations.dat");
 		files.push_back("dists/engine-data/hugo.dat");
 		files.push_back("dists/engine-data/kyra.dat");
 		files.push_back("dists/engine-data/lure.dat");
@@ -941,9 +941,9 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 
 	std::string projectOutputDirectory;
 #ifdef POSIX
-	char *rp = realpath(setup.outputDir.c_str(), NULL);
+	char tmpbuf[PATH_MAX];
+	char *rp = realpath(setup.outputDir.c_str(), tmpbuf);
 	projectOutputDirectory = rp;
-	free(rp);
 #endif
 
 	/****************************************
@@ -1158,19 +1158,6 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ADD_SETTING_LIST(scummvmOSX_Debug, "LIBRARY_SEARCH_PATHS", scummvmOSX_LibPaths, kSettingsNoQuote | kSettingsAsList, 5);
 	ADD_SETTING_QUOTE(scummvmOSX_Debug, "OTHER_CFLAGS", "");
 	ADD_SETTING(scummvmOSX_Debug, "PRODUCT_NAME", PROJECT_NAME);
-	ValueList scummvmOSX_LinkerFlags;
-#ifdef MACOSX_NO_SDKVERSION
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	scummvmOSX_LinkerFlags.push_back("-platform_version");
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	scummvmOSX_LinkerFlags.push_back("macos");
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	// Since the option can only be used with Xcode 11, assume the min version targetted is 10.14
-	scummvmOSX_LinkerFlags.push_back("10.14");
-	scummvmOSX_LinkerFlags.push_back("-Xlinker");
-	scummvmOSX_LinkerFlags.push_back("0.0.0");
-	ADD_SETTING_LIST(scummvmOSX_Debug, "OTHER_LDFLAGS", scummvmOSX_LinkerFlags, kSettingsAsList, 5);
-#endif
 
 	scummvmOSX_Debug_Object->addProperty("name", "Debug", "", kSettingsNoValue);
 	scummvmOSX_Debug_Object->_properties["buildSettings"] = scummvmOSX_Debug;
@@ -1181,12 +1168,10 @@ void XcodeProvider::setupBuildConfiguration(const BuildSetup &setup) {
 	ADD_SETTING(scummvmOSX_Release, "COPY_PHASE_STRIP", "YES");
 	REMOVE_SETTING(scummvmOSX_Release, "GCC_DYNAMIC_NO_PIC");
 	REMOVE_SETTING(scummvmOSX_Release, "GCC_OPTIMIZATION_LEVEL");
+	ADD_SETTING(scummvmOSX_Release, "GCC_OPTIMIZATION_LEVEL", "3");
 	ADD_SETTING(scummvmOSX_Release, "WRAPPER_EXTENSION", "app");
 	REMOVE_SETTING(scummvmOSX_Release, "DEBUG_INFORMATION_FORMAT");
 	ADD_SETTING_QUOTE(scummvmOSX_Release, "DEBUG_INFORMATION_FORMAT", "dwarf-with-dsym");
-#ifdef MACOSX_NO_SDKVERSION
-	ADD_SETTING_LIST(scummvmOSX_Release, "OTHER_LDFLAGS", scummvmOSX_LinkerFlags, kSettingsAsList, 5);
-#endif
 
 	scummvmOSX_Release_Object->addProperty("name", "Release", "", kSettingsNoValue);
 	scummvmOSX_Release_Object->_properties["buildSettings"] = scummvmOSX_Release;

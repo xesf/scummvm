@@ -539,7 +539,7 @@ begin_credits("Credits");
 			begin_section("AGI");
 				add_person("Stuart George", "darkfiber", "");
 				add_person("Matthew Hoops", "clone2727", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Martin Kiewitz", "m_kiewitz", "");
 				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "");
 				add_person("Walter van Niftrik", "waltervn", "");
@@ -555,6 +555,50 @@ begin_credits("Credits");
 				add_person("Oliver Kiehl", "olki", "(retired)");
 				add_person("Ludvig Strigeus", "ludde", "(retired)");
 			end_section();
+
+			begin_section("AGS");
+				add_person("Paul Gilbert", "dreammaster", "");
+				add_person("Thierry Crozat", "criezy", "");
+				add_person("Chris Jones", "Pumaman", "Creator");
+				add_person("Alan Van Drake", "", "AGS");
+				add_person("Benjamin Penney", "", "AGS");
+				add_person("Benoit Pierre", "", "AGS");
+				add_person("Bernhard Rosenkraenzer", "", "AGS");
+				add_person("Cristian Morales Vega", "", "AGS");
+				add_person("Edward Rudd", "", "AGS");
+				add_person("Erico Vieira Porto", "", "AGS");
+				add_person("Ferdinand Thiessen", "", "AGS");
+				add_person("Francesco Ariis", "", "AGS");
+				add_person("Gilad Shaham", "", "AGS");
+				add_person("Ivan Mogilko", "", "AGS");
+				add_person("Janet Gilbert", "", "AGS");
+				add_person("Jochen Schleu", "", "AGS");
+				add_person("Joe Lee", "", "AGS");
+				add_person("John Steele Scott", "", "AGS");
+				add_person("Martin Sedlak", "", "AGS");
+				add_person("Matthew Gambrell", "", "AGS");
+				add_person("Michael Rittenhouse", "", "AGS");
+				add_person("Morgan Willcock", "", "AGS");
+				add_person("Nick Sonneveld", "", "AGS");
+				add_person("Ori Avtalion", "", "AGS");
+				add_person("Paul Wilkinson", "", "AGS");
+				add_person("Per Olav Flaten", "", "AGS");
+				add_person("Piotr Wieczorek", "", "AGS");
+				add_person("Ryan O'Connor", "", "AGS");
+				add_person("Scott Baker", "", "AGS");
+				add_person("Shane Stevens", "", "AGS");
+				add_person("Shawn R. Walker", "", "AGS");
+				add_person("Stefano Collavini", "", "AGS");
+				add_person("Steve McCrea", "", "AGS");
+				add_person("Steven Poulton", "", "AGS");
+				add_person("Sunit Das", "", "AGS");
+				add_person("Tobias Hansen", "", "AGS");
+				add_person("Tom Vandepoele", "", "AGS");
+				add_person("Tzach Shabtay", "", "AGS");
+				add_person("", "rofl0r", "AGS");
+				add_person("Berian Williams", "AGA", "AgsCreditz");
+			end_section();
+
 
 			begin_section("Avalanche");
 				add_person("Peter Bozs&oacute;", "uruk", "");
@@ -584,7 +628,7 @@ begin_credits("Credits");
 			end_section();
 
 			begin_section("Chewy");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Cine");
@@ -636,7 +680,7 @@ begin_credits("Credits");
 			end_section();
 
 			begin_section("Drascula");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "");
 				add_person("Thierry Crozat", "criezy", "");
 			end_section();
@@ -644,7 +688,7 @@ begin_credits("Credits");
 			begin_section("DreamWeb");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "");
 				add_person("Bertrand Augereau", "Tramb", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Vladimir Menshakov", "whoozle", "");
 				add_person("Willem Jan Palenstijn", "wjp", "");
 			end_section();
@@ -685,7 +729,7 @@ begin_credits("Credits");
 				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "Grim");
 				add_person("Christian Krause", "chkr", "EMI (retired)");
 				add_person("Einar Johan T. S&oslash;m&aring;en", "somaen", "Grim, EMI");
-				add_person("Joel Teichroeb ", "klusark", "EMI");
+				add_person("Joel Teichroeb", "klusark", "EMI");
 				add_person("Joni V&auml;h&auml;m&auml;ki", "Akz", "EMI (retired)");
 			end_section();
 
@@ -693,6 +737,10 @@ begin_credits("Credits");
 				add_person("Henry Bush", "spookypeanut", "");
 				add_person("Scott Thomas", "ST", "");
 				add_person("Jordi Vilalta Prat", "jvprat", "");
+			end_section();
+
+			begin_section("Hades' Challenge");
+				add_person("Vladimir Serbinenko/Google", "phcoder", "");
 			end_section();
 
 			begin_section("HDB");
@@ -738,7 +786,7 @@ begin_credits("Credits");
 
 			begin_section("Lab");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Willem Jan Palenstijn", "wjp", "");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
@@ -763,19 +811,19 @@ begin_credits("Credits");
 
 			begin_section("MADE");
 				add_person("Benjamin Haisch", "john_doe", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("MADS");
 				add_person("Arnaud Boutonn&eacute;", "Strangerke", "");
 				add_person("Paul Gilbert", "dreammaster", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Mohawk");
 				add_person("Bastien Bouclet", "bgk", "");
 				add_person("Matthew Hoops", "clone2727", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Alyssa Milburn", "fuzzie", "");
 				add_person("Eugene Sandulenko", "sev", "");
 				add_person("David Turner", "digitall", "");
@@ -798,7 +846,7 @@ begin_credits("Credits");
 
 			begin_section("Neverhood");
 				add_person("Benjamin Haisch", "john_doe", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Parallaction");
@@ -838,7 +886,7 @@ begin_credits("Credits");
 			begin_section("SAGA");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "");
 				add_person("Daniel Balsom", "DanielFox", "Original engine reimplementation author (retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Andrew Kurushin", "ajax16384", "");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
@@ -848,7 +896,7 @@ begin_credits("Credits");
 				add_person("Greg Frieger", "_FRG_", "");
 				add_person("Paul Gilbert", "dreammaster", "");
 				add_person("Max Horn", "Fingolfin", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Martin Kiewitz", "m_kiewitz", "");
 				add_person("Walter van Niftrik", "waltervn", "");
 				add_person("Willem Jan Palenstijn", "wjp", "");
@@ -896,7 +944,7 @@ begin_credits("Credits");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "");
 				add_person("Paul Gilbert", "dreammaster", "");
 				add_person("Max Horn", "Fingolfin", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Eugene Sandulenko", "sev", "");
 			end_section();
 
@@ -911,7 +959,7 @@ begin_credits("Credits");
 				add_person("Paul Gilbert", "dreammaster", "");
 				add_person("Sven Hesse", "DrMcCoy", "");
 				add_person("Max Horn", "Fingolfin", "(retired)");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Joost Peters", "joostp", "");
 			end_section();
 
@@ -923,7 +971,7 @@ begin_credits("Credits");
 
 			begin_section("Toltecs");
 				add_person("Benjamin Haisch", "john_doe", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 			end_section();
 
 			begin_section("Tony");
@@ -1011,7 +1059,7 @@ begin_credits("Credits");
 
 			begin_section("Z-Vision");
 				add_person("Adrian Astley", "RichieSams", "");
-				add_person("Filippos Karapetis", "[md5]", "");
+				add_person("Filippos Karapetis", "bluegr", "");
 				add_person("Anton Yarcev", "Zidane", "");
 			end_section();
 
@@ -1314,6 +1362,7 @@ begin_credits("Credits");
 				end_section();
 				begin_section("Greek");
 					add_person("Thanasis Antoniou", "Praetorian", "");
+					add_person("Filippos Karapetis", "bluegr", "");
 				end_section();
 				begin_section("Hungarian");
 					add_person("Alex Bevilacqua", "", "");
@@ -1422,7 +1471,7 @@ begin_credits("Credits");
 				add_person("Edward Rudd", "urkle", "Fixes for playing MP3 versions of MI1/Loom audio");
 				add_person("Daniel Schepler", "dschepler", "Final MI1 CD music support, initial Ogg Vorbis support");
 				add_person("Andr&eacute; Souza", "luke_br", "SDL-based OpenGL renderer");
-				add_person("Joel Teichroeb ", "klusark", "Android port for ResidualVM");
+				add_person("Joel Teichroeb", "klusark", "Android port for ResidualVM");
 				add_person("Tom Frost", "TomFrost", "WebOS port contributions");
 			end_persons();
 		end_section();
@@ -1472,8 +1521,8 @@ begin_credits("Credits");
 			add_paragraph("Special thanks to Bob Heitman and Corey Cole for their support of FreeSCI.");
 		end_section();
 
-		begin_section("Grim Contributors", "grim_contrib");
-			begin_persons();
+		begin_section("ResidualVM Contributors", "residualvm_contrib");
+			begin_section("Grim");
 				add_person("Thomas Allen", "olldray", "Various engine code fixes and improvements");
 				add_person("Torbj&ouml;rn Andersson", "eriktorbjorn", "Various code fixes");
 				add_person("Ori Avtalion", "salty-horse", "Lipsync, LAF support, various code fixes");
@@ -1515,19 +1564,15 @@ begin_credits("Credits");
 				add_person("", "mparnaudeau", "Various grim engine code fixes");
 				add_person("", "PoulpiFr", "Few fixes to Android port");
 				add_person("", "sietschie", "Few fixes to engine");
-			end_persons();
-		end_section();
+			end_section();
 
-		begin_section("Myst 3", "myst3_contrib");
-			begin_persons();
+			begin_section("Myst 3");
 				add_person("David Fioramonti", "dafioram", "Autosave support and few fixes");
 				add_person("Matthew Hoops", "clone2727", "Various engine improvements and code fixes");
 				add_person("Stefano Musumeci", "subr3v", "TinyGL engine support");
-			end_persons();
-		end_section();
+			end_section();
 
-		begin_section("Stark", "stark_contrib");
-			begin_persons();
+			begin_section("Stark");
 				add_person("Bartosz Dudziak", "Snejp", "Various engine improvements and code fixes");
 				add_person("Matthew Hoops", "clone2727", "ADPCM decoder");
 				add_person("Pawe&#322; Ko&#322;odziejski", "aquadran", "Various engine code fixes");
@@ -1539,15 +1584,8 @@ begin_credits("Credits");
 				add_person("Will Thomson", "wlthomson", "Few fixes to engine");
 				add_person("", "Faalagorn", "Few code improvements");
 				add_person("", "orangeforest11", "Few engine improvements");
-			end_persons();
-                end_section();
-
-		begin_section("Hades' Challenge", "hadesch_contrib");
-			begin_persons();
-				add_person("Vladimir Serbinenko/Google", "phcoder", "Engine implementation");
-			end_persons();
+			end_section();
 		end_section();
-
 
 		add_paragraph("And to all the contributors, users, and beta testers we've missed. Thanks!");
 

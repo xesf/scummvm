@@ -29,6 +29,7 @@
 #include "scumm/imuse_digi/dimuse.h"
 #include "scumm/imuse_digi/dimuse_bndmgr.h"
 #include "scumm/imuse_digi/dimuse_track.h"
+#include "scumm/imuse_digi/dimuse_tables.h"
 
 #include "audio/audiostream.h"
 #include "audio/mixer.h"
@@ -79,14 +80,14 @@ int IMuseDigital::allocSlot(int priority) {
 	return trackId;
 }
 
-void IMuseDigital::startSound(int soundId, const char *soundName, int soundType, int volGroupId, Audio::AudioStream *input, int hookId, int volume, int priority, Track *otherTrack) {
+int IMuseDigital::startSound(int soundId, const char *soundName, int soundType, int volGroupId, Audio::AudioStream *input, int hookId, int volume, int priority, Track *otherTrack) {
 	Common::StackLock lock(_mutex, "IMuseDigital::startSound()");
 	debug(5, "IMuseDigital::startSound(%d) - begin func", soundId);
 
 	int l = allocSlot(priority);
 	if (l == -1) {
 		warning("IMuseDigital::startSound() Can't start sound - no free slots");
-		return;
+		return -1;
 	}
 	debug(5, "IMuseDigital::startSound(%d, trackId:%d)", soundId, l);
 
@@ -105,6 +106,24 @@ void IMuseDigital::startSound(int soundId, const char *soundName, int soundType,
 	track->soundType = soundType;
 	track->trackId = l;
 
+	if (_vm->_game.id == GID_CMI) {
+		if (track->soundId / 1000 == 1) { // State
+			for (l = 0; _comiStateMusicTable[l].soundId != -1; l++) {
+				if ((_comiStateMusicTable[l].soundId == track->soundId)) {
+					track->loopShiftType = _comiStateMusicTable[l].shiftLoop;
+					break;
+				}
+			}
+		} else if (track->soundId / 1000 == 2) { // Sequence
+			for (l = 0; _comiSeqMusicTable[l].soundId != -1; l++) {
+				if ((_comiSeqMusicTable[l].soundId == track->soundId)) {
+					track->loopShiftType = _comiSeqMusicTable[l].shiftLoop;
+					break;
+				}
+			}
+		}
+	}
+
 	int bits = 0, freq = 0, channels = 0;
 
 	track->souStreamUsed = (input != 0);
@@ -120,7 +139,7 @@ void IMuseDigital::startSound(int soundId, const char *soundName, int soundType,
 			track->soundDesc = _sound->openSound(soundId, soundName, soundType, volGroupId, 2);
 
 		if (!track->soundDesc)
-			return;
+			return -1;
 
 		track->sndDataExtComp = _sound->isSndDataExtComp(track->soundDesc);
 
@@ -134,6 +153,12 @@ void IMuseDigital::startSound(int soundId, const char *soundName, int soundType,
 				freq = (freq * a->_talkFrequency) / 256;
 				track->pan = a->_talkPan;
 				track->vol = a->_talkVolume * 1000;
+				// Keep track of the current actor in COMI:
+				// This is necessary since pan and volume settings for actors
+				// are often changed AFTER the speech sound is started,
+				// so this is a way to keep track of the changes in real time.
+				if (_vm->_game.id == GID_CMI)
+					track->speakingActor = a;
 			}
 
 			// The volume is set to zero, when using subtitles only setting in COMI
@@ -158,6 +183,8 @@ void IMuseDigital::startSound(int soundId, const char *soundName, int soundType,
 		} else
 			error("IMuseDigital::startSound(): Can't handle %d bit samples", bits);
 
+		track->littleEndian = track->soundDesc->littleEndian;
+
 		int fadeDelay = 30; // Default fade value if not found anywhere else
 
 		if (otherTrack && otherTrack->used && !otherTrack->toBeRemoved) {
@@ -171,7 +198,7 @@ void IMuseDigital::startSound(int soundId, const char *soundName, int soundType,
 				track->regionOffset -= track->regionOffset >= (track->feedSize / _callbackFps) ? (track->feedSize / _callbackFps) : 0;
 			}
 		}
-		if (_vm->_game.id == GID_CMI) {
+		if (_vm->_game.id == GID_CMI && (track->volGroupId == IMUSE_VOLGRP_MUSIC)) {
 			// Fade in the new track
 			track->vol = 0;
 			track->volFadeDelay = fadeDelay;
@@ -185,6 +212,8 @@ void IMuseDigital::startSound(int soundId, const char *soundName, int soundType,
 	}
 
 	track->used = true;
+
+	return track->trackId;
 }
 
 void IMuseDigital::setPriority(int soundId, int priority) {
@@ -204,6 +233,9 @@ void IMuseDigital::setPriority(int soundId, int priority) {
 void IMuseDigital::setVolume(int soundId, int volume) {
 	Common::StackLock lock(_mutex, "IMuseDigital::setVolume()");
 	debug(5, "IMuseDigital::setVolume(%d, %d)", soundId, volume);
+
+	if (_vm->_game.id == GID_CMI && volume > 127)
+		volume = volume / 2;
 
 	for (int l = 0; l < MAX_DIGITAL_TRACKS; l++) {
 		Track *track = _track[l];
@@ -243,6 +275,15 @@ int IMuseDigital::getCurMusicSoundId() {
 void IMuseDigital::setPan(int soundId, int pan) {
 	Common::StackLock lock(_mutex, "IMuseDigital::setPan()");
 	debug(5, "IMuseDigital::setPan(%d, %d)", soundId, pan);
+
+	// Sometimes, COMI scumm scripts try to set pan values in the range 0-255
+	// instead of 0-128. I sincerely have no idea why and what exactly is the 
+	// correct way of handling these cases (does it happen on a sound by sound basis?).
+	// Until someone properly reverse engineers the engine, this fix works fine for
+	// those sounds (e.g. the cannon fire SFX in Part 1 minigame, the bell sound
+	// in Plunder Town).
+	if (_vm->_game.id == GID_CMI && pan > 127)
+		pan = pan / 2;
 
 	for (int l = 0; l < MAX_DIGITAL_TRACKS; l++) {
 		Track *track = _track[l];
@@ -353,9 +394,9 @@ void IMuseDigital::setTrigger(TriggerParams *trigger) {
 }
 
 Track *IMuseDigital::handleComiFadeOut(Track *track, int fadeDelay) {
-	track->volFadeDelay = fadeDelay;
+	track->volFadeDelay = fadeDelay != 0 ? fadeDelay : 60;
 	track->volFadeDest = 0;
-	track->volFadeStep = (track->volFadeDest - track->vol) * 60 * (1000 / _callbackFps) / (1000 * fadeDelay);
+	track->volFadeStep = (track->volFadeDest - track->vol) * 60 * (1000 / _callbackFps) / (1000 * track->volFadeDelay);
 	track->volFadeUsed = true;
 	track->toBeRemoved = true;
 	return track;
@@ -439,8 +480,6 @@ int IMuseDigital::transformVolumeLinearToEqualPow(int volume, int mode) {
 		case 5:  // Logarithmic 3
 			eqPowValue = 1 + 0.7 * log10(mappedValue);
 			break;
-		case 6:  // Half sine curve
-			eqPowValue = (1.0 - cos(mappedValue * M_PI)) / 2.0;
 		default: // Fallback to linear
 			eqPowValue = mappedValue;
 			break;
@@ -482,9 +521,6 @@ int IMuseDigital::transformVolumeEqualPowToLinear(int volume, int mode) {
 			break;
 		case 5:  // Logarithmic 3
 			linearValue = 0.0372759 * pow(M_E, 3.28941 * mappedValue);
-			break;
-		case 6:  // Half sine curve
-			linearValue = (2 * asin(sqrt(mappedValue))) / M_PI; // Ricontrolla
 			break;
 		default: // Fallback to linear
 			linearValue = mappedValue;

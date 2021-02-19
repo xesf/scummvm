@@ -20,12 +20,8 @@
  *
  */
 
-#include "ultima/ultima8/misc/pent_include.h"
 #include "ultima/ultima8/filesys/file_system.h"
-#include "ultima/shared/std/string.h"
 #include "ultima/ultima8/ultima8.h"
-#include "common/system.h"
-#include "common/memstream.h"
 #include "common/savefile.h"
 
 namespace Ultima {
@@ -36,7 +32,7 @@ using Std::string;
 FileSystem *FileSystem::_fileSystem = nullptr;
 
 FileSystem::FileSystem(bool noforced)
-	: _noForcedVPaths(noforced), _allowDataOverride(true) {
+	: _noForcedVPaths(noforced) {
 	debugN(MM_INFO, "Creating FileSystem...\n");
 
 	_fileSystem = this;
@@ -52,15 +48,6 @@ FileSystem::~FileSystem() {
 
 // Open a streaming file as readable. Streamed (0 on failure)
 IDataSource *FileSystem::ReadFile(const string &vfn, bool is_text) {
-	IDataSource *data = checkBuiltinData(vfn, is_text);
-
-	// allow data-override?
-	if (!_allowDataOverride && data)
-		return data;
-
-	if (data)
-		delete data;
-
 	Common::SeekableReadStream *readStream;
 	if (!rawOpen(readStream, vfn))
 		return nullptr;
@@ -96,15 +83,6 @@ bool FileSystem::rawOpen(Common::SeekableReadStream *&in, const string &fname) {
 		delete f;
 	}
 
-	// Handle opening savegames
-	if (name.hasPrefix("@save/")) {
-		int slotNumber = Std::atoi(name.c_str() + 6);
-		Std::string saveFilename = Ultima8Engine::get_instance()->getSaveStateName(slotNumber);
-
-		in = g_system->getSavefileManager()->openForLoading(saveFilename);
-		return in != nullptr;
-	}
-
 	if (!rewrite_virtual_path(name))
 		return false;
 
@@ -129,15 +107,7 @@ bool FileSystem::rawOpen(Common::WriteStream *&out,  const string &fname) {
 	string name = fname;
 	switch_slashes(name);
 
-	if (name.hasPrefix("@save/")) {
-		int slotNumber = Std::atoi(name.c_str() + 6);
-		Std::string saveFilename = Ultima8Engine::get_instance()->getSaveStateName(slotNumber);
-
-		out = g_system->getSavefileManager()->openForSaving(saveFilename, false);
-		return out != nullptr;
-	} else {
-		return false;
-	}
+	return false;
 
 #if 0
 	if (!rewrite_virtual_path(name)) {
@@ -182,7 +152,7 @@ bool FileSystem::base_to_uppercase(string &str, int count) {
 		if (todo <= 0)
 			break;
 
-		*X = static_cast<char>(Std::toUpper(*X));
+		*X = static_cast<char>(toupper(*X));
 	}
 	if (X == str.rend())
 		todo--; // start of pathname counts as separator too
@@ -253,17 +223,6 @@ bool FileSystem::RemoveVirtualPath(const string &vpath) {
 		_virtualPaths.erase(vp);
 		return true;
 	}
-}
-
-IDataSource *FileSystem::checkBuiltinData(const Std::string &vfn, bool is_text) {
-	// Is it a Memory file?
-	Std::map<Common::String, MemoryFile *>::const_iterator mf = _memoryFiles.find(vfn);
-
-	if (mf != _memoryFiles.end())
-		return new IBufferDataSource(mf->_value->_data,
-		                             mf->_value->_len, is_text);
-
-	return nullptr;
 }
 
 bool FileSystem::rewrite_virtual_path(string &vfn) const {

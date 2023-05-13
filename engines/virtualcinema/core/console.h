@@ -27,15 +27,15 @@
 #include "engines/engine.h"
 #include "gui/debugger.h"
 
-#include "agrippa.h"
+#include "virtualcinema/core/vcengine.h"
  
 namespace VirtualCinema {
 
-class AgrippaEngine;
+class VCEngine;
 
 class Console : public GUI::Debugger {
     public:
-        Console(AgrippaEngine *vm) {}
+        Console(VCEngine *vm) {}
         virtual ~Console(void) {}
 };
 

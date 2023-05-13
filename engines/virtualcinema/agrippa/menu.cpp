@@ -20,8 +20,9 @@
 *
 */
 
+#include "virtualcinema/core/eventHandler.h"
+
 #include "menu.h"
-#include "eventHandler.h"
 
 namespace VirtualCinema {
 
@@ -31,18 +32,18 @@ Menu::Menu(AgrippaEngine *vm): _vm(vm) {
 Menu::~Menu() {
 }
 
-bool Menu::handleEvent(const AgrippaEvent &evt) {
+bool Menu::handleEvent(const VCEvent &evt) {
     switch ((int32)evt.type) {
     default:
         break;
 
-    case EVENT_AGRIPPA_MOUNT:
+    case EVENT_VC_MOUNT:
         return mountEvent(evt);
             
-    case EVENT_AGRIPPA_UNMOUNT:
+    case EVENT_VC_UNMOUNT:
         return unmountEvent(evt);
 
-    case EVENT_AGRIPPA_UPDATE:
+    case EVENT_VC_UPDATE:
         return updateEvent(evt);
 
     case Common::EVENT_KEYDOWN:
@@ -57,14 +58,14 @@ bool Menu::handleEvent(const AgrippaEvent &evt) {
     return false;
 }
 
-bool Menu::mountEvent(const AgrippaEvent &evt) {
+bool Menu::mountEvent(const VCEvent &evt) {
     _intro = _vm->getVideoManager()->play("xg/49583.xmv");
     _intro.get()->moveTo(0, 0);
     
     return true;
 }
 
-bool Menu::unmountEvent(const AgrippaEvent &evt) {
+bool Menu::unmountEvent(const VCEvent &evt) {
     return true;
 }
 
@@ -98,7 +99,7 @@ void Menu::mountMenuItems(bool reloaded) {
     }
 }
 
-bool Menu::updateEvent(const AgrippaEvent &evt) {
+bool Menu::updateEvent(const VCEvent &evt) {
     if (!_titleRect.isEmpty()) {
         if (_title.get()->endOfVideo()) {
             mountMenuTitle();
@@ -147,11 +148,11 @@ bool Menu::updateEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-bool Menu::keyEvent(const AgrippaEvent &evt) {
+bool Menu::keyEvent(const VCEvent &evt) {
     return true;
 }
 
-bool Menu::mouseEvent(const AgrippaEvent &evt) {
+bool Menu::mouseEvent(const VCEvent &evt) {
     if (!canInteract) {
         return true;
     }

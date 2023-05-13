@@ -20,8 +20,9 @@
 *
 */
 
+#include "virtualcinema/core/eventHandler.h"
+
 #include "game.h"
-#include "eventHandler.h"
 #include "nodes/decisionNode.h"
 
 namespace VirtualCinema {
@@ -32,18 +33,18 @@ Game::Game(AgrippaEngine *vm): _vm(vm) {
 Game::~Game() {
 }
 
-bool Game::handleEvent(const AgrippaEvent &evt) {
+bool Game::handleEvent(const VCEvent &evt) {
     switch ((int32)evt.type) {
     default:
         break;
 
-    case EVENT_AGRIPPA_MOUNT:
+    case EVENT_VC_MOUNT:
         return mountEvent(evt);
             
-    case EVENT_AGRIPPA_UNMOUNT:
+    case EVENT_VC_UNMOUNT:
         return unmountEvent(evt);
 
-    case EVENT_AGRIPPA_UPDATE:
+    case EVENT_VC_UPDATE:
         return updateEvent(evt);
 
     case Common::EVENT_KEYDOWN:
@@ -58,7 +59,7 @@ bool Game::handleEvent(const AgrippaEvent &evt) {
     return false;
 }
 
-bool Game::mountEvent(const AgrippaEvent &evt) {
+bool Game::mountEvent(const VCEvent &evt) {
     VideoNode* N64421 = new VideoNode(64421, "xv/64421.xmv", "Seattle Office");
     VideoNode* N19812 = new VideoNode(19812, "xv/19812.xmv", "Willmore Entering Office");
     DecisionNode* N25683 = new DecisionNode(25683, "xn/25683.xmv", "Emotion Decision - Willmore Entering Office");
@@ -74,11 +75,11 @@ bool Game::mountEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-bool Game::unmountEvent(const AgrippaEvent &evt) {
+bool Game::unmountEvent(const VCEvent &evt) {
     return true;
 }
 
-bool Game::updateEvent(const AgrippaEvent &evt) {
+bool Game::updateEvent(const VCEvent &evt) {
     if (_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->updateMovies();
     }
@@ -101,11 +102,11 @@ bool Game::updateEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-bool Game::keyEvent(const AgrippaEvent &evt) {
+bool Game::keyEvent(const VCEvent &evt) {
     return true;
 }
 
-bool Game::mouseEvent(const AgrippaEvent &evt) {
+bool Game::mouseEvent(const VCEvent &evt) {
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:
     case Common::EVENT_RBUTTONDOWN:

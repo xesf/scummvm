@@ -27,10 +27,8 @@
 #include "engines/engine.h"
 #include "gui/debugger.h"
 
+#include "virtualcinema/core/vcengine.h"
 
-#include "console.h"
-#include "video.h"
-#include "eventHandler.h"
 #include "intro.h"
 #include "menu.h"
 #include "game.h"
@@ -38,42 +36,20 @@
 #include "nodes/node.h"
  
 namespace VirtualCinema {
- 
-class Console;
-class VideoManager;
+
 class Intro;
 class Menu;
 class Game;
 
-enum {
-    kDebugLevelMain = 1 << 0,
-    kDebugLevelResources = 1 << 1,
-};
-
-class AgrippaEngine : public Engine {
+class AgrippaEngine : public VCEngine {
 public:
     AgrippaEngine(OSystem *syst);
     ~AgrippaEngine();
 
-    virtual Common::Error run();
-    virtual Common::Error handleEvents();
-    
-    void switchEventHandler(EventHandler *handler);
-    void notifyEvent(AgrippaEventType type, int32 param1, int32 param2);
-    
-    VideoManager* getVideoManager() { return _video; };
     Menu* getMenu() { return _menu; };
     Game* getGame() { return _game; };
-    
-    void fillScreen(uint32 col);
  
 private:
-    Common::RandomSource *_rnd;
-    Console *_console;
-
-    EventHandler *_handler;
-    VideoManager * _video;
-
     Intro *_intro;
     Menu *_menu;
     Game *_game;

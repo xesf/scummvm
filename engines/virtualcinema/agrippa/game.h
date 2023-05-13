@@ -23,26 +23,29 @@
 #ifndef VIRTUALCINEMA_GAME_H
 #define VIRTUALCINEMA_GAME_H
 
-#include "nodes/videoNode.h"
-#include "eventHandler.h"
+#include "virtualcinema/core/eventHandler.h"
+
 #include "agrippa.h"
+#include "nodes/videoNode.h"
 
 namespace VirtualCinema {
+
+class AgrippaEngine;
 
 class Game : public EventHandler {
 public:
     Game(AgrippaEngine *vm);
     ~Game();
     
-    bool handleEvent(const AgrippaEvent &evt);
+    bool handleEvent(const VCEvent &evt);
 
 protected:
-    bool mountEvent(const AgrippaEvent &evt);
-    bool unmountEvent(const AgrippaEvent &evt);
-    bool updateEvent(const AgrippaEvent &evt);
-    bool keyEvent(const AgrippaEvent &evt);
-    bool mouseEvent(const AgrippaEvent &evt);
-    bool cursorEvent(const AgrippaEvent &evt) { return true; };
+    bool mountEvent(const VCEvent &evt);
+    bool unmountEvent(const VCEvent &evt);
+    bool updateEvent(const VCEvent &evt);
+    bool keyEvent(const VCEvent &evt);
+    bool mouseEvent(const VCEvent &evt);
+    bool cursorEvent(const VCEvent &evt) { return true; };
     
 private:
     AgrippaEngine *_vm;

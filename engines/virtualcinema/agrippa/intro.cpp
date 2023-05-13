@@ -20,8 +20,9 @@
 *
 */
 
+#include "virtualcinema/core/eventHandler.h"
+
 #include "intro.h"
-#include "eventHandler.h"
 
 namespace VirtualCinema {
 
@@ -44,18 +45,18 @@ VideoNode* Intro::getIntroNodes() {
     return N56003;
 }
 
-bool Intro::handleEvent(const AgrippaEvent &evt) {
+bool Intro::handleEvent(const VCEvent &evt) {
     switch ((int32)evt.type) {
     default:
         break;
 
-    case EVENT_AGRIPPA_MOUNT:
+    case EVENT_VC_MOUNT:
         return mountEvent(evt);
             
-    case EVENT_AGRIPPA_UNMOUNT:
+    case EVENT_VC_UNMOUNT:
         return unmountEvent(evt);
 
-    case EVENT_AGRIPPA_UPDATE:
+    case EVENT_VC_UPDATE:
         return updateEvent(evt);
 
     case Common::EVENT_KEYDOWN:
@@ -70,18 +71,18 @@ bool Intro::handleEvent(const AgrippaEvent &evt) {
     return false;
 }
 
-bool Intro::mountEvent(const AgrippaEvent &evt) {
+bool Intro::mountEvent(const VCEvent &evt) {
     _currentNode = getIntroNodes();
     _vm->getVideoManager()->play(_currentNode->getPath());
 
     return true;
 }
 
-bool Intro::unmountEvent(const AgrippaEvent &evt) {
+bool Intro::unmountEvent(const VCEvent &evt) {
     return true;
 }
 
-bool Intro::updateEvent(const AgrippaEvent &evt) {
+bool Intro::updateEvent(const VCEvent &evt) {
     if (_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->updateMovies();
     }
@@ -107,11 +108,11 @@ bool Intro::updateEvent(const AgrippaEvent &evt) {
     return true;
 }
 
-bool Intro::keyEvent(const AgrippaEvent &evt) {
+bool Intro::keyEvent(const VCEvent &evt) {
     return true;
 }
 
-bool Intro::mouseEvent(const AgrippaEvent &evt) {
+bool Intro::mouseEvent(const VCEvent &evt) {
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:
     case Common::EVENT_RBUTTONDOWN:

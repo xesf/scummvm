@@ -28,27 +28,27 @@
 
 namespace VirtualCinema {
 
-enum AgrippaEventType {
-    EVENT_AGRIPPA_NONE     = 1000,
+enum VCEventType {
+    EVENT_VC_NONE     = 1000,
     
-    EVENT_AGRIPPA_MOUNT    = 1001,
-    EVENT_AGRIPPA_UPDATE   = 1002,
-    EVENT_AGRIPPA_UNMOUNT  = 1003,
-    EVENT_AGRIPPA_CURSOR   = 1004,
-    EVENT_AGRIPPA_SUBTITLE = 1005,
-    EVENT_AGRIPPA_CREDITS  = 1006,
-    EVENT_AGRIPPA_LOCATION = 1007,
+    EVENT_VC_MOUNT    = 1001,
+    EVENT_VC_UPDATE   = 1002,
+    EVENT_VC_UNMOUNT  = 1003,
+    EVENT_VC_CURSOR   = 1004,
+    EVENT_VC_SUBTITLE = 1005,
+    EVENT_VC_CREDITS  = 1006,
+    EVENT_VC_LOCATION = 1007,
 
-    EVENT_AGRIPPA_ACTIVATE = 1999
+    EVENT_VC_ACTIVATE = 1999
 };
 
-struct AgrippaEvent : public Common::Event {
-    AgrippaEvent() : Event() {
+struct VCEvent : public Common::Event {
+    VCEvent() : Event() {
         param1 = 0;
         param2 = 0;
     }
 
-    AgrippaEvent(AgrippaEventType msgType, int32 p1 = 0, int32 p2 = 0) : Event() {
+    VCEvent(VCEventType msgType, int32 p1 = 0, int32 p2 = 0) : Event() {
         type = (Common::EventType)msgType;
         param1 = p1;
         param2 = p2;
@@ -62,16 +62,16 @@ class EventHandler {
 public:
     virtual ~EventHandler() {}
 
-    virtual bool handleEvent(const AgrippaEvent &ev) = 0;
+    virtual bool handleEvent(const VCEvent &ev) = 0;
     
-    virtual bool mountEvent(const AgrippaEvent &evt) = 0;
-    virtual bool unmountEvent(const AgrippaEvent &evt) = 0;
+    virtual bool mountEvent(const VCEvent &evt) = 0;
+    virtual bool unmountEvent(const VCEvent &evt) = 0;
     
-    virtual bool updateEvent(const AgrippaEvent &evt) = 0;
-    virtual bool keyEvent(const AgrippaEvent &evt) = 0;
-    virtual bool mouseEvent(const AgrippaEvent &evt) = 0;
+    virtual bool updateEvent(const VCEvent &evt) = 0;
+    virtual bool keyEvent(const VCEvent &evt) = 0;
+    virtual bool mouseEvent(const VCEvent &evt) = 0;
     
-    virtual bool cursorEvent(const AgrippaEvent &evt) = 0;
+    virtual bool cursorEvent(const VCEvent &evt) = 0;
 };
 
 } // End of namespace VirtualCinema

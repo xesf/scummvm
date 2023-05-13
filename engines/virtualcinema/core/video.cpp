@@ -32,8 +32,8 @@
 #include "video/qt_decoder.h"
 #include "video/qt_data.h"
 
-#include "virtualcinema/agrippa/agrippa.h"
-#include "virtualcinema/agrippa/video.h"
+#include "virtualcinema/core/vcengine.h"
+#include "virtualcinema/core/video.h"
 
 namespace VirtualCinema {
 
@@ -163,7 +163,7 @@ void VideoEntry::setEndTime(const Audio::Timestamp &endTime) {
 
 // ---------------------------------------------------------------------------------
 
-VideoManager::VideoManager(AgrippaEngine *vm) : _vm(vm) {
+VideoManager::VideoManager(VCEngine *vm) : _vm(vm) {
 }
 
 VideoManager::~VideoManager() {

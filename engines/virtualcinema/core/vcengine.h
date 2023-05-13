@@ -20,39 +20,50 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_INTRO_H
-#define VIRTUALCINEMA_INTRO_H
+#ifndef VIRTUALCINEMA_VCENGINE_H
+#define VIRTUALCINEMA_VCENGINE_H
+ 
+#include "common/random.h"
+#include "engines/engine.h"
+#include "gui/debugger.h"
+
 
 #include "virtualcinema/core/eventHandler.h"
-
-#include "agrippa.h"
-#include "nodes/videoNode.h"
-
+#include "virtualcinema/core/console.h"
+#include "virtualcinema/core/video.h"
+ 
 namespace VirtualCinema {
+ 
+class Console;
+class VideoManager;
+class EventHandler;
 
-class AgrippaEngine;
+enum {
+    kDebugLevelMain = 1 << 0,
+    kDebugLevelResources = 1 << 1,
+};
 
-class Intro : public EventHandler {
+class VCEngine : public Engine {
 public:
-    Intro(AgrippaEngine *vm);
-    ~Intro();
-    
-    bool handleEvent(const VCEvent &evt);
+    VCEngine(OSystem *syst);
+    ~VCEngine();
 
+    virtual Common::Error run();
+    virtual Common::Error handleEvents();
+    
+    void switchEventHandler(EventHandler *handler);
+    void notifyEvent(VCEventType type, int32 param1, int32 param2);
+    
+    VideoManager* getVideoManager() { return _video; };
+    
+    void fillScreen(uint32 col);
+ 
 protected:
-    bool mountEvent(const VCEvent &evt);
-    bool unmountEvent(const VCEvent &evt);
-    bool updateEvent(const VCEvent &evt);
-    bool keyEvent(const VCEvent &evt);
-    bool mouseEvent(const VCEvent &evt);
-    bool cursorEvent(const VCEvent &evt) { return true; };
-    
-private:
-    AgrippaEngine *_vm;
-    bool _skip = false;
-    
-    VideoNode *_currentNode;
-    VideoNode* getIntroNodes();
+    Common::RandomSource *_rnd;
+    Console *_console;
+
+    EventHandler *_handler;
+    VideoManager * _video;
 };
 
 } // End of namespace VirtualCinema

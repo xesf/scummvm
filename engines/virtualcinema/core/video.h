@@ -32,15 +32,13 @@
 #include "common/rational.h"
 #include "graphics/pixelformat.h"
 
-#include "agrippa.h"
-
 namespace Video {
 class VideoDecoder;
 }
 
 namespace VirtualCinema {
 
-class AgrippaEngine;
+class VCEngine;
 
 /**
  * A video monitored by the VideoManager
@@ -231,7 +229,7 @@ private:
     // Non-changing variables
     Video::VideoDecoder *_video;
     Common::String _fileName; // External video files
-    int _id;                  // Internal Agrippa files
+    int _id;                  // Internal engine files
 
     // Playback variables
     uint16 _x;
@@ -245,7 +243,7 @@ typedef Common::SharedPtr<VideoEntry> VideoEntryPtr;
 
 class VideoManager {
 public:
-    explicit VideoManager(AgrippaEngine *vm);
+    explicit VideoManager(VCEngine *vm);
     virtual ~VideoManager();
 
     // Generic movie functions
@@ -268,7 +266,7 @@ public:
     void removeEntry(const VideoEntryPtr &video);
 
 protected:
-    AgrippaEngine *_vm;
+    VCEngine *_vm;
 
     // Keep tabs on any videos playing
     typedef Common::List<VideoEntryPtr> VideoList;

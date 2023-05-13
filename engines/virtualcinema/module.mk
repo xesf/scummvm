@@ -6,7 +6,8 @@ MODULE_OBJS = \
     agrippa/game.o \
     agrippa/intro.o \
     agrippa/menu.o \
-    agrippa/video.o \
+    core/vcengine.o \
+    core/video.o \
 	console.o \
 	metaengine.o
 

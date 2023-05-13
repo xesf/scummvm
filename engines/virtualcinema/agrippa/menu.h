@@ -23,26 +23,29 @@
 #ifndef VIRTUALCINEMA_MENU_H
 #define VIRTUALCINEMA_MENU_H
 
-#include "eventHandler.h"
+#include "virtualcinema/core/eventHandler.h"
+#include "virtualcinema/core/video.h"
+
 #include "agrippa.h"
-#include "video.h"
 
 namespace VirtualCinema {
+
+class AgrippaEngine;
 
 class Menu : public EventHandler {
 public:
     Menu(AgrippaEngine *vm);
     ~Menu();
     
-    bool handleEvent(const AgrippaEvent &evt);
+    bool handleEvent(const VCEvent &evt);
 
 protected:
-    bool mountEvent(const AgrippaEvent &evt);
-    bool unmountEvent(const AgrippaEvent &evt);
-    bool updateEvent(const AgrippaEvent &evt);
-    bool keyEvent(const AgrippaEvent &evt);
-    bool mouseEvent(const AgrippaEvent &evt);
-    bool cursorEvent(const AgrippaEvent &evt) { return true; };
+    bool mountEvent(const VCEvent &evt);
+    bool unmountEvent(const VCEvent &evt);
+    bool updateEvent(const VCEvent &evt);
+    bool keyEvent(const VCEvent &evt);
+    bool mouseEvent(const VCEvent &evt);
+    bool cursorEvent(const VCEvent &evt) { return true; };
     
 private:
     AgrippaEngine *_vm;
@@ -52,7 +55,7 @@ private:
     VideoEntryPtr _background;
     VideoEntryPtr _menuItems;
     
-    bool _titlePlaying = false;
+    // bool _titlePlaying = false;
     Common::Rect _titleRect;
     
     int _selectedMenuItem = -1;

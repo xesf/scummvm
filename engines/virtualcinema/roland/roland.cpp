@@ -21,7 +21,7 @@
  */
 
 #include "common/scummsys.h"
-
+ 
 #include "common/config-manager.h"
 #include "common/debug.h"
 #include "common/debug-channels.h"
@@ -38,42 +38,43 @@
 #include "virtualcinema/core/console.h"
 #include "virtualcinema/core/video.h"
 
-#include "agrippa.h"
-#include "intro.h"
-#include "nodes/node.h"
+#include "roland.h"
 
+// #include "intro.h"
+
+// #include "nodes/node.h"
+ 
 namespace VirtualCinema {
-
-AgrippaEngine::AgrippaEngine(OSystem *syst)
+ 
+RolandEngine::RolandEngine(OSystem *syst)
     : VCEngine(syst) {
-     
+
     const Common::FSNode gameDataDir(ConfMan.get("path"));
-    SearchMan.addSubDirectoryMatching(gameDataDir, "xg");
-    SearchMan.addSubDirectoryMatching(gameDataDir, "xn");
-    SearchMan.addSubDirectoryMatching(gameDataDir, "xs");
-    SearchMan.addSubDirectoryMatching(gameDataDir, "xt");
-    SearchMan.addSubDirectoryMatching(gameDataDir, "xv");
+    SearchMan.addSubDirectoryMatching(gameDataDir, "hyper");
+    SearchMan.addSubDirectoryMatching(gameDataDir, "menus");
+    SearchMan.addSubDirectoryMatching(gameDataDir, "qt");
+    SearchMan.addSubDirectoryMatching(gameDataDir, "screens");
 
     // Common debug channels
     // DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
     // DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
 
-    _intro = new Intro(this);
-    _menu = new Menu(this);
-    _game = new Game(this);
+    // _intro = new Intro(this);
+    // _menu = new Menu(this);
+    // _game = new Game(this);
 
-    _handler = _intro;
+    // _handler = _intro;
 
-    debug("AgrippaEngine::AgrippaEngine");
+    debug("RolandEngine::RolandEngine");
 }
-
-AgrippaEngine::~AgrippaEngine() {
-    debug("AgrippaEngine::~AgrippaEngine");
+ 
+RolandEngine::~RolandEngine() {
+    debug("RolandEngine::~RolandEngine");
     _handler = NULL;
 
-    delete _game;
-    delete _menu;
-    delete _intro;
+    // delete _game;
+    // delete _menu;
+    // delete _intro;
 }
-
+ 
 } // End of namespace VirtualCinema

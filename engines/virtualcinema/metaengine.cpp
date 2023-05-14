@@ -25,6 +25,7 @@
 #include "virtualcinema/detection.h"
 
 #include "virtualcinema/x-files/agrippa.h"
+#include "virtualcinema/roland/roland.h"
 
 namespace VirtualCinema {
 
@@ -60,6 +61,9 @@ Common::Error VirtualCinemaMetaEngine::createInstance(OSystem *syst, Engine **en
         case VirtualCinema::GAME_AGRIPPA:
             *engine = new VirtualCinema::AgrippaEngine(syst);
             break;
+		case VirtualCinema::GAME_ROLAND:
+			*engine = new VirtualCinema::RolandEngine(syst);
+			break;
         default:
             error("Game not implemented");
             break;

@@ -40,8 +40,8 @@ const DebugChannelDef VirtualCinemaMetaEngineDetection::debugFlagList[] = {
 
 VirtualCinemaMetaEngineDetection::VirtualCinemaMetaEngineDetection() : AdvancedMetaEngineDetection(VirtualCinema::gameDescriptions,
 	sizeof(VirtualCinema::VirtualCinemaGameDescription), VirtualCinema::VirtualCinemaGames) {
-	static const char *const DIRECTORY_GLOBS[3] = { "xv", "vob", 0 };
-    _maxScanDepth = 3;
+	static const char *const DIRECTORY_GLOBS[4] = { "xv", "vob", "qt", 0 };
+    _maxScanDepth = 4;
     _directoryGlobs = DIRECTORY_GLOBS;
 }
 

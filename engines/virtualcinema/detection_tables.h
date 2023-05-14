@@ -36,6 +36,20 @@ const PlainGameDescriptor VirtualCinemaGames[] = {
 
 const VirtualCinemaGameDescription gameDescriptions[] = {
 	{
+		// The Madness of Roland EN US
+		{
+			"roland",
+			nullptr,
+			AD_ENTRY1s("authnote.mov", "1143684de873b7c32c46b8b69579ac47", 19005022),
+			Common::EN_USA,
+			Common::kPlatformWindows,
+			ADGF_TESTING | ADGF_CD,
+			GUI_OPTIONS_ROLAND
+		},
+		GAME_ROLAND
+	},
+
+	{
 		// The X-Files Game EN US
 		{
 			"agrippa",

@@ -20,10 +20,10 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_INTRO_H
-#define VIRTUALCINEMA_INTRO_H
+#ifndef VIRTUALCINEMA_GAME_H
+#define VIRTUALCINEMA_GAME_H
 
-#include "virtualcinema/core/eventHandler.h"
+#include "virtualcinema/core/scene.h"
 
 #include "agrippa.h"
 #include "nodes/videoNode.h"
@@ -32,27 +32,22 @@ namespace VirtualCinema {
 
 class AgrippaEngine;
 
-class Intro : public EventHandler {
+class Game : public Scene {
 public:
-    Intro(AgrippaEngine *vm);
-    ~Intro();
-    
-    bool handleEvent(const VCEvent &evt);
+    Game(AgrippaEngine *vm);
+    ~Game();
 
 protected:
-    bool mountEvent(const VCEvent &evt);
-    bool unmountEvent(const VCEvent &evt);
-    bool updateEvent(const VCEvent &evt);
-    bool keyEvent(const VCEvent &evt);
-    bool mouseEvent(const VCEvent &evt);
-    bool cursorEvent(const VCEvent &evt) { return true; };
+    bool mountEvent(const VCEvent &evt) override;
+    bool unmountEvent(const VCEvent &evt) override;
+    bool updateEvent(const VCEvent &evt) override;
+    bool keyEvent(const VCEvent &evt) override;
+    bool mouseEvent(const VCEvent &evt) override;
     
 private:
     AgrippaEngine *_vm;
-    bool _skip = false;
     
-    VideoNode *_currentNode;
-    VideoNode* getIntroNodes();
+    Node *_currentNode;
 };
 
 } // End of namespace VirtualCinema

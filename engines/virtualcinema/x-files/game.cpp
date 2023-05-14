@@ -33,32 +33,6 @@ Game::Game(AgrippaEngine *vm): _vm(vm) {
 Game::~Game() {
 }
 
-bool Game::handleEvent(const VCEvent &evt) {
-    switch ((int32)evt.type) {
-    default:
-        break;
-
-    case EVENT_VC_MOUNT:
-        return mountEvent(evt);
-            
-    case EVENT_VC_UNMOUNT:
-        return unmountEvent(evt);
-
-    case EVENT_VC_UPDATE:
-        return updateEvent(evt);
-
-    case Common::EVENT_KEYDOWN:
-        return keyEvent(evt);
-
-    case Common::EVENT_LBUTTONDOWN:
-    case Common::EVENT_RBUTTONDOWN:
-        return mouseEvent(evt);
-
-    }
-
-    return false;
-}
-
 bool Game::mountEvent(const VCEvent &evt) {
     VideoNode* N64421 = new VideoNode(64421, "xv/64421.xmv", "Seattle Office");
     VideoNode* N19812 = new VideoNode(19812, "xv/19812.xmv", "Willmore Entering Office");

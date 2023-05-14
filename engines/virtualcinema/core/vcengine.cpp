@@ -43,12 +43,12 @@ VCEngine::VCEngine(OSystem *syst)
     _rnd = new Common::RandomSource("VirtualCinema");
 
     Graphics::PixelFormat pixelFormat = _system->getSupportedFormats().front();
+    CursorMan.showMouse(true);
 
     initGraphics(640, 480, &pixelFormat);
  
     _console = new Console(this);
     _video = new VideoManager(this);
-    CursorMan.showMouse(true);
 }
  
 VCEngine::~VCEngine() {

@@ -1,11 +1,11 @@
 MODULE := engines/virtualcinema
 
 MODULE_OBJS = \
-	agrippa/nodes/node.o \
-    agrippa/agrippa.o \
-    agrippa/game.o \
-    agrippa/intro.o \
-    agrippa/menu.o \
+    x-files/agrippa.o \
+    x-files/game.o \
+    x-files/intro.o \
+    x-files/menu.o \
+    core/scene.o \
     core/vcengine.o \
     core/video.o \
 	console.o \

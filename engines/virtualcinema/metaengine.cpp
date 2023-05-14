@@ -24,7 +24,7 @@
 #include "virtualcinema/metaengine.h"
 #include "virtualcinema/detection.h"
 
-#include "virtualcinema/agrippa/agrippa.h"
+#include "virtualcinema/x-files/agrippa.h"
 
 namespace VirtualCinema {
 

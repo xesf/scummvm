@@ -40,7 +40,7 @@ struct Node {
 public:
     Node(int type, int id, Common::String path, Common::String desc):
         _type(type), _id(id), _path(path), _desc(desc) {}
-    ~Node() {};
+    ~Node() { };
     
     int getId() { return _id; };
     int getType() { return _type; };

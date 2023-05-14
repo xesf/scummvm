@@ -35,11 +35,14 @@ enum VCEventType {
     EVENT_VC_UPDATE   = 1002,
     EVENT_VC_UNMOUNT  = 1003,
     EVENT_VC_CURSOR   = 1004,
-    EVENT_VC_SUBTITLE = 1005,
-    EVENT_VC_CREDITS  = 1006,
-    EVENT_VC_LOCATION = 1007,
-
-    EVENT_VC_ACTIVATE = 1999
+    EVENT_VC_ACTIVATE = 1099
+    // 1100-1199 reserved for Roland
+    // 1200-1299 reserved for QGate
+    // 1300-1399 reserved for Vortex
+    // 1400-1499 reserved for X-Files
+    // EVENT_VC_SUBTITLE = 1405,
+    // EVENT_VC_CREDITS  = 1406,
+    // EVENT_VC_LOCATION = 1407,
 };
 
 struct VCEvent : public Common::Event {

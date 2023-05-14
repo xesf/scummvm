@@ -32,32 +32,6 @@ Menu::Menu(AgrippaEngine *vm): _vm(vm) {
 Menu::~Menu() {
 }
 
-bool Menu::handleEvent(const VCEvent &evt) {
-    switch ((int32)evt.type) {
-    default:
-        break;
-
-    case EVENT_VC_MOUNT:
-        return mountEvent(evt);
-            
-    case EVENT_VC_UNMOUNT:
-        return unmountEvent(evt);
-
-    case EVENT_VC_UPDATE:
-        return updateEvent(evt);
-
-    case Common::EVENT_KEYDOWN:
-        return keyEvent(evt);
-
-    case Common::EVENT_MOUSEMOVE:
-    case Common::EVENT_LBUTTONDOWN:
-        return mouseEvent(evt);
-
-    }
-
-    return false;
-}
-
 bool Menu::mountEvent(const VCEvent &evt) {
     _intro = _vm->getVideoManager()->play("xg/49583.xmv");
     _intro.get()->moveTo(0, 0);
@@ -74,10 +48,11 @@ void Menu::mountMenu() {
     _background.get()->moveTo(61, 103);
     _background.get()->setLooping(true);
     
-    mountMenuItems(false);
+    mountMenuItems();
     mountMenuTitle();
     
     _titleRect = _title.get()->getRect();
+    _menuMounted = true;
 }
 
 void Menu::mountMenuTitle() {
@@ -86,37 +61,31 @@ void Menu::mountMenuTitle() {
     _title.get()->stop();
 }
 
-//const Audio::Timestamp &startTime, const Audio::Timestamp &endTime
-void Menu::mountMenuItems(bool reloaded) {
+void Menu::mountMenuItems() {
     _menuItems = _vm->getVideoManager()->play("xg/49587.xmv");
     _menuItems.get()->moveTo(640 - 168, 0);
-    if (reloaded) {
-        _menuItems.get()->setBounds(Audio::Timestamp(5000, 600), _menuItems.get()->getDuration());
-        _menuItems.get()->seek(Audio::Timestamp(5000, 600));
-        _menuItems.get()->stop();
-    } else {
-        _menuItems.get()->setEndTime(Audio::Timestamp(5000, 600));
-    }
+    _menuItems.get()->setEndTime(Audio::Timestamp(5000, 600));
 }
 
 bool Menu::updateEvent(const VCEvent &evt) {
+    if (!_menuMounted && _intro.get()->endOfVideo()) {
+        mountMenu();
+    }
     if (!_titleRect.isEmpty()) {
         if (_title.get()->endOfVideo()) {
-            mountMenuTitle();
+            _title.get()->seek(Audio::Timestamp(0, 600));
+            _title.get()->stop();
         }
         if (_menuItems.get()->endOfVideo()) {
-            mountMenuItems(true);
-            canInteract = true;
+            _menuItems.get()->setBounds(Audio::Timestamp(5000, 600), _menuItems.get()->getDuration());
+            _menuItems.get()->seek(Audio::Timestamp(5000, 600));
+            _menuItems.get()->stop();
+            _canInteract = true;
         }
     }
     
     if (_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->updateMovies();
-    }
-    
-    if (!_vm->getVideoManager()->isVideoPlaying()) {
-        _vm->getVideoManager()->stopVideos();
-        mountMenu();
     }
     
     switch (_selectedMenuItem) {
@@ -148,12 +117,8 @@ bool Menu::updateEvent(const VCEvent &evt) {
     return true;
 }
 
-bool Menu::keyEvent(const VCEvent &evt) {
-    return true;
-}
-
 bool Menu::mouseEvent(const VCEvent &evt) {
-    if (!canInteract) {
+    if (!_canInteract) {
         return true;
     }
     switch (evt.type) {
@@ -171,7 +136,6 @@ bool Menu::mouseEvent(const VCEvent &evt) {
                 _menuItems.get()->start();
             }
         }
-                
         // debug("%hd %hd", evt.mouse.x, evt.mouse.y);
         break;
     case Common::EVENT_LBUTTONDOWN:

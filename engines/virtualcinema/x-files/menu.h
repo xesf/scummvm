@@ -23,7 +23,7 @@
 #ifndef VIRTUALCINEMA_MENU_H
 #define VIRTUALCINEMA_MENU_H
 
-#include "virtualcinema/core/eventHandler.h"
+#include "virtualcinema/core/scene.h"
 #include "virtualcinema/core/video.h"
 
 #include "agrippa.h"
@@ -32,24 +32,20 @@ namespace VirtualCinema {
 
 class AgrippaEngine;
 
-class Menu : public EventHandler {
+class Menu : public Scene {
 public:
     Menu(AgrippaEngine *vm);
     ~Menu();
-    
-    bool handleEvent(const VCEvent &evt);
 
 protected:
-    bool mountEvent(const VCEvent &evt);
-    bool unmountEvent(const VCEvent &evt);
-    bool updateEvent(const VCEvent &evt);
-    bool keyEvent(const VCEvent &evt);
-    bool mouseEvent(const VCEvent &evt);
-    bool cursorEvent(const VCEvent &evt) { return true; };
+    bool mountEvent(const VCEvent &evt) override;
+    bool unmountEvent(const VCEvent &evt) override;
+    bool updateEvent(const VCEvent &evt) override;
+    bool mouseEvent(const VCEvent &evt) override;
     
 private:
     AgrippaEngine *_vm;
-    
+
     VideoEntryPtr _intro;
     VideoEntryPtr _title;
     VideoEntryPtr _background;
@@ -59,11 +55,12 @@ private:
     Common::Rect _titleRect;
     
     int _selectedMenuItem = -1;
-    bool canInteract = false;
+    bool _canInteract = false;
+    bool _menuMounted = false;
     
     void mountMenu();
     void mountMenuTitle();
-    void mountMenuItems(bool reloaded);
+    void mountMenuItems();
     
     enum {
         kMenuItemNew      = 0,
@@ -76,26 +73,16 @@ private:
     };
     
     const Common::Rect _menuItemsRects[7] = {
-        Common::Rect( 472, 30,  640, 70),
         Common::Rect( 472, 70,  640, 120),
         Common::Rect( 472, 120, 640, 170),
         Common::Rect( 472, 170, 640, 220),
         Common::Rect( 472, 220, 640, 270),
         Common::Rect( 472, 270, 640, 320),
         Common::Rect( 472, 320, 640, 370),
-        // Common::Rect( 472, 370, 640, 420),
+        Common::Rect( 472, 370, 640, 420),
     };
     
     const Audio::Timestamp _menuItemsBoundStart[7] = {
-        Audio::Timestamp(5000,  600),
-        Audio::Timestamp(5900,  600),
-        Audio::Timestamp(6800,  600),
-        Audio::Timestamp(7700,  600),
-        Audio::Timestamp(8600,  600),
-        Audio::Timestamp(9500, 600),
-        Audio::Timestamp(10400, 600),
-    };
-    const Audio::Timestamp _menuItemsBoundEnd[7] = {
         Audio::Timestamp(5900,  600),
         Audio::Timestamp(6800,  600),
         Audio::Timestamp(7700,  600),
@@ -103,6 +90,15 @@ private:
         Audio::Timestamp(9500, 600),
         Audio::Timestamp(10400, 600),
         Audio::Timestamp(11500, 600),
+    };
+    const Audio::Timestamp _menuItemsBoundEnd[7] = {
+        Audio::Timestamp(6800,  600),
+        Audio::Timestamp(7700,  600),
+        Audio::Timestamp(8600,  600),
+        Audio::Timestamp(9500, 600),
+        Audio::Timestamp(10400, 600),
+        Audio::Timestamp(11500, 600),
+        Audio::Timestamp(12400, 600),
     };
 };
 

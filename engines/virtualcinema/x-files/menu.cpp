@@ -40,6 +40,13 @@ bool Menu::mountEvent(const VCEvent &evt) {
 }
 
 bool Menu::unmountEvent(const VCEvent &evt) {
+    // _vm->getVideoManager()->stopVideos();
+    // _vm->fillScreen(0);
+
+    // _background.get()->close();
+    // _title.get()->close();
+    // _menuItems.get()->close();
+
     return true;
 }
 
@@ -69,6 +76,7 @@ void Menu::mountMenuItems() {
 
 bool Menu::updateEvent(const VCEvent &evt) {
     if (!_menuMounted && _intro.get()->endOfVideo()) {
+        _intro.get()->close();
         mountMenu();
     }
     if (!_titleRect.isEmpty()) {

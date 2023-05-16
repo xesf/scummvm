@@ -58,22 +58,19 @@ AgrippaEngine::AgrippaEngine(OSystem *syst)
     // DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
     // DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
 
-    _intro = new Intro(this);
     _menu = new Menu(this);
     _game = new Game(this);
 
-    _handler = _intro;
+    _handler = new Intro(this);
 
     debug("AgrippaEngine::AgrippaEngine");
 }
 
 AgrippaEngine::~AgrippaEngine() {
     debug("AgrippaEngine::~AgrippaEngine");
-    _handler = NULL;
 
     delete _game;
     delete _menu;
-    delete _intro;
 }
 
 } // End of namespace VirtualCinema

@@ -37,7 +37,6 @@
  
 namespace VirtualCinema {
 
-class Intro;
 class Menu;
 class Game;
 
@@ -50,7 +49,6 @@ public:
     Game* getGame() { return _game; };
  
 private:
-    Intro *_intro;
     Menu *_menu;
     Game *_game;
 };

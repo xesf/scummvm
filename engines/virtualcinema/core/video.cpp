@@ -188,6 +188,7 @@ void VideoManager::stopVideos() {
 }
 
 VideoEntryPtr VideoManager::play(const Common::String &fileName) {
+    debug("Playing video: %s", fileName.c_str());
     VideoEntryPtr ptr = openFile(fileName);
     ptr->center();
     if (!ptr)

@@ -52,7 +52,6 @@ VCEngine::VCEngine(OSystem *syst)
 }
  
 VCEngine::~VCEngine() {
-    _handler = NULL;
     delete _rnd;
 }
 
@@ -70,6 +69,11 @@ Common::Error VCEngine::run() {
 
     while (!shouldQuit()) {
         handleEvents();
+    }
+
+    if (_handler) {
+        VCEvent deinit(EVENT_VC_UNMOUNT);
+        _handler->handleEvent(deinit);
     }
 
     return Common::kNoError;
@@ -131,6 +135,7 @@ void VCEngine::switchEventHandler(EventHandler *handler) {
     if (_handler != NULL) {
         VCEvent deinit(EVENT_VC_UNMOUNT);
         _handler->handleEvent(deinit);
+        delete _handler;
     }
 
     // TODO in-game menu

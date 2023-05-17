@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.8.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2023-05-10 22:03+0000\n"
-"PO-Revision-Date: 2023-05-06 06:12+0000\n"
+"POT-Creation-Date: 2023-05-15 10:43+0000\n"
+"PO-Revision-Date: 2023-05-15 07:07+0000\n"
 "Last-Translator: Purple T <ZEONK@hotmail.com>\n"
 "Language-Team: French <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/fr/>\n"
@@ -66,7 +66,8 @@ msgstr "Remonter"
 #: gui/saveload-dialog.cpp:455 gui/saveload-dialog.cpp:526
 #: gui/saveload-dialog.cpp:828 gui/saveload-dialog.cpp:1220
 #: gui/shaderbrowser-dialog.cpp:81 gui/themebrowser.cpp:54
-#: gui/unknown-game-dialog.cpp:53 base/main.cpp:595 engines/engine.cpp:741
+#: gui/unknown-game-dialog.cpp:53 base/main.cpp:595
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:741
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -296,7 +297,8 @@ msgstr "Les contenus du code JSON sont malformés."
 #: gui/editgamedialog.cpp:353 gui/editrecorddialog.cpp:67
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:543 gui/launcher.cpp:547
 #: gui/massadd.cpp:90 gui/options.cpp:2339 gui/predictivedialog.cpp:69
-#: gui/saveload-dialog.cpp:1221 engines/engine.cpp:544 engines/engine.cpp:567
+#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:32
+#: engines/engine.cpp:544 engines/engine.cpp:567
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/buried/saveload.cpp:69
 #: engines/director/lingo/lingo-builtins.cpp:1818
@@ -863,7 +865,7 @@ msgstr "Interface"
 #. I18N: Action in In Cold Blood
 #: gui/gui-manager.cpp:157 engines/hpl1/metaengine.cpp:96
 #: engines/icb/icb.cpp:95 engines/icb/icb.cpp:173 engines/mohawk/myst.cpp:573
-#: engines/mohawk/riven.cpp:837
+#: engines/mohawk/riven.cpp:844
 msgid "Interact"
 msgstr "Interagir"
 
@@ -2295,7 +2297,7 @@ msgstr "Enregistreur ou Lecteur de Gameplay"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: engines/engine.cpp:590
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:590
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -2765,6 +2767,106 @@ msgstr "Go"
 msgid "TB"
 msgstr "To"
 
+#: dists/android.strings.xml.cpp:30
+msgid "ScummVM"
+msgstr "ScummVM"
+
+#: dists/android.strings.xml.cpp:31
+msgid "Graphic adventure game engine"
+msgstr "Moteur de jeux d'aventure graphiques"
+
+#: dists/android.strings.xml.cpp:33
+#: backends/events/default/default-events.cpp:217
+#: backends/events/default/default-events.cpp:358
+#: engines/adl/metaengine.cpp:328 engines/hdb/metaengine.cpp:275
+#: engines/mohawk/myst_stacks/menu.cpp:317
+#: engines/mohawk/riven_stacks/aspit.cpp:454 engines/scumm/help.cpp:80
+#: engines/scumm/help.cpp:82 engines/zvision/metaengine.cpp:272
+#: engines/zvision/metaengine.cpp:290
+msgid "Quit"
+msgstr "Quitter"
+
+#: dists/android.strings.xml.cpp:34
+msgid "Config File Error"
+msgstr "Erreur de fichier de configuration"
+
+#: dists/android.strings.xml.cpp:35
+msgid "Unable to read ScummVM config file or create a new one!"
+msgstr ""
+"Impossible de lire le fichier de configuration de ScummVM ou d'en créer un "
+"nouveau !"
+
+#: dists/android.strings.xml.cpp:36
+msgid "Save Path Error"
+msgstr "Erreur de chemin de sauvegarde"
+
+#: dists/android.strings.xml.cpp:37
+msgid "Unable to create or access default save path!"
+msgstr "Impossible de créer ou d'accéder au chemin de sauvegarde par défaut !"
+
+#: dists/android.strings.xml.cpp:38
+msgid "Icons Path Error"
+msgstr "Erreur de chemin d'icônes"
+
+#: dists/android.strings.xml.cpp:39
+msgid "Unable to create or access default icons and shaders path!"
+msgstr ""
+"Impossible de créer ou d'accéder au chemin d'icônes et de shadders par "
+"défaut !"
+
+#: dists/android.strings.xml.cpp:40
+msgid ""
+"Unable to access the globally set save path! Please revert to default from "
+"ScummVM Options"
+msgstr ""
+"Impossible d'accéder au chemin de sauvegarde défini globalement ! Veuillez "
+"rétablir le chemin par défaut à partir des options de ScummVM"
+
+#: dists/android.strings.xml.cpp:41
+msgid "Toggle virtual keyboard"
+msgstr "Act./Désact. Clavier virtuel"
+
+#: dists/android.strings.xml.cpp:42 engines/scumm/help.cpp:78
+#: engines/scumm/help.cpp:82 engines/scumm/help.cpp:84
+#: engines/scumm/help.cpp:98 engines/scumm/help.cpp:99
+#: engines/scumm/help.cpp:100
+msgid "Alt"
+msgstr "Alt"
+
+#: dists/android.strings.xml.cpp:45
+msgid "Done"
+msgstr "Terminé"
+
+#: dists/android.strings.xml.cpp:46
+msgid "Mode change"
+msgstr "Changement de mode"
+
+#: dists/android.strings.xml.cpp:47
+msgid "Shift"
+msgstr "Shift"
+
+#: dists/android.strings.xml.cpp:48 engines/dragons/metaengine.cpp:154
+#: engines/scumm/help.cpp:84 engines/scumm/help.cpp:87
+msgid "Enter"
+msgstr "Entrer"
+
+#: dists/android.strings.xml.cpp:49
+msgid "Close popup"
+msgstr "Fermer popup"
+
+#: dists/android.strings.xml.cpp:50
+msgid ""
+"Please select the *root* of your external (physical) SD card. This is "
+"required for ScummVM to access this path: "
+msgstr ""
+"Veuillez sélectionner la *racine* de votre carte SD externe (physique). "
+"Cette sélection est nécessaire pour que ScummVM puisse accéder à ce chemin : "
+
+#: dists/android.strings.xml.cpp:51
+msgid "Storage Access Framework Permissions for ScummVM were revoked!"
+msgstr ""
+"Les permissions de Storage Access Framework pour ScummVM ont été révoquées !"
+
 #. I18N: One line summary as shown in *nix distributions
 #: dists/scummvm.appdata.xml.cpp:32
 msgid "Interpreter for numerous adventure games and role-playing games"
@@ -3013,7 +3115,7 @@ msgstr ""
 "ERREUR : Impossible de copier la sauvegarde auto. vers un nouvel emplacement"
 
 #: engines/engine.cpp:630 engines/savestate.cpp:98
-#: backends/platform/ios7/ios7_osys_main.cpp:255 engines/mm/xeen/saves.cpp:293
+#: backends/platform/ios7/ios7_osys_main.cpp:256 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Sauvegarde auto"
@@ -3120,7 +3222,7 @@ msgstr "Clic Droit"
 #: engines/metaengine.cpp:82 engines/grim/grim.cpp:535
 #: engines/hdb/metaengine.cpp:258 engines/icb/icb.cpp:137
 #: engines/icb/icb.cpp:203 engines/mohawk/myst.cpp:596
-#: engines/mohawk/riven.cpp:860 engines/sky/metaengine.cpp:125
+#: engines/mohawk/riven.cpp:867 engines/sky/metaengine.cpp:125
 #: engines/twine/metaengine.cpp:231 engines/wintermute/keymapper_tables.h:1608
 msgid "Pause"
 msgstr "Pause"
@@ -3131,7 +3233,7 @@ msgstr "Menu du jeu"
 
 #: engines/metaengine.cpp:95 engines/grim/grim.cpp:518
 #: engines/grim/grim.cpp:614 engines/mohawk/myst.cpp:567
-#: engines/mohawk/riven.cpp:831 engines/wintermute/keymapper_tables.h:220
+#: engines/mohawk/riven.cpp:838 engines/wintermute/keymapper_tables.h:220
 #: engines/wintermute/keymapper_tables.h:1092
 #: engines/wintermute/keymapper_tables.h:1276
 #: engines/wintermute/keymapper_tables.h:1601
@@ -3367,16 +3469,6 @@ msgid ""
 msgstr ""
 "Voulez-vous vraiment quitter ?\n"
 "Toute progression non sauvegardée sera perdue."
-
-#: backends/events/default/default-events.cpp:217
-#: backends/events/default/default-events.cpp:358
-#: engines/adl/metaengine.cpp:328 engines/hdb/metaengine.cpp:275
-#: engines/mohawk/myst_stacks/menu.cpp:317
-#: engines/mohawk/riven_stacks/aspit.cpp:454 engines/scumm/help.cpp:80
-#: engines/scumm/help.cpp:82 engines/zvision/metaengine.cpp:272
-#: engines/zvision/metaengine.cpp:290
-msgid "Quit"
-msgstr "Quitter"
 
 #: backends/events/default/default-events.cpp:332
 msgid "Global"
@@ -4297,22 +4389,22 @@ msgstr ""
 "Toucher (sans appui) en bas de la zone tactile : Touche Flèche bas\n"
 "Barre Espace du clavier : Pause"
 
-#: backends/platform/ios7/ios7_osys_events.cpp:412
+#: backends/platform/ios7/ios7_osys_events.cpp:466
 #: backends/platform/iphone/osys_events.cpp:299
 msgid "Mouse-click-and-drag mode enabled."
 msgstr "Mode clic-souris-et-déplacer activé."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:414
+#: backends/platform/ios7/ios7_osys_events.cpp:468
 #: backends/platform/iphone/osys_events.cpp:301
 msgid "Mouse-click-and-drag mode disabled."
 msgstr "Mode clic-souris-et-déplacer désactivé."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:435
+#: backends/platform/ios7/ios7_osys_events.cpp:489
 #: backends/platform/iphone/osys_events.cpp:312
 msgid "Touchpad mode enabled."
 msgstr "Mode touchpad activé."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:437
+#: backends/platform/ios7/ios7_osys_events.cpp:491
 #: backends/platform/iphone/osys_events.cpp:314
 msgid "Touchpad mode disabled."
 msgstr "Mode touchpad désactivé."
@@ -5002,7 +5094,7 @@ msgstr "Continuer"
 
 #: engines/bladerunner/detection_tables.h:90
 #: engines/bladerunner/detection_tables.h:101
-#: engines/kyra/detection_tables.h:76
+#: engines/kyra/detection_tables.h:77
 msgid ""
 "The fan translator does not wish his translation to be incorporated into "
 "ScummVM."
@@ -5430,11 +5522,6 @@ msgstr "Changer de commande"
 #: engines/zvision/metaengine.cpp:232
 msgid "Inventory"
 msgstr "Inventaire"
-
-#: engines/dragons/metaengine.cpp:154 engines/scumm/help.cpp:84
-#: engines/scumm/help.cpp:87
-msgid "Enter"
-msgstr "Entrer"
 
 #: engines/dragons/metaengine.cpp:220
 msgid "Debug Graphics"
@@ -6082,11 +6169,11 @@ msgstr "Remora"
 msgid "Side Step"
 msgstr "Pas de côté"
 
-#: engines/kyra/detection_tables.h:74
+#: engines/kyra/detection_tables.h:75
 msgid "Missing language specific game code and/or resources."
 msgstr "Code et/ou ressources de jeu spécifiques à la langue manquants."
 
-#: engines/kyra/detection_tables.h:75
+#: engines/kyra/detection_tables.h:76
 msgid ""
 "Missing language specific game code and/or resources for this fan "
 "translation."
@@ -6094,19 +6181,19 @@ msgstr ""
 "Code et/ou ressources de jeu spécifiques à la langue manquants pour cette "
 "traduction de fan."
 
-#: engines/kyra/detection_tables.h:77
+#: engines/kyra/detection_tables.h:78
 msgid "Demo plays simple animations without using Westwood's Engine."
 msgstr ""
 "La démo joue des animations simples sans utiliser le moteur de Westwood."
 
-#: engines/kyra/detection_tables.h:1368
+#: engines/kyra/detection_tables.h:1369
 msgid "You added the game incorrectly. Please add the root folder of the game."
 msgstr ""
 "Le jeu a été ajouté de façon incorrecte. Veuillez ajouter le dossier racine "
 "du jeu."
 
 #. I18N: The file in the game directory needs to be extracted
-#: engines/kyra/detection_tables.h:1384
+#: engines/kyra/detection_tables.h:1385
 msgid ""
 "You added the game incorrectly. The GAME.DAT file is an ISO image and you "
 "need to extract the game data files from it."
@@ -6790,19 +6877,19 @@ msgstr "La prise en charge de CSTime n'a pas été activée dans cette version"
 msgid "The game is paused. Press any key to continue."
 msgstr "Jeu en pause. Appuyer sur une touche pour reprendre."
 
-#: engines/mohawk/myst.cpp:555 engines/mohawk/riven.cpp:819
+#: engines/mohawk/myst.cpp:555 engines/mohawk/riven.cpp:826
 msgid "Open main menu"
 msgstr "Ouvrir le menu principal"
 
-#: engines/mohawk/myst.cpp:579 engines/mohawk/riven.cpp:843
+#: engines/mohawk/myst.cpp:579 engines/mohawk/riven.cpp:850
 msgid "Load game state"
 msgstr "Charger la position du jeu"
 
-#: engines/mohawk/myst.cpp:584 engines/mohawk/riven.cpp:848
+#: engines/mohawk/myst.cpp:584 engines/mohawk/riven.cpp:855
 msgid "Save game state"
 msgstr "Sauvegarder la position du jeu"
 
-#: engines/mohawk/myst.cpp:589 engines/mohawk/riven.cpp:853
+#: engines/mohawk/myst.cpp:589 engines/mohawk/riven.cpp:860
 msgid "Show options menu"
 msgstr "Afficher le menu des options"
 
@@ -6882,50 +6969,50 @@ msgstr ""
 "Il vous manque le fichier 'extras.mhk'. Utiliser le fichier archive "
 "'arcriven.z' fonctionne également."
 
-#: engines/mohawk/riven.cpp:503
+#: engines/mohawk/riven.cpp:510
 msgid "You are missing the following required Riven data files:\n"
 msgstr ""
 "Il vous manque les fichiers de données obligatoires suivants pour Riven :\n"
 
-#: engines/mohawk/riven.cpp:865
+#: engines/mohawk/riven.cpp:872
 msgid "Move forward"
 msgstr "Bouger en avant"
 
-#: engines/mohawk/riven.cpp:871
+#: engines/mohawk/riven.cpp:878
 msgid "Move forward left"
 msgstr "Bouger en avant gauche"
 
-#: engines/mohawk/riven.cpp:875
+#: engines/mohawk/riven.cpp:882
 msgid "Move forward right"
 msgstr "Bouger en avant droite"
 
-#: engines/mohawk/riven.cpp:879
+#: engines/mohawk/riven.cpp:886
 msgid "Move backwards"
 msgstr "Bouger en arrière"
 
-#: engines/mohawk/riven.cpp:885 engines/wintermute/keymapper_tables.h:161
+#: engines/mohawk/riven.cpp:892 engines/wintermute/keymapper_tables.h:161
 #: engines/wintermute/keymapper_tables.h:741
 #: engines/wintermute/keymapper_tables.h:2122
 #: engines/wintermute/keymapper_tables.h:2223
 msgid "Turn left"
 msgstr "Tourner vers la Gauche"
 
-#: engines/mohawk/riven.cpp:891 engines/wintermute/keymapper_tables.h:167
+#: engines/mohawk/riven.cpp:898 engines/wintermute/keymapper_tables.h:167
 #: engines/wintermute/keymapper_tables.h:746
 #: engines/wintermute/keymapper_tables.h:2128
 #: engines/wintermute/keymapper_tables.h:2230
 msgid "Turn right"
 msgstr "Tourner vers la Droite"
 
-#: engines/mohawk/riven.cpp:897
+#: engines/mohawk/riven.cpp:904
 msgid "Look up"
 msgstr "Regarder en haut"
 
-#: engines/mohawk/riven.cpp:902
+#: engines/mohawk/riven.cpp:909
 msgid "Look down"
 msgstr "Regarder en bas"
 
-#: engines/mohawk/riven.cpp:908
+#: engines/mohawk/riven.cpp:915
 msgid "Play intro videos"
 msgstr "Jouer les vidéos d'intro"
 
@@ -7955,12 +8042,6 @@ msgstr "Ctrl"
 #: engines/scumm/help.cpp:77
 msgid "Load saved game 1-10"
 msgstr "Charger sauvegarde 1-10"
-
-#: engines/scumm/help.cpp:78 engines/scumm/help.cpp:82
-#: engines/scumm/help.cpp:84 engines/scumm/help.cpp:98
-#: engines/scumm/help.cpp:99 engines/scumm/help.cpp:100
-msgid "Alt"
-msgstr "Alt"
 
 #: engines/scumm/help.cpp:78
 msgid "Save game 1-10"
@@ -10430,9 +10511,6 @@ msgstr ""
 #~ msgid "Invalid Scene ID!"
 #~ msgstr "ID de la scène invalide !"
 
-#~ msgid "Shift"
-#~ msgstr "Shift"
-
 #~ msgid "Show item costs in standard inventory mode"
 #~ msgstr "Afficher le prix des objets dans l'inventaire en mode standard"
 
@@ -10863,9 +10941,6 @@ msgstr ""
 
 #~ msgid "Global menu"
 #~ msgstr "Menu global"
-
-#~ msgid "Virtual keyboard"
-#~ msgstr "Clavier virtuel"
 
 #~ msgid "Key mapper"
 #~ msgstr "Affectation des touches"

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.4.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2023-05-10 22:03+0000\n"
-"PO-Revision-Date: 2023-05-05 23:12+0000\n"
+"POT-Creation-Date: 2023-05-15 10:43+0000\n"
+"PO-Revision-Date: 2023-05-14 22:30+0000\n"
 "Last-Translator: IlDucci <pajaroloco_2@hotmail.com>\n"
 "Language-Team: Spanish <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/es/>\n"
@@ -66,7 +66,8 @@ msgstr "Arriba"
 #: gui/saveload-dialog.cpp:455 gui/saveload-dialog.cpp:526
 #: gui/saveload-dialog.cpp:828 gui/saveload-dialog.cpp:1220
 #: gui/shaderbrowser-dialog.cpp:81 gui/themebrowser.cpp:54
-#: gui/unknown-game-dialog.cpp:53 base/main.cpp:595 engines/engine.cpp:741
+#: gui/unknown-game-dialog.cpp:53 base/main.cpp:595
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:741
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -294,7 +295,8 @@ msgstr "Los contenidos del código JSON no son válidos."
 #: gui/editgamedialog.cpp:353 gui/editrecorddialog.cpp:67
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:543 gui/launcher.cpp:547
 #: gui/massadd.cpp:90 gui/options.cpp:2339 gui/predictivedialog.cpp:69
-#: gui/saveload-dialog.cpp:1221 engines/engine.cpp:544 engines/engine.cpp:567
+#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:32
+#: engines/engine.cpp:544 engines/engine.cpp:567
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/buried/saveload.cpp:69
 #: engines/director/lingo/lingo-builtins.cpp:1818
@@ -856,7 +858,7 @@ msgstr "Interfaz"
 #. I18N: Action in In Cold Blood
 #: gui/gui-manager.cpp:157 engines/hpl1/metaengine.cpp:96
 #: engines/icb/icb.cpp:95 engines/icb/icb.cpp:173 engines/mohawk/myst.cpp:573
-#: engines/mohawk/riven.cpp:837
+#: engines/mohawk/riven.cpp:844
 msgid "Interact"
 msgstr "Interactuar"
 
@@ -2289,7 +2291,7 @@ msgstr "Grabar o reproducir vídeos"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: engines/engine.cpp:590
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:590
 msgid "Delete"
 msgstr "Eliminar"
 
@@ -2754,6 +2756,107 @@ msgstr "GB"
 msgid "TB"
 msgstr "TB"
 
+#: dists/android.strings.xml.cpp:30
+msgid "ScummVM"
+msgstr "ScummVM"
+
+#: dists/android.strings.xml.cpp:31
+msgid "Graphic adventure game engine"
+msgstr "Motor de aventuras gráficas"
+
+#: dists/android.strings.xml.cpp:33
+#: backends/events/default/default-events.cpp:217
+#: backends/events/default/default-events.cpp:358
+#: engines/adl/metaengine.cpp:328 engines/hdb/metaengine.cpp:275
+#: engines/mohawk/myst_stacks/menu.cpp:317
+#: engines/mohawk/riven_stacks/aspit.cpp:454 engines/scumm/help.cpp:80
+#: engines/scumm/help.cpp:82 engines/zvision/metaengine.cpp:272
+#: engines/zvision/metaengine.cpp:290
+msgid "Quit"
+msgstr "Salir"
+
+#: dists/android.strings.xml.cpp:34
+msgid "Config File Error"
+msgstr "Error en el archivo de configuración"
+
+#: dists/android.strings.xml.cpp:35
+msgid "Unable to read ScummVM config file or create a new one!"
+msgstr "¡No se ha podido leer o crear el archivo de configuración de ScummVM!"
+
+#: dists/android.strings.xml.cpp:36
+msgid "Save Path Error"
+msgstr "Error de la ruta de partidas guardadas"
+
+#: dists/android.strings.xml.cpp:37
+msgid "Unable to create or access default save path!"
+msgstr ""
+"¡No se ha podido crear o acceder a la ruta predeterminada de partidas "
+"guardadas!"
+
+#: dists/android.strings.xml.cpp:38
+msgid "Icons Path Error"
+msgstr "Error de la ruta de iconos"
+
+#: dists/android.strings.xml.cpp:39
+msgid "Unable to create or access default icons and shaders path!"
+msgstr ""
+"¡No se ha podido crear o acceder a la ruta predeterminada de iconos y "
+"shaders!"
+
+#: dists/android.strings.xml.cpp:40
+msgid ""
+"Unable to access the globally set save path! Please revert to default from "
+"ScummVM Options"
+msgstr ""
+"¡No se ha podido acceder a la ruta global de partidas guardadas! Cámbiala a "
+"la predeterminada dentro de las opciones de ScummVM"
+
+#: dists/android.strings.xml.cpp:41
+msgid "Toggle virtual keyboard"
+msgstr "Alternar teclado virtual"
+
+#: dists/android.strings.xml.cpp:42 engines/scumm/help.cpp:78
+#: engines/scumm/help.cpp:82 engines/scumm/help.cpp:84
+#: engines/scumm/help.cpp:98 engines/scumm/help.cpp:99
+#: engines/scumm/help.cpp:100
+msgid "Alt"
+msgstr "Alt"
+
+#: dists/android.strings.xml.cpp:45
+msgid "Done"
+msgstr "Terminar"
+
+#: dists/android.strings.xml.cpp:46
+msgid "Mode change"
+msgstr "Cambiar modo"
+
+#: dists/android.strings.xml.cpp:47
+msgid "Shift"
+msgstr "Mayúsculas"
+
+#: dists/android.strings.xml.cpp:48 engines/dragons/metaengine.cpp:154
+#: engines/scumm/help.cpp:84 engines/scumm/help.cpp:87
+msgid "Enter"
+msgstr "Enter"
+
+#: dists/android.strings.xml.cpp:49
+msgid "Close popup"
+msgstr "Cerrar ventana"
+
+#: dists/android.strings.xml.cpp:50
+msgid ""
+"Please select the *root* of your external (physical) SD card. This is "
+"required for ScummVM to access this path: "
+msgstr ""
+"Selecciona la *raíz* de tu tarjeta SD externa (física). Debes indicarla para "
+"que ScummVM pueda acceder a la siguiente ruta: "
+
+#: dists/android.strings.xml.cpp:51
+msgid "Storage Access Framework Permissions for ScummVM were revoked!"
+msgstr ""
+"¡Se han revocado los permisos del framework de acceso al almacenamiento para "
+"ScummVM!"
+
 #. I18N: One line summary as shown in *nix distributions
 #: dists/scummvm.appdata.xml.cpp:32
 msgid "Interpreter for numerous adventure games and role-playing games"
@@ -2998,7 +3101,7 @@ msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr "ERROR: No se ha podido copiar la partida guardada a un espacio nuevo."
 
 #: engines/engine.cpp:630 engines/savestate.cpp:98
-#: backends/platform/ios7/ios7_osys_main.cpp:255 engines/mm/xeen/saves.cpp:293
+#: backends/platform/ios7/ios7_osys_main.cpp:256 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Autoguardado"
@@ -3104,7 +3207,7 @@ msgstr "Clic derecho"
 #: engines/metaengine.cpp:82 engines/grim/grim.cpp:535
 #: engines/hdb/metaengine.cpp:258 engines/icb/icb.cpp:137
 #: engines/icb/icb.cpp:203 engines/mohawk/myst.cpp:596
-#: engines/mohawk/riven.cpp:860 engines/sky/metaengine.cpp:125
+#: engines/mohawk/riven.cpp:867 engines/sky/metaengine.cpp:125
 #: engines/twine/metaengine.cpp:231 engines/wintermute/keymapper_tables.h:1608
 msgid "Pause"
 msgstr "Pausar"
@@ -3115,7 +3218,7 @@ msgstr "Menú del juego"
 
 #: engines/metaengine.cpp:95 engines/grim/grim.cpp:518
 #: engines/grim/grim.cpp:614 engines/mohawk/myst.cpp:567
-#: engines/mohawk/riven.cpp:831 engines/wintermute/keymapper_tables.h:220
+#: engines/mohawk/riven.cpp:838 engines/wintermute/keymapper_tables.h:220
 #: engines/wintermute/keymapper_tables.h:1092
 #: engines/wintermute/keymapper_tables.h:1276
 #: engines/wintermute/keymapper_tables.h:1601
@@ -3352,16 +3455,6 @@ msgid ""
 msgstr ""
 "¿Seguro que quieres salir?\n"
 "Se perderán todos los progresos no guardados."
-
-#: backends/events/default/default-events.cpp:217
-#: backends/events/default/default-events.cpp:358
-#: engines/adl/metaengine.cpp:328 engines/hdb/metaengine.cpp:275
-#: engines/mohawk/myst_stacks/menu.cpp:317
-#: engines/mohawk/riven_stacks/aspit.cpp:454 engines/scumm/help.cpp:80
-#: engines/scumm/help.cpp:82 engines/zvision/metaengine.cpp:272
-#: engines/zvision/metaengine.cpp:290
-msgid "Quit"
-msgstr "Salir"
 
 #: backends/events/default/default-events.cpp:332
 msgid "Global"
@@ -4285,22 +4378,22 @@ msgstr ""
 "direccional hacia abajo\n"
 "Barra espaciadora del teclado: pausar"
 
-#: backends/platform/ios7/ios7_osys_events.cpp:412
+#: backends/platform/ios7/ios7_osys_events.cpp:466
 #: backends/platform/iphone/osys_events.cpp:299
 msgid "Mouse-click-and-drag mode enabled."
 msgstr "Modo de arrastre de ratón activado."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:414
+#: backends/platform/ios7/ios7_osys_events.cpp:468
 #: backends/platform/iphone/osys_events.cpp:301
 msgid "Mouse-click-and-drag mode disabled."
 msgstr "Modo de arrastre de ratón desactivado."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:435
+#: backends/platform/ios7/ios7_osys_events.cpp:489
 #: backends/platform/iphone/osys_events.cpp:312
 msgid "Touchpad mode enabled."
 msgstr "Modo Touchpad activado."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:437
+#: backends/platform/ios7/ios7_osys_events.cpp:491
 #: backends/platform/iphone/osys_events.cpp:314
 msgid "Touchpad mode disabled."
 msgstr "Modo Touchpad desactivado."
@@ -4987,7 +5080,7 @@ msgstr "Continuar"
 
 #: engines/bladerunner/detection_tables.h:90
 #: engines/bladerunner/detection_tables.h:101
-#: engines/kyra/detection_tables.h:76
+#: engines/kyra/detection_tables.h:77
 msgid ""
 "The fan translator does not wish his translation to be incorporated into "
 "ScummVM."
@@ -5416,11 +5509,6 @@ msgstr "Cambiar orden"
 #: engines/zvision/metaengine.cpp:232
 msgid "Inventory"
 msgstr "Inventario"
-
-#: engines/dragons/metaengine.cpp:154 engines/scumm/help.cpp:84
-#: engines/scumm/help.cpp:87
-msgid "Enter"
-msgstr "Enter"
 
 #: engines/dragons/metaengine.cpp:220
 msgid "Debug Graphics"
@@ -6069,31 +6157,31 @@ msgstr "REMORA"
 msgid "Side Step"
 msgstr "Moverse hacia los lados"
 
-#: engines/kyra/detection_tables.h:74
+#: engines/kyra/detection_tables.h:75
 msgid "Missing language specific game code and/or resources."
 msgstr "Faltan el código o recursos del juego específicos del idioma."
 
-#: engines/kyra/detection_tables.h:75
+#: engines/kyra/detection_tables.h:76
 msgid ""
 "Missing language specific game code and/or resources for this fan "
 "translation."
 msgstr ""
 "Faltan el código o recursos del juego específicos de esta fantraducción."
 
-#: engines/kyra/detection_tables.h:77
+#: engines/kyra/detection_tables.h:78
 msgid "Demo plays simple animations without using Westwood's Engine."
 msgstr ""
 "La demostración mostrará animaciones sencillas sin recurrir al motor de "
 "Westwood."
 
-#: engines/kyra/detection_tables.h:1368
+#: engines/kyra/detection_tables.h:1369
 msgid "You added the game incorrectly. Please add the root folder of the game."
 msgstr ""
 "Has añadido el juego de forma incorrecta. Debes añadir la carpeta raíz del "
 "juego."
 
 #. I18N: The file in the game directory needs to be extracted
-#: engines/kyra/detection_tables.h:1384
+#: engines/kyra/detection_tables.h:1385
 msgid ""
 "You added the game incorrectly. The GAME.DAT file is an ISO image and you "
 "need to extract the game data files from it."
@@ -6768,19 +6856,19 @@ msgstr "No se ha incluido el soporte para CSTime."
 msgid "The game is paused. Press any key to continue."
 msgstr "Partida en pausa. Pulsa cualquier tecla para continuar."
 
-#: engines/mohawk/myst.cpp:555 engines/mohawk/riven.cpp:819
+#: engines/mohawk/myst.cpp:555 engines/mohawk/riven.cpp:826
 msgid "Open main menu"
 msgstr "Abrir menú principal"
 
-#: engines/mohawk/myst.cpp:579 engines/mohawk/riven.cpp:843
+#: engines/mohawk/myst.cpp:579 engines/mohawk/riven.cpp:850
 msgid "Load game state"
 msgstr "Cargar estado del juego"
 
-#: engines/mohawk/myst.cpp:584 engines/mohawk/riven.cpp:848
+#: engines/mohawk/myst.cpp:584 engines/mohawk/riven.cpp:855
 msgid "Save game state"
 msgstr "Guardar estado del juego"
 
-#: engines/mohawk/myst.cpp:589 engines/mohawk/riven.cpp:853
+#: engines/mohawk/myst.cpp:589 engines/mohawk/riven.cpp:860
 msgid "Show options menu"
 msgstr "Mostrar menú de opciones"
 
@@ -6860,49 +6948,49 @@ msgstr ""
 "Falta el fichero «extras.mhk». También puedes utilizar el fichero instalador "
 "«arcriven.z»."
 
-#: engines/mohawk/riven.cpp:503
+#: engines/mohawk/riven.cpp:510
 msgid "You are missing the following required Riven data files:\n"
 msgstr "Te faltan estos archivos de Riven:\n"
 
-#: engines/mohawk/riven.cpp:865
+#: engines/mohawk/riven.cpp:872
 msgid "Move forward"
 msgstr "Avanzar"
 
-#: engines/mohawk/riven.cpp:871
+#: engines/mohawk/riven.cpp:878
 msgid "Move forward left"
 msgstr "Avanzar a la izquierda"
 
-#: engines/mohawk/riven.cpp:875
+#: engines/mohawk/riven.cpp:882
 msgid "Move forward right"
 msgstr "Avanzar a la derecha"
 
-#: engines/mohawk/riven.cpp:879
+#: engines/mohawk/riven.cpp:886
 msgid "Move backwards"
 msgstr "Retroceder"
 
-#: engines/mohawk/riven.cpp:885 engines/wintermute/keymapper_tables.h:161
+#: engines/mohawk/riven.cpp:892 engines/wintermute/keymapper_tables.h:161
 #: engines/wintermute/keymapper_tables.h:741
 #: engines/wintermute/keymapper_tables.h:2122
 #: engines/wintermute/keymapper_tables.h:2223
 msgid "Turn left"
 msgstr "Girar a la izquierda"
 
-#: engines/mohawk/riven.cpp:891 engines/wintermute/keymapper_tables.h:167
+#: engines/mohawk/riven.cpp:898 engines/wintermute/keymapper_tables.h:167
 #: engines/wintermute/keymapper_tables.h:746
 #: engines/wintermute/keymapper_tables.h:2128
 #: engines/wintermute/keymapper_tables.h:2230
 msgid "Turn right"
 msgstr "Girar a la derecha"
 
-#: engines/mohawk/riven.cpp:897
+#: engines/mohawk/riven.cpp:904
 msgid "Look up"
 msgstr "Mirar arriba"
 
-#: engines/mohawk/riven.cpp:902
+#: engines/mohawk/riven.cpp:909
 msgid "Look down"
 msgstr "Mirar abajo"
 
-#: engines/mohawk/riven.cpp:908
+#: engines/mohawk/riven.cpp:915
 msgid "Play intro videos"
 msgstr "Reproducir introducciones"
 
@@ -7919,12 +8007,6 @@ msgstr "Ctrl"
 #: engines/scumm/help.cpp:77
 msgid "Load saved game 1-10"
 msgstr "Cargar partida guardada 1-10"
-
-#: engines/scumm/help.cpp:78 engines/scumm/help.cpp:82
-#: engines/scumm/help.cpp:84 engines/scumm/help.cpp:98
-#: engines/scumm/help.cpp:99 engines/scumm/help.cpp:100
-msgid "Alt"
-msgstr "Alt"
 
 #: engines/scumm/help.cpp:78
 msgid "Save game 1-10"
@@ -10368,9 +10450,6 @@ msgstr ""
 #~ msgid "Invalid Scene ID!"
 #~ msgstr "¡ID de escena no válido!"
 
-#~ msgid "Shift"
-#~ msgstr "Mayúsculas"
-
 #~ msgid "Show item costs in standard inventory mode"
 #~ msgstr "Mostrar coste de los objetos en modo de inventario estándar"
 
@@ -10809,9 +10888,6 @@ msgstr ""
 
 #~ msgid "Global menu"
 #~ msgstr "Menú general"
-
-#~ msgid "Virtual keyboard"
-#~ msgstr "Teclado virtual"
 
 #~ msgid "Key mapper"
 #~ msgstr "Asignación de teclas"

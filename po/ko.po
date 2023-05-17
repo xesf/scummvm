@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 2.3.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2023-05-10 22:03+0000\n"
+"POT-Creation-Date: 2023-05-15 10:43+0000\n"
 "PO-Revision-Date: 2022-04-06 04:44+0000\n"
 "Last-Translator: wonst719 <wonst719@gmail.com>\n"
 "Language-Team: Korean <https://translations.scummvm.org/projects/scummvm/"
@@ -66,7 +66,8 @@ msgstr "위로"
 #: gui/saveload-dialog.cpp:455 gui/saveload-dialog.cpp:526
 #: gui/saveload-dialog.cpp:828 gui/saveload-dialog.cpp:1220
 #: gui/shaderbrowser-dialog.cpp:81 gui/themebrowser.cpp:54
-#: gui/unknown-game-dialog.cpp:53 base/main.cpp:595 engines/engine.cpp:741
+#: gui/unknown-game-dialog.cpp:53 base/main.cpp:595
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:741
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -305,7 +306,8 @@ msgstr ""
 #: gui/editgamedialog.cpp:353 gui/editrecorddialog.cpp:67
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:543 gui/launcher.cpp:547
 #: gui/massadd.cpp:90 gui/options.cpp:2339 gui/predictivedialog.cpp:69
-#: gui/saveload-dialog.cpp:1221 engines/engine.cpp:544 engines/engine.cpp:567
+#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:32
+#: engines/engine.cpp:544 engines/engine.cpp:567
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/buried/saveload.cpp:69
 #: engines/director/lingo/lingo-builtins.cpp:1818
@@ -864,7 +866,7 @@ msgstr "GUI"
 #. I18N: Action in In Cold Blood
 #: gui/gui-manager.cpp:157 engines/hpl1/metaengine.cpp:96
 #: engines/icb/icb.cpp:95 engines/icb/icb.cpp:173 engines/mohawk/myst.cpp:573
-#: engines/mohawk/riven.cpp:837
+#: engines/mohawk/riven.cpp:844
 msgid "Interact"
 msgstr "상호작용"
 
@@ -2289,7 +2291,7 @@ msgstr "게임플레이 녹화 또는 재생"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: engines/engine.cpp:590
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:590
 msgid "Delete"
 msgstr "삭제"
 
@@ -2714,6 +2716,109 @@ msgstr "GB"
 msgid "TB"
 msgstr "TB"
 
+#: dists/android.strings.xml.cpp:30
+#, fuzzy
+#| msgid "Quit ScummVM"
+msgid "ScummVM"
+msgstr "ScummVM 종료"
+
+#: dists/android.strings.xml.cpp:31
+msgid "Graphic adventure game engine"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:33
+#: backends/events/default/default-events.cpp:217
+#: backends/events/default/default-events.cpp:358
+#: engines/adl/metaengine.cpp:328 engines/hdb/metaengine.cpp:275
+#: engines/mohawk/myst_stacks/menu.cpp:317
+#: engines/mohawk/riven_stacks/aspit.cpp:454 engines/scumm/help.cpp:80
+#: engines/scumm/help.cpp:82 engines/zvision/metaengine.cpp:272
+#: engines/zvision/metaengine.cpp:290
+msgid "Quit"
+msgstr "종료"
+
+#: dists/android.strings.xml.cpp:34
+msgid "Config File Error"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:35
+msgid "Unable to read ScummVM config file or create a new one!"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:36
+#, fuzzy
+#| msgid "Save Path:"
+msgid "Save Path Error"
+msgstr "저장 경로:"
+
+#: dists/android.strings.xml.cpp:37
+msgid "Unable to create or access default save path!"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:38
+#, fuzzy
+#| msgid "Icon Path:"
+msgid "Icons Path Error"
+msgstr "/icon/ 경로:"
+
+#: dists/android.strings.xml.cpp:39
+msgid "Unable to create or access default icons and shaders path!"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:40
+msgid ""
+"Unable to access the globally set save path! Please revert to default from "
+"ScummVM Options"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:41
+#, fuzzy
+#| msgid "Virtual keyboard"
+msgid "Toggle virtual keyboard"
+msgstr "가상 키보드"
+
+#: dists/android.strings.xml.cpp:42 engines/scumm/help.cpp:78
+#: engines/scumm/help.cpp:82 engines/scumm/help.cpp:84
+#: engines/scumm/help.cpp:98 engines/scumm/help.cpp:99
+#: engines/scumm/help.cpp:100
+msgid "Alt"
+msgstr "Alt"
+
+#: dists/android.strings.xml.cpp:45
+msgid "Done"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:46
+msgid "Mode change"
+msgstr ""
+
+#: dists/android.strings.xml.cpp:47
+#, fuzzy
+#| msgid "Shift key"
+msgid "Shift"
+msgstr "시프트 키"
+
+#: dists/android.strings.xml.cpp:48 engines/dragons/metaengine.cpp:154
+#: engines/scumm/help.cpp:84 engines/scumm/help.cpp:87
+msgid "Enter"
+msgstr "Enter"
+
+#: dists/android.strings.xml.cpp:49
+#, fuzzy
+#| msgid "Close"
+msgid "Close popup"
+msgstr "닫기"
+
+#: dists/android.strings.xml.cpp:50
+msgid ""
+"Please select the *root* of your external (physical) SD card. This is "
+"required for ScummVM to access this path: "
+msgstr ""
+
+#: dists/android.strings.xml.cpp:51
+msgid "Storage Access Framework Permissions for ScummVM were revoked!"
+msgstr ""
+
 #. I18N: One line summary as shown in *nix distributions
 #: dists/scummvm.appdata.xml.cpp:32
 msgid "Interpreter for numerous adventure games and role-playing games"
@@ -2953,7 +3058,7 @@ msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr "오류: 저장 데이터를 새로운 슬롯으로 복사하지 못했습니다"
 
 #: engines/engine.cpp:630 engines/savestate.cpp:98
-#: backends/platform/ios7/ios7_osys_main.cpp:255 engines/mm/xeen/saves.cpp:293
+#: backends/platform/ios7/ios7_osys_main.cpp:256 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "자동 저장"
@@ -3059,7 +3164,7 @@ msgstr "오른쪽 클릭"
 #: engines/metaengine.cpp:82 engines/grim/grim.cpp:535
 #: engines/hdb/metaengine.cpp:258 engines/icb/icb.cpp:137
 #: engines/icb/icb.cpp:203 engines/mohawk/myst.cpp:596
-#: engines/mohawk/riven.cpp:860 engines/sky/metaengine.cpp:125
+#: engines/mohawk/riven.cpp:867 engines/sky/metaengine.cpp:125
 #: engines/twine/metaengine.cpp:231 engines/wintermute/keymapper_tables.h:1608
 msgid "Pause"
 msgstr "일시정지"
@@ -3070,7 +3175,7 @@ msgstr "게임 메뉴"
 
 #: engines/metaengine.cpp:95 engines/grim/grim.cpp:518
 #: engines/grim/grim.cpp:614 engines/mohawk/myst.cpp:567
-#: engines/mohawk/riven.cpp:831 engines/wintermute/keymapper_tables.h:220
+#: engines/mohawk/riven.cpp:838 engines/wintermute/keymapper_tables.h:220
 #: engines/wintermute/keymapper_tables.h:1092
 #: engines/wintermute/keymapper_tables.h:1276
 #: engines/wintermute/keymapper_tables.h:1601
@@ -3306,16 +3411,6 @@ msgid ""
 msgstr ""
 "정말로 종료하시겠습니까?\n"
 "저장되지 않은 진행사항은 사라지게 됩니다."
-
-#: backends/events/default/default-events.cpp:217
-#: backends/events/default/default-events.cpp:358
-#: engines/adl/metaengine.cpp:328 engines/hdb/metaengine.cpp:275
-#: engines/mohawk/myst_stacks/menu.cpp:317
-#: engines/mohawk/riven_stacks/aspit.cpp:454 engines/scumm/help.cpp:80
-#: engines/scumm/help.cpp:82 engines/zvision/metaengine.cpp:272
-#: engines/zvision/metaengine.cpp:290
-msgid "Quit"
-msgstr "종료"
 
 #: backends/events/default/default-events.cpp:332
 msgid "Global"
@@ -4220,22 +4315,22 @@ msgid ""
 "Keyboard spacebar: Pause"
 msgstr ""
 
-#: backends/platform/ios7/ios7_osys_events.cpp:412
+#: backends/platform/ios7/ios7_osys_events.cpp:466
 #: backends/platform/iphone/osys_events.cpp:299
 msgid "Mouse-click-and-drag mode enabled."
 msgstr "마우스 클릭&드래그 모드가 활성화되었습니다."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:414
+#: backends/platform/ios7/ios7_osys_events.cpp:468
 #: backends/platform/iphone/osys_events.cpp:301
 msgid "Mouse-click-and-drag mode disabled."
 msgstr "마우스 클릭&드래그 모드가 비활성화되었습니다."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:435
+#: backends/platform/ios7/ios7_osys_events.cpp:489
 #: backends/platform/iphone/osys_events.cpp:312
 msgid "Touchpad mode enabled."
 msgstr "터치패드 모드가 활성화되었습니다."
 
-#: backends/platform/ios7/ios7_osys_events.cpp:437
+#: backends/platform/ios7/ios7_osys_events.cpp:491
 #: backends/platform/iphone/osys_events.cpp:314
 msgid "Touchpad mode disabled."
 msgstr "터치패드 모드가 비활성화되었습니다."
@@ -4907,7 +5002,7 @@ msgstr "계속"
 
 #: engines/bladerunner/detection_tables.h:90
 #: engines/bladerunner/detection_tables.h:101
-#: engines/kyra/detection_tables.h:76
+#: engines/kyra/detection_tables.h:77
 msgid ""
 "The fan translator does not wish his translation to be incorporated into "
 "ScummVM."
@@ -5324,11 +5419,6 @@ msgstr "변경 명령"
 #: engines/zvision/metaengine.cpp:232
 msgid "Inventory"
 msgstr "인벤토리"
-
-#: engines/dragons/metaengine.cpp:154 engines/scumm/help.cpp:84
-#: engines/scumm/help.cpp:87
-msgid "Enter"
-msgstr "Enter"
 
 #: engines/dragons/metaengine.cpp:220
 msgid "Debug Graphics"
@@ -5981,26 +6071,26 @@ msgstr "게임 제거(~R~)"
 msgid "Side Step"
 msgstr "왼쪽으로"
 
-#: engines/kyra/detection_tables.h:74
+#: engines/kyra/detection_tables.h:75
 msgid "Missing language specific game code and/or resources."
 msgstr "언어 고유의 게임 코드나 리소스가 없습니다."
 
-#: engines/kyra/detection_tables.h:75
+#: engines/kyra/detection_tables.h:76
 msgid ""
 "Missing language specific game code and/or resources for this fan "
 "translation."
 msgstr "이 비공식 번역에 언어 고유의 게임 코드나 리소스가 없습니다."
 
-#: engines/kyra/detection_tables.h:77
+#: engines/kyra/detection_tables.h:78
 msgid "Demo plays simple animations without using Westwood's Engine."
 msgstr "데모는 Westwood의 엔진을 사용하지 않고 간단한 애니메이션을 재생합니다."
 
-#: engines/kyra/detection_tables.h:1368
+#: engines/kyra/detection_tables.h:1369
 msgid "You added the game incorrectly. Please add the root folder of the game."
 msgstr "게임을 잘못 추가했습니다. 게임의 루트 폴더를 추가해 주십시오."
 
 #. I18N: The file in the game directory needs to be extracted
-#: engines/kyra/detection_tables.h:1384
+#: engines/kyra/detection_tables.h:1385
 msgid ""
 "You added the game incorrectly. The GAME.DAT file is an ISO image and you "
 "need to extract the game data files from it."
@@ -6686,19 +6776,19 @@ msgstr "CSTime 지원이 컴파일 되지 않음"
 msgid "The game is paused. Press any key to continue."
 msgstr "게임이 일시 중지되었습니다. 아무 키나 눌러 다시 시작합니다."
 
-#: engines/mohawk/myst.cpp:555 engines/mohawk/riven.cpp:819
+#: engines/mohawk/myst.cpp:555 engines/mohawk/riven.cpp:826
 msgid "Open main menu"
 msgstr "메인 메뉴 열기"
 
-#: engines/mohawk/myst.cpp:579 engines/mohawk/riven.cpp:843
+#: engines/mohawk/myst.cpp:579 engines/mohawk/riven.cpp:850
 msgid "Load game state"
 msgstr "게임 상태저장 불러오기"
 
-#: engines/mohawk/myst.cpp:584 engines/mohawk/riven.cpp:848
+#: engines/mohawk/myst.cpp:584 engines/mohawk/riven.cpp:855
 msgid "Save game state"
 msgstr "게임 상태저장 저장하기"
 
-#: engines/mohawk/myst.cpp:589 engines/mohawk/riven.cpp:853
+#: engines/mohawk/myst.cpp:589 engines/mohawk/riven.cpp:860
 msgid "Show options menu"
 msgstr "옵션 메뉴 보이기"
 
@@ -6775,49 +6865,49 @@ msgstr ""
 "'extras.mhk' 파일을 찾을 수 없습니다. 'arcriven.z' 설치 파일도 사용 가능합니"
 "다."
 
-#: engines/mohawk/riven.cpp:503
+#: engines/mohawk/riven.cpp:510
 msgid "You are missing the following required Riven data files:\n"
 msgstr "다음 필수 Riven 데이터 파일이 부족합니다:\n"
 
-#: engines/mohawk/riven.cpp:865
+#: engines/mohawk/riven.cpp:872
 msgid "Move forward"
 msgstr "앞으로 이동"
 
-#: engines/mohawk/riven.cpp:871
+#: engines/mohawk/riven.cpp:878
 msgid "Move forward left"
 msgstr "왼쪽 앞으로 이동"
 
-#: engines/mohawk/riven.cpp:875
+#: engines/mohawk/riven.cpp:882
 msgid "Move forward right"
 msgstr "오른쪽 앞으로 이동"
 
-#: engines/mohawk/riven.cpp:879
+#: engines/mohawk/riven.cpp:886
 msgid "Move backwards"
 msgstr "뒤로 이동"
 
-#: engines/mohawk/riven.cpp:885 engines/wintermute/keymapper_tables.h:161
+#: engines/mohawk/riven.cpp:892 engines/wintermute/keymapper_tables.h:161
 #: engines/wintermute/keymapper_tables.h:741
 #: engines/wintermute/keymapper_tables.h:2122
 #: engines/wintermute/keymapper_tables.h:2223
 msgid "Turn left"
 msgstr "왼쪽으로 회전"
 
-#: engines/mohawk/riven.cpp:891 engines/wintermute/keymapper_tables.h:167
+#: engines/mohawk/riven.cpp:898 engines/wintermute/keymapper_tables.h:167
 #: engines/wintermute/keymapper_tables.h:746
 #: engines/wintermute/keymapper_tables.h:2128
 #: engines/wintermute/keymapper_tables.h:2230
 msgid "Turn right"
 msgstr "오른쪽으로 회전"
 
-#: engines/mohawk/riven.cpp:897
+#: engines/mohawk/riven.cpp:904
 msgid "Look up"
 msgstr "위를 바라보기"
 
-#: engines/mohawk/riven.cpp:902
+#: engines/mohawk/riven.cpp:909
 msgid "Look down"
 msgstr "아래를 바라보기"
 
-#: engines/mohawk/riven.cpp:908
+#: engines/mohawk/riven.cpp:915
 msgid "Play intro videos"
 msgstr "인트로 영상 재생"
 
@@ -7785,12 +7875,6 @@ msgstr "Ctrl"
 #: engines/scumm/help.cpp:77
 msgid "Load saved game 1-10"
 msgstr "세이브 파일 1~10번을 불러옴"
-
-#: engines/scumm/help.cpp:78 engines/scumm/help.cpp:82
-#: engines/scumm/help.cpp:84 engines/scumm/help.cpp:98
-#: engines/scumm/help.cpp:99 engines/scumm/help.cpp:100
-msgid "Alt"
-msgstr "Alt"
 
 #: engines/scumm/help.cpp:78
 msgid "Save game 1-10"
@@ -10189,11 +10273,6 @@ msgstr ""
 #~ msgid "Invalid Scene ID!"
 #~ msgstr "씬 ID가 잘못되었습니다!"
 
-#, fuzzy
-#~| msgid "Shift key"
-#~ msgid "Shift"
-#~ msgstr "시프트 키"
-
 #~ msgid "Show item costs in standard inventory mode"
 #~ msgstr "일반 인벤토리 모드에서 아이템 가격을 표시"
 
@@ -10566,9 +10645,6 @@ msgstr ""
 
 #~ msgid "Global menu"
 #~ msgstr "전역 메뉴"
-
-#~ msgid "Virtual keyboard"
-#~ msgstr "가상 키보드"
 
 #~ msgid "Key mapper"
 #~ msgstr "키 맵퍼"

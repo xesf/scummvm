@@ -74,13 +74,13 @@ byte kDrillerZXPalette[9][3] = {
 };
 
 byte kDrillerCPCPalette[32][3] = {
-	{0x00, 0x00, 0x00}, // 0: special case?
+	{0x80, 0x80, 0x80}, // 0: special case?
 	{0x11, 0x22, 0x33},
 	{0x80, 0xff, 0x80}, // 2
 	{0xff, 0xff, 0x80}, // 3
 	{0x11, 0x22, 0x33},
 	{0xff, 0x00, 0x80}, // 5
-	{0x00, 0xff, 0x80}, // 6
+	{0x00, 0x80, 0x00}, // 6
 	{0xff, 0x80, 0x80}, // 7
 	{0x11, 0x22, 0x33},
 	{0x11, 0x22, 0x33},
@@ -94,7 +94,7 @@ byte kDrillerCPCPalette[32][3] = {
 	{0x00, 0xff, 0x80}, // 17
 	{0x00, 0xff, 0x00}, // 18
 	{0x80, 0xff, 0xff}, // 19
-	{0x11, 0x22, 0x33},
+	{0x00, 0x00, 0x00}, // 20
 	{0x00, 0x00, 0xff}, // 21
 	{0x00, 0x80, 0x00}, // 22
 	{0x00, 0x80, 0xff}, // 23
@@ -176,19 +176,22 @@ static const struct CGAPalettteEntry {
 	{10, kDrillerCGAPalettePinkBlue},
 	{11, kDrillerCGAPaletteRedGreen},
 	{12, kDrillerCGAPalettePinkBlue},
-
+	{13, kDrillerCGAPaletteRedGreen},
 	{14, kDrillerCGAPalettePinkBlue},
-
+	{15, kDrillerCGAPaletteRedGreen},
 	{16, kDrillerCGAPalettePinkBlue},
-
+	{17, kDrillerCGAPalettePinkBlue},
+	{18, kDrillerCGAPalettePinkBlue},
 	{19, kDrillerCGAPaletteRedGreen},
 	{20, kDrillerCGAPalettePinkBlue},
 	{21, kDrillerCGAPaletteRedGreen},
 	{22, kDrillerCGAPalettePinkBlue},
 	{23, kDrillerCGAPaletteRedGreen},
-
+	{25, kDrillerCGAPalettePinkBlue},
+	{27, kDrillerCGAPaletteRedGreen},
 	{28, kDrillerCGAPalettePinkBlue},
 
+	{31, kDrillerCGAPaletteRedGreen},
 	{32, kDrillerCGAPalettePinkBlue},
 	{127, kDrillerCGAPaletteRedGreen},
 	{0, 0}   // This marks the end

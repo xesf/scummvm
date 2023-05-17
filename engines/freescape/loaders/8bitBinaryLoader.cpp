@@ -191,7 +191,7 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 			// instructions = getInstructions(conditionSource);
 			debugC(1, kFreescapeDebugParser, "%s", conditionSource.c_str());
 		}
-		debugC(1, kFreescapeDebugParser, "End of object at %lx", file->pos());
+		debugC(1, kFreescapeDebugParser, "End of object at %lx", long(file->pos()));
 
 		if (!GeometricObject::isPolygon(objectType))
 			position = 32 * position;
@@ -219,7 +219,7 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 			byteSizeOfObject = 0;
 		}
 		assert(byteSizeOfObject == 0);
-		debugC(1, kFreescapeDebugParser, "End of object at %lx", file->pos());
+		debugC(1, kFreescapeDebugParser, "End of object at %lx", long(file->pos()));
 		// create an entrance
 		return new Entrance(
 			objectID,
@@ -260,7 +260,7 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 			conditionSource = detokenise8bitCondition(conditionArray, instructions, isCastle());
 			debugC(1, kFreescapeDebugParser, "%s", conditionSource.c_str());
 		}
-		debugC(1, kFreescapeDebugParser, "End of object at %lx", file->pos());
+		debugC(1, kFreescapeDebugParser, "End of object at %lx", long(file->pos()));
 		// create an entrance
 		return new Sensor(
 			objectID,
@@ -277,11 +277,23 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 
 	case kGroupType:
 		debugC(1, kFreescapeDebugParser, "Object of type 'group'");
-		file->seek(byteSizeOfObject, SEEK_CUR);
+		Common::Array<uint8> groupDataArray;
+		groupDataArray.push_back(uint8(position.x()));
+		groupDataArray.push_back(uint8(position.y()));
+		groupDataArray.push_back(uint8(position.z()));
+
+		groupDataArray.push_back(uint8(v.x()));
+		groupDataArray.push_back(uint8(v.y()));
+		groupDataArray.push_back(uint8(v.z()));
+
+		byteSizeOfObject++;
+		while(--byteSizeOfObject > 0)
+			groupDataArray.push_back(file->readByte());
+
 		return new Group(
 			objectID,
-			position,
-			v);
+			rawFlagsAndType,
+			groupDataArray);
 		break;
 	}
 	// Unreachable
@@ -436,7 +448,7 @@ Area *FreescapeEngine::load8bitArea(Common::SeekableReadStream *file, uint16 nco
 	debugC(1, kFreescapeDebugParser, "Area %d", areaNumber);
 	debugC(1, kFreescapeDebugParser, "Flags: %d Objects: %d", areaFlags, numberOfObjects);
 	// debug("Condition Ptr: %x", cPtr);
-	debugC(1, kFreescapeDebugParser, "Pos before first object: %lx", file->pos());
+	debugC(1, kFreescapeDebugParser, "Pos before first object: %lx", long(file->pos()));
 
 	// Driller specific
 	uint8 gasPocketX = 0;
@@ -485,6 +497,12 @@ Area *FreescapeEngine::load8bitArea(Common::SeekableReadStream *file, uint16 nco
 	for (uint8 object = 0; object < numberOfObjects && areaNumber != 192; object++) {
 		debugC(1, kFreescapeDebugParser, "Reading object: %d", object);
 		Object *newObject = load8bitObject(file);
+
+		if (newObject->getType() == ObjectType::kGroupType) {
+			Group *group = (Group *)newObject;
+			for (ObjectMap::iterator it = objectsByID->begin(); it != objectsByID->end(); ++it)
+				group->assemble(it->_value);
+		}
 
 		if (newObject) {
 			newObject->scale(scale);
@@ -543,7 +561,7 @@ Area *FreescapeEngine::load8bitArea(Common::SeekableReadStream *file, uint16 nco
 		}
 	}
 
-	debugC(1, kFreescapeDebugParser, "End of area at %lx", file->pos());
+	debugC(1, kFreescapeDebugParser, "End of area at %lx", long(file->pos()));
 	return area;
 }
 
@@ -617,7 +635,7 @@ void FreescapeEngine::load8bitBinary(Common::SeekableReadStream *file, int offse
 		loadDemoData(file, offset + demoDataTable, 128); // TODO: check this size
 
 	file->seek(offset + globalByteCodeTable);
-	debugC(1, kFreescapeDebugParser, "Position: %lx\n", file->pos());
+	debugC(1, kFreescapeDebugParser, "Position: %lx\n", long(file->pos()));
 
 	uint8 numConditions = readField(file, 8);
 	debugC(1, kFreescapeDebugParser, "%d global conditions", numConditions);
@@ -625,7 +643,7 @@ void FreescapeEngine::load8bitBinary(Common::SeekableReadStream *file, int offse
 		FCLInstructionVector instructions;
 		// get the length
 		uint32 lengthOfCondition = readField(file, 8);
-		debugC(1, kFreescapeDebugParser, "length of condition: %d at %lx", lengthOfCondition, file->pos());
+		debugC(1, kFreescapeDebugParser, "length of condition: %d at %lx", lengthOfCondition, long(file->pos()));
 		// get the condition
 		if (lengthOfCondition > 0) {
 			Common::Array<uint8> conditionArray = readArray(file, lengthOfCondition);
@@ -673,7 +691,7 @@ void FreescapeEngine::load8bitBinary(Common::SeekableReadStream *file, int offse
 		file->seek(offset + 0xc8);
 	// file->seek(offset + 0x4f); //CPC
 
-	debugC(1, kFreescapeDebugParser, "areas index at: %lx", file->pos());
+	debugC(1, kFreescapeDebugParser, "areas index at: %lx", long(file->pos()));
 	uint16 *fileOffsetForArea = new uint16[numberOfAreas];
 	for (uint16 area = 0; area < numberOfAreas; area++) {
 		fileOffsetForArea[area] = readField(file, 16);

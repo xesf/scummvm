@@ -186,7 +186,8 @@ const MapScreenDirectionDef *MapDef::getScreenDirection(uint screen, uint direct
 	return screenDirections[screen][direction].get();
 }
 
-ScriptEnvironmentVars::ScriptEnvironmentVars() : lmb(false), lmbDrag(false), esc(false), exitToMenu(false), panInteractionID(0), fpsOverride(0), lastHighlightedItem(0) {
+ScriptEnvironmentVars::ScriptEnvironmentVars() : lmb(false), lmbDrag(false), esc(false), exitToMenu(false), animChangeSet(false),
+	panInteractionID(0), fpsOverride(0), lastHighlightedItem(0), animChangeFrameOffset(0), animChangeNumFrames(0) {
 }
 
 OSEvent::OSEvent() : type(kOSEventTypeInvalid), keyCode(static_cast<Common::KeyCode>(0)), keymappedEvent(kKeymappedEventNone), timestamp(0) {
@@ -385,11 +386,19 @@ void SfxData::load(Common::SeekableReadStream &stream, Audio::Mixer *mixer) {
 					c = '/';
 			}
 
+			size_t commentPos = sfxPath.find(';');
+			if (commentPos != Common::String::npos) {
+				sfxPath = sfxPath.substr(0, commentPos);
+				sfxPath.trim();
+			}
+
 			sfxPath = Common::String("Sfx/") + sfxPath;
 
 			Common::File f;
-			if (!f.open(sfxPath))
+			if (!f.open(sfxPath)) {
 				warning("SfxData::load: Could not open sample file '%s'", sfxPath.c_str());
+				continue;
+			}
 
 			int64 size = f.size();
 			if (size <= 0 || size > 0x1fffffffu) {
@@ -1021,7 +1030,7 @@ Runtime::Runtime(OSystem *system, Audio::Mixer *mixer, const Common::FSNode &roo
 	_menuInterface.reset(new RuntimeMenuInterface(this));
 
 	for (int32 i = 0; i < 49; i++)
-		_dbToVolume[i] = decibelsToLinear(i - 49, Audio::Mixer::kMaxChannelVolume, Audio::Mixer::kMaxChannelVolume);
+		_dbToVolume[i] = decibelsToLinear(i - 49, Audio::Mixer::kMaxChannelVolume / 2, Audio::Mixer::kMaxChannelVolume / 2);
 }
 
 Runtime::~Runtime() {
@@ -1200,6 +1209,15 @@ bool Runtime::bootGame(bool newGame) {
 
 		loadScore();
 		debug(1, "Score loaded OK");
+
+		// Duplicate rooms must be identified in advance because they can take effect before the room logic is loaded.
+		// For example, in room 37, when taking the hanging lift across, the room is changed to room 28 and then
+		// animation PortD_Zwierz_morph is used, is an animation mapped to room 25, but we can't know that room 28 is
+		// a duplicate of room 25 unless we check the logic file for rooms 26-28.  Additionally, we can't just scan
+		// downward for missing animations elsewhere because PRZYCUMIE_KRZESELKO is mapped to animations 25 and 26,
+		// but the frame range for 27 and 28 is supposed to use room 25 (the root of the duplication), not 26.
+		loadDuplicateRooms();
+		debug(1, "Duplicated rooms identified OK");
 	} else {
 		StartConfigDef &startConfig = _startConfigs[kStartConfigInitial];
 		startConfig.disc = 1;
@@ -1887,11 +1905,11 @@ void Runtime::continuePlayingAnimation(bool loop, bool useStopFrame, bool &outAn
 					VCruise::AudioPlayer &audioPlayer = *playlistEntry.sample->audioPlayer;
 
 					if (playlistEntry.isUpdate) {
-						audioPlayer.setVolumeAndBalance(applyVolumeScale(playlistEntry.volume), playlistEntry.balance);
+						audioPlayer.setVolumeAndBalance(applyVolumeScale(playlistEntry.volume), applyBalanceScale(playlistEntry.balance));
 					} else {
 						audioPlayer.stop();
 						playlistEntry.sample->audioStream->seek(0);
-						audioPlayer.play(applyVolumeScale(playlistEntry.volume), playlistEntry.balance);
+						audioPlayer.play(applyVolumeScale(playlistEntry.volume), applyBalanceScale(playlistEntry.balance));
 					}
 
 					// No break, it's possible for there to be multiple sounds in the same frame
@@ -2147,6 +2165,7 @@ bool Runtime::runScript() {
 			DISPATCH_OP(PuzzleDone);
 			DISPATCH_OP(PuzzleWhoWon);
 			DISPATCH_OP(Fn);
+			DISPATCH_OP(ItemHighlightSetTrue);
 
 		default:
 			error("Unimplemented opcode %i", static_cast<int>(instr.op));
@@ -2157,6 +2176,15 @@ bool Runtime::runScript() {
 }
 
 #undef DISPATCH_OP
+
+bool Runtime::requireAvailableStack(uint n) {
+	if (_scriptStack.size() < n) {
+		error("Script stack underflow");
+		return false;
+	}
+
+	return true;
+}
 
 void Runtime::terminateScript() {
 	_scriptCallStack.clear();
@@ -2193,6 +2221,21 @@ void Runtime::terminateScript() {
 	}
 }
 
+RoomScriptSet *Runtime::getRoomScriptSetForCurrentRoom() const {
+	if (!_scriptSet)
+		return nullptr;
+
+	uint roomNumber = _roomNumber;
+	if (roomNumber < _roomDuplicationOffsets.size())
+		roomNumber -= _roomDuplicationOffsets[roomNumber];
+
+	RoomScriptSetMap_t::const_iterator it = _scriptSet->roomScripts.find(roomNumber);
+	if (it == _scriptSet->roomScripts.end())
+		return nullptr;
+
+	return it->_value.get();
+}
+
 bool Runtime::checkCompletionConditions() {
 	bool succeeded = true;
 	for (uint i = 0; i < GyroState::kNumGyros; i++) {
@@ -2223,9 +2266,10 @@ bool Runtime::checkCompletionConditions() {
 
 	// Activate the corresponding failure or success interaction if present
 	if (_scriptSet) {
-		RoomScriptSetMap_t::const_iterator roomScriptIt = _scriptSet->roomScripts.find(_roomNumber);
-		if (roomScriptIt != _scriptSet->roomScripts.end()) {
-			const ScreenScriptSetMap_t &screenScriptsMap = roomScriptIt->_value->screenScripts;
+		RoomScriptSet *roomScriptSet = getRoomScriptSetForCurrentRoom();
+
+		if (roomScriptSet) {
+			const ScreenScriptSetMap_t &screenScriptsMap = roomScriptSet->screenScripts;
 			ScreenScriptSetMap_t::const_iterator screenScriptIt = screenScriptsMap.find(_screenNumber);
 			if (screenScriptIt != screenScriptsMap.end()) {
 				const ScreenScriptSet &screenScriptSet = *screenScriptIt->_value;
@@ -2532,6 +2576,38 @@ void Runtime::loadScore() {
 		warning("Couldn't load music score");
 }
 
+void Runtime::loadDuplicateRooms() {
+	assert(_gameID == GID_SCHIZM);
+
+	Common::ArchiveMemberList logics;
+	SearchMan.listMatchingMembers(logics, "Log/Room##.log", true);
+
+	for (const Common::ArchiveMemberPtr &logic : logics) {
+		Common::String name = logic->getName();
+
+		char d10 = name[4];
+		char d1 = name[5];
+
+		uint roomNumber = (d10 - '0') * 10 + (d1 - '0');
+
+		Common::SharedPtr<Common::SeekableReadStream> stream(logic->createReadStream());
+		if (stream) {
+			if (checkSchizmLogicForDuplicatedRoom(*stream, stream->size())) {
+				if (_roomDuplicationOffsets.size() < roomNumber)
+					_roomDuplicationOffsets.resize(roomNumber + 1);
+				_roomDuplicationOffsets[roomNumber] = 1;
+			}
+		} else {
+			warning("Logic for room %u couldn't be checked for duplication");
+		}
+	}
+
+	for (uint i = 1; i < _roomDuplicationOffsets.size(); i++) {
+		if (_roomDuplicationOffsets[i])
+			_roomDuplicationOffsets[i] += _roomDuplicationOffsets[i - 1];
+	}
+}
+
 Common::SharedPtr<SoundInstance> Runtime::loadWave(const Common::String &soundName, uint soundID, const Common::ArchiveMemberPtr &archiveMemberPtr) {
 	for (const Common::SharedPtr<SoundInstance> &activeSound : _activeSounds) {
 		if (activeSound->name == soundName)
@@ -2730,9 +2806,10 @@ void Runtime::changeToScreen(uint roomNumber, uint screenNumber) {
 		_swapOutScreen = 0;
 
 		if (_scriptSet) {
-			RoomScriptSetMap_t::const_iterator roomScriptIt = _scriptSet->roomScripts.find(_roomNumber);
-			if (roomScriptIt != _scriptSet->roomScripts.end()) {
-				const ScreenScriptSetMap_t &screenScriptsMap = roomScriptIt->_value->screenScripts;
+			RoomScriptSet *roomScriptSet = getRoomScriptSetForCurrentRoom();
+
+			if (roomScriptSet) {
+				const ScreenScriptSetMap_t &screenScriptsMap = roomScriptSet->screenScripts;
 				ScreenScriptSetMap_t::const_iterator screenScriptIt = screenScriptsMap.find(_screenNumber);
 				if (screenScriptIt != screenScriptsMap.end()) {
 					const Common::SharedPtr<Script> &script = screenScriptIt->_value->entryScript;
@@ -2748,6 +2825,8 @@ void Runtime::changeToScreen(uint roomNumber, uint screenNumber) {
 			_havePanDownFromDirection[i] = false;
 		}
 
+		clearIdleAnimations();
+
 		for (uint i = 0; i < kNumDirections; i++)
 			_haveIdleAnimations[i] = false;
 
@@ -2758,6 +2837,41 @@ void Runtime::changeToScreen(uint roomNumber, uint screenNumber) {
 
 		recordSaveGameSnapshot();
 	}
+}
+
+void Runtime::clearIdleAnimations() {
+	for (uint i = 0; i < kNumDirections; i++)
+		_haveIdleAnimations[i] = false;
+
+	_havePendingPreIdleActions = true;
+	_haveIdleStaticAnimation = false;
+	_idleCurrentStaticAnimation.clear();
+	_havePendingPlayAmbientSounds = true;
+}
+
+void Runtime::changeHero() {
+	recordSaveGameSnapshot();
+
+	Common::SharedPtr<SaveGameSwappableState> currentState = _saveGame->states[0];
+	Common::SharedPtr<SaveGameSwappableState> alternateState = _saveGame->states[1];
+
+	if (_swapOutRoom && _swapOutScreen) {
+		// Some scripts may kick the player out to another location on swap back,
+		// such as the elevator in the first area on Hannah's quest.  This is done
+		// via the "heroOut" op.
+		currentState->roomNumber = _swapOutRoom;
+		currentState->screenNumber = _swapOutScreen;
+		currentState->direction = _direction;
+	}
+
+	_saveGame->states[0] = alternateState;
+	_saveGame->states[1] = currentState;
+
+	_saveGame->hero ^= 1u;
+
+	changeToCursor(_cursors[kCursorArrow]);
+
+	restoreSaveGameSnapshot();
 }
 
 void Runtime::triggerPreIdleActions() {
@@ -2869,6 +2983,13 @@ bool Runtime::dischargeIdleMouseMove() {
 		}
 	}
 
+	if (_gameID == GID_SCHIZM && !isOnInteraction) {
+		if (_traySection.rect.contains(_mousePos) && (_traySection.rect.right - _mousePos.x) < 88u) {
+			isOnInteraction = true;
+			interactionID = kHeroChangeInteractionID;
+		}
+	}
+
 	if (_idleIsOnInteraction && (!isOnInteraction || interactionID != _idleInteractionID)) {
 		// Mouse left the previous interaction
 		_idleIsOnInteraction = false;
@@ -2882,12 +3003,17 @@ bool Runtime::dischargeIdleMouseMove() {
 		_idleIsOnInteraction = true;
 		_idleInteractionID = interactionID;
 
-		// New interaction, is there a script?
-		Common::SharedPtr<Script> script = findScriptForInteraction(interactionID);
+		if (interactionID == kHeroChangeInteractionID) {
+			changeToCursor(_cursors[16]);
+			_idleHaveClickInteraction = true;
+		} else {
+			// New interaction, is there a script?
+			Common::SharedPtr<Script> script = findScriptForInteraction(interactionID);
 
-		if (script) {
-			activateScript(script, ScriptEnvironmentVars());
-			return true;
+			if (script) {
+				activateScript(script, ScriptEnvironmentVars());
+				return true;
+			}
 		}
 	}
 
@@ -2929,17 +3055,22 @@ bool Runtime::dischargeIdleMouseDown() {
 
 bool Runtime::dischargeIdleClick() {
 	if (_idleIsOnInteraction && _idleHaveClickInteraction) {
-		// Interaction, is there a script?
-		Common::SharedPtr<Script> script = findScriptForInteraction(_idleInteractionID);
-
-		_idleIsOnInteraction = false;	// ?
-
-		if (script) {
-			ScriptEnvironmentVars vars;
-			vars.lmb = true;
-
-			activateScript(script, vars);
+		if (_gameID == GID_SCHIZM && _idleInteractionID == kHeroChangeInteractionID) {
+			changeHero();
 			return true;
+		} else {
+			// Interaction, is there a script?
+			Common::SharedPtr<Script> script = findScriptForInteraction(_idleInteractionID);
+
+			_idleIsOnInteraction = false; // ?
+
+			if (script) {
+				ScriptEnvironmentVars vars;
+				vars.lmb = true;
+
+				activateScript(script, vars);
+				return true;
+			}
 		}
 	}
 
@@ -3139,7 +3270,7 @@ void Runtime::changeAnimation(const AnimationDef &animDef, uint initialFrame, bo
 }
 
 void Runtime::changeAnimation(const AnimationDef &animDef, uint initialFrame, bool consumeFPSOverride, const Fraction &defaultFrameRate) {
-	debug("changeAnimation: %u -> %u  Initial %u", animDef.firstFrame, animDef.lastFrame, initialFrame);
+	debug("changeAnimation: Anim: %u  Range: %u -> %u  Initial %u", animDef.animNum, animDef.firstFrame, animDef.lastFrame, initialFrame);
 
 	_animPlaylist.reset();
 
@@ -3575,7 +3706,7 @@ void Runtime::update3DSounds() {
 
 bool Runtime::computeEffectiveVolumeAndBalance(SoundInstance &snd) {
 	uint effectiveVolume = applyVolumeScale(snd.volume);
-	int32 effectiveBalance = snd.balance;
+	int32 effectiveBalance = applyBalanceScale(snd.balance);
 
 	double radians = Common::deg2rad<double>(_listenerAngle);
 	int32 cosAngle = static_cast<int32>(cos(radians) * (1 << 15));
@@ -3719,8 +3850,21 @@ uint Runtime::applyVolumeScale(int32 volume) const {
 		else if (volume < 0)
 			return 0;
 
-		return volume * Audio::Mixer::kMaxChannelVolume / 100;
+		return volume * Audio::Mixer::kMaxChannelVolume / 200;
 	}
+}
+
+int Runtime::applyBalanceScale(int32 balance) const {
+	if (balance < -100)
+		balance = -100;
+	else if (balance > 100)
+		balance = 100;
+
+	// Avoid undefined divide rounding behavior, round toward zero
+	if (balance < 0)
+		return -((-balance) * 127 / 100);
+	else
+		return balance * 127 / 100;
 }
 
 AnimationDef Runtime::stackArgsToAnimDef(const StackInt_t *args) const {
@@ -3737,6 +3881,22 @@ AnimationDef Runtime::stackArgsToAnimDef(const StackInt_t *args) const {
 	def.animName = _animDefNames[args[7]];
 
 	return def;
+}
+
+void Runtime::adjustUsingAnimChange(AnimationDef &animDef) const {
+	if (_scriptEnv.animChangeSet) {
+		uint origFirstFrame = animDef.firstFrame;
+		uint origLastFrame = animDef.lastFrame;
+
+		uint newFirstFrame = origFirstFrame + _scriptEnv.animChangeFrameOffset;
+		uint newLastFrame = newFirstFrame + _scriptEnv.animChangeNumFrames;
+
+		if (newLastFrame > origLastFrame || newFirstFrame > origLastFrame)
+			warning("animChange ops overran the original animation bounds");
+
+		animDef.firstFrame = newFirstFrame;
+		animDef.lastFrame = newLastFrame;
+	}
 }
 
 void Runtime::pushAnimDef(const AnimationDef &animDef) {
@@ -3787,13 +3947,18 @@ void Runtime::compileSchizmLogicSet(const uint *roomNumbers, uint numRooms) {
 	Common::SharedPtr<ScriptSet> scriptSet(new ScriptSet());
 
 	for (uint i = 0; i < numRooms; i++) {
+		uint roomNumber = roomNumbers[i];
+		uint roomFile = roomNumber;
 
-		Common::String logicFileName = Common::String::format("Log/Room%02u.log", roomNumbers[i]);
+		if (roomNumber < _roomDuplicationOffsets.size())
+			roomFile -= _roomDuplicationOffsets[roomNumber];
+
+		Common::String logicFileName = Common::String::format("Log/Room%02u.log", roomFile);
 
 		Common::File logicFile;
 		if (logicFile.open(logicFileName)) {
 			debug(1, "Compiling script %s...", logicFileName.c_str());
-			compileSchizmLogicFile(*scriptSet, logicFile, static_cast<uint>(logicFile.size()), logicFileName, gs.get());
+			compileSchizmLogicFile(*scriptSet, roomNumber, roomFile, logicFile, static_cast<uint>(logicFile.size()), logicFileName, gs.get());
 			logicFile.close();
 		}
 	}
@@ -3949,13 +4114,11 @@ void Runtime::drawDebugOverlay() {
 
 Common::SharedPtr<Script> Runtime::findScriptForInteraction(uint interactionID) const {
 	if (_scriptSet) {
-		RoomScriptSetMap_t::const_iterator roomScriptIt = _scriptSet->roomScripts.find(_roomNumber);
+		RoomScriptSet *roomScriptSet = getRoomScriptSetForCurrentRoom();
 
-		if (roomScriptIt != _scriptSet->roomScripts.end()) {
-			const RoomScriptSet &roomScriptSet = *roomScriptIt->_value;
-
-			ScreenScriptSetMap_t::const_iterator screenScriptIt = roomScriptSet.screenScripts.find(_screenNumber);
-			if (screenScriptIt != roomScriptSet.screenScripts.end()) {
+		if (roomScriptSet) {
+			ScreenScriptSetMap_t::const_iterator screenScriptIt = roomScriptSet->screenScripts.find(_screenNumber);
+			if (screenScriptIt != roomScriptSet->screenScripts.end()) {
 				const ScreenScriptSet &screenScriptSet = *screenScriptIt->_value;
 
 				ScriptMap_t::const_iterator interactionScriptIt = screenScriptSet.interactionScripts.find(interactionID);
@@ -4703,7 +4866,7 @@ void Runtime::recordSaveGameSnapshot() {
 		snapshot->numStates = 1;
 	else if (_gameID == GID_SCHIZM) {
 		snapshot->numStates = 2;
-		snapshot->states[1].reset(new SaveGameSwappableState());
+		snapshot->states[1] = _altState;
 	}
 
 	SaveGameSwappableState *mainState = snapshot->states[0].get();
@@ -4967,21 +5130,17 @@ LoadGameOutcome Runtime::loadGame(Common::ReadStream *stream) {
 #endif
 
 #define PEEK_STACK(n)                                                                         \
-	if (this->_scriptStack.size() < (n)) {                                                    \
-		error("Script stack underflow");                                                      \
+	if (!requireAvailableStack(n))                                                            \
 		return;                                                                               \
-	}                                                                                         \
 	const StackValue *stackArgs = &this->_scriptStack[this->_scriptStack.size() - (n)]
 
 
 #define TAKE_STACK_INT_NAMED(n, arrayName)                                                    \
 	StackInt_t arrayName[n];                                                                  \
 	do {                                                                                      \
-		const uint stackSize = _scriptStack.size();                                           \
-		if (stackSize < (n)) {                                                                \
-			error("Script stack underflow");                                                  \
+		if (!requireAvailableStack(n))                                                        \
 			return;                                                                           \
-		}                                                                                     \
+		const uint stackSize = _scriptStack.size();                                           \
 		const StackValue *stackArgsPtr = &this->_scriptStack[stackSize - (n)];                \
 		for (uint i = 0; i < (n); i++) {                                                      \
 			if (stackArgsPtr[i].type != StackValue::kNumber)                                  \
@@ -4996,11 +5155,9 @@ LoadGameOutcome Runtime::loadGame(Common::ReadStream *stream) {
 #define TAKE_STACK_STR_NAMED(n, arrayName)                                     \
 	Common::String arrayName[n];                                               \
 	do {                                                                       \
-		const uint stackSize = _scriptStack.size();                            \
-		if (stackSize < (n)) {                                                 \
-			error("Script stack underflow");                                   \
+		if (!requireAvailableStack(n))                                         \
 			return;                                                            \
-		}                                                                      \
+		const uint stackSize = _scriptStack.size();                            \
 		const StackValue *stackArgsPtr = &this->_scriptStack[stackSize - (n)]; \
 		for (uint i = 0; i < (n); i++) {                                       \
 			if (stackArgsPtr[i].type != StackValue::kString)                   \
@@ -5015,11 +5172,9 @@ LoadGameOutcome Runtime::loadGame(Common::ReadStream *stream) {
 #define TAKE_STACK_VAR_NAMED(n, arrayName)                                     \
 	StackValue arrayName[n];                                                   \
 	do {                                                                       \
-		const uint stackSize = _scriptStack.size();                            \
-		if (stackSize < (n)) {                                                 \
-			error("Script stack underflow");                                   \
+		if (!requireAvailableStack(n))                                         \
 			return;                                                            \
-		}                                                                      \
+		const uint stackSize = _scriptStack.size();                            \
 		const StackValue *stackArgsPtr = &this->_scriptStack[stackSize - (n)]; \
 		for (uint i = 0; i < (n); i++)                                         \
 			arrayName[i] = Common::move(stackArgsPtr[i]);                      \
@@ -5168,6 +5323,7 @@ void Runtime::scriptOpAnimF(ScriptArg_t arg) {
 	_screenNumber = stackArgs[kAnimDefStackArgs + 0];
 	_direction = stackArgs[kAnimDefStackArgs + 1];
 	_havePendingScreenChange = true;
+	clearIdleAnimations();
 
 	uint cursorID = kCursorArrow;
 	if (_scriptEnv.panInteractionID == kPanUpInteraction)
@@ -5220,6 +5376,8 @@ void Runtime::scriptOpAnimS(ScriptArg_t arg) {
 
 	AnimationDef animDef = stackArgsToAnimDef(stackArgs + 0);
 
+	adjustUsingAnimChange(animDef);
+
 	// Static animations start on the last frame
 	changeAnimation(animDef, animDef.lastFrame, false);
 
@@ -5235,12 +5393,17 @@ void Runtime::scriptOpAnim(ScriptArg_t arg) {
 	TAKE_STACK_INT(kAnimDefStackArgs + 2);
 
 	AnimationDef animDef = stackArgsToAnimDef(stackArgs + 0);
+
+	adjustUsingAnimChange(animDef);
+
 	changeAnimation(animDef, animDef.firstFrame, true, _animSpeedDefault);
 
 	_gameState = kGameStateWaitingForAnimation;
 	_screenNumber = stackArgs[kAnimDefStackArgs + 0];
 	_direction = stackArgs[kAnimDefStackArgs + 1];
 	_havePendingScreenChange = true;
+
+	clearIdleAnimations();
 
 	if (_loadedAnimationHasSound)
 		changeToCursor(nullptr);
@@ -5382,6 +5545,20 @@ void Runtime::scriptOpItemHighlightSet(ScriptArg_t arg) {
 
 		if (item.itemID == static_cast<uint>(stackArgs[0])) {
 			item.highlighted = isHighlighted;
+			drawInventory(slot);
+			break;
+		}
+	}
+}
+
+void Runtime::scriptOpItemHighlightSetTrue(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	for (uint slot = 0; slot < kNumInventorySlots; slot++) {
+		InventoryItem &item = _inventory[slot];
+
+		if (item.itemID == static_cast<uint>(stackArgs[0])) {
+			item.highlighted = true;
 			drawInventory(slot);
 			break;
 		}
@@ -6202,9 +6379,10 @@ void Runtime::scriptOpGoto(ScriptArg_t arg) {
 	Common::SharedPtr<Script> newScript = nullptr;
 
 	if (_scriptSet) {
-		RoomScriptSetMap_t::const_iterator roomScriptIt = _scriptSet->roomScripts.find(_roomNumber);
-		if (roomScriptIt != _scriptSet->roomScripts.end()) {
-			const ScreenScriptSetMap_t &screenScriptsMap = roomScriptIt->_value->screenScripts;
+		RoomScriptSet *roomScriptSet = getRoomScriptSetForCurrentRoom();
+
+		if (roomScriptSet) {
+			const ScreenScriptSetMap_t &screenScriptsMap = roomScriptSet->screenScripts;
 			ScreenScriptSetMap_t::const_iterator screenScriptIt = screenScriptsMap.find(_screenNumber);
 			if (screenScriptIt != screenScriptsMap.end()) {
 				const ScreenScriptSet &screenScriptSet = *screenScriptIt->_value;
@@ -6254,16 +6432,52 @@ void Runtime::scriptOpAnimName(ScriptArg_t arg) {
 	if (_roomNumber >= _roomDefs.size())
 		error("Can't resolve animation for room, room number was invalid");
 
+	Common::String &animName = _scriptSet->strings[arg];
+
+	// In Reah, animations are mapped to rooms.
+	// 
+	// In Schizm this can get very complicated: It supports overlapping room logics which in some cases
+	// have animation ranges mapped to a different animation.
+	//
+	// For example, in Schizm, rooms 25-28 all share one logic file and their corresponding animations are
+	// largely duplicates of each other with different skies.
+	//
+	// It appears that the animation to select is based on the remapped room if the animation can't be
+	// found in its primary room.
+	//
+	// For example, PRZYCUMIE_KRZESELKO is mapped to an animation range in room 25 and another range in
+	// room 26, and there is no mapping for room 28.  In this case, the animation frame range from room 25
+	// is used, but it is remapped to animation 28.
 	Common::SharedPtr<RoomDef> roomDef = _roomDefs[_roomNumber];
-	if (!roomDef)
-		error("Can't resolve animation for room, room number was invalid");
+	if (roomDef) {
+		Common::HashMap<Common::String, AnimationDef>::const_iterator it = roomDef->animations.find(animName);
+		if (it != roomDef->animations.end()) {
+			pushAnimDef(it->_value);
+			return;
+		}
+	}
+
+	if (_roomNumber < _roomDuplicationOffsets.size() && _roomDuplicationOffsets[_roomNumber] != 0) {
+		int roomToUse = _roomNumber - _roomDuplicationOffsets[_roomNumber];
+
+		roomDef = _roomDefs[roomToUse];
+
+		Common::HashMap<Common::String, AnimationDef>::const_iterator it = roomDef->animations.find(animName);
+		if (it != roomDef->animations.end()) {
+			AnimationDef animDef = it->_value;
+
+			if (animDef.animNum == roomToUse)
+				animDef.animNum = _roomNumber;
+			else if (animDef.animNum == -roomToUse)
+				animDef.animNum = -static_cast<int>(_roomNumber);
+
+			pushAnimDef(animDef);
+			return;
+		}
+	}
 
 
-	Common::HashMap<Common::String, AnimationDef>::const_iterator it = roomDef->animations.find(_scriptSet->strings[arg]);
-	if (it == roomDef->animations.end())
-		error("Can't resolve animation for room, couldn't find animation '%s'", _scriptSet->strings[arg].c_str());
-
-	pushAnimDef(it->_value);
+	error("Can't resolve animation for room, couldn't find animation '%s'", animName.c_str());
 }
 
 void Runtime::scriptOpValueName(ScriptArg_t arg) {
@@ -6348,8 +6562,15 @@ void Runtime::scriptOpMusicPlayScore(ScriptArg_t arg) {
 	startScoreSection();
 }
 
-OPCODE_STUB(ScoreAlways)
-OPCODE_STUB(ScoreNormal)
+void Runtime::scriptOpScoreAlways(ScriptArg_t arg) {
+	// This op should temporarily disable music mute
+	warning("ScoreAlways opcode isn't implemented yet");
+}
+
+void Runtime::scriptOpScoreNormal(ScriptArg_t arg) {
+	// This op should re-enable music mute
+	warning("ScoreNormal opcode isn't implemented yet");
+}
 
 void Runtime::scriptOpSndPlay(ScriptArg_t arg) {
 	TAKE_STACK_STR_NAMED(1, sndNameArgs);
@@ -6362,7 +6583,17 @@ void Runtime::scriptOpSndPlay(ScriptArg_t arg) {
 		triggerSound(true, *cachedSound, getSilentSoundVolume(), 0, false, false);
 }
 
-OPCODE_STUB(SndPlayEx)
+void Runtime::scriptOpSndPlayEx(ScriptArg_t arg) {
+	TAKE_STACK_INT_NAMED(2, sndParamArgs);
+	TAKE_STACK_STR_NAMED(1, sndNameArgs);
+
+	StackInt_t soundID = 0;
+	SoundInstance *cachedSound = nullptr;
+	resolveSoundByName(sndNameArgs[0], true, soundID, cachedSound);
+
+	if (cachedSound)
+		triggerSound(true, *cachedSound, sndParamArgs[0], sndParamArgs[1], false, false);
+}
 
 void Runtime::scriptOpSndPlay3D(ScriptArg_t arg) {
 	TAKE_STACK_INT_NAMED(5, sndParamArgs);
@@ -6373,9 +6604,9 @@ void Runtime::scriptOpSndPlay3D(ScriptArg_t arg) {
 	resolveSoundByName(sndNameArgs[0], true, soundID, cachedSound);
 
 	SoundParams3D sndParams;
-	sndParams.unknownRange = sndParamArgs[2];
-	sndParams.minRange = sndParamArgs[3];
-	sndParams.maxRange = sndParamArgs[4];
+	sndParams.minRange = sndParamArgs[2];
+	sndParams.maxRange = sndParamArgs[3];
+	sndParams.unknownRange = sndParamArgs[4]; // Doesn't appear to be the same thing as Reah.  Usually 1000, sometimes 2000 or 3000.
 
 	if (cachedSound) {
 		setSound3DParameters(*cachedSound, sndParamArgs[0], sndParamArgs[1], sndParams);
@@ -6397,11 +6628,34 @@ void Runtime::scriptOpSndWait(ScriptArg_t arg) {
 
 OPCODE_STUB(SndHalt)
 OPCODE_STUB(SndToBack)
-OPCODE_STUB(SndStop)
-OPCODE_STUB(SndStopAll)
+
+void Runtime::scriptOpSndStop(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	SoundInstance *cachedSound = resolveSoundByID(stackArgs[0]);
+
+	if (cachedSound)
+		stopSound(*cachedSound);
+}
+
+void Runtime::scriptOpSndStopAll(ScriptArg_t arg) {
+	for (const Common::SharedPtr<SoundInstance> &snd : _activeSounds)
+		stopSound(*snd);
+}
+
 OPCODE_STUB(SndAddRandom)
 OPCODE_STUB(SndClearRandom)
-OPCODE_STUB(VolumeAdd)
+
+
+
+void Runtime::scriptOpVolumeAdd(ScriptArg_t arg) {
+	TAKE_STACK_INT(3);
+
+	SoundInstance *cachedSound = resolveSoundByID(static_cast<uint>(stackArgs[0]));
+
+	if (cachedSound)
+		triggerSoundRamp(*cachedSound, stackArgs[1] * 100, cachedSound->volume + stackArgs[2], false);
+}
 
 void Runtime::scriptOpVolumeChange(ScriptArg_t arg) {
 	TAKE_STACK_INT(3);
@@ -6423,19 +6677,20 @@ void Runtime::scriptOpAnimVolume(ScriptArg_t arg) {
 void Runtime::scriptOpAnimChange(ScriptArg_t arg) {
 	TAKE_STACK_INT(2);
 
-	(void)stackArgs;
+	if (stackArgs[1] == 0)
+		error("animChange frame count shouldn't be zero");
 
-	// Not sure what this does yet.  It is parameterized in some rooms.
-	warning("animChange opcode isn't implemented yet");
+	_scriptEnv.animChangeSet = true;
+	_scriptEnv.animChangeFrameOffset = stackArgs[0];
+	_scriptEnv.animChangeNumFrames = stackArgs[1] - 1;
 }
 
 void Runtime::scriptOpScreenName(ScriptArg_t arg) {
 	const Common::String &scrName = _scriptSet->strings[arg];
-	RoomScriptSetMap_t::const_iterator scriptSetIt = _scriptSet->roomScripts.find(_roomNumber);
-	if (scriptSetIt == _scriptSet->roomScripts.end())
-		error("Couldn't resolve room number to find screen name: '%s'", scrName.c_str());
 
-	const RoomScriptSet *rss = scriptSetIt->_value.get();
+	RoomScriptSet *rss = getRoomScriptSetForCurrentRoom();
+	if (!rss)
+		error("Couldn't resolve room number to find screen name: '%s'", scrName.c_str());
 
 	ScreenNameMap_t::const_iterator screenNameIt = rss->screenNames.find(scrName);
 	if (screenNameIt == rss->screenNames.end())
@@ -6450,7 +6705,20 @@ void Runtime::scriptOpExtractByte(ScriptArg_t arg) {
 	_scriptStack.push_back(StackValue(static_cast<StackInt_t>((stackArgs[0] >> (stackArgs[1] * 8) & 0xff))));
 }
 
-OPCODE_STUB(InsertByte)
+void Runtime::scriptOpInsertByte(ScriptArg_t arg) {
+	TAKE_STACK_INT(3);
+
+	StackInt_t value = stackArgs[0];
+	StackInt_t valueToInsert = (stackArgs[1] & 0xff);
+	int bytePos = stackArgs[2];
+
+	StackInt_t mask = static_cast<StackInt_t>(0xff) << (bytePos * 8);
+
+	value -= (value & mask);
+	value += (valueToInsert << (bytePos * 8));
+
+	_scriptStack.push_back(StackValue(value));
+}
 
 void Runtime::scriptOpString(ScriptArg_t arg) {
 	_scriptStack.push_back(StackValue(_scriptSet->strings[arg]));
@@ -6514,17 +6782,84 @@ void Runtime::scriptOpHeroOut(ScriptArg_t arg) {
 	_swapOutDirection = stackArgs[2];
 }
 
-OPCODE_STUB(HeroGetPos)
-OPCODE_STUB(HeroSetPos)
+void Runtime::scriptOpHeroGetPos(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	bool thisHero = false;
+	switch (stackArgs[0]) {
+	case 0:
+		thisHero = (_hero == 0);
+		break;
+	case 1:
+		thisHero = (_hero == 1);
+		break;
+	case 2:
+		thisHero = false;
+		break;
+	default:
+		error("Unhandled heroGetPos argument %i", static_cast<int>(stackArgs[0]));
+		return;
+	}
+
+	uint roomNumber = thisHero ? _roomNumber : _altState->roomNumber;
+	uint screenNumber = thisHero ? _screenNumber : _altState->screenNumber;
+	uint direction = thisHero ? _direction : _altState->direction;
+
+	uint combined = (roomNumber << 16) | (screenNumber << 8) | direction;
+
+	_scriptStack.push_back(StackValue(static_cast<StackInt_t>(combined)));
+}
+
+void Runtime::scriptOpHeroSetPos(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	bool thisHero = false;
+	switch (stackArgs[0]) {
+	case 0:
+		thisHero = (_hero == 0);
+		break;
+	case 1:
+		thisHero = (_hero == 1);
+		break;
+	case 2:
+		thisHero = false;
+		break;
+	default:
+		error("Unhandled heroGetPos argument %i", static_cast<int>(stackArgs[0]));
+		return;
+	}
+
+	if (!thisHero) {
+		error("heroSetPos for the current hero isn't supported (and Schizm's game scripts shouldn't be doing it).");
+		return;
+	}
+
+	_altState->roomNumber = (stackArgs[1] >> 16) & 0xff;
+	_altState->screenNumber = (stackArgs[1] >> 8) & 0xff;
+	_altState->direction = stackArgs[1] & 0xff;
+}
 
 void Runtime::scriptOpHeroGet(ScriptArg_t arg) {
 	_scriptStack.push_back(StackValue(_hero));
 }
 
 OPCODE_STUB(Garbage)
-OPCODE_STUB(GetRoom)
-OPCODE_STUB(BitAnd)
-OPCODE_STUB(BitOr)
+
+void Runtime::scriptOpGetRoom(ScriptArg_t arg) {
+	_scriptStack.push_back(StackValue(_roomNumber));
+}
+
+void Runtime::scriptOpBitAnd(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	_scriptStack.push_back(StackValue(stackArgs[0] & stackArgs[1]));
+}
+
+void Runtime::scriptOpBitOr(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	_scriptStack.push_back(StackValue(stackArgs[0] | stackArgs[1]));
+}
 
 void Runtime::scriptOpAngleGet(ScriptArg_t arg) {
 	_scriptStack.push_back(StackValue(_direction));
@@ -6538,12 +6873,49 @@ void Runtime::scriptOpIsCDVersion(ScriptArg_t arg) {
 	_scriptStack.push_back(StackValue(_isCDVariant ? 1 : 0));
 }
 
-OPCODE_STUB(Disc)
+void Runtime::scriptOpDisc(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	(void)stackArgs;
+
+	// Always pass correct disc checks
+	_scriptStack.push_back(StackValue(1));
+}
+
 OPCODE_STUB(HidePanel)
-OPCODE_STUB(RotateUpdate)
-OPCODE_STUB(Mul)
-OPCODE_STUB(Div)
-OPCODE_STUB(Mod)
+
+void Runtime::scriptOpRotateUpdate(ScriptArg_t arg) {
+	warning("RotateUpdate op not implemented yet");
+}
+
+void Runtime::scriptOpMul(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	_scriptStack.push_back(StackValue(stackArgs[0] * stackArgs[1]));
+}
+
+void Runtime::scriptOpDiv(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	if (stackArgs[1] == 0) {
+		error("Division by zero");
+		return;
+	}
+
+	_scriptStack.push_back(StackValue(stackArgs[0] / stackArgs[1]));
+}
+
+void Runtime::scriptOpMod(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	if (stackArgs[1] == 0) {
+		error("Division by zero");
+		return;
+	}
+
+	_scriptStack.push_back(StackValue(stackArgs[0] % stackArgs[1]));
+}
+
 OPCODE_STUB(CyfraGet)
 OPCODE_STUB(PuzzleInit)
 OPCODE_STUB(PuzzleCanPress)

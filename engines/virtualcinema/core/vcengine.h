@@ -45,6 +45,9 @@ enum {
 
 class VCEngine : public Engine {
 public:
+    Graphics::PixelFormat _screenPixelFormat;
+
+public:
     VCEngine(OSystem *syst);
     ~VCEngine();
 
@@ -64,6 +67,7 @@ protected:
 
     EventHandler *_handler;
     VideoManager * _video;
+
 };
 
 } // End of namespace VirtualCinema

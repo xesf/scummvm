@@ -59,11 +59,11 @@ RolandEngine::RolandEngine(OSystem *syst)
     // DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
     // DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
 
-    // _intro = new Intro(this);
+    _intro = new RIntro(this);
     // _menu = new Menu(this);
     // _game = new Game(this);
 
-    // _handler = _intro;
+    _handler = _intro;
 
     debug("RolandEngine::RolandEngine");
 }
@@ -74,7 +74,7 @@ RolandEngine::~RolandEngine() {
 
     // delete _game;
     // delete _menu;
-    // delete _intro;
+    delete _intro;
 }
  
 } // End of namespace VirtualCinema

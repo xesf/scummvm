@@ -49,6 +49,7 @@ VCEngine::VCEngine(OSystem *syst)
  
     _console = new Console(this);
     _video = new VideoManager(this);
+    _image = new ImageManager(this);
 }
  
 VCEngine::~VCEngine() {

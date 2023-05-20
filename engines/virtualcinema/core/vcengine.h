@@ -30,12 +30,14 @@
 
 #include "virtualcinema/core/eventHandler.h"
 #include "virtualcinema/core/console.h"
+#include "virtualcinema/core/image.h"
 #include "virtualcinema/core/video.h"
  
 namespace VirtualCinema {
  
 class Console;
 class VideoManager;
+class ImageManager;
 class EventHandler;
 
 enum {
@@ -58,6 +60,7 @@ public:
     void notifyEvent(VCEventType type, int32 param1, int32 param2);
     
     VideoManager* getVideoManager() { return _video; };
+    ImageManager* getImageManager() { return _image; };
     
     void fillScreen(uint32 col);
  
@@ -67,6 +70,7 @@ protected:
 
     EventHandler *_handler;
     VideoManager * _video;
+    ImageManager * _image;
 
 };
 

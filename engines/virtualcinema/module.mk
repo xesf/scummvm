@@ -7,6 +7,7 @@ MODULE_OBJS = \
     x-files/game.o \
     x-files/intro.o \
     x-files/menu.o \
+    core/image.o \
     core/scene.o \
     core/vcengine.o \
     core/video.o \

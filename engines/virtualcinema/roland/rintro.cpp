@@ -19,12 +19,14 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 *
 */
-#include "common/file.h"
-#include "common/system.h"
-#include "graphics/surface.h"
-#include "image/bmp.h"
+// #include "common/file.h"
+// #include "common/system.h"
+// #include "graphics/surface.h"
+// #include "image/bmp.h"
+
 
 #include "virtualcinema/core/eventHandler.h"
+#include "virtualcinema/core/image.h"
 
 #include "rintro.h"
 
@@ -37,20 +39,17 @@ RIntro::~RIntro() {
 }
 
 bool RIntro::mountEvent(const VCEvent &evt) {
-    Common::File file;
-    Common::String filename = Common::String::format("Intro%d.RLE", 1);
-    if (!file.open(filename))
-        error("unable to load image %s", filename.c_str());
-    _image = new Image::BitmapDecoder();
-    _image->loadStream(file);
-    file.close();
-
-    Graphics::Surface *screen = _image->getSurface()->convertTo(_vm->_system->getScreenFormat(), _image->getPalette(), _image->getPaletteColorCount());
-
-    _vm->_system->copyRectToScreen(screen->getPixels(), screen->pitch, 0, 0, screen->w, screen->h);
+    ImageEntryPtr intro1 = _vm->getImageManager()->show("INTRO1.RLE");
+    _vm->getImageManager()->updateImages();
     _vm->_system->updateScreen();
+    _vm->_system->delayMillis(2000);
+    _vm->getImageManager()->removeEntry(intro1);
+    _vm->getImageManager()->show("BKGND.RLE");
+    _vm->getImageManager()->updateImages();
 
-    delete screen;
+    _vm->getVideoManager()->play("ROCKSLID.MOV");
+    // _vm->getVideoManager()->play("SPLASH.MOV");
+
     return true;
 }
 
@@ -59,6 +58,11 @@ bool RIntro::unmountEvent(const VCEvent &evt) {
 }
 
 bool RIntro::updateEvent(const VCEvent &evt) {
+    if (_vm->getVideoManager()->isVideoPlaying()) {
+        _vm->getVideoManager()->updateMovies();
+    } else {
+        _vm->getImageManager()->updateImages();
+    }
     return true;
 }
 

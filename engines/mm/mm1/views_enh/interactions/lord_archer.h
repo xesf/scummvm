@@ -19,32 +19,27 @@
  *
  */
 
-#ifndef FREESCAPE_GROUP_H
-#define FREESCAPE_GROUP_H
+#ifndef MM1_VIEWS_ENH_INTERACTIONS_LORD_ARCHER_H
+#define MM1_VIEWS_ENH_INTERACTIONS_LORD_ARCHER_H
 
-#include "freescape/objects/object.h"
+#include "mm/mm1/views_enh/interactions/interaction.h"
 
-namespace Freescape {
+namespace MM {
+namespace MM1 {
+namespace ViewsEnh {
+namespace Interactions {
 
-class Group : public Object {
+class LordArcher : public Interaction {
 public:
-	Group(uint16 objectID_, uint16 flags_, const Common::Array<byte> data_);
-	void linkObject(Object *obj);
-	void assemble(int frame, int index);
+	LordArcher();
+	virtual ~LordArcher() {}
 
-	Common::Array<Object *> _objects;
-	Common::Array<Math::Vector3d> _objectPositions;
-	Common::Array<int16> _objectIndices;
-	Common::Array<int16> _objectIds;
-	int _scale;
-
-	ObjectType getType() override { return ObjectType::kGroupType; };
-	bool isDrawable() override { return true; }
-	void draw(Freescape::Renderer *gfx) override { error("cannot render Group"); };
-	void scale(int scale_) override { _scale = scale_; };
-	Object *duplicate() override { error("cannot duplicate Group"); };
+	bool msgKeypress(const KeypressMessage &msg) override;
 };
 
-} // End of namespace Freescape
+} // namespace Interactions
+} // namespace ViewsEnh
+} // namespace MM1
+} // namespace MM
 
-#endif // FREESCAPE_GLOBAL_H
+#endif

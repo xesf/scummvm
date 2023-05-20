@@ -27,29 +27,22 @@ namespace Freescape {
 Group::Group(uint16 objectID_, uint16 flags_, const Common::Array<byte> data_) {
 	_objectID = objectID_;
 	_flags = flags_;
+	_scale = 0;
 
 	int i;
 	for (i = 0; i < 9; i++) {
 		debugC(1, kFreescapeDebugParser, "group data[%d] = %d", i, data_[i]);
 		if (data_[i] > 0)
 			_objectIds.push_back(data_[i]);
-		/*else
-			break;*/
 	}
 	i = 9;
-	while (i < int(data_.size())) {
-		debugC(1, kFreescapeDebugParser, "group data[%d] = %d", i, data_[i]);
-
-		if (data_[i] >= _objectIds.size())
-			break;
-
-		_objects.push_back(nullptr);
-		//assert(data_[i] < _objectIds.size());
+	while (i < int(data_.size() - 4)) {
+		debugC(1, kFreescapeDebugParser, "group data[%d] = %d (index)	", i, data_[i]);
 		_objectIndices.push_back(data_[i]);
 
-		debug("data[%d] = %d", i + 1, data_[i + 1]);
-		debug("data[%d] = %d", i + 2, data_[i + 2]);
-		debug("data[%d] = %d", i + 3, data_[i + 3]);
+		debugC(1, kFreescapeDebugParser, "group data[%d] = %d", i + 1, data_[i + 1]);
+		debugC(1, kFreescapeDebugParser, "group data[%d] = %d", i + 2, data_[i + 2]);
+		debugC(1, kFreescapeDebugParser, "group data[%d] = %d", i + 3, data_[i + 3]);
 		Math::Vector3d position(data_[i + 1], data_[i + 2], data_[i + 3]);
 		_objectPositions.push_back(position);
 
@@ -59,12 +52,11 @@ Group::Group(uint16 objectID_, uint16 flags_, const Common::Array<byte> data_) {
 	if (isDestroyed()) // If the object is destroyed, restore it
 		restore();
 
-	_flags = _flags & ~0x80;
-	assert(!isInitiallyInvisible());
+	makeInitiallyVisible();
 	makeVisible();
 }
 
-void Group::assemble(Object *obj) {
+void Group::linkObject(Object *obj) {
 	int objectIndex = -1;
 	for (int i = 0; i < int(_objectIds.size()) ; i++) {
 		if (_objectIds[i] == obj->getObjectID()) {
@@ -76,15 +68,20 @@ void Group::assemble(Object *obj) {
 	if (objectIndex == -1)
 		return;
 
-	for (int i = 0; i < int(_objectIndices.size()) ; i++) {
-		int index = _objectIndices[i];
-		if (index == objectIndex) {
-			Object *duplicate = obj->duplicate();
-			Math::Vector3d position = _objectPositions[i];
-			duplicate->setOrigin(position);
-			_objects[i] = duplicate;
-		}
-	}
+	obj->makeInitiallyVisible();
+	obj->makeVisible();
+	_objects.push_back(obj);
 }
 
+void Group::assemble(int frame, int index) {
+	Object *obj = _objects[index];
+	Math::Vector3d position = _objectPositions[frame];
+
+	if (!GeometricObject::isPolygon(obj->getType()))
+		position = 32 * position / _scale;
+	else
+		position = position / _scale;
+
+	obj->setOrigin(position);
+}
 } // End of namespace Freescape

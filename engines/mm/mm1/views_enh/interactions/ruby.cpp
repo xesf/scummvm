@@ -19,32 +19,26 @@
  *
  */
 
-#ifndef FREESCAPE_GROUP_H
-#define FREESCAPE_GROUP_H
+#include "mm/mm1/views_enh/interactions/ruby.h"
+#include "mm/mm1/maps/map39.h"
+#include "mm/mm1/globals.h"
 
-#include "freescape/objects/object.h"
+namespace MM {
+namespace MM1 {
+namespace ViewsEnh {
+namespace Interactions {
 
-namespace Freescape {
+Ruby::Ruby() : InteractionQuery("Ruby", 12) {
+	_title = STRING["maps.emap39.title"];
+	addText(STRING["maps.emap39.ruby1"]);
+}
 
-class Group : public Object {
-public:
-	Group(uint16 objectID_, uint16 flags_, const Common::Array<byte> data_);
-	void linkObject(Object *obj);
-	void assemble(int frame, int index);
+void Ruby::answerEntered() {
+	MM1::Maps::Map39 &map = *static_cast<MM1::Maps::Map39 *>(g_maps->_currentMap);
+	map.riddleAnswered(_answer);
+}
 
-	Common::Array<Object *> _objects;
-	Common::Array<Math::Vector3d> _objectPositions;
-	Common::Array<int16> _objectIndices;
-	Common::Array<int16> _objectIds;
-	int _scale;
-
-	ObjectType getType() override { return ObjectType::kGroupType; };
-	bool isDrawable() override { return true; }
-	void draw(Freescape::Renderer *gfx) override { error("cannot render Group"); };
-	void scale(int scale_) override { _scale = scale_; };
-	Object *duplicate() override { error("cannot duplicate Group"); };
-};
-
-} // End of namespace Freescape
-
-#endif // FREESCAPE_GLOBAL_H
+} // namespace Interactions
+} // namespace ViewsEnh
+} // namespace MM1
+} // namespace MM

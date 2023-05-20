@@ -185,6 +185,7 @@ MODULE_OBJS += \
 	mm1/views_enh/interactions/arenko.o \
 	mm1/views_enh/interactions/arrested.o \
 	mm1/views_enh/interactions/chess.o \
+	mm1/views_enh/interactions/dog_statue.o \
 	mm1/views_enh/interactions/giant.o \
 	mm1/views_enh/interactions/ghost.o \
 	mm1/views_enh/interactions/gypsy.o \
@@ -195,8 +196,12 @@ MODULE_OBJS += \
 	mm1/views_enh/interactions/interaction_query.o \
 	mm1/views_enh/interactions/leprechaun.o \
 	mm1/views_enh/interactions/lion.o \
+	mm1/views_enh/interactions/lord_archer.o \
+	mm1/views_enh/interactions/lord_ironfist.o \
+	mm1/views_enh/interactions/orango.o \
 	mm1/views_enh/interactions/prisoners.o \
 	mm1/views_enh/interactions/resistances.o \
+	mm1/views_enh/interactions/ruby.o \
 	mm1/views_enh/interactions/statue.o \
 	mm1/views_enh/interactions/trivia.o \
 	mm1/views_enh/interactions/volcano_god.o \

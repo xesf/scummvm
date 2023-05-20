@@ -326,6 +326,11 @@ void FreescapeEngine::move(CameraMovement direction, uint8 scale, float deltaTim
 }
 
 void FreescapeEngine::resolveCollisions(Math::Vector3d const position) {
+	if (_noClipMode) {
+		_position = position;
+		return;
+	}
+
 	Math::Vector3d newPosition = position;
 	Math::Vector3d lastPosition = _lastPosition;
 
@@ -373,11 +378,8 @@ void FreescapeEngine::resolveCollisions(Math::Vector3d const position) {
 }
 
 void FreescapeEngine::runCollisionConditions(Math::Vector3d const lastPosition, Math::Vector3d const newPosition) {
-	if (_noClipMode)
-		return;
-
 	// We need to make sure the bounding box touches the floor so we will expand it and run the collision checking
-	uint tolerance = 3;
+	uint tolerance = isCastle() ? 1 : 3;
 	Math::Vector3d v(newPosition.x() - 1, newPosition.y() - _playerHeight - tolerance, newPosition.z() - 1);
 	Math::AABB boundingBox(lastPosition, lastPosition);
 	boundingBox.expand(v);

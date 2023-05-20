@@ -19,32 +19,39 @@
  *
  */
 
-#ifndef FREESCAPE_GROUP_H
-#define FREESCAPE_GROUP_H
+#include "mm/mm1/views_enh/interactions/lord_archer.h"
+#include "mm/mm1/maps/map40.h"
+#include "mm/mm1/globals.h"
 
-#include "freescape/objects/object.h"
 
-namespace Freescape {
+namespace MM {
+namespace MM1 {
+namespace ViewsEnh {
+namespace Interactions {
 
-class Group : public Object {
-public:
-	Group(uint16 objectID_, uint16 flags_, const Common::Array<byte> data_);
-	void linkObject(Object *obj);
-	void assemble(int frame, int index);
+LordArcher::LordArcher() : Interaction("LordArcher", 33) {
+	_title = STRING["maps.emap40.title"];
+	addText(STRING["maps.emap40.archer"]);
+	addButton(STRING["maps.yes"], 'Y');
+	addButton(STRING["maps.no"], 'N');
+}
 
-	Common::Array<Object *> _objects;
-	Common::Array<Math::Vector3d> _objectPositions;
-	Common::Array<int16> _objectIndices;
-	Common::Array<int16> _objectIds;
-	int _scale;
+bool LordArcher::msgKeypress(const KeypressMessage &msg) {
+	if (msg.keycode == Common::KEYCODE_y || msg.keycode == Common::KEYCODE_n) {
+		MM1::Maps::Map40 &map = *static_cast<MM1::Maps::Map40 *>(g_maps->_currentMap);
+		close();
 
-	ObjectType getType() override { return ObjectType::kGroupType; };
-	bool isDrawable() override { return true; }
-	void draw(Freescape::Renderer *gfx) override { error("cannot render Group"); };
-	void scale(int scale_) override { _scale = scale_; };
-	Object *duplicate() override { error("cannot duplicate Group"); };
-};
+		if (msg.keycode == Common::KEYCODE_y) {
+			map.archerSubmit();
+		} else {
+			map.archerResist();
+		}
+	}
 
-} // End of namespace Freescape
+	return true;
+}
 
-#endif // FREESCAPE_GLOBAL_H
+} // namespace Interactions
+} // namespace ViewsEnh
+} // namespace MM1
+} // namespace MM

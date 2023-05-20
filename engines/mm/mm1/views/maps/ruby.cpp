@@ -29,8 +29,6 @@ namespace MM1 {
 namespace Views {
 namespace Maps {
 
-#define ANSWER_OFFSET 477
-
 Ruby::Ruby() : AnswerEntry("Ruby", Common::Point(14, 7), 12) {
 	_bounds = getLineBounds(17, 24);
 }
@@ -42,31 +40,9 @@ void Ruby::draw() {
 }
 
 void Ruby::answerEntered() {
-	MM1::Maps::Map &map = *g_maps->_currentMap;
-	Common::String properAnswer;
+	MM1::Maps::Map39 &map = *static_cast<MM1::Maps::Map39 *>(g_maps->_currentMap);
 	close();
-
-	for (int i = 0; i < 12 && map[ANSWER_OFFSET + i]; ++i)
-		properAnswer += map[ANSWER_OFFSET + i] - 64;
-
-	if (_answer.equalsIgnoreCase(properAnswer)) {
-		g_maps->clearSpecial();
-		Sound::sound(SOUND_3);
-		map.redrawGame();
-
-		for (uint i = 0; i < g_globals->_party.size(); ++i) {
-			g_globals->_party[i]._flags[5] |= CHARFLAG5_20;
-		}
-
-		g_globals->_treasure._items[2] = CRYSTAL_KEY_ID;
-		g_events->addAction(KEYBIND_SEARCH);
-
-	} else {
-		g_maps->_mapPos.x = 9;
-		map.updateGame();
-
-		send(InfoMessage(STRING["maps.map39.ruby2"]));
-	}
+	map.riddleAnswered(_answer);
 }
 
 } // namespace Maps

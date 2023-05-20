@@ -19,32 +19,27 @@
  *
  */
 
-#ifndef FREESCAPE_GROUP_H
-#define FREESCAPE_GROUP_H
+#include "mm/mm1/views_enh/interactions/orango.h"
+#include "mm/mm1/maps/map48.h"
+#include "mm/mm1/globals.h"
 
-#include "freescape/objects/object.h"
 
-namespace Freescape {
+namespace MM {
+namespace MM1 {
+namespace ViewsEnh {
+namespace Interactions {
 
-class Group : public Object {
-public:
-	Group(uint16 objectID_, uint16 flags_, const Common::Array<byte> data_);
-	void linkObject(Object *obj);
-	void assemble(int frame, int index);
+Orango::Orango() : InteractionQuery("Orango", 15, 13) {
+	_title = STRING["maps.emap48.title"];
+	addText(STRING["maps.emap48.orango1"]);
+}
 
-	Common::Array<Object *> _objects;
-	Common::Array<Math::Vector3d> _objectPositions;
-	Common::Array<int16> _objectIndices;
-	Common::Array<int16> _objectIds;
-	int _scale;
+void Orango::answerEntered() {
+	MM1::Maps::Map48 &map = *static_cast<MM1::Maps::Map48 *>(g_maps->_currentMap);
+	map.orangoAnswer(_answer);
+}
 
-	ObjectType getType() override { return ObjectType::kGroupType; };
-	bool isDrawable() override { return true; }
-	void draw(Freescape::Renderer *gfx) override { error("cannot render Group"); };
-	void scale(int scale_) override { _scale = scale_; };
-	Object *duplicate() override { error("cannot duplicate Group"); };
-};
-
-} // End of namespace Freescape
-
-#endif // FREESCAPE_GLOBAL_H
+} // namespace Interactions
+} // namespace ViewsEnh
+} // namespace MM1
+} // namespace MM

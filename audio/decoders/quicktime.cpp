@@ -130,7 +130,7 @@ Common::QuickTimeParser::SampleDesc *QuickTimeAudioDecoder::readSampleDesc(Track
 		entry->_sampleRate = (_fd->readUint32BE() >> 16);
 
 		debug(0, "stsd version =%d", stsdVersion);
-		if (stsdVersion == 0) {
+		if (stsdVersion == 0 || stsdVersion == 64872) {
 			// Not used, except in special cases. See below.
 			entry->_samplesPerFrame = entry->_bytesPerFrame = 0;
 		} else if (stsdVersion == 1) {
@@ -567,7 +567,7 @@ QuickTimeAudioDecoder::AudioSampleDesc::~AudioSampleDesc() {
 
 bool QuickTimeAudioDecoder::AudioSampleDesc::isAudioCodecSupported() const {
 	// Check if the codec is a supported codec
-	if (_codecTag == MKTAG('t', 'w', 'o', 's') || _codecTag == MKTAG('r', 'a', 'w', ' ') || _codecTag == MKTAG('i', 'm', 'a', '4'))
+	if (_codecTag == 0 || _codecTag == MKTAG('t', 'w', 'o', 's') || _codecTag == MKTAG('r', 'a', 'w', ' ') || _codecTag == MKTAG('i', 'm', 'a', '4'))
 		return true;
 
 #ifdef AUDIO_QDM2_H
@@ -606,10 +606,10 @@ AudioStream *QuickTimeAudioDecoder::AudioSampleDesc::createAudioStream(Common::S
 		AudioStream *audioStream = _codec->decodeFrame(*stream);
 		delete stream;
 		return audioStream;
-	} else if (_codecTag == MKTAG('t', 'w', 'o', 's') || _codecTag == MKTAG('r', 'a', 'w', ' ')) {
+	} else if (_codecTag == 0 || _codecTag == MKTAG('t', 'w', 'o', 's') || _codecTag == MKTAG('r', 'a', 'w', ' ')) {
 		// Fortunately, most of the audio used in Myst videos is raw...
 		uint16 flags = 0;
-		if (_codecTag == MKTAG('r', 'a', 'w', ' '))
+		if (_codecTag == 0 || _codecTag == MKTAG('r', 'a', 'w', ' '))
 			flags |= FLAG_UNSIGNED;
 		if (_channels == 2)
 			flags |= FLAG_STEREO;

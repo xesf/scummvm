@@ -43,6 +43,30 @@
 // #include "intro.h"
 
 // #include "nodes/node.h"
+
+static const byte cursorArrow[] = {
+	0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	0, 1, 0, 3, 3, 3, 3, 3, 3, 3, 3,
+	0, 1, 1, 0, 3, 3, 3, 3, 3, 3, 3,
+	0, 1, 1, 1, 0, 3, 3, 3, 3, 3, 3,
+	0, 1, 1, 1, 1, 0, 3, 3, 3, 3, 3,
+	0, 1, 1, 1, 1, 1, 0, 3, 3, 3, 3,
+	0, 1, 1, 1, 1, 1, 1, 0, 3, 3, 3,
+	0, 1, 1, 1, 1, 1, 1, 1, 0, 3, 3,
+	0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3,
+	0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+	0, 1, 1, 0, 1, 1, 0, 3, 3, 3, 3,
+	0, 1, 0, 3, 0, 1, 1, 0, 3, 3, 3,
+	0, 0, 3, 3, 0, 1, 1, 0, 3, 3, 3,
+	0, 3, 3, 3, 3, 0, 1, 1, 0, 3, 3,
+	3, 3, 3, 3, 3, 0, 1, 1, 0, 3, 3,
+	3, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3
+};
+
+static const byte cursorPalette[] = {
+	0, 0, 0,
+	0xff, 0xff, 0xff
+};
  
 namespace VirtualCinema {
  
@@ -55,12 +79,20 @@ RolandEngine::RolandEngine(OSystem *syst)
     SearchMan.addSubDirectoryMatching(gameDataDir, "qt");
     SearchMan.addSubDirectoryMatching(gameDataDir, "screens");
 
+    // remove default cursor
+    CursorMan.popCursor();
+    CursorMan.popCursorPalette();
+
+    CursorMan.pushCursor(cursorArrow, 11, 16, 1, 1, 3);
+	CursorMan.pushCursorPalette(cursorPalette, 0, 2);
+    CursorMan.showMouse(true);
+
     // Common debug channels
     // DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
     // DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
 
     _intro = new RIntro(this);
-    // _menu = new Menu(this);
+    _menu = new RMenu(this);
     // _game = new Game(this);
 
     _handler = _intro;
@@ -73,7 +105,7 @@ RolandEngine::~RolandEngine() {
     _handler = NULL;
 
     // delete _game;
-    // delete _menu;
+    delete _menu;
     delete _intro;
 }
  

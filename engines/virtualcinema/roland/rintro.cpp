@@ -89,7 +89,7 @@ bool RIntro::updateEvent(const VCEvent &evt) {
             _vm->_system->delayMillis(2000);
         }
         _vm->fillScreen(0);
-        _vm->switchEventHandler(nullptr); // _vm->getMenu()
+        _vm->switchEventHandler(_vm->getMenu());
         _skip = false;
     }
     return true;

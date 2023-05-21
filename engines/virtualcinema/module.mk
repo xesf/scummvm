@@ -3,6 +3,7 @@ MODULE := engines/virtualcinema
 MODULE_OBJS = \
     roland/roland.o \
     roland/rintro.o \
+    roland/rmenu.o \
     x-files/agrippa.o \
     x-files/game.o \
     x-files/intro.o \

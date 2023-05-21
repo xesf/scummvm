@@ -20,37 +20,37 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_ROLAND_H
-#define VIRTUALCINEMA_ROLAND_H
- 
-#include "common/random.h"
-#include "engines/engine.h"
-#include "gui/debugger.h"
+#ifndef VIRTUALCINEMA_RMENU_H
+#define VIRTUALCINEMA_RMENU_H
 
-#include "virtualcinema/core/vcengine.h"
+#include "image/bmp.h"
 
-#include "rintro.h"
-#include "rmenu.h"
-// #include "game.h"
- 
+#include "virtualcinema/core/scene.h"
+
+#include "roland.h"
+
 namespace VirtualCinema {
 
-class RIntro;
-class RMenu;
-// class Game;
+class RolandEngine;
 
-class RolandEngine : public VCEngine {
+class RMenu : public Scene {
 public:
-    RolandEngine(OSystem *syst);
-    ~RolandEngine();
+    RMenu(RolandEngine *vm);
+    ~RMenu();
 
-    RMenu* getMenu() { return _menu; };
-    // Game* getGame() { return _game; };
- 
+protected:
+    bool mountEvent(const VCEvent &evt) override;
+    bool unmountEvent(const VCEvent &evt) override;
+    bool updateEvent(const VCEvent &evt) override;
+    bool keyEvent(const VCEvent &evt) override;
+    bool mouseEvent(const VCEvent &evt) override;
+    
 private:
-    RIntro *_intro;
-    RMenu *_menu;
-    // Game *_game;
+    RolandEngine *_vm;
+    bool _skip = false;
+
+    ImageEntryPtr _background;
+    ImageEntryPtr _chapters;
 };
 
 } // End of namespace VirtualCinema

@@ -26,6 +26,7 @@
 #include "common/textconsole.h"
 #include "common/system.h"
 #include "common/file.h"
+#include "common/util.h"
 
 #include "graphics/palette.h"
 #include "graphics/surface.h"
@@ -73,7 +74,11 @@ uint16 ImageEntry::getHeight() {
 }
 
 Common::Rect ImageEntry::getRect() {
-    return Common::Rect(_x, _y, _x + getWidth(), _y + getHeight());
+    return _rect;
+}
+
+void ImageEntry::setRect(uint16 x, uint16 y, uint16 w, uint16 h) {
+    _rect = Common::Rect(x, y, x + w, y + h);
 }
 
 // ---------------------------------------------------------------------------------
@@ -95,7 +100,6 @@ void ImageManager::closeImages() {
 ImageEntryPtr ImageManager::show(const Common::String &fileName) {
     debug("Showing image: %s", fileName.c_str());
     ImageEntryPtr ptr = openFile(fileName);
-    ptr->center();
     if (!ptr)
         return ImageEntryPtr();
 
@@ -117,7 +121,9 @@ ImageEntryPtr ImageManager::openFile(const Common::String &fileName) {
 
     // Create the entry
     ImageEntryPtr entry(new ImageEntry(image, fileName));
-
+    entry.get()->center();
+    // entry.get()->_rect = Common::Rect(entry.get()->_x, entry.get()->_y, entry.get()->_x + entry.get()->getWidth(), entry.get()->_y + entry.get()->getHeight());
+    entry.get()->_rect = Common::Rect(0, 0, entry.get()->getWidth(), entry.get()->getHeight());
     // Convert the image to the screen format
     entry.get()->_surface = image->getSurface()->convertTo(_vm->_system->getScreenFormat(), image->getPalette(), image->getPaletteColorCount());
 
@@ -179,11 +185,9 @@ bool ImageManager::updateImages() {
 // }
 
 bool ImageManager::drawImage(ImageEntryPtr imageEntry) {
-    // clip the image to make sure it stays on the screen
-    Common::Rect targetRect = Common::Rect(imageEntry->_surface->w, imageEntry->_surface->h);
-    targetRect.translate(imageEntry->getX(), imageEntry->getY());
-
-    Common::Rect frameRect = Common::Rect(imageEntry->_surface->w, imageEntry->_surface->h);
+    Common::Rect frameRect = imageEntry->getRect();
+    Common::Rect targetRect = Common::Rect(MIN(frameRect.width(), imageEntry->_surface->w), MIN(frameRect.height(), imageEntry->_surface->h));
+    targetRect.translate(imageEntry->_x, imageEntry->_y);
 
     if (targetRect.left < 0) {
         frameRect.left -= targetRect.left;

@@ -43,8 +43,6 @@ class ImageEntry : private Common::NonCopyable {
     friend class ImageManager;
 
 private:
-    // Hide the destructor/constructor
-    // Only ImageManager should be allowed
     ImageEntry();
     ImageEntry(Image::BitmapDecoder *image, const Common::String &fileName);
     ImageEntry(Image::BitmapDecoder *image);
@@ -52,77 +50,30 @@ private:
 public:
     ~ImageEntry();
 
-    /**
-     * Convenience implicit cast to bool
-     */
     operator bool() const { return isOpen(); }
-
-    /**
-     * Is the image open?
-     */
     bool isOpen() const { return _image != 0; }
-
-    /**
-     * Close the image
-     */
     void close();
-
-    /**
-     * Get the X position of where the image is displayed
-     */
     uint16 getX() const { return _x; }
-
-    /**
-     * Get the Y position of where the image is displayed
-     */
     uint16 getY() const { return _y; }
-
-    /**
-     * Is the image enabled? (Drawing to the screen)
-     */
     bool isEnabled() const { return _enabled; }
-
-    /**
-     * Get the file name of the image, or empty if by ID
-     */
     const Common::String &getFileName() const { return _fileName; }
-
-    /**
-     * Move the x position of the image
-     */
     void setX(uint16 x) { _x = x; }
-
-    /**
-     * Move the y position of the image
-     */
     void setY(uint16 y) { _y = y; }
-
-    /**
-     * Move the image to the specified coordinates
-     */
     void moveTo(uint16 x, uint16 y) { setX(x); setY(y); }
-
-    /**
-     * Center the image on the screen
-     */
     void center();
-
-    /**
-     * Set the image's enabled status
-     */
     void setEnabled(bool enabled) { _enabled = enabled; }
 
     uint16 getWidth();
     uint16 getHeight();
     Common::Rect getRect();
+    void setRect(uint16 x, uint16 y, uint16 w, uint16 h);
 
 private:
-    // Non-changing variables
     Image::BitmapDecoder *_image;
     Graphics::Surface *_surface;
-    Common::String _fileName; // External image files
+    Common::String _fileName;
+    Common::Rect _rect;
 
-    // Playback variables
     uint16 _x;
     uint16 _y;
     bool _enabled;
@@ -135,7 +86,7 @@ public:
     explicit ImageManager(VCEngine *vm);
     virtual ~ImageManager();
 
-    // Generic movie functions
+    // Generic image functions
     ImageEntryPtr show(const Common::String &filename);
     bool updateImages();
     void closeImages();
@@ -146,7 +97,6 @@ public:
     // Handle functions
     ImageEntryPtr findImage(const Common::String &fileName);
     void removeEntry(const ImageEntryPtr &image);
-    // void drawImage(const ImageEntryPtr &image);
 
 protected:
     VCEngine *_vm;

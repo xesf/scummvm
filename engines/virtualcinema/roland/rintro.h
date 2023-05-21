@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_INTRO_H
-#define VIRTUALCINEMA_INTRO_H
+#ifndef VIRTUALCINEMA_RINTRO_H
+#define VIRTUALCINEMA_RINTRO_H
 
 #include "image/bmp.h"
 

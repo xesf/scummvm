@@ -48,6 +48,10 @@ protected:
 private:
     RolandEngine *_vm;
     bool _skip = false;
+
+    VideoEntryPtr _rockslid;
+    VideoEntryPtr _splash;
+    ImageEntryPtr _logo;
 };
 
 } // End of namespace VirtualCinema

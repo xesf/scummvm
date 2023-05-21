@@ -42,13 +42,15 @@ bool RIntro::mountEvent(const VCEvent &evt) {
     ImageEntryPtr intro1 = _vm->getImageManager()->show("INTRO1.RLE");
     _vm->getImageManager()->updateImages();
     _vm->_system->updateScreen();
-    _vm->_system->delayMillis(2000);
+    _vm->_system->delayMillis(1000);
     _vm->getImageManager()->removeEntry(intro1);
     _vm->getImageManager()->show("BKGND.RLE");
     _vm->getImageManager()->updateImages();
 
-    _vm->getVideoManager()->play("ROCKSLID.MOV");
-    // _vm->getVideoManager()->play("SPLASH.MOV");
+    _rockslid = _vm->getVideoManager()->play("ROCKSLID.MOV");
+    _rockslid->setAutoClose(false);
+    _splash = _vm->getVideoManager()->play("SPLASH.MOV");
+    _splash->stop();
 
     return true;
 }
@@ -58,10 +60,36 @@ bool RIntro::unmountEvent(const VCEvent &evt) {
 }
 
 bool RIntro::updateEvent(const VCEvent &evt) {
+    if (!_logo) {
+        if ((_skip || _rockslid->endOfVideo()) && !_splash->isPlaying()) {
+            _skip = false;
+            _rockslid->seek(Audio::Timestamp(0, 600));
+            _rockslid->stop();
+            _splash->start();
+        }
+        if (_skip || _splash->endOfVideo()) {
+            _skip = false;
+            _splash->close();
+            _logo =_vm->getImageManager()->show("INTRO2.RLE");
+            _vm->getImageManager()->updateImages();
+            _rockslid->setAutoClose(true);
+            _rockslid->start();
+        }
+    }
     if (_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->updateMovies();
     } else {
         _vm->getImageManager()->updateImages();
+    }
+    if (_skip || (_logo && !_vm->getVideoManager()->isVideoPlaying())) {
+        _vm->getVideoManager()->closeVideos();
+        if (!_skip) {
+            _vm->_system->delayMillis(2000);
+        }
+        _vm->getImageManager()->closeImages();
+        _vm->fillScreen(0);
+        _vm->switchEventHandler(nullptr); // _vm->getMenu()
+        _skip = false;
     }
     return true;
 }
@@ -71,6 +99,7 @@ bool RIntro::keyEvent(const VCEvent &evt) {
 }
 
 bool RIntro::mouseEvent(const VCEvent &evt) {
+    _skip = false;
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:
     case Common::EVENT_RBUTTONDOWN:

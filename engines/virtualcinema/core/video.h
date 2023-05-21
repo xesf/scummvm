@@ -78,6 +78,16 @@ public:
     bool endOfVideo() const;
 
     /**
+     * Is the video set to auto-close?
+     */
+    bool isAutoClose() const;
+
+    /**
+     * Set the video to auto-close
+     */
+    void setAutoClose(bool autoClose);
+
+    /**
      * Get the X position of where the video is displayed
      */
     uint16 getX() const { return _x; }
@@ -236,6 +246,7 @@ private:
     uint16 _y;
     bool _loop;
     bool _enabled;
+    bool _autoClose;
     Audio::Timestamp _start;
 };
 
@@ -252,7 +263,7 @@ public:
     bool updateMovies();
     void pauseVideos();
     void resumeVideos();
-    void stopVideos();
+    void closeVideos();
     bool isVideoPlaying();
     
     // Utility functions for managing entries

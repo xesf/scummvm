@@ -53,7 +53,7 @@ bool Intro::mountEvent(const VCEvent &evt) {
 }
 
 bool Intro::unmountEvent(const VCEvent &evt) {
-    _vm->getVideoManager()->stopVideos();
+    _vm->getVideoManager()->closeVideos();
     _vm->fillScreen(0);
     delete _currentNode;
     return true;
@@ -65,7 +65,7 @@ bool Intro::updateEvent(const VCEvent &evt) {
     }
     
     if (_skip || !_vm->getVideoManager()->isVideoPlaying()) {
-        _vm->getVideoManager()->stopVideos();
+        _vm->getVideoManager()->closeVideos();
         _vm->fillScreen(0);
         debug("Skipping video: %s", _currentNode->getPath().c_str());
         if (_currentNode->getId() == 56001) {

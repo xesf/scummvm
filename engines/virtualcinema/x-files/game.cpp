@@ -60,7 +60,7 @@ bool Game::updateEvent(const VCEvent &evt) {
     
     if (!_vm->getVideoManager()->isVideoPlaying()) {
         if (_currentNode->getId() != 25683) { // for testing purposes
-            _vm->getVideoManager()->stopVideos();
+            _vm->getVideoManager()->closeVideos();
             _vm->fillScreen(0);
             Node *previous = _currentNode;
             Node::NodeList nodes = _currentNode->getTarget();

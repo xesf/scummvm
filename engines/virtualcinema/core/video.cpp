@@ -37,13 +37,13 @@
 
 namespace VirtualCinema {
 
-VideoEntry::VideoEntry() : _video(nullptr), _id(-1), _x(0), _y(0), _loop(false), _enabled(true) {
+VideoEntry::VideoEntry() : _video(nullptr), _id(-1), _x(0), _y(0), _loop(false), _enabled(true), _autoClose(true) {
 }
 
-VideoEntry::VideoEntry(Video::VideoDecoder *video, const Common::String &fileName) : _video(video), _fileName(fileName), _id(-1), _x(0), _y(0), _loop(false), _enabled(true) {
+VideoEntry::VideoEntry(Video::VideoDecoder *video, const Common::String &fileName) : _video(video), _fileName(fileName), _id(-1), _x(0), _y(0), _loop(false), _enabled(true), _autoClose(true) {
 }
 
-VideoEntry::VideoEntry(Video::VideoDecoder *video, int id) : _video(video), _id(id), _x(0), _y(0), _loop(false), _enabled(true) {
+VideoEntry::VideoEntry(Video::VideoDecoder *video, int id) : _video(video), _id(id), _x(0), _y(0), _loop(false), _enabled(true), _autoClose(true) {
 }
 
 VideoEntry::~VideoEntry() {
@@ -57,6 +57,14 @@ void VideoEntry::close() {
 
 bool VideoEntry::endOfVideo() const {
     return !isOpen() || _video->endOfVideo();
+}
+
+bool VideoEntry::isAutoClose() const {
+    return _autoClose;
+}
+
+void VideoEntry::setAutoClose(bool autoClose) {
+    _autoClose = autoClose;
 }
 
 int VideoEntry::getCurFrame() const {
@@ -167,7 +175,7 @@ VideoManager::VideoManager(VCEngine *vm) : _vm(vm) {
 }
 
 VideoManager::~VideoManager() {
-    stopVideos();
+    closeVideos();
 }
 
 void VideoManager::pauseVideos() {
@@ -180,7 +188,7 @@ void VideoManager::resumeVideos() {
         (*it)->pause(false);
 }
 
-void VideoManager::stopVideos() {
+void VideoManager::closeVideos() {
     for (VideoList::iterator it = _videos.begin(); it != _videos.end(); it++)
         (*it)->close();
 
@@ -216,7 +224,7 @@ bool VideoManager::updateMovies() {
             if ((*it)->isLooping()) {
                 // Seek back if looping
                 (*it)->seek((*it)->getStart());
-            } else {
+            } else if ((*it)->isAutoClose()) {
                 // Done; close and continue on
                 (*it)->close();
                 it = _videos.erase(it);

@@ -98,7 +98,7 @@ bool Menu::updateEvent(const VCEvent &evt) {
     
     switch (_selectedMenuItem) {
     case kMenuItemNew:
-        _vm->getVideoManager()->stopVideos();
+        _vm->getVideoManager()->closeVideos();
         _vm->fillScreen(0);
         _vm->switchEventHandler(_vm->getGame());
         break;

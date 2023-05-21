@@ -21,14 +21,13 @@
  */
 
 #include "common/scummsys.h"
- 
 #include "common/config-manager.h"
 #include "common/debug.h"
 #include "common/debug-channels.h"
 #include "common/error.h"
-#include "gui/EventRecorder.h"
 #include "common/file.h"
 #include "common/fs.h"
+#include "gui/EventRecorder.h"
  
 #include "graphics/cursorman.h"
 #include "engines/util.h"
@@ -67,17 +66,17 @@ static const byte cursorPalette[] = {
 	0, 0, 0,
 	0xff, 0xff, 0xff
 };
- 
+
 namespace VirtualCinema {
- 
+
 RolandEngine::RolandEngine(OSystem *syst)
     : VCEngine(syst) {
 
     const Common::FSNode gameDataDir(ConfMan.get("path"));
     SearchMan.addSubDirectoryMatching(gameDataDir, "hyper");
-    SearchMan.addSubDirectoryMatching(gameDataDir, "menus");
+    SearchMan.addSubDirectoryMatching(gameDataDir, "menus", 0, 2);
     SearchMan.addSubDirectoryMatching(gameDataDir, "qt");
-    SearchMan.addSubDirectoryMatching(gameDataDir, "screens");
+    SearchMan.addSubDirectoryMatching(gameDataDir, "screens", 0, 3);
 
     // remove default cursor
     CursorMan.popCursor();
@@ -93,18 +92,18 @@ RolandEngine::RolandEngine(OSystem *syst)
 
     _intro = new RIntro(this);
     _menu = new RMenu(this);
-    // _game = new Game(this);
+    _chapter = new Chapter(this);
 
     _handler = _intro;
 
     debug("RolandEngine::RolandEngine");
 }
- 
+
 RolandEngine::~RolandEngine() {
     debug("RolandEngine::~RolandEngine");
     _handler = NULL;
 
-    // delete _game;
+    delete _chapter;
     delete _menu;
     delete _intro;
 }

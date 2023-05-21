@@ -28,49 +28,64 @@
 #include "virtualcinema/core/eventHandler.h"
 #include "virtualcinema/core/image.h"
 
-#include "rmenu.h"
+#include "chapter.h"
 
 namespace VirtualCinema {
 
-RMenu::RMenu(RolandEngine *vm): _vm(vm) {
+Chapter::Chapter(RolandEngine *vm): _vm(vm) {
 }
 
-RMenu::~RMenu() {
+Chapter::~Chapter() {
 }
 
-bool RMenu::mountEvent(const VCEvent &evt) {
-    _background = _vm->getImageManager()->show("CHAPMENU.RLE");
-    _chapters = _vm->getImageManager()->show("MENU-BAR.RLE");
-    _chapters->setRect(0, 2, 470, 240);
-    _chapters->setX(85);
-    _chapters->setY(130);
+char Chapter::getCharacterIndexLetter() {
+    switch (_vm->_characterIndex) {
+    case 1:
+        return 'A';
+    case 2:
+        return 'C';
+    case 3:
+        return 'D';
+    case 4:
+        return 'R';
+    default:
+    case 5:
+        return 'M';
+    }
+}
+
+bool Chapter::mountEvent(const VCEvent &evt) {
+    _background = _vm->getImageManager()->show(Common::String::format("CHAP-%d/%c/C%d%cL.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter()));
+    _page1 = _vm->getImageManager()->show(Common::String::format("CHAP-%d/%c/C%d%cLA-2.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter()));
+    _page1->setX(120);
+    _page1->setY(105);
+
+    _vm->getImageManager()->updateImages();
+    _vm->_system->updateScreen();
+
+    _vm->getVideoManager()->play(Common::String::format("QT/NARC%d%c%d.MOV", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_pageNumber));
 
     return true;
 }
 
-bool RMenu::unmountEvent(const VCEvent &evt) {
+bool Chapter::unmountEvent(const VCEvent &evt) {
     return true;
 }
 
-bool RMenu::updateEvent(const VCEvent &evt) {
+bool Chapter::updateEvent(const VCEvent &evt) {
     if (_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->updateMovies();
     } else {
         _vm->getImageManager()->updateImages();
     }
-    if (_skip) {
-        _skip = false;
-        _vm->fillScreen(0);
-        _vm->switchEventHandler(_vm->getChapter());
-    }
     return true;
 }
 
-bool RMenu::keyEvent(const VCEvent &evt) {
+bool Chapter::keyEvent(const VCEvent &evt) {
     return true;
 }
 
-bool RMenu::mouseEvent(const VCEvent &evt) {
+bool Chapter::mouseEvent(const VCEvent &evt) {
     _skip = false;
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:

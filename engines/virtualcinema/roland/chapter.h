@@ -20,60 +20,39 @@
  *
  */
 
-#ifndef VIRTUALCINEMA_ROLAND_H
-#define VIRTUALCINEMA_ROLAND_H
- 
-#include "common/random.h"
-#include "engines/engine.h"
-#include "gui/debugger.h"
+#ifndef VIRTUALCINEMA_CHAPTER_H
+#define VIRTUALCINEMA_CHAPTER_H
 
-#include "virtualcinema/core/vcengine.h"
+#include "image/bmp.h"
 
-#include "rintro.h"
-#include "rmenu.h"
-#include "chapter.h"
- 
+#include "virtualcinema/core/scene.h"
+
+#include "roland.h"
+
 namespace VirtualCinema {
 
-class RIntro;
-class RMenu;
-class Chapter;
+class RolandEngine;
 
-class RolandEngine : public VCEngine {
+class Chapter : public Scene {
 public:
-    /*
-    Chapters Indexes: 7
-        Seige of Paris
-        Beware the Forest Green
-        Black is the Kight
-        A Chapel, Small and Dear
-        La Bella Luna
-        The Tide Turns
-        Epilogue
-    */
-    uint16 _chapterNumber = 1;
-    uint16 _pageNumber = 1;
-    /*
-    Characters Indexes: 5
-        Angelica: 1
-        Charlemagne: 2
-        Durendal: 3
-        Roland: 4
-        Main Leaf: 5
-    */
-    uint16 _characterIndex = 5;
+    Chapter(RolandEngine *vm);
+    ~Chapter();
 
-public:
-    RolandEngine(OSystem *syst);
-    ~RolandEngine();
-
-    RMenu* getMenu() { return _menu; };
-    Chapter* getChapter() { return _chapter; };
- 
+protected:
+    bool mountEvent(const VCEvent &evt) override;
+    bool unmountEvent(const VCEvent &evt) override;
+    bool updateEvent(const VCEvent &evt) override;
+    bool keyEvent(const VCEvent &evt) override;
+    bool mouseEvent(const VCEvent &evt) override;
+    
 private:
-    RIntro *_intro;
-    RMenu *_menu;
-    Chapter *_chapter;
+    RolandEngine *_vm;
+    bool _skip = false;
+
+    ImageEntryPtr _background;
+    ImageEntryPtr _page1;
+
+    char getCharacterIndexLetter();
 };
 
 } // End of namespace VirtualCinema

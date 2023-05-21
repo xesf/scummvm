@@ -35,6 +35,30 @@
 
 #include "vcengine.h"
 #include "eventHandler.h"
+
+static const byte cursorDefault[] = {
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+};
+
+static const byte cursorPalette[] = {
+	0, 0, 0,
+	0xff, 0xff, 0xff
+};
  
 namespace VirtualCinema {
  
@@ -43,6 +67,9 @@ VCEngine::VCEngine(OSystem *syst)
     _rnd = new Common::RandomSource("VirtualCinema");
 
     _screenPixelFormat = _system->getSupportedFormats().front();
+
+    CursorMan.pushCursor(cursorDefault, 11, 16, 1, 1, 3);
+	CursorMan.pushCursorPalette(cursorPalette, 0, 2);
     CursorMan.showMouse(true);
 
     initGraphics(640, 480, &_screenPixelFormat);

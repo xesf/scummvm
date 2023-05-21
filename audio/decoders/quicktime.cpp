@@ -111,13 +111,13 @@ void QuickTimeAudioDecoder::init() {
 			_audioTracks.push_back(new QuickTimeAudioTrack(this, _tracks[i]));
 }
 
-Common::QuickTimeParser::SampleDesc *QuickTimeAudioDecoder::readSampleDesc(Track *track, uint32 format, uint32 descSize) {
+Common::QuickTimeParser::SampleDesc *QuickTimeAudioDecoder::readSampleDesc(Track *track, uint32 format, uint32 descSize, uint16 stsdVersion) {
 	if (track->codecType == CODEC_TYPE_AUDIO) {
 		debug(0, "Audio Codec FourCC: \'%s\'", tag2str(format));
 
 		AudioSampleDesc *entry = new AudioSampleDesc(track, format);
 
-		uint16 stsdVersion = _fd->readUint16BE();
+		uint16 version = _fd->readUint16BE();
 		_fd->readUint16BE(); // revision level
 		_fd->readUint32BE(); // vendor
 
@@ -129,11 +129,11 @@ Common::QuickTimeParser::SampleDesc *QuickTimeAudioDecoder::readSampleDesc(Track
 
 		entry->_sampleRate = (_fd->readUint32BE() >> 16);
 
-		debug(0, "stsd version =%d", stsdVersion);
-		if (stsdVersion == 0 || stsdVersion == 64872) {
+		debug(0, "stsd versopm %d | sample description version = %d", stsdVersion, version);
+		if (version == 0 || (stsdVersion == 0 && version > 1)) {
 			// Not used, except in special cases. See below.
 			entry->_samplesPerFrame = entry->_bytesPerFrame = 0;
-		} else if (stsdVersion == 1) {
+		} else if (version == 1) {
 			// Read QT version 1 fields. In version 0 these dont exist.
 			entry->_samplesPerFrame = _fd->readUint32BE();
 			debug(0, "stsd samples_per_frame =%d",entry->_samplesPerFrame);
@@ -142,7 +142,7 @@ Common::QuickTimeParser::SampleDesc *QuickTimeAudioDecoder::readSampleDesc(Track
 			debug(0, "stsd bytes_per_frame =%d", entry->_bytesPerFrame);
 			_fd->readUint32BE(); // bytes per sample
 		} else {
-			warning("Unsupported QuickTime STSD audio version %d", stsdVersion);
+			warning("Unsupported QuickTime STSD audio version %d", version);
 			delete entry;
 			return nullptr;
 		}
@@ -606,10 +606,10 @@ AudioStream *QuickTimeAudioDecoder::AudioSampleDesc::createAudioStream(Common::S
 		AudioStream *audioStream = _codec->decodeFrame(*stream);
 		delete stream;
 		return audioStream;
-	} else if (_codecTag == 0 || _codecTag == MKTAG('t', 'w', 'o', 's') || _codecTag == MKTAG('r', 'a', 'w', ' ')) {
+	} else if (_codecTag == MKTAG('t', 'w', 'o', 's') || _codecTag == MKTAG('r', 'a', 'w', ' ') || (_codecTag == 0 && _bitsPerSample == 8)) {
 		// Fortunately, most of the audio used in Myst videos is raw...
 		uint16 flags = 0;
-		if (_codecTag == 0 || _codecTag == MKTAG('r', 'a', 'w', ' '))
+		if (_codecTag == MKTAG('r', 'a', 'w', ' ') || (_codecTag == 0 && _bitsPerSample == 8))
 			flags |= FLAG_UNSIGNED;
 		if (_channels == 2)
 			flags |= FLAG_STEREO;

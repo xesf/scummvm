@@ -415,7 +415,7 @@ void MidiParser_QT::sendMetaEventToDriver(byte type, byte *data, uint16 length) 
 	}
 }
 
-Common::QuickTimeParser::SampleDesc *MidiParser_QT::readSampleDesc(Track *track, uint32 format, uint32 descSize) {
+Common::QuickTimeParser::SampleDesc *MidiParser_QT::readSampleDesc(Track *track, uint32 format, uint32 descSize, uint16 stsdVersion) {
 	if (track->codecType == CODEC_TYPE_MIDI) {
 		debug(0, "MIDI Codec FourCC '%s'", tag2str(format));
 

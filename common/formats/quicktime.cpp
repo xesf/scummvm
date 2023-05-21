@@ -525,7 +525,7 @@ int QuickTimeParser::readMDHD(Atom atom) {
 int QuickTimeParser::readSTSD(Atom atom) {
 	Track *track = _tracks.back();
 
-	_fd->readByte(); // version
+	uint16 stsdVersion = _fd->readByte(); // version
 	_fd->readByte(); _fd->readByte(); _fd->readByte(); // flags
 
 	uint32 entryCount = _fd->readUint32BE();
@@ -541,7 +541,7 @@ int QuickTimeParser::readSTSD(Atom atom) {
 		_fd->readUint16BE(); // reserved
 		_fd->readUint16BE(); // index
 
-		track->sampleDescs.push_back(readSampleDesc(track, format, size - 16));
+		track->sampleDescs.push_back(readSampleDesc(track, format, size - 16, stsdVersion));
 
 		debug(0, "size=%d 4CC= %s codec_type=%d", size, tag2str(format), track->codecType);
 

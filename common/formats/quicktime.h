@@ -176,7 +176,7 @@ protected:
 		Rational scaleFactorY;
 	};
 
-	virtual SampleDesc *readSampleDesc(Track *track, uint32 format, uint32 descSize) = 0;
+	virtual SampleDesc *readSampleDesc(Track *track, uint32 format, uint32 descSize, uint16 stsdVersion) = 0;
 
 	uint32 _timeScale;      // movie time
 	uint32 _duration;       // movie time

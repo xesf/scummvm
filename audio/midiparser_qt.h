@@ -85,7 +85,7 @@ protected:
 	void sendMetaEventToDriver(byte type, byte *data, uint16 length) override;
 
 	// QuickTimeParser
-	SampleDesc *readSampleDesc(Track *track, uint32 format, uint32 descSize) override;
+	SampleDesc *readSampleDesc(Track *track, uint32 format, uint32 descSize, uint16 stsdVersion) override;
 
 	/**
 	 * The source number to use when sending MIDI messages to the driver.

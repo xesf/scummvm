@@ -26,18 +26,11 @@
 #include "common/random.h"
 #include "engines/engine.h"
 #include "gui/debugger.h"
+#include "graphics/font.h"
 
 #include "virtualcinema/core/vcengine.h"
 
-#include "rintro.h"
-#include "rmenu.h"
-#include "chapter.h"
- 
 namespace VirtualCinema {
-
-class RIntro;
-class RMenu;
-class Chapter;
 
 class RolandEngine : public VCEngine {
 public:
@@ -62,18 +55,16 @@ public:
         Main Leaf: 5
     */
     uint16 _characterIndex = 5;
+    uint16 _selectedMenu = 0;
 
 public:
     RolandEngine(OSystem *syst);
     ~RolandEngine();
 
-    RMenu* getMenu() { return _menu; };
-    Chapter* getChapter() { return _chapter; };
- 
+    const Graphics::Font* getFont() { return _font; }
+
 private:
-    RIntro *_intro;
-    RMenu *_menu;
-    Chapter *_chapter;
+    const Graphics::Font *_font;
 };
 
 } // End of namespace VirtualCinema

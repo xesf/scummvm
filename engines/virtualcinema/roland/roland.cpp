@@ -30,6 +30,8 @@
 #include "gui/EventRecorder.h"
  
 #include "graphics/cursorman.h"
+#include "graphics/font.h"
+#include "graphics/fontman.h"
 #include "engines/util.h"
 
 #include "virtualcinema/core/vcengine.h"
@@ -38,10 +40,8 @@
 #include "virtualcinema/core/video.h"
 
 #include "roland.h"
-
-// #include "intro.h"
-
-// #include "nodes/node.h"
+#include "rintro.h"
+#include "chapter.h"
 
 static const byte cursorArrow[] = {
 	0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -86,15 +86,10 @@ RolandEngine::RolandEngine(OSystem *syst)
 	CursorMan.pushCursorPalette(cursorPalette, 0, 2);
     CursorMan.showMouse(true);
 
-    // Common debug channels
-    // DebugMan.addDebugChannel(kDebugLevelMain, "Main", "Generic debug level");
-    // DebugMan.addDebugChannel(kDebugLevelResources, "Resources", "Resources debugging");
+    _font = FontMan.getFontByUsage(Graphics::FontManager::kLocalizedFont);
 
-    _intro = new RIntro(this);
-    _menu = new RMenu(this);
-    _chapter = new Chapter(this);
-
-    _handler = _intro;
+    _handler = new RIntro(this);
+    // _handler = new Chapter(this);
 
     debug("RolandEngine::RolandEngine");
 }
@@ -102,10 +97,6 @@ RolandEngine::RolandEngine(OSystem *syst)
 RolandEngine::~RolandEngine() {
     debug("RolandEngine::~RolandEngine");
     _handler = NULL;
-
-    delete _chapter;
-    delete _menu;
-    delete _intro;
 }
- 
+
 } // End of namespace VirtualCinema

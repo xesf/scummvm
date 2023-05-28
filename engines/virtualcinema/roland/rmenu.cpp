@@ -27,8 +27,10 @@
 
 #include "virtualcinema/core/eventHandler.h"
 #include "virtualcinema/core/image.h"
+#include "virtualcinema/core/video.h"
 
 #include "rmenu.h"
+#include "chapter.h"
 
 namespace VirtualCinema {
 
@@ -44,24 +46,22 @@ bool RMenu::mountEvent(const VCEvent &evt) {
     _chapters->setRect(0, 2, 470, 240);
     _chapters->setX(85);
     _chapters->setY(130);
+    _vm->getImageManager()->updateImages();
 
     return true;
 }
 
 bool RMenu::unmountEvent(const VCEvent &evt) {
+    _vm->getImageManager()->closeImages();
     return true;
 }
 
 bool RMenu::updateEvent(const VCEvent &evt) {
-    if (_vm->getVideoManager()->isVideoPlaying()) {
-        _vm->getVideoManager()->updateMovies();
-    } else {
-        _vm->getImageManager()->updateImages();
-    }
+    _vm->getImageManager()->updateImages();
     if (_skip) {
         _skip = false;
         _vm->fillScreen(0);
-        _vm->switchEventHandler(_vm->getChapter());
+        _vm->switchEventHandler(new Chapter(_vm));
     }
     return true;
 }
@@ -74,9 +74,9 @@ bool RMenu::mouseEvent(const VCEvent &evt) {
     _skip = false;
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:
-    case Common::EVENT_RBUTTONDOWN:
         _skip = true;
         break;
+    case Common::EVENT_RBUTTONDOWN:
     default:
         break;
     }

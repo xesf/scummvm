@@ -189,8 +189,10 @@ void VideoManager::resumeVideos() {
 }
 
 void VideoManager::closeVideos() {
-    for (VideoList::iterator it = _videos.begin(); it != _videos.end(); it++)
+    for (VideoList::iterator it = _videos.begin(); it != _videos.end(); it++) {
+        (*it)->stop();
         (*it)->close();
+    }
 
     _videos.clear();
 }

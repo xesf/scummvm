@@ -29,6 +29,7 @@
 #include "virtualcinema/core/image.h"
 
 #include "rintro.h"
+#include "rmenu.h"
 
 namespace VirtualCinema {
 
@@ -42,7 +43,7 @@ bool RIntro::mountEvent(const VCEvent &evt) {
     ImageEntryPtr intro1 = _vm->getImageManager()->show("INTRO1.RLE");
     _vm->getImageManager()->updateImages();
     _vm->_system->updateScreen();
-    _vm->_system->delayMillis(1000);
+    // _vm->_system->delayMillis(1000);
     // _vm->getImageManager()->removeEntry(intro1);
     _vm->getImageManager()->show("BKGND.RLE");
     _vm->getImageManager()->updateImages();
@@ -57,7 +58,7 @@ bool RIntro::mountEvent(const VCEvent &evt) {
 
 bool RIntro::unmountEvent(const VCEvent &evt) {
     // _vm->getImageManager()->closeImages();
-    _vm->getVideoManager()->closeVideos();
+    // _vm->getVideoManager()->closeVideos();
     return true;
 }
 
@@ -85,11 +86,11 @@ bool RIntro::updateEvent(const VCEvent &evt) {
         _vm->getImageManager()->updateImages();
     }
     if (_skip || (_logo && !_vm->getVideoManager()->isVideoPlaying())) {
-        if (!_skip) {
-            _vm->_system->delayMillis(2000);
-        }
+        // if (!_skip) {
+        //     _vm->_system->delayMillis(2000);
+        // }
         _vm->fillScreen(0);
-        _vm->switchEventHandler(_vm->getMenu());
+        _vm->switchEventHandler(new RMenu(_vm));
         _skip = false;
     }
     return true;
@@ -103,9 +104,9 @@ bool RIntro::mouseEvent(const VCEvent &evt) {
     _skip = false;
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:
-    case Common::EVENT_RBUTTONDOWN:
-        _skip = true;
+    _skip = true;
         break;
+    case Common::EVENT_RBUTTONDOWN:
     default:
         break;
     }

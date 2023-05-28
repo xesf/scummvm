@@ -63,21 +63,37 @@ char Chapter::getPageLetter() {
 
 void Chapter::switchPage() {
     Common::String pagePath;
-    
-    if (_vm->_characterIndex == 5 && _vm->_pageNumber == 1) {
-        pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c-2.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+
+    if (_vm->_characterIndex == 5) {
+        if (_vm->_pageNumber == 1) {
+            pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c-2.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+        } else {
+            pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+        }
     } else {
-        pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+        pagePath = Common::String::format("CHAP-%d/%c/P%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
     }
 
     // automatically check for page boundaries
-    if (_vm->_pageNumber <= _maxPageNumber) {
-        Common::File file;
-        if (!file.exists(pagePath)) {
-            _vm->_pageNumber -= 1;
-            _maxPageNumber = _vm->_pageNumber;
-            pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+    Common::File file;
+    if (!file.exists(pagePath)) {
+        _vm->_pageNumber -= 1;
+        if (_vm->_pageNumber < 1) {
+            _vm->_pageNumber = 1;
         }
+        _maxPageNumber = _vm->_pageNumber;
+//            if (_vm->_characterIndex == 5) {
+//                pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+//            } else {
+//                pagePath = Common::String::format("CHAP-%d/%c/P%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
+//            }
+        return;
+    } else {
+        _maxPageNumber = _vm->_pageNumber;
+    }
+
+    if (_vm->_characterIndex == 5) {
+        _vm->getImageManager()->show(Common::String::format("CHAP-%d/%c/C%d%cL.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter()));
     }
 
     if (_page.get() != nullptr) {
@@ -85,20 +101,29 @@ void Chapter::switchPage() {
         _page->close();
     }
     _page = _vm->getImageManager()->show(pagePath);
-    _page->setX(120);
-    _page->setY(105);
+    if (_vm->_characterIndex == 5) {
+        _page->setX(120);
+        _page->setY(105);
+    }
+
+    if (_vm->_characterIndex != 5) {
+        _vm->getVideoManager()->closeVideos();
+        _vm->getVideoManager()->play(Common::String::format("QT/NARC%d%c%d.MOV", _vm->_chapterNumber, getCharacterIndexLetter(), (_vm->_characterIndex == 5) ? 1 : _vm->_pageNumber));
+    } else if (_vm->_pageNumber == 1) {
+        _vm->getVideoManager()->play(Common::String::format("QT/NARC%d%c%d.MOV", _vm->_chapterNumber, getCharacterIndexLetter(), (_vm->_characterIndex == 5) ? 1 : _vm->_pageNumber));
+    }
+
+    _vm->getImageManager()->updateImages();
+    _vm->_system->updateScreen();
 }
 
 bool Chapter::mountEvent(const VCEvent &evt) {
+    _vm->_pageNumber = 1;
+
     _prevPageNumber = _vm->_pageNumber;
+    _prevCharacterIndex = _vm->_characterIndex;
 
-    _background = _vm->getImageManager()->show(Common::String::format("CHAP-%d/%c/C%d%cL.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter()));
     switchPage();
-    _vm->getImageManager()->updateImages();
-    _vm->_system->updateScreen();
-    _vm->getVideoManager()->play(Common::String::format("QT/NARC%d%c%d.MOV", _vm->_chapterNumber, getCharacterIndexLetter(), (_vm->_characterIndex == 5) ? 1 : _vm->_pageNumber));
-
-    // _vm->getVideoManager()->resumeVideos();
 
     return true;
 }
@@ -117,10 +142,15 @@ bool Chapter::updateEvent(const VCEvent &evt) {
     }
 
     if (_prevPageNumber != _vm->_pageNumber) {
-        _prevPageNumber = _vm->_pageNumber;
         switchPage();
-        _vm->getImageManager()->updateImages();
-        _vm->_system->updateScreen();
+        _prevPageNumber = _vm->_pageNumber;
+    }
+
+    if (_prevCharacterIndex != _vm->_characterIndex) {
+        _vm->getVideoManager()->closeVideos();
+        switchPage();
+        _prevCharacterIndex = _vm->_characterIndex;
+        _vm->_pageNumber = 1;
     }
 
     // debugging hotspots
@@ -150,10 +180,13 @@ bool Chapter::mouseEvent(const VCEvent &evt) {
     case Common::EVENT_LBUTTONDOWN:
         for (uint i = 0; i < ARRAYSIZE(_cardHotspot); i++) {
             if (_cardHotspot[i].contains(evt.mouse)) {
-                if (_vm->_characterIndex == i) {
-                    _vm->_characterIndex = 5;
-                } else {
-                    _vm->_characterIndex = i;
+                if (_prevCharacterIndex == _vm->_characterIndex) {
+                    uint16 mapCards[5] = {4, 1, 3, 2, 5};
+                    if (_vm->_characterIndex == mapCards[i]) {
+                        _vm->_characterIndex = 5;
+                    } else {
+                        _vm->_characterIndex = mapCards[i];
+                    }
                 }
             }
         }
@@ -168,19 +201,14 @@ bool Chapter::mouseEvent(const VCEvent &evt) {
                     _vm->switchEventHandler(new RMenu(_vm));
                     break;
                 }
-                if (_prevPageNumber == _vm->_pageNumber) {
-                    _prevPageNumber = _vm->_pageNumber;
-                    if (i == 0) {
-                        _vm->_pageNumber -= 1;
-                    } else if (i == 2) {
-                        _vm->_pageNumber += 1;
-                    }
-                    
+                if (i == 0) {
+                    _vm->_pageNumber -= 1;
                     if (_vm->_pageNumber < 1) {
                         _vm->_pageNumber = 1;
                     }
-                    if (_vm->_pageNumber > _maxPageNumber) {
-                        _vm->_pageNumber = _maxPageNumber;
+                } else if (i == 2) {
+                    if (_vm->_pageNumber <= _maxPageNumber) {
+                        _vm->_pageNumber += 1;
                     }
                 }
             }

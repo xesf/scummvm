@@ -48,10 +48,10 @@ private:
     RolandEngine *_vm;
     bool _skip = false;
 
-    ImageEntryPtr _background;
     ImageEntryPtr _page;
 
     uint16 _prevPageNumber = 1;
+    uint16 _prevCharacterIndex = 5;
     uint16 _maxPageNumber = 20;
 
     char getCharacterIndexLetter();

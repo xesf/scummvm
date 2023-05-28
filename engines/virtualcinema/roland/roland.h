@@ -48,10 +48,10 @@ public:
     uint16 _pageNumber = 1;
     /*
     Characters Indexes: 5
-        Angelica: 1
-        Charlemagne: 2
-        Durendal: 3
         Roland: 4
+        Angelica: 1
+        Durendal: 3
+        Charlemagne: 2
         Main Leaf: 5
     */
     uint16 _characterIndex = 5;

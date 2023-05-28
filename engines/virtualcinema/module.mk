@@ -2,6 +2,7 @@ MODULE := engines/virtualcinema
 
 MODULE_OBJS = \
     roland/chapter.o \
+    roland/chaptermenu.o \
     roland/rintro.o \
     roland/rmenu.o \
     roland/roland.o \

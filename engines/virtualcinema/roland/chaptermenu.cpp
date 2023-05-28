@@ -29,49 +29,44 @@
 #include "virtualcinema/core/image.h"
 #include "virtualcinema/core/video.h"
 
-#include "rmenu.h"
-#include "chapter.h"
 #include "chaptermenu.h"
+#include "chapter.h"
 
 namespace VirtualCinema {
 
-RMenu::RMenu(RolandEngine *vm): _vm(vm) {
+ChapterMenu::ChapterMenu(RolandEngine *vm): _vm(vm) {
 }
 
-RMenu::~RMenu() {
+ChapterMenu::~ChapterMenu() {
     _vm->getImageManager()->closeImages();
 }
 
-bool RMenu::mountEvent(const VCEvent &evt) {
-    _background = _vm->getImageManager()->show("CHAPMENU.RLE");
-    _chapters = _vm->getImageManager()->show("MENU-BAR.RLE");
-    _chapters->setRect(0, 2, 470, 240);
-    _chapters->setX(85);
-    _chapters->setY(130);
+bool ChapterMenu::mountEvent(const VCEvent &evt) {
+    _vm->getImageManager()->show(Common::String::format("SUBMAIN/CH%d.RLE", _vm->_chapterNumber));
     _vm->getImageManager()->updateImages();
 
     return true;
 }
 
-bool RMenu::unmountEvent(const VCEvent &evt) {
+bool ChapterMenu::unmountEvent(const VCEvent &evt) {
     return true;
 }
 
-bool RMenu::updateEvent(const VCEvent &evt) {
-    _vm->getImageManager()->updateImages();
+bool ChapterMenu::updateEvent(const VCEvent &evt) {
+    // _vm->getImageManager()->updateImages();
     if (_skip) {
         _skip = false;
         _vm->fillScreen(0);
-        _vm->switchEventHandler(new ChapterMenu(_vm));
+        _vm->switchEventHandler(new Chapter(_vm));
     }
     return true;
 }
 
-bool RMenu::keyEvent(const VCEvent &evt) {
+bool ChapterMenu::keyEvent(const VCEvent &evt) {
     return true;
 }
 
-bool RMenu::mouseEvent(const VCEvent &evt) {
+bool ChapterMenu::mouseEvent(const VCEvent &evt) {
     _skip = false;
     switch (evt.type) {
     case Common::EVENT_LBUTTONDOWN:

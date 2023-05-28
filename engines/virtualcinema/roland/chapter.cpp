@@ -27,7 +27,7 @@
 #include "virtualcinema/core/image.h"
 
 #include "chapter.h"
-#include "rmenu.h"
+#include "chaptermenu.h"
 
 
 namespace VirtualCinema {
@@ -82,11 +82,6 @@ void Chapter::switchPage() {
             _vm->_pageNumber = 1;
         }
         _maxPageNumber = _vm->_pageNumber;
-//            if (_vm->_characterIndex == 5) {
-//                pagePath = Common::String::format("CHAP-%d/%c/C%d%cL%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
-//            } else {
-//                pagePath = Common::String::format("CHAP-%d/%c/P%c.RLE", _vm->_chapterNumber, getCharacterIndexLetter(), getPageLetter());
-//            }
         return;
     } else {
         _maxPageNumber = _vm->_pageNumber;
@@ -109,7 +104,7 @@ void Chapter::switchPage() {
     if (_vm->_characterIndex != 5) {
         _vm->getVideoManager()->closeVideos();
         _vm->getVideoManager()->play(Common::String::format("QT/NARC%d%c%d.MOV", _vm->_chapterNumber, getCharacterIndexLetter(), (_vm->_characterIndex == 5) ? 1 : _vm->_pageNumber));
-    } else if (_vm->_pageNumber == 1) {
+    } else if (_vm->_pageNumber == 1 && !_vm->getVideoManager()->isVideoPlaying()) {
         _vm->getVideoManager()->play(Common::String::format("QT/NARC%d%c%d.MOV", _vm->_chapterNumber, getCharacterIndexLetter(), (_vm->_characterIndex == 5) ? 1 : _vm->_pageNumber));
     }
 
@@ -198,7 +193,7 @@ bool Chapter::mouseEvent(const VCEvent &evt) {
         for (uint i = 0; i < ARRAYSIZE(_pageHotspot); i++) {
             if (_pageHotspot[i].contains(evt.mouse)) {
                 if (i == 1) {
-                    _vm->switchEventHandler(new RMenu(_vm));
+                    _vm->switchEventHandler(new ChapterMenu(_vm));
                     break;
                 }
                 if (i == 0) {

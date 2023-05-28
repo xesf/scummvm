@@ -51,8 +51,10 @@ VideoEntry::~VideoEntry() {
 }
 
 void VideoEntry::close() {
-    delete _video;
-    _video = nullptr;
+    if (_video) {
+        delete _video;
+        _video = nullptr;
+    }
 }
 
 bool VideoEntry::endOfVideo() const {

@@ -38,6 +38,7 @@ RMenu::RMenu(RolandEngine *vm): _vm(vm) {
 }
 
 RMenu::~RMenu() {
+    _vm->getImageManager()->closeImages();
 }
 
 bool RMenu::mountEvent(const VCEvent &evt) {
@@ -52,7 +53,6 @@ bool RMenu::mountEvent(const VCEvent &evt) {
 }
 
 bool RMenu::unmountEvent(const VCEvent &evt) {
-    _vm->getImageManager()->closeImages();
     return true;
 }
 

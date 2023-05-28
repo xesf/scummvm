@@ -51,10 +51,14 @@ ImageEntry::~ImageEntry() {
 }
 
 void ImageEntry::close() {
-    delete _surface;
-    delete _image;
-    _image = nullptr;
-    _surface = nullptr;
+    if (_surface) {
+        delete _surface;
+        _surface = nullptr;
+    }
+    if (_image) {
+        delete _image;
+        _image = nullptr;
+    }
 }
 
 void ImageEntry::center() {
